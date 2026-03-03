@@ -7,6 +7,9 @@ RUN pip install --no-cache-dir --upgrade pip
 
 COPY requirements.txt .
 
+# Instala dependências listadas em requirements.txt (inclui uvicorn)
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY app ./app
 
 EXPOSE 8000

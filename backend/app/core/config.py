@@ -1,5 +1,5 @@
 #Concentrar a config do db
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     '''
     Essa classe le variaveis de ambiente automaticamente
@@ -21,9 +21,9 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
     
-    class Config:
-        #Nao coloca prefixo nas variaveis de ambiente
-        env_prefix = ''
-        #case_sensitive = True por padrão, mas como as variaveis de ambiente geralmente são maiusculas, colocamos False para evitar problemas de case sensitivity
-        case_sensitive = False
+    # Pydantic v2: configurações de leitura de env
+    model_config = SettingsConfigDict(
+        env_prefix='',
+        case_sensitive=False,
+    )
 settings = Settings()
