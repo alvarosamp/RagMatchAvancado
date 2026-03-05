@@ -1,6 +1,7 @@
 from sqlalchemy  import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
+from app.logs.config import logger 
 
 #Engine = conexao com o banco
 engine = create_engine(settings.database_url, pool_pre_ping=True)
@@ -18,6 +19,8 @@ def get_db(): #cada request cria uma sessão de banco de dados nova, e a sessão
     
     db = SessionLocal()
     try:
+        logger.info("Sessão de banco de dados criada com sucesso.")
         yield db
     finally:
         db.close()
+        logger.info("Sessão de banco de dados fechada.")

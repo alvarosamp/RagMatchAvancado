@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.db.init_db import init_db
-
 from app.routers.health import router as health_router
 from app.routers.switches import router as switches_router
+from app.logs.config import logger
+
 
 app = FastAPI(title="Edital Matcher API", version="0.1.0")
 
@@ -25,5 +26,9 @@ def on_startup():
     db: Session = SessionLocal()
     try:
         init_db(db)
+        logger.info('Banco inicializado com sucesso')
+    except Exception as e:
+        logger.error(f"Erro ao inicializar banco: {e}")
+        raise
     finally:
         db.close()

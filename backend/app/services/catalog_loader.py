@@ -1,69 +1,56 @@
-import json
-from pathlib import Path
-from typing import Optional
 from sqlalchemy.orm import Session
 from app.db.models import Product
+import json
+from pathlib import Path
+from app.logs.config import logger
 
-
-def _find_default_catalog() -> Optional[Path]:
-    """Procura por data/Produtos/all_devices.json subindo a partir do diretório do arquivo atual.
-    Retorna Path se encontrado, ou None caso contrário.
-    """
-    current = Path(__file__).resolve()
-    # inclui o próprio arquivo e todos os pais
-    candidates = [current] + list(current.parents)
-    for p in candidates:
-        candidate = p / 'data' / 'Produtos' / 'all_devices.json'
+def _find_switch_catalog_path() -> Path:
+    """Resolve o caminho do catálogo de switches."""
+    docker_candidates = [
+        Path("/data/Produtos/all_devices.json"),
+        Path("/data/all_devices.json"),
+    ]
+    for candidate in docker_candidates:
         if candidate.exists():
             return candidate
-    return None
 
+    repo_root = Path(__file__).resolve().parents[3]
+    local_candidates = [
+        repo_root / "data" / "Produtos" / "all_devices.json",
+        repo_root / "data" / "all_devices.json",
+    ]
+    for candidate in local_candidates:
+        if candidate.exists():
+            return candidate
 
-def load_switch_catalog(db: Session, json_path: Optional[str] = None) -> int:
+    searched = docker_candidates + local_candidates
+    raise FileNotFoundError(
+        "Não encontrei o catálogo de switches. Procurei em: "
+        + ", ".join(str(p) for p in searched)
+    )
+
+def load_switch_catalog(db: Session) -> int:
     """
-    Carrega o catálogo de produtos a partir de um arquivo JSON e salva no banco de dados.
-
-    Comportamento:
-    - Se json_path for fornecido, usa-o diretamente.
-    - Se json_path for None, procura por `data/Produtos/all_devices.json` subindo a árvore de diretórios
-      a partir da localização deste módulo.
-    - Lê o JSON, itera pelos pares model_name -> specs e insere somente produtos não-duplicados.
-    - Retorna a quantidade de produtos inseridos.
+    Carrega o catálogo de switches no banco de dados a partir de um arquivo JSON.
     """
-    if json_path:
-        path = Path(json_path)
-    else:
-        found = _find_default_catalog()
-        if not found:
-            raise FileNotFoundError(
-                "Arquivo JSON não encontrado. Passe json_path ou coloque 'data/Produtos/all_devices.json' no repositório."
-            )
-        path = found
+    catalog_path = _find_switch_catalog_path()
+    with catalog_path.open("r", encoding="utf-8") as file:
+        catalog = json.load(file)
 
-    if not path.exists():
-        raise FileNotFoundError(f"Arquivo JSON não encontrado: {str(path)}")
+    inserted_count = 0
 
-    payload = json.loads(path.read_text(encoding='utf-8'))
-    inserted = 0
+    # Verifica duplicados de maneira otimizada
+    existing_switches = {switch.model: switch for switch in db.query(Product).filter(Product.category == "switch").all()}
 
-    # espera-se um dict com model_name: specs
-    if not isinstance(payload, dict):
-        raise ValueError(f"Formato de JSON inesperado: esperado objeto/dicionário no arquivo {path}")
-
-    for model_name, specs in payload.items():
-        # Se já existir no banco, não insere de novo
-        exists = db.query(Product).filter(Product.model == model_name).first()
-        if exists:
+    # Carrega novos switches
+    for model, specs in catalog.items():
+        if model in existing_switches:
             continue
-        db.add(
-            Product(
-                model=model_name,
-                category='switch',
-                data=specs,
-            )
-        )
-        inserted += 1
 
-    db.commit()
-    return inserted
-        
+        new_switch = Product(model=model, category="switch", data=specs)
+        db.add(new_switch)
+        db.commit()
+        inserted_count += 1
+
+    logger.info(f"{inserted_count} switches inseridos.")
+    return inserted_count
