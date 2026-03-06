@@ -1,52 +1,79 @@
 services:
-  # Banco de dados Postgres
+
+  # ── Banco de dados PostgreSQL + pgvector ──────────────────────────────────
   db:
-    image: postgres:16
+    image: pgvector/pgvector:pg16      # imagem oficial com extensão vector incluída
     container_name: edital_matcher_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
-    # Expondo porta 5432 para seu PC (pra debug com DBeaver por exemplo)
     ports:
-      - "5432:5432"
-
-    # Volume para persistir dados mesmo se o container reiniciar
+      - "5432:5432"                    # debug com DBeaver / psql
     volumes:
       - pgdata:/var/lib/postgresql/data
-
-    # Healthcheck garante que o banco “está pronto”
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # API FastAPI
+  # ── API FastAPI ───────────────────────────────────────────────────────────
   api:
     build: ./backend
     container_name: edital_matcher_api
-
-    # Variáveis de ambiente para a API conectar no banco
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-
+      POSTGRES_HOST:     ${POSTGRES_HOST}
+      POSTGRES_PORT:     ${POSTGRES_PORT}
+      OLLAMA_HOST:       http://ollama:11434   # aponta pro serviço abaixo
+      RUNNING_IN_DOCKER: "1"
     ports:
       - "${APP_PORT}:8000"
-
-    # Monta o código dentro do container (hot reload) + acesso ao JSON em /data
     volumes:
-      - ./backend:/app
-      - ./data:/data
-
+      - ./backend:/app                 # hot reload
+      - ./data:/data                   # all_devices.json
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started     # Ollama não tem healthcheck nativo ainda
+
+  # ── Ollama (LLM + Embeddings local) ──────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: edital_matcher_ollama
+    ports:
+      - "11434:11434"                  # acesso local para debug / Ollama UI
+    volumes:
+      - ollama_data:/root/.ollama      # persiste modelos baixados
+    # Se tiver GPU NVIDIA, descomente:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── Pull automático dos modelos na primeira execução ─────────────────────
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: edital_matcher_ollama_setup
+    depends_on:
+      - ollama
+    entrypoint: >
+      sh -c "
+        sleep 5 &&
+        ollama pull nomic-embed-text &&
+        ollama pull phi3
+      "
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    restart: "no"                      # roda uma vez e sai
 
 volumes:
   pgdata:
+  ollama_data:

@@ -8,11 +8,12 @@ from app.routers.switches import router as switches_router
 from app.logs.config import logger
 
 
-app = FastAPI(title="Edital Matcher API", version="0.1.0")
+app = FastAPI(title="Edital Matcher API", version="0.2.0", description = 'Matching inteligente de produtos contra editais')
 
 # Registra rotas
 app.include_router(health_router)
 app.include_router(switches_router)
+app.include_router(editais_router)  # Rota para editais (a ser implementada)
 
 @app.on_event("startup")
 def on_startup():
