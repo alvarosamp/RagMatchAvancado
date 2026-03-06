@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.models import Product
+from app.db.models import Product, MatchingResult
 from app.services.catalog_loader import load_switch_catalog
 from app.logs.config import logger
 

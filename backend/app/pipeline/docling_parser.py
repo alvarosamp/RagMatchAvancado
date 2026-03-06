@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Union
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from dcling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.base_models import InputFormat
 from app.logs.config import logger
 
@@ -27,6 +27,9 @@ class parsedDocument:
     filename : str
     full_text: str
     chunks: list[ParsedChunk] = field(default_factory=list)
+
+# Alias com inicial maiúscula para manter consistência com o restante do código
+ParsedDocument = parsedDocument
     
 
 #Parser principal
@@ -37,6 +40,13 @@ def _build_converter() -> DocumentConverter:
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
     )
 _converter : DocumentConverter | None = None #singleton
+
+def _get_converter() -> DocumentConverter:
+    """Retorna (ou cria) o singleton do DocumentConverter."""
+    global _converter
+    if _converter is None:
+        _converter = _build_converter()
+    return _converter
 
 def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -> ParsedDocument:
     """

@@ -8,8 +8,8 @@ Operações principais:
 '''
 from __future__ import annotations
 
-from streamlit import text
-from sqlachemy.orm import Session
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 from app.db.models import DocumentChunk, Edital
 from app.pipeline.chunker import TextChunker
 from app.pipeline.embedder import embed_text, embed_texts_batch

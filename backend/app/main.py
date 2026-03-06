@@ -13,7 +13,7 @@ app = FastAPI(title="Edital Matcher API", version="0.2.0", description = 'Matchi
 # Registra rotas
 app.include_router(health_router)
 app.include_router(switches_router)
-app.include_router(editais_router)  # Rota para editais (a ser implementada)
+# app.include_router(editais_router)  # TODO: implementar router de editais
 
 @app.on_event("startup")
 def on_startup():
