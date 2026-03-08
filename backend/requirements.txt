@@ -21,3 +21,7 @@ ollama>=0.2.0                 # pip install ollama
 # Utilitários
 pydantic>=2.0.0
 python-dotenv>=1.0.0
+
+# Exportação
+openpyxl>=3.1.0       # geração de XLSX
+reportlab>=4.0.0      # geração de PDF

@@ -3,33 +3,39 @@ from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.db.init_db import init_db
-from app.routers.health import router as health_router
+from app.routers.health  import router as health_router
 from app.routers.switches import router as switches_router
+from app.routers.editais  import router as editais_router
+from app.routers.export   import router as export_router
 from app.logs.config import logger
 
-
-app = FastAPI(title="Edital Matcher API", version="0.2.0", description = 'Matching inteligente de produtos contra editais')
+app = FastAPI(
+    title       = "Edital Matcher API",
+    version     = "0.2.0",
+    description = "Matching inteligente de produtos contra editais de licitação",
+)
 
 # Registra rotas
 app.include_router(health_router)
 app.include_router(switches_router)
-# app.include_router(editais_router)  # TODO: implementar router de editais
+app.include_router(editais_router)
+app.include_router(export_router)
+
 
 @app.on_event("startup")
 def on_startup():
     """
-    Quando a API subir:
-    - abre sessão
+    Startup:
+    - cria extensão pgvector
     - cria tabelas
     - carrega catálogo
-    - fecha sessão
     """
     db: Session = SessionLocal()
     try:
-        init_db(db)
-        logger.info('Banco inicializado com sucesso')
+        result = init_db(db)
+        logger.info(f"Banco inicializado: {result}")
     except Exception as e:
-        logger.error(f"Erro ao inicializar banco: {e}")
+        logger.error(f"Erro no startup: {e}")
         raise
     finally:
         db.close()
