@@ -1,269 +1,368 @@
-# Edital Matcher API
+# 📄 Edital Matcher — SaaS de Matching para Licitações
 
-Sistema inteligente de matching entre produtos de catálogo e requisitos técnicos de editais de licitação pública.
+Sistema inteligente que faz o matching automático entre produtos do catálogo e requisitos de editais de licitação, com pipeline OCR → Embeddings → RAG → LLM e camada completa de MLOps.
 
 ---
 
-## O que o sistema faz
+## 📌 Índice
 
-1. Recebe um PDF de edital de licitação
-2. Extrai o texto com OCR (Docling)
-3. Divide em chunks e gera embeddings vetoriais (Ollama + pgvector)
-4. Compara cada produto do catálogo contra os requisitos do edital
-5. Usa regras, heurísticas e LLM local (Ollama) para gerar um score de matching
-6. Exporta os resultados em XLSX, PDF ou CSV
+- [Visão Geral](#visão-geral)
+- [Stack Tecnológica](#stack-tecnológica)
+- [Arquitetura](#arquitetura)
+- [Estrutura de Pastas](#estrutura-de-pastas)
+- [MLOps Layer](#mlops-layer)
+- [API Endpoints](#api-endpoints)
+- [Como Rodar](#como-rodar)
+- [Fluxo de Uso](#fluxo-de-uso)
+- [Exportação](#exportação)
+- [Roadmap](#roadmap)
+
+---
+
+## Visão Geral
+
+O Edital Matcher analisa PDFs de editais de licitação e verifica automaticamente quais produtos do catálogo atendem aos requisitos técnicos exigidos. O resultado é um ranking scored com justificativas geradas por LLM e exportação em XLSX, PDF e CSV.
+
+**Problema resolvido:** analistas gastam horas lendo editais e comparando com catálogos manualmente. O sistema automatiza isso em minutos com rastreabilidade total via MLflow.
+
+---
+
+## Stack Tecnológica
+
+| Camada | Tecnologia | Função |
+|--------|-----------|--------|
+| **API** | FastAPI | Gateway REST, endpoints, roteamento |
+| **Banco** | PostgreSQL + pgvector | Dados relacionais + busca vetorial |
+| **OCR/Parser** | Docling | Extração de texto estruturado de PDFs |
+| **Embeddings** | Ollama `nomic-embed-text` (768d) | Vetorização de chunks |
+| **LLM Matching** | Ollama `llama3` | Avaliação semântica dos requisitos |
+| **Experiment Tracking** | MLflow | Rastreamento de runs, métricas, comparação de modelos |
+| **Orquestração** | Prefect *(next step)* | Pipeline assíncrono como DAG |
+| **Drift Monitoring** | Evidently | Detecção de mudanças nos dados ao longo do tempo |
+| **Exportação** | openpyxl + reportlab | XLSX, PDF, CSV |
 
 ---
 
 ## Arquitetura
 
 ```
-Usuário
-  │
-  ▼
-FastAPI (API Gateway)
-  │
-  ├── PostgreSQL + pgvector  (banco transacional + busca vetorial)
-  ├── Ollama                 (embeddings + LLM local)
-  │
-  ├── Pipeline
-  │     Docling (OCR/Parser) → Chunker → Embedder → pgvector
-  │
-  └── Motor de Matching
-        Busca vetorial (RAG) + Heurísticas + LLM → Score + Relatório
+Usuário / Cliente
+      │
+      ▼
+┌─────────────────────────────────────────────────────────┐
+│                    FastAPI (porta 8000)                  │
+│   /editais/upload  /editais/{id}/match  /export/*        │
+└────────────────────────┬────────────────────────────────┘
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+   ┌─────────────┐ ┌──────────┐ ┌────────────────┐
+   │  Pipeline   │ │ Matching │ │  MLOps Layer   │
+   │  OCR→Chunk  │ │  Engine  │ │                │
+   │  →Embed     │ │ RAG+LLM  │ │ tracker.py     │
+   └──────┬──────┘ └────┬─────┘ │ evaluator.py   │
+          │             │       │ drift_monitor  │
+          ▼             ▼       └───────┬────────┘
+   ┌─────────────────────────┐          │
+   │  PostgreSQL + pgvector  │          ▼
+   │  chunks / embeddings    │   ┌─────────────┐
+   │  editais / resultados   │   │   MLflow    │
+   └─────────────────────────┘   │ (porta 5000)│
+                                 └─────────────┘
+          │
+          ▼
+   ┌─────────────┐
+   │   Ollama    │
+   │ (porta 11434)│
+   │ nomic-embed │
+   │   llama3    │
+   └─────────────┘
+```
+
+### Motor de Matching — 3 Camadas
+
+```
+Requisito do Edital
+        │
+        ▼
+[1] RAG (pgvector)       → busca chunks relevantes do edital
+        │
+        ▼
+[2] Heurísticas/Regras   → score rápido baseado em atributos (peso: 30%)
+        │
+        ▼
+[3] LLM llama3           → raciocínio semântico + justificativa JSON (peso: 70%)
+        │
+        ▼
+Score Final
+  >= 0.75  →  ATENDE
+  0.45–0.75 →  VERIFICAR
+  < 0.45   →  NÃO ATENDE
 ```
 
 ---
 
-## Estrutura de pastas
+## Estrutura de Pastas
 
 ```
 edital-matcher/
-├── docker-compose.yaml
-├── .env                        ← criado a partir do .env.example
 │
-└── backend/
-    ├── Dockerfile
-    ├── requirements.txt
-    └── app/
-        ├── main.py
-        ├── core/
-        │   └── config.py       ← settings do banco (lê .env)
-        ├── db/
-        │   ├── models.py       ← tabelas: Product, Edital, Chunk, Requirement, MatchingResult
-        │   ├── session.py      ← engine e get_db
-        │   └── init_db.py      ← startup: pgvector + tabelas + catálogo
-        ├── logs/
-        │   └── config.py       ← logger
-        ├── pipeline/
-        │   ├── docling_parser.py  ← OCR e extração estruturada do PDF
-        │   ├── chunker.py         ← sliding window com overlap
-        │   └── embedder.py        ← nomic-embed-text via Ollama
-        ├── vector/
-        │   └── pgvector_store.py  ← salvar e buscar chunks por similaridade
-        ├── services/
-        │   ├── catalog_loader.py      ← carrega all_devices.json no banco
-        │   ├── requirements_checker.py ← regras por atributo
-        │   ├── matching_engine.py      ← RAG + heurísticas + LLM
-        │   └── export_service.py      ← geração de XLSX, PDF e CSV
-        └── routers/
-            ├── health.py    ← GET /health
-            ├── switches.py  ← GET /switches
-            ├── editais.py   ← upload, requisitos, matching
-            └── export.py    ← download XLSX, PDF, CSV
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── app/
+│       ├── main.py                        # FastAPI app, registra todos os routers
+│       ├── core/config.py                 # pydantic-settings, env vars
+│       ├── db/
+│       │   ├── models.py                  # Product, Edital, DocumentChunk, Requirement, MatchingResult
+│       │   ├── session.py                 # engine + get_db
+│       │   └── init_db.py                 # pgvector + tabelas + seed do catálogo
+│       ├── logs/config.py                 # logger com FileHandler + StreamHandler
+│       ├── pipeline/
+│       │   ├── docling_parser.py          # OCR + estrutura markdown
+│       │   ├── chunker.py                 # sliding window, overlap=150, max_chars=1000
+│       │   └── embedder.py                # nomic-embed-text, batch=32, retry exponencial
+│       ├── vector/pgvector_store.py       # save_chunks, search_similar (cosine <=>)
+│       ├── services/
+│       │   ├── catalog_loader.py          # carrega all_devices.json → banco
+│       │   ├── requirements_checker.py    # regras por atributo
+│       │   ├── matching_engine.py         # RAG + heurísticas + LLM
+│       │   └── export_service.py          # XLSX, PDF, CSV
+│       │
+│       ├── mlops/                         # ← NOVO: camada MLOps
+│       │   ├── __init__.py
+│       │   ├── tracker.py                 # MLflow: runs, params, métricas, artefatos
+│       │   ├── evaluator.py               # saúde do matching, distribuição, gaps
+│       │   └── drift_monitor.py           # Evidently: drift em embeddings e scores
+│       │
+│       ├── workers/                       # ← NOVO: preparação para Job Orchestrator
+│       │   ├── __init__.py
+│       │   └── pipeline_worker.py         # Prefect flows/tasks (síncrono hoje, async em breve)
+│       │
+│       └── routers/
+│           ├── health.py
+│           ├── switches.py
+│           ├── editais.py
+│           └── export.py
+│
+├── mlflow/mlruns/                         # artefatos e metadata (persistido via volume)
+├── monitoring/                            # planejado: Prometheus + Grafana
+├── notebooks/                             # planejado: análise exploratória
+├── data/
+│   ├── all_devices.json                   # catálogo de produtos
+│   └── uploads/
+├── tests/test_requirements.py
+└── docker-compose.yaml
 ```
 
 ---
 
-## Pré-requisitos
+## MLOps Layer
 
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose
-- Pelo menos **8 GB de RAM** disponível para o Ollama rodar os modelos
-- Os modelos `nomic-embed-text` e `llama3` são baixados automaticamente na primeira execução
+A camada MLOps foi desenhada para crescer junto com o projeto.
+
+### tracker.py — Experiment Tracking
+
+Registra cada execução do matching como um **run** no MLflow.
+
+```python
+from app.mlops import MatchingTracker
+
+tracker = MatchingTracker()
+tracker.log_matching_run(
+    edital_id="42",
+    resultados=resultados,
+    llm_model="llama3",
+)
+```
+
+M�tricas logadas: `score_medio`, `score_maximo`, `score_minimo`, `pct_atende`, `pct_verificar`, `pct_nao_atende`, `tempo_execucao_segundos`
+
+**UI:** http://localhost:5000
 
 ---
 
-## Como rodar
+### evaluator.py — Avaliação de Qualidade
 
-### 1. Clonar e configurar
+Analisa a saúde do matching sem ground truth.
+
+```python
+from app.mlops import MatchingEvaluator
+
+relatorio = MatchingEvaluator().gerar_relatorio_completo(
+    edital_id="42",
+    resultados=resultados,
+)
+# relatorio["saude_geral"]  → 0 a 100
+# relatorio["distribuicao"]["alertas"]  → avisos automáticos
+# relatorio["cobertura"]["requisitos_problematicos"]  → gaps no catálogo
+```
+
+Detecta: zona de incerteza alta, scores sem discriminação, requisitos sistematicamente mal avaliados.
+
+---
+
+### drift_monitor.py — Monitoramento de Drift
+
+Detecta quando embeddings ou scores mudam ao longo do tempo.
+
+```python
+from app.mlops import DriftMonitor
+
+monitor = DriftMonitor()
+monitor.registrar_scores(edital_id="42", resultados=resultados)
+
+analise = monitor.detectar_drift_scores(janela_runs=10)
+# analise["drift_detectado"]  → True/False
+# analise["delta"]            → variação na média
+
+# Relatório HTML interativo (requer Evidently)
+monitor.gerar_relatorio_evidently()
+```
+
+---
+
+### pipeline_worker.py — Orquestração (Prefect-ready)
+
+Pipeline estruturado como flows e tasks do Prefect. Hoje síncrono, assíncrono na próxima etapa.
+
+```python
+from app.workers import PipelineWorker
+
+worker = PipelineWorker()
+worker.executar_pipeline_completo(edital_id="42", pdf_path="/data/edital.pdf")
+worker.executar_matching_com_tracking(edital_id="42", resultados_matching=resultados)
+```
+
+---
+
+## API Endpoints
+
+```
+GET  /health
+GET  /switches
+GET  /verify-switches
+GET  /matching-results
+
+POST /editais/upload                 → PDF → OCR → chunks → embeddings
+GET  /editais/                       → lista editais
+POST /editais/{id}/requirements      → cadastra requisitos
+POST /editais/{id}/match             → executa matching + MLOps tracking
+GET  /editais/{id}/results           → consulta resultados
+
+GET  /editais/{id}/export/xlsx       → planilha Excel (Resumo + Detalhes)
+GET  /editais/{id}/export/pdf        → relatório PDF A4
+GET  /editais/{id}/export/csv        → CSV UTF-8 BOM
+```
+
+Swagger: **http://localhost:8000/docs**
+
+---
+
+## Como Rodar
+
+**Pré-requisitos:** Docker + 8GB RAM + 15GB disco
 
 ```bash
-git clone <seu-repositorio>
+# 1. Clone e configure
+git clone <repo>
 cd edital-matcher
+cp backend/.env.example backend/.env
 
-cp .env.example .env
-# edite o .env se quiser mudar senhas ou porta
-```
-
-### 2. Subir tudo
-
-```bash
+# 2. Suba os serviços
 docker compose up --build
 ```
 
-Na **primeira execução**, o serviço `ollama-setup` vai baixar os modelos automaticamente. Isso pode levar alguns minutos dependendo da internet. Depois fica salvo no volume `ollama_data`.
-
-### 3. Acessar
+Na primeira vez o `ollama-setup` baixa os modelos automaticamente (~5 min).
 
 | Serviço | URL |
-|---|---|
-| API (Swagger) | http://localhost:8000/docs |
-| Health check | http://localhost:8000/health |
+|---------|-----|
+| API REST | http://localhost:8000 |
+| Swagger UI | http://localhost:8000/docs |
+| MLflow UI | http://localhost:5000 |
 | Ollama | http://localhost:11434 |
 
 ---
 
-## Fluxo de uso
-
-### Passo 1 — Fazer upload do edital
+## Fluxo de Uso
 
 ```
-POST /editais/upload
-Content-Type: multipart/form-data
+1. POST /editais/upload
+   → envia o PDF do edital
+   → retorna: { edital_id, n_chunks }
 
-file: <arquivo.pdf>
-tenant_id: empresa_x  (opcional)
-```
+2. POST /editais/{id}/requirements
+   → cadastra os requisitos técnicos exigidos
 
-Retorna o `edital_id` gerado.
+3. POST /editais/{id}/match
+   → executa matching completo
+   → loga automaticamente no MLflow
 
-### Passo 2 — Cadastrar os requisitos
-
-```
-POST /editais/{edital_id}/requirements
-Content-Type: application/json
-
-[
-  {
-    "attribute": "Portas RJ45",
-    "raw_value": "mínimo 16 portas RJ-45",
-    "parsed_value": "16",
-    "unit": "portas"
-  },
-  {
-    "attribute": "PoE",
-    "raw_value": "deve possuir PoE",
-    "parsed_value": "True"
-  }
-]
-```
-
-### Passo 3 — Rodar o matching
-
-```
-POST /editais/{edital_id}/match
-```
-
-Avalia todos os produtos do catálogo contra os requisitos e retorna ranking com scores.
-
-### Passo 4 — Exportar os resultados
-
-```
-GET /editais/{edital_id}/export/xlsx   → planilha Excel
-GET /editais/{edital_id}/export/pdf    → relatório PDF
-GET /editais/{edital_id}/export/csv    → CSV (separado por ;)
+4. GET /editais/{id}/export/xlsx
+   → baixa planilha com ranking + justificativas
 ```
 
 ---
 
-## Endpoints disponíveis
+## Exportação
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/health` | Status da API |
-| GET | `/switches` | Lista produtos do catálogo |
-| GET | `/verify-switches` | Verifica requisitos básicos dos switches |
-| POST | `/editais/upload` | Faz upload e processa PDF do edital |
-| POST | `/editais/{id}/requirements` | Cadastra requisitos do edital |
-| POST | `/editais/{id}/match` | Executa o matching |
-| GET | `/editais/` | Lista todos os editais |
-| GET | `/editais/{id}/results` | Resultados de matching salvos |
-| GET | `/editais/{id}/export/xlsx` | Download da planilha |
-| GET | `/editais/{id}/export/pdf` | Download do relatório PDF |
-| GET | `/editais/{id}/export/csv` | Download do CSV |
+| Formato | Conteúdo |
+|---------|---------|
+| **XLSX** | Aba Resumo (ranking colorido) + Aba Detalhes (produto × requisito × justificativa LLM) |
+| **PDF** | Cabeçalho, tabela de ranking, detalhes dos top 5 produtos |
+| **CSV** | Separador `;`, UTF-8 BOM — `edital_id`, `modelo`, `score_geral`, `status_geral`, `requisito`, `score_item`, `justificativa_llm` |
 
 ---
 
-## Catálogo de produtos
+## Variáveis de Ambiente
 
-O catálogo fica em `data/Produtos/all_devices.json`. O sistema carrega automaticamente no startup. Para adicionar novos produtos, basta adicionar entradas ao JSON e reiniciar a API — produtos duplicados são ignorados.
-
-Formato esperado:
-
-```json
-{
-  "MODELO-XYZ": {
-    "Tipo de Gerenciamento": "Managed (CLI/Web)",
-    "Managed Web": true,
-    "Portas RJ45": "24x 1G",
-    "PoE": true,
-    "Portas PoE": "24",
-    "Budget PoE (W)": "384",
-    "Power Requirement / Tensão de Entrada": "100–240 VAC, 50/60 Hz"
-  }
-}
+```env
+DATABASE_URL=postgresql://postgres:postgres@db:5432/edital_matcher
+OLLAMA_HOST=http://ollama:11434
+MLFLOW_TRACKING_URI=http://mlflow:5000
 ```
-
----
-
-## Comandos úteis
-
-```bash
-# Subir pela primeira vez
-docker compose up --build
-
-# Subir sem rebuild (código Python tem hot reload)
-docker compose up
-
-# Ver logs da API
-docker compose logs -f api
-
-# Ver logs do Ollama
-docker compose logs -f ollama
-
-# Parar tudo
-docker compose down
-
-# Parar e apagar banco (cuidado!)
-docker compose down -v
-
-# Rodar testes
-docker compose exec api pytest tests/ -v
-```
-
----
-
-## Variáveis de ambiente
-
-| Variável | Descrição | Padrão |
-|---|---|---|
-| `POSTGRES_DB` | Nome do banco | `edital_matcher` |
-| `POSTGRES_USER` | Usuário do banco | `postgres` |
-| `POSTGRES_PASSWORD` | Senha do banco | — |
-| `POSTGRES_HOST` | Host do banco | `db` |
-| `POSTGRES_PORT` | Porta do banco | `5432` |
-| `APP_PORT` | Porta da API no host | `8000` |
-| `OLLAMA_HOST` | URL do Ollama | `http://ollama:11434` |
-
----
-
-## Modelos Ollama utilizados
-
-| Modelo | Uso | Tamanho aprox. |
-|---|---|---|
-| `nomic-embed-text` | Geração de embeddings (768d) | ~270 MB |
-| `llama3` | Motor de matching e raciocínio | ~4.7 GB |
-
-Para trocar o modelo LLM, edite a variável `LLM_MODEL` em `app/services/matching_engine.py`.
 
 ---
 
 ## Roadmap
 
-- [x] Pipeline OCR → Chunk → Embed
-- [x] Busca vetorial com pgvector
-- [x] Motor de Matching (RAG + Heurísticas + LLM)
-- [x] Exportação XLSX / PDF / CSV
-- [ ] Auth / Multi-tenant
-- [ ] Orquestrador de jobs assíncrono (Celery/ARQ)
-- [ ] Frontend web
+```
+✅  Pipeline OCR → Chunk → Embed (Docling + nomic-embed-text)
+✅  Motor de Matching RAG + Heurísticas + LLM (llama3)
+✅  Catálogo de produtos (all_devices.json)
+✅  Exportação XLSX / PDF / CSV
+✅  MLOps Layer (MLflow + Evidently + Prefect-ready)
+
+⬜  Auth / Multi-tenant
+    → JWT + tabela tenants
+    → tenant_id entra no tracker automaticamente
+
+⬜  Job Orchestrator assíncrono
+    → Prefect ativo (já comentado no docker-compose)
+    → POST /upload retorna job_id imediatamente
+    → GET /jobs/{id}/status mostra progresso
+
+⬜  Frontend Web
+    → Dashboard de licitações + upload + resultados
+
+⬜  Monitoramento (Prometheus + Grafana)
+    → Latência, error rate, score médio por tenant
+    → Alertas de drift automáticos
+```
+
+---
+
+## Catálogo — Chaves dos Produtos
+
+```
+Tipo de Gerenciamento | Unmanaged | Managed Web | Família (oficial) | Camada
+Static Route / Rota Estática | Portas RJ45 | Uplinks | PoE | Portas PoE
+Budget PoE (W) | Capacidade de Comutação | Taxa de Encaminhamento | Tabela MAC
+VLANs | QinQ | IGMP / MLD | QoS | Recursos L3 | Segurança (802.1X/ACL/ARP)
+Proteção Surto/ESD | Ventilação | Power Requirement / Tensão de Entrada | Aplicação típica
+```
+
+---
+
+*Projeto privado — todos os direitos reservados.*
