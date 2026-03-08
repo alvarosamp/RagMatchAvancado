@@ -28,12 +28,12 @@ def save_chunks(db: Session, edital : Edital, chunks : list[TextChunker]) -> int
     embeddings = embed_texts_batch(texts)
     db_chunks = [
         DocumentChunk(
-            edital_id = edital.id, 
-            chunk_idx = chunks.index_idx,
-            text = chunks.text,
+            edital_id = edital.id,
+            chunk_idx = chunk.chunk_idx,
+            text      = chunk.text,
             embedding = emb,
         )
-        for chunks, emb in zip(chunks, embeddings)
+        for chunk, emb in zip(chunks, embeddings)
     ]
     
     db.bulk_save_objects(db_chunks)

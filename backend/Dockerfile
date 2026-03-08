@@ -2,6 +2,17 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# Dependências de sistema necessárias para OpenCV (cv2) usado pelo docling/tableformer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxcb1 \
+    libxrender1 \
+    libxext6 \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 #Melhora experiencia de instalação
 RUN pip install --no-cache-dir --upgrade pip
 

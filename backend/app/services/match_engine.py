@@ -26,7 +26,7 @@ from app.db.models import MatchingResult, MatchStatus, Product, Requirement
 from app.vector.pgvector_store import search_similar
 from app.logs.config import logger
 
-LLM_MODEL = "llama3"   # troque por qualquer modelo que tiver no seu Ollama
+LLM_MODEL = "phi3"   # modelo disponível no Ollama (ver docker-compose ollama-setup)
 
 
 # ──────────────────────────────────────────

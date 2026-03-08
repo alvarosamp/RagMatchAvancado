@@ -58,17 +58,17 @@ def _apply_sliding_window(
     blocks: list[str],
     max_chars: int,
     overlap: int,
-) -> list[TextChunk]:
+) -> list[TextChunker]:
     """
     Se um bloco cabe em max_chars → chunk direto.
     Se não → divide em fatias com sobreposição.
     """
-    result: list[TextChunk] = []
+    result: list[TextChunker] = []
     idx = 0
 
     for block in blocks:
         if len(block) <= max_chars:
-            result.append(TextChunk(chunk_idx=idx, text=block, char_count=len(block)))
+            result.append(TextChunker(chunk_idx=idx, text=block, char_count=len(block)))
             idx += 1
         else:
             start = 0
@@ -76,7 +76,7 @@ def _apply_sliding_window(
                 end   = min(start + max_chars, len(block))
                 slice_ = block[start:end].strip()
                 if slice_:
-                    result.append(TextChunk(chunk_idx=idx, text=slice_, char_count=len(slice_)))
+                    result.append(TextChunker(chunk_idx=idx, text=slice_, char_count=len(slice_)))
                     idx += 1
                 if end == len(block):
                     break
