@@ -1,79 +1,121 @@
+# =============================================================================
+# docker-compose.yaml — versão atualizada com serviços MLOps
+# =============================================================================
+#
+# NOVOS SERVIÇOS ADICIONADOS:
+#   - mlflow:   servidor de experiment tracking (http://localhost:5000)
+#   - prefect:  servidor de orquestração — COMENTADO (ativar na próxima etapa)
+#
+# SERVIÇOS EXISTENTES (mantidos):
+#   - db, api, ollama, ollama-setup
+#
+# =============================================================================
+
 services:
 
-  # ── Banco de dados PostgreSQL + pgvector ──────────────────────────────────
   db:
-    image: pgvector/pgvector:pg16      # imagem oficial com extensão vector incluída
-    container_name: edital_matcher_db
+    image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB:       ${POSTGRES_DB}
-      POSTGRES_USER:     ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"                    # debug com DBeaver / psql
+      POSTGRES_DB: edital_matcher
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 5
 
-  # ── API FastAPI ───────────────────────────────────────────────────────────
   api:
     build: ./backend
-    container_name: edital_matcher_api
-    environment:
-      POSTGRES_DB:       ${POSTGRES_DB}
-      POSTGRES_USER:     ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST:     ${POSTGRES_HOST}
-      POSTGRES_PORT:     ${POSTGRES_PORT}
-      OLLAMA_HOST:       http://ollama:11434   # aponta pro serviço abaixo
-      RUNNING_IN_DOCKER: "1"
-    ports:
-      - "${APP_PORT}:8000"
     volumes:
-      - ./backend:/app                 # hot reload
-      - ./data:/data                   # all_devices.json
+      - ./backend:/app
+      - ./data:/data
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      OLLAMA_HOST: http://ollama:11434
+      MLFLOW_TRACKING_URI: http://mlflow:5000    # ← NOVO
     depends_on:
       db:
         condition: service_healthy
-      ollama:
-        condition: service_started     # Ollama não tem healthcheck nativo ainda
+      mlflow:
+        condition: service_started               # ← NOVO
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # ── Ollama (LLM + Embeddings local) ──────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
-    container_name: edital_matcher_ollama
     ports:
-      - "11434:11434"                  # acesso local para debug / Ollama UI
+      - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama      # persiste modelos baixados
-    # Se tiver GPU NVIDIA, descomente:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+      - ollama_data:/root/.ollama
 
-  # ── Pull automático dos modelos na primeira execução ─────────────────────
   ollama-setup:
     image: ollama/ollama:latest
-    container_name: edital_matcher_ollama_setup
     depends_on:
       - ollama
     entrypoint: >
-      sh -c "
+      /bin/sh -c "
         sleep 5 &&
         ollama pull nomic-embed-text &&
-        ollama pull phi3
+        ollama pull llama3
       "
     environment:
       OLLAMA_HOST: http://ollama:11434
-    restart: "no"                      # roda uma vez e sai
+
+  # ── MLflow Tracking Server ────────────────────────────────────────────────
+  # CONCEITO: backend store = PostgreSQL já existente (sem nova infra)
+  # Acesse a UI em: http://localhost:5000
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://postgres:postgres@db:5432/edital_matcher
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
+    volumes:
+      - mlflow_data:/mlruns
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://postgres:postgres@db:5432/edital_matcher
+        --default-artifact-root /mlruns/artifacts
+        --host 0.0.0.0
+        --port 5000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Prefect (COMENTADO — ativar na etapa do Job Orchestrator) ─────────────
+  # prefect:
+  #   image: prefecthq/prefect:2-latest
+  #   ports:
+  #     - "4200:4200"
+  #   environment:
+  #     PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://postgres:postgres@db:5432/edital_matcher
+  #     PREFECT_SERVER_API_HOST: 0.0.0.0
+  #   command: prefect server start
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #
+  # prefect-worker:
+  #   image: prefecthq/prefect:2-latest
+  #   environment:
+  #     PREFECT_API_URL: http://prefect:4200/api
+  #     MLFLOW_TRACKING_URI: http://mlflow:5000
+  #   command: prefect worker start --pool default-agent-pool
+  #   depends_on:
+  #     - prefect
+  #     - mlflow
+  #   volumes:
+  #     - ./backend:/app
+  #     - ./data:/data
 
 volumes:
-  pgdata:
+  postgres_data:
   ollama_data:
+  mlflow_data:    # ← NOVO

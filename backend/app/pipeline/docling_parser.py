@@ -1,21 +1,27 @@
-'''
-Recebe um arquivo PDF e retorna:
-    - texto completo extraido
-    - lista de chunks com metadados
-'''
+"""
+pipeline/docling_parser.py
+──────────────────────────
+Recebe um arquivo PDF (path ou bytes) e retorna:
+  - texto completo extraído
+  - lista de chunks com metadados
+"""
 
 from __future__ import annotations
+
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Union
+
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.base_models import InputFormat
+
 from app.logs.config import logger
 
 
 # ──────────────────────────────────────────
-# Tipos de saida
+# Tipos de saída
 # ──────────────────────────────────────────
 
 @dataclass
@@ -25,18 +31,16 @@ class ParsedChunk:
     page: int | None = None
     section: str | None = None
 
+
 @dataclass
-class parsedDocument:
+class ParsedDocument:
     filename: str
     full_text: str
     chunks: list[ParsedChunk] = field(default_factory=list)
 
-# Alias com inicial maiúscula para consistência
-ParsedDocument = parsedDocument
-
 
 # ──────────────────────────────────────────
-# Singleton do converter
+# Parser principal
 # ──────────────────────────────────────────
 
 def _build_converter() -> DocumentConverter:
@@ -46,19 +50,17 @@ def _build_converter() -> DocumentConverter:
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
     )
 
-_converter: DocumentConverter | None = None
+
+_converter: DocumentConverter | None = None  # singleton
+
 
 def _get_converter() -> DocumentConverter:
-    """Retorna (ou cria) o singleton do DocumentConverter."""
     global _converter
     if _converter is None:
+        logger.info("Inicializando Docling DocumentConverter...")
         _converter = _build_converter()
     return _converter
 
-
-# ──────────────────────────────────────────
-# Parser principal
-# ──────────────────────────────────────────
 
 def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -> ParsedDocument:
     """
@@ -73,6 +75,7 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
     """
     converter = _get_converter()
 
+    # Se vier como bytes, salva em temp
     if isinstance(source, bytes):
         import tempfile, os
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
@@ -86,14 +89,12 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
         result = converter.convert(str(source))
 
     doc = result.document
+
+    # Exporta markdown (preserva estrutura de seções e tabelas)
     full_text: str = doc.export_to_markdown()
 
+    # Extrai chunks por elemento estrutural (parágrafos / tabelas)
     raw_chunks = _extract_chunks_from_doc(doc)
-
-    # Fallback: se nenhum chunk estrutural foi encontrado, divide pelo full_text
-    if not raw_chunks and full_text.strip():
-        logger.warning(f"[Docling] '{filename}' → nenhum chunk estrutural; usando fallback por parágrafo")
-        raw_chunks = _full_text_fallback(full_text)
 
     logger.info(f"[Docling] '{filename}' → {len(full_text)} chars, {len(raw_chunks)} chunks")
     return ParsedDocument(filename=filename, full_text=full_text, chunks=raw_chunks)
@@ -106,44 +107,29 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
     """
     Itera pelos elementos do documento Docling e cria chunks por seção.
-    Aceita qualquer label que contenha texto — filtra apenas elementos vazios.
+    Cada item de texto relevante (parágrafo, célula de tabela, título) vira um chunk.
     """
     chunks: list[ParsedChunk] = []
     idx = 0
     current_section = "Início"
 
-    SECTION_LABELS = {"section_header", "title", "page_header"}
-    SKIP_LABELS    = {"page_footer", "page_number", "picture"}
-
     for item, _ in doc.iterate_items():
-        label = str(getattr(item, "label", "") or "")
-        text  = str(getattr(item, "text",  "") or "").strip()
+        label = getattr(item, "label", "")
+        text  = getattr(item, "text",  "").strip()
 
         if not text:
             continue
-        if label in SKIP_LABELS:
-            continue
-        if label in SECTION_LABELS:
+
+        if label in ("section_header", "title"):
             current_section = text
-            continue
+            continue                          # seção vira contexto, não chunk
 
-        chunks.append(ParsedChunk(
-            chunk_idx=idx,
-            text=text,
-            section=current_section,
-        ))
-        idx += 1
+        if label in ("paragraph", "list_item", "table", "caption", "footnote"):
+            chunks.append(ParsedChunk(
+                chunk_idx = idx,
+                text      = text,
+                section   = current_section,
+            ))
+            idx += 1
 
-    return chunks
-
-
-def _full_text_fallback(full_text: str) -> list[ParsedChunk]:
-    """
-    Fallback: divide o full_text em blocos separados por linha em branco.
-    Usado quando o Docling não retorna chunks estruturais.
-    """
-    chunks: list[ParsedChunk] = []
-    blocks = [b.strip() for b in full_text.split("\n\n") if b.strip()]
-    for idx, block in enumerate(blocks):
-        chunks.append(ParsedChunk(chunk_idx=idx, text=block, section="Documento"))
     return chunks

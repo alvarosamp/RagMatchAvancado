@@ -1,27 +1,40 @@
-# API
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-python-multipart>=0.0.9       # upload de arquivos
+# ── API ───────────────────────────────────────────────────────────────────────
+fastapi
+uvicorn
+python-multipart
 
-# Banco
-sqlalchemy>=2.0.0
-psycopg2-binary>=2.9.9
-pydantic-settings>=2.0.0
-pgvector>=0.3.0               # integração pgvector + SQLAlchemy
+# ── Banco ─────────────────────────────────────────────────────────────────────
+sqlalchemy
+psycopg2-binary
+pydantic-settings
+pgvector
 
-# OCR / Parser
-docling>=2.0.0                # pip install docling
+# ── OCR / Parser ──────────────────────────────────────────────────────────────
+docling
 
-# LLM / Embeddings (Ollama local)
-ollama>=0.2.0                 # pip install ollama
-# modelos necessários:
-#   ollama pull nomic-embed-text   (embeddings 768d)
-#   ollama pull llama3             (matching LLM)
+# ── LLM / Embeddings ──────────────────────────────────────────────────────────
+ollama
 
-# Utilitários
-pydantic>=2.0.0
-python-dotenv>=1.0.0
+# ── Exportação ────────────────────────────────────────────────────────────────
+openpyxl
+reportlab
 
-# Exportação
-openpyxl>=3.1.0       # geração de XLSX
-reportlab>=4.0.0      # geração de PDF
+# ── Utils ─────────────────────────────────────────────────────────────────────
+pydantic
+python-dotenv
+
+# =============================================================================
+# MLOPS — novas dependências
+# =============================================================================
+
+# MLflow: experiment tracking, model registry, UI de comparação de runs
+mlflow>=2.12.1
+
+# Prefect: orquestração de pipelines — descomente na etapa do Job Orchestrator
+# prefect>=2.19.0
+
+# Evidently: monitoramento de drift em dados e modelos
+evidently>=0.4.22
+
+# Pandas: necessário para o Evidently processar DataFrames
+pandas>=2.0.0
