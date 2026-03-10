@@ -18,8 +18,8 @@ Vocabulario MLOPS:
 '''
 
 import time
+from typing import Optional
 
-from llama_cpp import Optional 
 import mlflow
 import logging
 import os
@@ -57,7 +57,7 @@ class MatchingTracker:
         self.expertiment_name = experiment_name
         logger.info(f"MLflow tracking URI set to: {tracking_uri}")
         
-    def start_run(self, edital_id: str, tenant_id : Optional[str] = None, run_name: Optioonal[str] = None):
+    def start_run(self, edital_id: str, tenant_id : Optional[str] = None, run_name: Optional[str] = None):
         '''
         Abre um novo 'run' no mlflow para registrar essa execução
         

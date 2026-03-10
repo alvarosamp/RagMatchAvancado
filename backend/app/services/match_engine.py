@@ -67,7 +67,7 @@ except Exception as mlops_err:
     logger.warning(f"[MatchingEngine] MLOps desativado (nao critico): {mlops_err}")
 
 
-LLM_MODEL = "llama3"   # troque por qualquer modelo disponivel no seu Ollama
+LLM_MODEL = "phi3"   # troque por qualquer modelo disponivel no seu Ollama
 
 
 # ─────────────────────────────────────────────────────────────────────────────

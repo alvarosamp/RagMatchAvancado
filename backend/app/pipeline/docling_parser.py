@@ -96,6 +96,11 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
     # Extrai chunks por elemento estrutural (parágrafos / tabelas)
     raw_chunks = _extract_chunks_from_doc(doc)
 
+    # Fallback: se não extraiu nenhum chunk estrutural, divide o markdown por parágrafos
+    if not raw_chunks and full_text.strip():
+        logger.warning(f"[Docling] '{filename}' → 0 chunks estruturais, ativando fallback por parágrafo")
+        raw_chunks = _full_text_fallback(full_text, filename)
+
     logger.info(f"[Docling] '{filename}' → {len(full_text)} chars, {len(raw_chunks)} chunks")
     return ParsedDocument(filename=filename, full_text=full_text, chunks=raw_chunks)
 
@@ -104,10 +109,14 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 # Extração de chunks estruturais
 # ──────────────────────────────────────────
 
+# Labels que não carregam conteúdo útil — ignorados
+_SKIP_LABELS = {"page_footer", "page_header", "page_number", "picture"}
+
 def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
     """
     Itera pelos elementos do documento Docling e cria chunks por seção.
-    Cada item de texto relevante (parágrafo, célula de tabela, título) vira um chunk.
+    Aceita QUALQUER label de conteúdo (parágrafo, tabela, lista, etc.),
+    pulando apenas elementos decorativos (rodapé, nº de página, imagem).
     """
     chunks: list[ParsedChunk] = []
     idx = 0
@@ -120,16 +129,35 @@ def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
         if not text:
             continue
 
+        # Atualiza seção corrente mas não vira chunk
         if label in ("section_header", "title"):
             current_section = text
-            continue                          # seção vira contexto, não chunk
+            continue
 
-        if label in ("paragraph", "list_item", "table", "caption", "footnote"):
-            chunks.append(ParsedChunk(
-                chunk_idx = idx,
-                text      = text,
-                section   = current_section,
-            ))
-            idx += 1
+        # Pula elementos sem conteúdo relevante
+        if label in _SKIP_LABELS:
+            continue
 
+        chunks.append(ParsedChunk(
+            chunk_idx = idx,
+            text      = text,
+            section   = current_section,
+        ))
+        idx += 1
+
+    return chunks
+
+
+def _full_text_fallback(full_text: str, filename: str) -> list[ParsedChunk]:
+    """
+    Fallback: divide o markdown exportado pelo Docling em blocos por
+    parágrafo duplo ('\\n\\n'). Usado quando nenhum chunk estrutural
+    foi encontrado (PDFs com layout não-padrão).
+    """
+    paragraphs = [p.strip() for p in full_text.split("\n\n") if p.strip()]
+    chunks = [
+        ParsedChunk(chunk_idx=i, text=p, section="fallback")
+        for i, p in enumerate(paragraphs)
+    ]
+    logger.info(f"[Docling] '{filename}' fallback → {len(chunks)} blocos de parágrafo")
     return chunks

@@ -66,7 +66,7 @@ class DriftMonitor:
             storage_path : onde salvar o historico de embeddings e scores.
                 Deve ser um volume persistente no docker
         '''
-        self.storage_path = storage_path
+        self.storage_path = Path(storage_path)
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
         #Arquivos de historico para cada tipo de drift

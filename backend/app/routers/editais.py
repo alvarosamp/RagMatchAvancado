@@ -22,7 +22,7 @@ from app.db.models import Edital, Requirement, Product
 from app.pipeline.docling_parser import parse_pdf
 from app.pipeline.chunker import chunk_document
 from app.vector.pgvector_store import save_chunks
-from app.services.matching_engine import run_matching
+from app.services.matching_engine import run_matching, match_all_products
 from app.logs.config import logger
 
 router = APIRouter(prefix="/editais", tags=["editais"])
@@ -164,14 +164,15 @@ def match_edital(
 
     logger.info(f"[Matching] Edital {edital_id}: {len(products)} produtos × {len(requirements)} requisitos")
 
-    reports = []
-    for product in products:
-        report = run_matching(db, product, requirements)
-        reports.append({
-            "model":         report.product_model,
-            "overall_score": report.overall_score,
-            "status":        report.status,
-            "summary":       report.summary,
+    # match_all_products faz o loop completo E dispara o MLOps (MLflow tracker)
+    reports_obj = match_all_products(db, products, requirements, edital_id=edital_id)
+
+    reports = [
+        {
+            "model":         r.product_model,
+            "overall_score": r.overall_score,
+            "status":        r.status,
+            "summary":       r.summary,
             "details": [
                 {
                     "attribute":   d.attribute,
@@ -181,12 +182,11 @@ def match_edital(
                     "status":      d.status,
                     "reasoning":   d.reasoning,
                 }
-                for d in report.details
+                for d in r.details
             ],
-        })
-
-    # Ordena por score decrescente
-    reports.sort(key=lambda r: r["overall_score"], reverse=True)
+        }
+        for r in reports_obj
+    ]
 
     return {
         "edital_id":     edital_id,

@@ -28,7 +28,8 @@
 import statistics
 import logging
 from typing import Optional
-from venv import logger
+
+logger = logging.getLogger(__name__)
 
 class MatchingEvaluator:
     '''

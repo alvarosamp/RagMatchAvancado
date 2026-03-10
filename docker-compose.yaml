@@ -37,14 +37,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      POSTGRES_DB: edital_matcher
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
       OLLAMA_HOST: http://ollama:11434
-      MLFLOW_TRACKING_URI: http://mlflow:5000    # ← NOVO
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     depends_on:
       db:
         condition: service_healthy
       mlflow:
-        condition: service_started               # ← NOVO
+        condition: service_started
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   ollama:
@@ -69,22 +73,25 @@ services:
 
   # ── MLflow Tracking Server ────────────────────────────────────────────────
   # CONCEITO: backend store = PostgreSQL já existente (sem nova infra)
-  # Acesse a UI em: http://localhost:5000
+  # Acesse a UI em: http://localhost:5001
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.12.1
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://postgres:postgres@db:5432/edital_matcher
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
     volumes:
       - mlflow_data:/mlruns
-    command: >
-      mlflow server
-        --backend-store-uri postgresql://postgres:postgres@db:5432/edital_matcher
-        --default-artifact-root /mlruns/artifacts
-        --host 0.0.0.0
-        --port 5000
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        pip install --quiet psycopg2-binary &&
+        mlflow server \
+          --backend-store-uri postgresql://postgres:postgres@db:5432/edital_matcher \
+          --default-artifact-root /mlruns/artifacts \
+          --host 0.0.0.0 \
+          --port 5000
     depends_on:
       db:
         condition: service_healthy

@@ -4,7 +4,7 @@ para garantir contexto suficiente em cada chunk antes de embeder
 '''
 from __future__ import annotations
 from dataclasses import dataclass
-from app.pipeline.docling_parser import ParsedChunk, parsedDocument
+from app.pipeline.docling_parser import ParsedChunk, ParsedDocument
 from app.logs.config import logger
 
 @dataclass
@@ -22,7 +22,7 @@ DEFAULT_OVERLAP = 150  #sobreposição entre chunks consecutivos
 #Chunker
 
 def chunk_document(
-    doc : parsedDocument,
+    doc : ParsedDocument,
     max_chars : int = DEFAULT_MAX_CHARS,
     overlap : int = DEFAULT_OVERLAP,
 ) -> list[TextChunker]:
