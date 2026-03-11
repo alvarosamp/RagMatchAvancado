@@ -1,16 +1,3 @@
-# =============================================================================
-# docker-compose.yaml — versão atualizada com serviços MLOps
-# =============================================================================
-#
-# NOVOS SERVIÇOS ADICIONADOS:
-#   - mlflow:   servidor de experiment tracking (http://localhost:5000)
-#   - prefect:  servidor de orquestração — COMENTADO (ativar na próxima etapa)
-#
-# SERVIÇOS EXISTENTES (mantidos):
-#   - db, api, ollama, ollama-setup
-#
-# =============================================================================
-
 services:
 
   db:
@@ -37,19 +24,24 @@ services:
     ports:
       - "8000:8000"
     environment:
-      POSTGRES_DB: edital_matcher
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
       OLLAMA_HOST: http://ollama:11434
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
     depends_on:
       db:
         condition: service_healthy
       mlflow:
         condition: service_started
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
 
   ollama:
     image: ollama/ollama:latest
@@ -71,58 +63,26 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
 
-  # ── MLflow Tracking Server ────────────────────────────────────────────────
-  # CONCEITO: backend store = PostgreSQL já existente (sem nova infra)
-  # Acesse a UI em: http://localhost:5001
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.12.1
     ports:
-      - "5001:5000"
+      - "5000:5000"
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://postgres:postgres@db:5432/edital_matcher
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
     volumes:
       - mlflow_data:/mlruns
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        pip install --quiet psycopg2-binary &&
-        mlflow server \
-          --backend-store-uri postgresql://postgres:postgres@db:5432/edital_matcher \
-          --default-artifact-root /mlruns/artifacts \
-          --host 0.0.0.0 \
-          --port 5000
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://postgres:postgres@db:5432/edital_matcher
+        --default-artifact-root /mlruns/artifacts
+        --host 0.0.0.0
+        --port 5000
     depends_on:
       db:
         condition: service_healthy
 
-  # ── Prefect (COMENTADO — ativar na etapa do Job Orchestrator) ─────────────
-  # prefect:
-  #   image: prefecthq/prefect:2-latest
-  #   ports:
-  #     - "4200:4200"
-  #   environment:
-  #     PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://postgres:postgres@db:5432/edital_matcher
-  #     PREFECT_SERVER_API_HOST: 0.0.0.0
-  #   command: prefect server start
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #
-  # prefect-worker:
-  #   image: prefecthq/prefect:2-latest
-  #   environment:
-  #     PREFECT_API_URL: http://prefect:4200/api
-  #     MLFLOW_TRACKING_URI: http://mlflow:5000
-  #   command: prefect worker start --pool default-agent-pool
-  #   depends_on:
-  #     - prefect
-  #     - mlflow
-  #   volumes:
-  #     - ./backend:/app
-  #     - ./data:/data
-
 volumes:
   postgres_data:
   ollama_data:
-  mlflow_data:    # ← NOVO
+  mlflow_data:

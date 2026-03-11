@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    @apply bg-ink text-white font-body antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,0.08) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231E2A42' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  ::-webkit-scrollbar       { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-border rounded-full; }
+}
+
+@layer components {
+  .card {
+    @apply bg-slate-card border border-slate-border rounded-xl p-6;
+  }
+
+  .btn-primary {
+    @apply bg-azure text-white font-display font-semibold px-5 py-2.5 rounded-lg
+           hover:bg-azure-dim transition-all duration-200 disabled:opacity-40
+           disabled:cursor-not-allowed active:scale-95 text-sm tracking-wide;
+  }
+
+  .btn-ghost {
+    @apply border border-slate-border text-gray-300 font-body px-5 py-2.5 rounded-lg
+           hover:bg-slate-hover hover:text-white transition-all duration-200 text-sm;
+  }
+
+  .input {
+    @apply w-full bg-ink-50 border border-slate-border rounded-lg px-4 py-2.5
+           text-white placeholder-gray-500 font-body text-sm
+           focus:outline-none focus:border-azure focus:ring-1 focus:ring-azure/30
+           transition-all duration-200;
+  }
+
+  .badge-atende    { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-green-dim/40 text-green-match border border-green-match/20; }
+  .badge-verificar { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-yellow-dim/40 text-yellow-warn border border-yellow-warn/20; }
+  .badge-falhou    { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-red-dim/40 text-red-fail border border-red-fail/20; }
+  .badge-pending   { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-slate-border/40 text-gray-400 border border-slate-border; }
+}
+
+/* Scan line effect — aparece em loading states */
+.scan-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(59,130,246,0.04) 50%, transparent 60%);
+  animation: scan 2s linear infinite;
+  pointer-events: none;
+}
