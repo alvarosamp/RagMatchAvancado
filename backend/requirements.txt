@@ -20,21 +20,16 @@ openpyxl
 reportlab
 
 # ── Utils ─────────────────────────────────────────────────────────────────────
-pydantic
+pydantic[email]
 python-dotenv
 
-# =============================================================================
-# MLOPS — novas dependências
-# =============================================================================
-
-# MLflow: experiment tracking, model registry, UI de comparação de runs
+# ── MLOps ─────────────────────────────────────────────────────────────────────
 mlflow>=2.12.1
-
-# Prefect: orquestração de pipelines — descomente na etapa do Job Orchestrator
-# prefect>=2.19.0
-
-# Evidently: monitoramento de drift em dados e modelos
 evidently>=0.4.22
-
-# Pandas: necessário para o Evidently processar DataFrames
 pandas>=2.0.0
+# prefect>=2.19.0   # descomente na etapa do Job Orchestrator
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0

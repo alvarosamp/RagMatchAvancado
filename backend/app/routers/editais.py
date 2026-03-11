@@ -1,19 +1,24 @@
 """
-routers/editais.py
 ──────────────────
 Endpoints para:
-  POST /editais/upload   → faz OCR, chunka, embeda e salva no banco
-  POST /editais/{id}/match → roda matching para todos os switches
-  GET  /editais           → lista editais
-  GET  /editais/{id}/results → resultados de matching
+  POST /editais/upload          → faz OCR, chunka, embeda e salva no banco
+  POST /editais/{id}/match      → roda matching para todos os switches
+  GET  /editais                 → lista editais DO tenant autenticado
+  GET  /editais/{id}/results    → resultados de matching
+
+MUDANÇAS COM AUTH:
+  - Todos os endpoints exigem JWT válido (Authorization: Bearer <token>)
+  - tenant_id é extraído do token — nunca mais vem do Form
+  - Queries filtradas por tenant_id automaticamente
+  - Upload e match exigem role "admin" ou "editor"
+  - Listagem e resultados aceitam qualquer role autenticado
 """
 
 from __future__ import annotations
 
-import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -25,21 +30,24 @@ from app.vector.pgvector_store import save_chunks
 from app.services.matching_engine import run_matching, match_all_products
 from app.logs.config import logger
 
+# ── Auth imports ──────────────────────────────────────────────────────────────
+from app.auth.models import User
+from app.auth.dependencies import get_current_user, require_role
+
 router = APIRouter(prefix="/editais", tags=["editais"])
 
 
 # ──────────────────────────────────────────
-# Schemas de resposta
+# Schemas
 # ──────────────────────────────────────────
 
 class EditalResponse(BaseModel):
-    id: int
-    filename: str
-    chunks_count: int
+    id:                 int
+    filename:           str
+    chunks_count:       int
     requirements_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # ──────────────────────────────────────────
@@ -48,9 +56,11 @@ class EditalResponse(BaseModel):
 
 @router.post("/upload", response_model=EditalResponse)
 async def upload_edital(
-    file:      UploadFile = File(..., description="PDF do edital"),
-    tenant_id: Optional[str] = Form(None),
-    db:        Session = Depends(get_db),
+    file:         UploadFile = File(..., description="PDF do edital"),
+    # MUDANÇA: tenant_id não vem mais do Form — vem do JWT
+    # require_role("admin", "editor") = só admin e editor podem fazer upload
+    current_user: User    = Depends(require_role("admin", "editor")),
+    db:           Session = Depends(get_db),
 ):
     """
     Pipeline completo:
@@ -58,25 +68,30 @@ async def upload_edital(
     2. Docling → extrai texto e estrutura
     3. Chunker → divide em blocos semânticos
     4. Embedder + PGVector → gera e salva embeddings
-    5. Salva Edital no banco
+    5. Salva Edital com tenant_id do token
+
+    Requer: Authorization: Bearer <token> com role admin ou editor
     """
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
-    logger.info(f"[Editais] Recebendo: {file.filename} (tenant={tenant_id})")
+    # tenant_id extraído do JWT — não pode ser manipulado pelo cliente
+    tenant_id = current_user.tenant.slug
+
+    logger.info(f"[Editais] Upload: {file.filename} | tenant={tenant_id} | user={current_user.email}")
     pdf_bytes = await file.read()
 
     # 1. Parse com Docling
     parsed_doc = parse_pdf(pdf_bytes, filename=file.filename)
 
-    # 2. Salva edital no banco
+    # 2. Salva edital vinculado ao tenant
     edital = Edital(
         filename  = file.filename,
         full_text = parsed_doc.full_text,
-        tenant_id = tenant_id,
+        tenant_id = tenant_id,   # ← vem do JWT, não do Form
     )
     db.add(edital)
-    db.flush()  # gera edital.id sem commit final
+    db.flush()
 
     # 3. Chunking
     chunks = chunk_document(parsed_doc)
@@ -87,7 +102,7 @@ async def upload_edital(
     db.commit()
     db.refresh(edital)
 
-    logger.info(f"[Editais] Edital {edital.id} salvo com {saved} chunks")
+    logger.info(f"[Editais] Edital {edital.id} salvo | chunks={saved} | tenant={tenant_id}")
     return EditalResponse(
         id                  = edital.id,
         filename            = edital.filename,
@@ -97,27 +112,26 @@ async def upload_edital(
 
 
 # ──────────────────────────────────────────
-# Importar requisitos (JSON manual ou extraído)
+# Requisitos
 # ──────────────────────────────────────────
 
 @router.post("/{edital_id}/requirements")
 def add_requirements(
     edital_id:    int,
     requirements: list[dict],
-    db: Session = Depends(get_db),
+    current_user: User    = Depends(require_role("admin", "editor")),
+    db:           Session = Depends(get_db),
 ):
     """
     Importa lista de requisitos para um edital.
-    
-    Payload esperado:
-    [
-      {"attribute": "portas_rj45", "raw_value": "mínimo 16 portas RJ-45", "parsed_value": "16", "unit": "portas"},
-      ...
-    ]
+
+    ISOLAMENTO: verifica que o edital pertence ao tenant do usuário.
+    Um tenant não consegue adicionar requisitos a editais de outro tenant.
+
+    Requer: role admin ou editor
     """
-    edital = db.get(Edital, edital_id)
-    if not edital:
-        raise HTTPException(404, detail="Edital não encontrado")
+    # Busca edital e verifica que pertence ao tenant do usuário
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
 
     added = []
     for r in requirements:
@@ -141,31 +155,45 @@ def add_requirements(
 
 @router.post("/{edital_id}/match")
 def match_edital(
-    edital_id: int,
-    db: Session = Depends(get_db),
+    edital_id:    int,
+    current_user: User    = Depends(require_role("admin", "editor")),
+    db:           Session = Depends(get_db),
 ):
     """
-    Executa o matching de TODOS os produtos do catálogo
-    contra os requisitos do edital.
+    Executa matching de TODOS os produtos contra os requisitos do edital.
 
-    Retorna relatório consolidado por produto.
+    ISOLAMENTO: verifica que o edital pertence ao tenant.
+    O tenant_slug é passado para o MLOps para separar os experimentos.
+
+    Requer: role admin ou editor
     """
-    edital = db.get(Edital, edital_id)
-    if not edital:
-        raise HTTPException(404, "Edital não encontrado")
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
 
     requirements = edital.requirements
     if not requirements:
-        raise HTTPException(400, "Edital não possui requisitos cadastrados. Use POST /editais/{id}/requirements primeiro.")
+        raise HTTPException(
+            status_code = 400,
+            detail      = "Edital não possui requisitos. Use POST /editais/{id}/requirements primeiro.",
+        )
 
     products = db.query(Product).filter(Product.category == "switch").all()
     if not products:
-        raise HTTPException(404, "Nenhum produto no catálogo")
+        raise HTTPException(status_code=404, detail="Nenhum produto no catálogo.")
 
-    logger.info(f"[Matching] Edital {edital_id}: {len(products)} produtos × {len(requirements)} requisitos")
+    logger.info(
+        f"[Matching] Edital {edital_id} | "
+        f"{len(products)} produtos × {len(requirements)} requisitos | "
+        f"tenant={current_user.tenant.slug}"
+    )
 
-    # match_all_products faz o loop completo E dispara o MLOps (MLflow tracker)
-    reports_obj = match_all_products(db, products, requirements, edital_id=edital_id)
+    # Passa tenant_slug para o MLOps — cada tenant vê seus próprios experimentos
+    reports_obj = match_all_products(
+        db,
+        products,
+        requirements,
+        edital_id  = edital_id,
+        tenant_id  = current_user.tenant.slug,   # ← MLOps recebe o tenant
+    )
 
     reports = [
         {
@@ -189,10 +217,10 @@ def match_edital(
     ]
 
     return {
-        "edital_id":     edital_id,
+        "edital_id":      edital_id,
         "total_products": len(reports),
-        "best_match":    reports[0] if reports else None,
-        "results":       reports,
+        "best_match":     reports[0] if reports else None,
+        "results":        reports,
     }
 
 
@@ -201,37 +229,81 @@ def match_edital(
 # ──────────────────────────────────────────
 
 @router.get("/")
-def list_editais(db: Session = Depends(get_db)):
-    """Lista todos os editais cadastrados."""
-    editais = db.query(Edital).all()
+def list_editais(
+    current_user: User    = Depends(get_current_user),  # qualquer role autenticado
+    db:           Session = Depends(get_db),
+):
+    """
+    Lista editais DO tenant autenticado.
+
+    ISOLAMENTO: filtra por tenant_id — nunca retorna editais de outros tenants.
+    """
+    editais = (
+        db.query(Edital)
+        .filter(Edital.tenant_id == current_user.tenant.slug)
+        .all()
+    )
     return [
         {
-            "id":       e.id,
-            "filename": e.filename,
-            "chunks":   len(e.chunks),
+            "id":           e.id,
+            "filename":     e.filename,
+            "chunks":       len(e.chunks),
             "requirements": len(e.requirements),
-            "parsed_at": e.parsed_at,
+            "parsed_at":    e.parsed_at,
         }
         for e in editais
     ]
 
 
 @router.get("/{edital_id}/results")
-def get_results(edital_id: int, db: Session = Depends(get_db)):
-    """Retorna resultados de matching já salvos para um edital."""
-    edital = db.get(Edital, edital_id)
-    if not edital:
-        raise HTTPException(404, "Edital não encontrado")
+def get_results(
+    edital_id:    int,
+    current_user: User    = Depends(get_current_user),
+    db:           Session = Depends(get_db),
+):
+    """
+    Retorna resultados de matching salvos para um edital.
+
+    ISOLAMENTO: verifica que o edital pertence ao tenant.
+    """
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
 
     results = []
     for req in edital.requirements:
         for mr in req.matching_results:
             results.append({
-                "product":    mr.product.model,
-                "attribute":  req.attribute,
-                "status":     mr.status,
-                "score":      mr.score,
-                "reasoning":  mr.llm_reasoning,
+                "product":   mr.product.model,
+                "attribute": req.attribute,
+                "status":    mr.status,
+                "score":     mr.score,
+                "reasoning": mr.llm_reasoning,
             })
 
     return {"edital_id": edital_id, "results": results}
+
+
+# ──────────────────────────────────────────
+# Helper interno — isolamento de tenant
+# ──────────────────────────────────────────
+
+def _get_edital_do_tenant(edital_id: int, current_user: User, db: Session) -> Edital:
+    """
+    Busca um edital e verifica que pertence ao tenant do usuário autenticado.
+
+    ISOLAMENTO: Se o edital existir mas pertencer a outro tenant,
+    retorna 404 (não 403) — para não revelar que o edital existe.
+
+    Raises:
+        404: edital não encontrado ou pertence a outro tenant
+    """
+    edital = (
+        db.query(Edital)
+        .filter(
+            Edital.id        == edital_id,
+            Edital.tenant_id == current_user.tenant.slug,  # ← filtro de tenant
+        )
+        .first()
+    )
+    if not edital:
+        raise HTTPException(status_code=404, detail="Edital não encontrado.")
+    return edital
