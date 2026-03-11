@@ -1,119 +1,92 @@
 """
+routers/editais.py
 ──────────────────
 Endpoints para:
-  POST /editais/upload          → faz OCR, chunka, embeda e salva no banco
-  POST /editais/{id}/match      → roda matching para todos os switches
-  GET  /editais                 → lista editais DO tenant autenticado
-  GET  /editais/{id}/results    → resultados de matching
+  POST /editais/upload          → cria job assíncrono, retorna job_id
+  POST /editais/{id}/match      → cria job de matching, retorna job_id
+  POST /editais/{id}/requirements → adiciona requisitos (síncrono — rápido)
+  GET  /editais                 → lista editais do tenant
+  GET  /editais/{id}/results    → resultados de matching salvos
 
-MUDANÇAS COM AUTH:
-  - Todos os endpoints exigem JWT válido (Authorization: Bearer <token>)
-  - tenant_id é extraído do token — nunca mais vem do Form
-  - Queries filtradas por tenant_id automaticamente
-  - Upload e match exigem role "admin" ou "editor"
-  - Listagem e resultados aceitam qualquer role autenticado
+MUDANÇAS COM JOB ORCHESTRATOR:
+  - Upload e match agora são assíncronos — retornam job_id imediatamente
+  - Cliente consulta GET /jobs/{job_id} para acompanhar progresso
+  - Sem mais timeouts em PDFs grandes
 """
 
 from __future__ import annotations
 
-from typing import Optional
-
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.db.models import Edital, Requirement, Product
-from app.pipeline.docling_parser import parse_pdf
-from app.pipeline.chunker import chunk_document
-from app.vector.pgvector_store import save_chunks
-from app.services.matching_engine import run_matching, match_all_products
-from app.logs.config import logger
-
-# ── Auth imports ──────────────────────────────────────────────────────────────
 from app.auth.models import User
 from app.auth.dependencies import get_current_user, require_role
+from app.jobs.queue import JobQueue
+from app.logs.config import logger
 
 router = APIRouter(prefix="/editais", tags=["editais"])
+_queue = JobQueue()
 
 
-# ──────────────────────────────────────────
-# Schemas
-# ──────────────────────────────────────────
+class JobCreatedResponse(BaseModel):
+    """
+    Resposta imediata após criar um job assíncrono.
+    O cliente usa o job_id para consultar progresso: GET /jobs/{job_id}
+    """
+    job_id:  str
+    status:  str = "pending"
+    message: str
+
 
 class EditalResponse(BaseModel):
     id:                 int
     filename:           str
     chunks_count:       int
     requirements_count: int
-
     model_config = {"from_attributes": True}
 
 
-# ──────────────────────────────────────────
-# Upload + Processamento
-# ──────────────────────────────────────────
+# ── Upload (assíncrono) ───────────────────────────────────────────────────────
 
-@router.post("/upload", response_model=EditalResponse)
+@router.post("/upload", response_model=JobCreatedResponse, status_code=202)
 async def upload_edital(
-    file:         UploadFile = File(..., description="PDF do edital"),
-    # MUDANÇA: tenant_id não vem mais do Form — vem do JWT
-    # require_role("admin", "editor") = só admin e editor podem fazer upload
-    current_user: User    = Depends(require_role("admin", "editor")),
-    db:           Session = Depends(get_db),
+    file:             UploadFile      = File(..., description="PDF do edital"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    current_user:     User            = Depends(require_role("admin", "editor")),
+    db:               Session         = Depends(get_db),
 ):
     """
-    Pipeline completo:
-    1. Recebe o PDF
-    2. Docling → extrai texto e estrutura
-    3. Chunker → divide em blocos semânticos
-    4. Embedder + PGVector → gera e salva embeddings
-    5. Salva Edital com tenant_id do token
-
-    Requer: Authorization: Bearer <token> com role admin ou editor
+    Recebe o PDF e cria job assíncrono (OCR → Chunk → Embed).
+    Retorna imediatamente com job_id (HTTP 202 Accepted).
+    Acompanhe em: GET /jobs/{job_id}
     """
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
-    # tenant_id extraído do JWT — não pode ser manipulado pelo cliente
+    pdf_bytes = await file.read()
     tenant_id = current_user.tenant.slug
 
-    logger.info(f"[Editais] Upload: {file.filename} | tenant={tenant_id} | user={current_user.email}")
-    pdf_bytes = await file.read()
+    logger.info(f"[Editais] Upload recebido | arquivo={file.filename} | tenant={tenant_id}")
 
-    # 1. Parse com Docling
-    parsed_doc = parse_pdf(pdf_bytes, filename=file.filename)
-
-    # 2. Salva edital vinculado ao tenant
-    edital = Edital(
-        filename  = file.filename,
-        full_text = parsed_doc.full_text,
-        tenant_id = tenant_id,   # ← vem do JWT, não do Form
+    job_id = _queue.criar_job_upload(
+        background_tasks = background_tasks,
+        pdf_bytes        = pdf_bytes,
+        filename         = file.filename,
+        tenant_id        = tenant_id,
+        user_id          = current_user.id,
+        db               = db,
     )
-    db.add(edital)
-    db.flush()
 
-    # 3. Chunking
-    chunks = chunk_document(parsed_doc)
-
-    # 4. Embeddings + pgvector
-    saved = save_chunks(db, edital, chunks)
-
-    db.commit()
-    db.refresh(edital)
-
-    logger.info(f"[Editais] Edital {edital.id} salvo | chunks={saved} | tenant={tenant_id}")
-    return EditalResponse(
-        id                  = edital.id,
-        filename            = edital.filename,
-        chunks_count        = saved,
-        requirements_count  = len(edital.requirements),
+    return JobCreatedResponse(
+        job_id  = job_id,
+        message = f"PDF '{file.filename}' recebido. Acompanhe em GET /jobs/{job_id}",
     )
 
 
-# ──────────────────────────────────────────
-# Requisitos
-# ──────────────────────────────────────────
+# ── Requisitos (síncrono — rápido) ───────────────────────────────────────────
 
 @router.post("/{edital_id}/requirements")
 def add_requirements(
@@ -123,14 +96,9 @@ def add_requirements(
     db:           Session = Depends(get_db),
 ):
     """
-    Importa lista de requisitos para um edital.
-
-    ISOLAMENTO: verifica que o edital pertence ao tenant do usuário.
-    Um tenant não consegue adicionar requisitos a editais de outro tenant.
-
-    Requer: role admin ou editor
+    Adiciona requisitos a um edital já processado.
+    Síncrono — cadastrar requisitos é apenas INSERT no banco.
     """
-    # Busca edital e verifica que pertence ao tenant do usuário
     edital = _get_edital_do_tenant(edital_id, current_user, db)
 
     added = []
@@ -149,95 +117,59 @@ def add_requirements(
     return {"edital_id": edital_id, "requirements_added": len(added)}
 
 
-# ──────────────────────────────────────────
-# Matching
-# ──────────────────────────────────────────
+# ── Matching (assíncrono) ─────────────────────────────────────────────────────
 
-@router.post("/{edital_id}/match")
+@router.post("/{edital_id}/match", response_model=JobCreatedResponse, status_code=202)
 def match_edital(
-    edital_id:    int,
-    current_user: User    = Depends(require_role("admin", "editor")),
-    db:           Session = Depends(get_db),
+    edital_id:        int,
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    current_user:     User            = Depends(require_role("admin", "editor")),
+    db:               Session         = Depends(get_db),
 ):
     """
-    Executa matching de TODOS os produtos contra os requisitos do edital.
-
-    ISOLAMENTO: verifica que o edital pertence ao tenant.
-    O tenant_slug é passado para o MLOps para separar os experimentos.
-
-    Requer: role admin ou editor
+    Cria job assíncrono de matching (RAG + Heurísticas + LLM).
+    Retorna imediatamente com job_id (HTTP 202 Accepted).
+    Acompanhe em: GET /jobs/{job_id}
     """
     edital = _get_edital_do_tenant(edital_id, current_user, db)
 
-    requirements = edital.requirements
-    if not requirements:
+    if not edital.requirements:
         raise HTTPException(
-            status_code = 400,
-            detail      = "Edital não possui requisitos. Use POST /editais/{id}/requirements primeiro.",
+            status_code=400,
+            detail="Edital sem requisitos. Use POST /editais/{id}/requirements primeiro.",
         )
 
-    products = db.query(Product).filter(Product.category == "switch").all()
-    if not products:
+    produtos = db.query(Product).filter(Product.category == "switch").all()
+    if not produtos:
         raise HTTPException(status_code=404, detail="Nenhum produto no catálogo.")
 
     logger.info(
-        f"[Matching] Edital {edital_id} | "
-        f"{len(products)} produtos × {len(requirements)} requisitos | "
-        f"tenant={current_user.tenant.slug}"
+        f"[Editais] Matching agendado | edital={edital_id} | "
+        f"produtos={len(produtos)} | tenant={current_user.tenant.slug}"
     )
 
-    # Passa tenant_slug para o MLOps — cada tenant vê seus próprios experimentos
-    reports_obj = match_all_products(
-        db,
-        products,
-        requirements,
-        edital_id  = edital_id,
-        tenant_id  = current_user.tenant.slug,   # ← MLOps recebe o tenant
+    job_id = _queue.criar_job_matching(
+        background_tasks = background_tasks,
+        edital_id        = edital_id,
+        tenant_id        = current_user.tenant.slug,
+        user_id          = current_user.id,
+        db               = db,
     )
 
-    reports = [
-        {
-            "model":         r.product_model,
-            "overall_score": r.overall_score,
-            "status":        r.status,
-            "summary":       r.summary,
-            "details": [
-                {
-                    "attribute":   d.attribute,
-                    "required":    d.required,
-                    "found":       d.found,
-                    "final_score": d.final_score,
-                    "status":      d.status,
-                    "reasoning":   d.reasoning,
-                }
-                for d in r.details
-            ],
-        }
-        for r in reports_obj
-    ]
-
-    return {
-        "edital_id":      edital_id,
-        "total_products": len(reports),
-        "best_match":     reports[0] if reports else None,
-        "results":        reports,
-    }
+    return JobCreatedResponse(
+        job_id  = job_id,
+        message = f"Matching iniciado para edital {edital_id}. Acompanhe em GET /jobs/{job_id}",
+    )
 
 
-# ──────────────────────────────────────────
-# Listagem e consulta
-# ──────────────────────────────────────────
+# ── Listagem e consulta ───────────────────────────────────────────────────────
 
 @router.get("/")
 def list_editais(
-    current_user: User    = Depends(get_current_user),  # qualquer role autenticado
+    current_user: User    = Depends(get_current_user),
     db:           Session = Depends(get_db),
 ):
-    """
-    Lista editais DO tenant autenticado.
-
-    ISOLAMENTO: filtra por tenant_id — nunca retorna editais de outros tenants.
-    """
+    """Lista editais do tenant autenticado."""
     editais = (
         db.query(Edital)
         .filter(Edital.tenant_id == current_user.tenant.slug)
@@ -261,11 +193,7 @@ def get_results(
     current_user: User    = Depends(get_current_user),
     db:           Session = Depends(get_db),
 ):
-    """
-    Retorna resultados de matching salvos para um edital.
-
-    ISOLAMENTO: verifica que o edital pertence ao tenant.
-    """
+    """Retorna resultados de matching salvos para um edital."""
     edital = _get_edital_do_tenant(edital_id, current_user, db)
 
     results = []
@@ -282,25 +210,15 @@ def get_results(
     return {"edital_id": edital_id, "results": results}
 
 
-# ──────────────────────────────────────────
-# Helper interno — isolamento de tenant
-# ──────────────────────────────────────────
+# ── Helper — isolamento de tenant ─────────────────────────────────────────────
 
 def _get_edital_do_tenant(edital_id: int, current_user: User, db: Session) -> Edital:
-    """
-    Busca um edital e verifica que pertence ao tenant do usuário autenticado.
-
-    ISOLAMENTO: Se o edital existir mas pertencer a outro tenant,
-    retorna 404 (não 403) — para não revelar que o edital existe.
-
-    Raises:
-        404: edital não encontrado ou pertence a outro tenant
-    """
+    """Busca edital e garante que pertence ao tenant do usuário."""
     edital = (
         db.query(Edital)
         .filter(
             Edital.id        == edital_id,
-            Edital.tenant_id == current_user.tenant.slug,  # ← filtro de tenant
+            Edital.tenant_id == current_user.tenant.slug,
         )
         .first()
     )
