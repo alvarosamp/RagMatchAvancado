@@ -6,6 +6,18 @@
 
 import { useEffect, useState } from 'react'
 import { authApi } from '../api/client'
+import PasswordRequirements from '../components/PasswordRequirements'
+
+function isPasswordValid(pw) {
+  if (!pw) return false
+  return (
+    pw.length >= 8 &&
+    /[a-z]/.test(pw) &&
+    /[A-Z]/.test(pw) &&
+    /\d/.test(pw) &&
+    /[^A-Za-z0-9]/.test(pw)
+  )
+}
 
 const ROLE_CFG = {
   admin:  { label: 'Admin',  cls: 'badge-atende'    },
@@ -20,6 +32,7 @@ export default function Usuarios() {
   const [form,    setForm]    = useState({ email: '', password: '', full_name: '', role: 'editor' })
   const [creating,setCreating]= useState(false)
   const [showForm,setShowForm]= useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const load = () => {
     authApi.listUsers()
@@ -33,6 +46,13 @@ export default function Usuarios() {
   const handleCreate = async (e) => {
     e.preventDefault()
     setError(''); setCreating(true)
+
+    if (!isPasswordValid(form.password)) {
+      setCreating(false)
+      setError('A senha não atende aos requisitos mínimos. Verifique a lista abaixo do campo.')
+      return
+    }
+
     try {
       await authApi.createUser(form)
       setForm({ email: '', password: '', full_name: '', role: 'editor' })
@@ -69,7 +89,18 @@ export default function Usuarios() {
               </div>
               <div>
                 <label className="block text-xs font-mono text-gray-400 mb-1.5">Senha</label>
-                <input className="input" type="password" placeholder="mínimo 8 caracteres" value={form.password} onChange={e => set('password', e.target.value)} required />
+                <div className="relative">
+                  <input className="input pr-20" type={showPassword ? 'text' : 'password'} placeholder="mínimo 8 caracteres" value={form.password} onChange={e => set('password', e.target.value)} required />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(s => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border border-slate-border text-xs font-mono text-gray-400 hover:text-white hover:border-azure/40 transition-colors"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                </div>
+                <PasswordRequirements value={form.password} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

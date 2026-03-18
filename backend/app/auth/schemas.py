@@ -29,6 +29,8 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 
+from app.auth.password_policy import assert_valid_password
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tenant schemas
@@ -86,13 +88,8 @@ class UserCreate(BaseModel):
     @field_validator("password")
     @classmethod
     def senha_forte(cls, v: str) -> str:
-        """
-        Validação básica de força de senha.
-        Em produção, adicione mais regras (maiúscula, número, símbolo).
-        """
-        if len(v) < 8:
-            raise ValueError("A senha deve ter pelo menos 8 caracteres")
-        return v
+        """Validação de senha (alinhada com a política central do projeto)."""
+        return assert_valid_password(v)
 
     @field_validator("role")
     @classmethod
@@ -183,6 +180,4 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def senha_forte(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("A senha deve ter pelo menos 8 caracteres")
-        return v
+        return assert_valid_password(v)
