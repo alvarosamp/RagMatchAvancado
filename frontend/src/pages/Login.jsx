@@ -7,11 +7,32 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import PasswordRequirements from '../components/PasswordRequirements'
+
+const passwordPolicy = {
+  minLen: 8,
+  hasLower: (s) => /[a-z]/.test(s),
+  hasUpper: (s) => /[A-Z]/.test(s),
+  hasNumber: (s) => /\d/.test(s),
+  hasSymbol: (s) => /[^A-Za-z0-9]/.test(s),
+}
+
+function isPasswordValid(pw) {
+  if (!pw) return false
+  return (
+    pw.length >= passwordPolicy.minLen &&
+    passwordPolicy.hasLower(pw) &&
+    passwordPolicy.hasUpper(pw) &&
+    passwordPolicy.hasNumber(pw) &&
+    passwordPolicy.hasSymbol(pw)
+  )
+}
 
 export default function Login() {
   const [mode,    setMode]    = useState('login')   // 'login' | 'register'
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const { login, register }   = useAuth()
   const navigate              = useNavigate()
 
@@ -26,6 +47,13 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
+    // Evita round-trip desnecessário: validação rápida no cliente.
+    if (mode === 'register' && !isPasswordValid(form.password)) {
+      setLoading(false)
+      setError('Sua senha não atende aos requisitos. Verifique a lista abaixo do campo.')
+      return
+    }
 
     try {
       if (mode === 'login') {
@@ -132,8 +160,21 @@ export default function Login() {
 
             <div>
               <label className="block text-xs font-mono text-gray-400 mb-1.5 uppercase tracking-wider">Senha</label>
-              <input className="input" type="password" placeholder="••••••••"
-                value={form.password} onChange={e => set('password', e.target.value)} required />
+              <div className="relative">
+                <input className="input pr-20" type={showPassword ? 'text' : 'password'} placeholder="••••••••"
+                  value={form.password} onChange={e => set('password', e.target.value)} required />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border border-slate-border text-xs font-mono text-gray-400 hover:text-white hover:border-azure/40 transition-colors"
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                >
+                  {showPassword ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
+              {mode === 'register' && (
+                <PasswordRequirements value={form.password} />
+              )}
             </div>
 
             {error && (
