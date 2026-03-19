@@ -1,0 +1,79 @@
+﻿edital_id;modelo;score_geral;status_geral;requisito;exigido;encontrado;score_item;status_item;justificativa_llm
+9;TL-SG3210;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3210;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3428;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3428;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3428MP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3428MP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3452;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3452;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3452P;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;TL-SG3452P;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;SP7500-24PGE4GC-L2M;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;SP7500-24PGE4GC-L2M;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;SP7500-48PGE4TF-L3M;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;SP7500-48PGE4TF-L3M;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GN;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GN;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7200-24GE2GF;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7200-24GE2GF;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7500-48GE4TF-L3M;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7500-48GE4TF-L3M;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7500-24GE4GC-L2M;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;S7500-24GE4GC-L2M;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3654F;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3654F;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428F;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428F;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3226F;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3226F;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3218F;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3218F;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3210F;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3210F;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GNM;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GNM;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-16GNM;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-16GNM;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08GNM;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08GNM;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08GNM-PL;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08GNM-PL;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-N1248GN;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-N1248GN;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GN.1;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-24GN.1;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-16GN;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-16GN;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08G-MT-V1;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-08G-MT-V1;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3210FP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3210FP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3218FP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3218FP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3226FP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3226FP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428FP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428FP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4S(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4S(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8S4T4X(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8S4T4X(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4X-PWR(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4X-PWR(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428FCP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3428FCP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3654FP;0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;IRD-SW-3654FP;0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4X(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-8T4X(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4S(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4S(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24S4X(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24S4X(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X-PWR(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X-PWR(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X-PWH(A);0.5000;⚠️ Verificar;tensao;220V;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.
+9;ISCOM S2600-24T4X-PWH(A);0.5000;⚠️ Verificar;corrente;10A;N/A;0.5000;⚠️ Verificar;Não foi possível obter avaliação do LLM.

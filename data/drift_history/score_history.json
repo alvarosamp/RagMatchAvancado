@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-03-19T01:00:27.728235",
+    "edital_id": "9",
+    "tenant_id": "acme",
+    "n_produtos": 39,
+    "score_medio": 0.5,
+    "score_mediana": 0.5,
+    "score_std": 0.0,
+    "score_min": 0.5,
+    "score_max": 0.5,
+    "pct_atende": 0.0,
+    "pct_verificar": 0.0,
+    "pct_nao_atende": 0.0
+  }
+]

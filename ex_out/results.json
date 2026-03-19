@@ -1,0 +1,551 @@
+{
+  "edital_id": 9,
+  "results": [
+    {
+      "product": "TL-SG3210",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3428",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3428MP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3452",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3452P",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "SP7500-24PGE4GC-L2M",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "SP7500-48PGE4TF-L3M",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GN",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7200-24GE2GF",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7500-48GE4TF-L3M",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7500-24GE4GC-L2M",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3654F",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428F",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3226F",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3218F",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3210F",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GNM",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-16GNM",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08GNM",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08GNM-PL",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-N1248GN",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GN.1",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-16GN",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08G-MT-V1",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3210FP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3218FP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3226FP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428FP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4S(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8S4T4X(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4X-PWR(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428FCP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3654FP",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4X(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4S(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24S4X(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X-PWR(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X-PWH(A)",
+      "attribute": "tensao",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3210",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3428",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3428MP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3452",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "TL-SG3452P",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "SP7500-24PGE4GC-L2M",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "SP7500-48PGE4TF-L3M",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GN",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7200-24GE2GF",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7500-48GE4TF-L3M",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "S7500-24GE4GC-L2M",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3654F",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428F",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3226F",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3218F",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3210F",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GNM",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-16GNM",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08GNM",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08GNM-PL",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-N1248GN",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-24GN.1",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-16GN",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-08G-MT-V1",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3210FP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3218FP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3226FP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428FP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4S(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8S4T4X(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4X-PWR(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3428FCP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "IRD-SW-3654FP",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-8T4X(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4S(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24S4X(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X-PWR(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    },
+    {
+      "product": "ISCOM S2600-24T4X-PWH(A)",
+      "attribute": "corrente",
+      "status": "verificar",
+      "score": 0.5,
+      "reasoning": "Não foi possível obter avaliação do LLM."
+    }
+  ]
+}
