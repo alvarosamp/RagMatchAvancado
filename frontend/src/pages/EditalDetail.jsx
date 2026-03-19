@@ -1,4 +1,4 @@
-/**
+1/**
  * pages/EditalDetail.jsx
  * ───────────────────────
  * Resultados de matching de um edital — ranking de produtos + detalhes.

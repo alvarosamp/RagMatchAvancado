@@ -27,7 +27,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.db.models import User, Tenant
+from app.auth.models import User, Tenant
 from app.auth.security import decode_access_token
 from app.logs.config import logger
 

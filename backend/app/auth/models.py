@@ -47,9 +47,10 @@ class Tenant(Base):
     - created_at: timestamp de criação
     - is_active: se o tenant está ativo (pode ser usado para soft delete)
     '''
-    table_name = 'tenants'
+    __tablename__ = 'tenants'
+
     id = Column(Integer, primary_key=True, index=True)
-    slug = Column(String, unique=True, index=True)  # ex: "empresa-abc
+    slug = Column(String, unique=True, index=True)  # ex: "empresa-abc"
     name = Column(String, nullable=False)  # ex: "Empresa ABC LTDA"
     created_at = Column(DateTime, server_default=func.now())
     is_active = Column(Boolean, default=True)
@@ -73,17 +74,20 @@ class User(Base):
     - is_active: se o usuario está ativo (pode ser usado para soft delete)
     '''
     __tablename__ = 'users'
-id = Column(Integer, primary_key=True, index=True)
-email = Column(String, unique=True, index=True)  # ex: "
-hashed_password = Column(String, nullable=False)  # ex: "$2b$12$abc123..."
-is_active = Column(Boolean, default=True)
-role = Column(String, default="editor")  # ex: "admin" ou "user"
-tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-created_at = Column(DateTime, server_default=func.now())
 
-#Cada usuario pertence a um tenant
-tenant = relationship("Tenant", back_populates="users")
-def __repr__(self):
-    return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String, nullable=False)  # ex: "$2b$12$abc123..."
+    full_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    role = Column(String, default="editor")  # admin/editor/viewer
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    # Cada usuário pertence a um tenant
+    tenant = relationship("Tenant", back_populates="users")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
 
 

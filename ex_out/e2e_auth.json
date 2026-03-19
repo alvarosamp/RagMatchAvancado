@@ -1,0 +1,6 @@
+{
+  "base_url": "http://localhost:8000",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhY21lLmNvbSIsInRlbmFudF9zbHVnIjoiYWNtZSIsInJvbGUiOiJhZG1pbiIsInVzZXJfaWQiOjgsImV4cCI6MTc3Mzg4NDIxOX0.xDus7gTqMSoL9POvRUE9S5wzHEYdeCoF4xuxBQJQGQw",
+  "tenant_slug": "acme",
+  "email": "admin@acme.com"
+}

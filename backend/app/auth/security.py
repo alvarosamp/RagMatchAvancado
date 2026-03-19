@@ -14,12 +14,14 @@ Injeta na rota via dependency
 
 '''
 import os
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt 
 from passlib.context import CryptContext
 from app.logs.config import logger
 from dotenv import load_dotenv
+from fastapi import HTTPException, status
 
 load_dotenv()  # Carrega variáveis de ambiente do .env
 
@@ -48,6 +50,34 @@ auto = deprecate automaticamente hashes antigos se o algoritmo mudar, for recome
 '''
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# bcrypt aceita no máximo 72 *bytes* de senha.
+# (Quando entra como str, o limite é no UTF-8 codificado.)
+_BCRYPT_MAX_PASSWORD_BYTES = 72
+
+
+def _ensure_bcrypt_password_length(plain_password: str) -> None:
+    password_bytes = plain_password.encode("utf-8")
+    if len(password_bytes) > _BCRYPT_MAX_PASSWORD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Senha muito longa para bcrypt (máximo 72 bytes em UTF-8). "
+                "Reduza o tamanho da senha."
+            ),
+        )
+
+
+def _bcrypt_compatible_secret(plain_password: str) -> bytes:
+    """Gera uma representação de tamanho fixo para uso com bcrypt.
+
+    bcrypt impõe limite de 72 bytes. Para evitar crashes e manter suporte a
+    senhas longas, fazemos pre-hash com SHA-256 e codificamos em base64.
+
+    Isso mantém verificação consistente (hash e verify usam o mesmo pre-hash).
+    """
+    # retornamos bytes (32 bytes fixos) para não correr risco de tamanho/encoding
+    return hashlib.sha256(plain_password.encode("utf-8")).digest()
+
 def hash_passoword(plain_password : str) -> str:
     ''' 
     Gera o hash bcrypt de uma senha em texto puro
@@ -60,7 +90,15 @@ def hash_passoword(plain_password : str) -> str:
        -> $2b$12 indica bcrypt com custo 12
 
     '''
-    return _pwd_context.hash(plain_password)
+    # Sempre usar pre-hash: evita limite de 72 bytes do bcrypt e mantém
+    # comportamento consistente para qualquer tamanho/charset.
+    return _pwd_context.hash(_bcrypt_compatible_secret(plain_password))
+
+
+# Compatibilidade: alguns módulos importam `hash_password` (nome correto).
+# Mantemos o original (com typo) para não quebrar chamadas existentes.
+def hash_password(plain_password: str) -> str:
+    return hash_passoword(plain_password)
 
 def verify_password(plain_password: str, hashed_password : str) -> bool:
     '''
@@ -73,7 +111,7 @@ def verify_password(plain_password: str, hashed_password : str) -> bool:
     :return: Descrição
     :rtype: bool
     '''
-    return _pwd_context.verify(plain_password, hashed_password)
+    return _pwd_context.verify(_bcrypt_compatible_secret(plain_password), hashed_password)
 
 #JWT - Craicao e validacao
 
@@ -144,6 +182,7 @@ def decode_access_token(token: str) -> dict:
         JWTError: se o token for inválido, expirado ou adulterado.
     """
     #jwr.decode() valida assinatura + expiraçao automaticamente
+    assert SECRET_KEY is not None, "SECRET_KEY must be set"
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     logger.debug(f"Token decodificado com sucesso: {payload}")
     return payload 

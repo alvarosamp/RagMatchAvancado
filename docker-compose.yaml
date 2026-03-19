@@ -25,6 +25,11 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      postgres_db: edital_matcher
+      postgres_user: postgres
+      postgres_password: postgres
+      postgres_host: db
+      postgres_port: "5432"
       OLLAMA_HOST: http://ollama:11434
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
@@ -66,7 +71,7 @@ services:
   mlflow:
     build: ./mlflow
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://postgres:postgres@db:5432/edital_matcher
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts

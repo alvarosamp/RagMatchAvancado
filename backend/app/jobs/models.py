@@ -22,7 +22,7 @@
 # =============================================================================
 
 import enum
-from sqlachemy import Column, DateTime, Enum, Float, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, Enum, Float, Integer, JSON, String, Text
 from sqlalchemy.sql import func
 from app.db.models import Base
 
@@ -69,7 +69,7 @@ class Job(Base):
     __tablename__ = 'jobs'
     id = Column(String, primary_key = True, index = True)
     job_type = Column(Enum(JobType), nullable = False)
-    status = Column(Enum(JobStatus), nullable = False, defaut= JobStatus.PENDING, index = True)
+    status = Column(Enum(JobStatus), nullable=False, default=JobStatus.PENDING, index=True)
     progress = Column(Float, default = 0.0) # 0.0 a 1.0
     #Multi tenant: Cada job pertence a um tenant 
     tenant_id = Column(String, index = True, nullable = False)
