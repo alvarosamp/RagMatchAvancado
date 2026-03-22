@@ -1,0 +1,14 @@
+# requirements.txt
+# Instale com: pip install -r requirements.txt
+
+requests>=2.31.0
+pandas>=2.0.0
+openpyxl>=3.1.0     # leitura/escrita de .xlsx
+
+# OCR (opcional mas recomendado)
+docling>=2.0.0      # OCR + estrutura de PDFs
+pypdf>=4.0.0        # fallback quando Docling não está disponível
+
+# LLM local (opcional — para classificação com Ollama)
+# O Ollama em si é instalado separadamente: https://ollama.ai
+# Nenhuma dependência Python necessária (usa requests já listado)
