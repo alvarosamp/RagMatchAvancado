@@ -105,7 +105,7 @@ Schema obrigatório:
     {
       "numero_item": "string ou null",
       "descricao": "descrição completa do item ou null",
-      "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor, etc.) ou null",
+      "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Bateria, transceiver etc.) ou null",
       "marca": "string ou null",
       "modelo": "modelo exato ou null",
       "quantidade": número inteiro ou null,
