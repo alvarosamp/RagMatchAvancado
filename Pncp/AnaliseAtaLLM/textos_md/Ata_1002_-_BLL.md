@@ -1,0 +1,115 @@
+## MUNICIPIO DE IPIRANGA DO NORTE IPIRANGA DO NORTE-MT
+
+## VENCEDORES DO PROCESSO
+
+## PREGÃO ELETRÔNICO Nº 036/2025
+
+Processo Administrativo Nº 111/2025
+
+Tipo: AQUISIÇÃO PARCELADA PREGOEIRO: ANE KELLY RIBEIRO PITTERI Data de Publicação:  30/09/2025 11:49:15
+
+TOTAL DO PROCESSO:
+
+117.900,00
+
+Item: 1
+
+Descrição:  SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.
+
+Quantidade: 1
+
+Val. Ref.: 96.519,92
+
+Unidade: UNIDADE.
+
+Total Item: 22.204,50
+
+Marca: Serviço
+
+Modelo:
+
+Valor Unit.: 22.204,50
+
+Item: 2
+
+Descrição:  SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO, ABRANGENDO UM TOTAL DE 287 (DUZENTAS E OITENTA E SETE) CÂMERAS (96 EXISTENTES + 191 NOVAS) E TODOS OS EQUIPAMENTOS ASSOCIADOS, CONFORME SLAS DEFINIDOS NESTE TERMO.
+
+Quantidade: 12
+
+Val. Ref.: 18.665,88
+
+Unidade: Mês
+
+Total Item: 62.287,20
+
+Marca: Serviço
+
+Modelo:
+
+Valor Unit.: 5.190,60
+
+Item: 3
+
+Descrição:  SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES, UTILIZANDO OS KITS DE MONITORAMENTO DETALHADOS NO ITEM 4.2. O SERVIÇO INCLUI A INTEGRAÇÃO COM O SISTEMA DE IGNIÇÃO DOS VEÍCULOS.
+
+Quantidade: 1
+
+Val. Ref.: 48.092,99
+
+Unidade: UNIDADE.
+
+Total Item: 13.292,70
+
+Marca: Serviço
+
+Modelo:
+
+Valor Unit.: 13.292,70
+
+Item: 4
+
+Descrição:  SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES, CONFORME SLAS DEFINIDOS NESTE TERMO.
+
+Quantidade: 12
+
+Val. Ref.: 5.766,67
+
+Unidade: Mês
+
+Total Item: 20.115,60
+
+Marca: Serviço
+
+Modelo:
+
+Valor Unit.: 1.676,30
+
+Quant.: 1
+
+Total: 117.900,00
+
+LOTE 1
+
+Num: 893
+
+Lance: 117.900,00
+
+## AFC INFORMATICA &amp; INTERNET LTDA
+
+12.823.984/0001-90
+
+117.900,00
+
+## MUNICIPIO DE IPIRANGA DO NORTE IPIRANGA DO NORTE-MT
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+PREGOEIRO: ANE KELLY RIBEIRO PITTERI
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+MEMBRO DE EQUIPE DE APOIO LETICIA SILVERIO BONIN
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+
+Equipe de apoio PAULA CRISTINA BALESTRIN
