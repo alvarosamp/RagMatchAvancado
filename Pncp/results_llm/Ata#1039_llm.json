@@ -1,0 +1,128 @@
+{
+  "id_pncp": "Ata#1039",
+  "numero_ata": "40/2025",
+  "orgao": "Ministério Público do Estado de Rondônia",
+  "data_assinatura": "12/11/2025",
+  "vigencia": "12 meses, contado a partir da data de divulgação oficial no Diário Eletrônico do Ministério Público do Estado de Rondônia e poderá ser prorrogada por igual período desde que comprovado o preço vantajoso.",
+  "objeto": "Ata de Registro de Preços",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",
+      "tipo": "Switch de Acesso 48 Portas PoE.",
+      "marca": "Alcatel Lucent OS6360-PH48- US",
+      "modelo": "OS6360-PH48- US",
+      "quantidade": 120,
+      "unidade": "Portas",
+      "valor_unitario": 15.406,
+      "valor_total": 1.84872,
+      "fornecedor": "Alcatel Lucent OS6360-PH48- US",
+      "cnpj_fornecedor": "04.381.083/0001-67",
+      "especificacoes": [
+        "Switch de Acesso 48 Portas PoE.",
+        "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+.",
+      "tipo": "Licença de upgrade das portas Gigabit SFP para 10G SFP+.",
+      "marca": "Alcatel Lucent OS6360-SW- PERF",
+      "modelo": "OS6360-SW- PERF",
+      "quantidade": 120,
+      "unidade": "Portas",
+      "valor_unitario": 4.594,
+      "valor_total": 551280.0,
+      "fornecedor": "Alcatel Lucent OS6360-SW- PERF",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "19.25.110001249.0003606",
+      "descricao": "",
+      "tipo": "CNPJ formatado",
+      "marca": "DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": 0.0,
+      "valor_total": 1250.5,
+      "fornecedor": "DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "CNPJ formatado",
+        "CNPJ"
+      ],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "0",
+      "descricao": "",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": 0.0,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "2226395",
+      "descricao": "",
+      "tipo": "Código de Verificação",
+      "marca": "2226395v4",
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": 0.0,
+      "valor_total": 1250.5,
+      "fornecedor": "DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "Código de Verificação",
+        "Código de Verificação"
+      ],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "4",
+      "descricao": "",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": 0.0,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "65",
+      "descricao": "",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": 0.0,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": ""
+    }
+  ],
+  "tokens_usados": 4832,
+  "aviso": "texto dividido em 2 chunks"
+}

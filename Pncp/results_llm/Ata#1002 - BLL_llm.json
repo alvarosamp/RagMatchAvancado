@@ -1,0 +1,11 @@
+{
+  "id_pncp": "Ata#1002 - BLL",
+  "numero_ata": null,
+  "orgao": null,
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": null,
+  "itens": [],
+  "tokens_usados": 0,
+  "aviso": "erro LLM: LLM retornou JSON inválido: Expecting ',' delimiter: line 37 column 2 (char 2548)"
+}

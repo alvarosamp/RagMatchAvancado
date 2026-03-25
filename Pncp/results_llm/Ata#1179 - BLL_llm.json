@@ -1,0 +1,32 @@
+{
+  "id_pncp": "Ata#1179 - BLL",
+  "numero_ata": "690,00",
+  "orgao": "MUNICIPIO DE UBATUBA UBATUBA-SP",
+  "data_assinatura": "17/09/2025 08:11:53",
+  "vigencia": "descrição do objeto geral da ata",
+  "objeto": "PARAFUSADEIRA ELÉTRICA PORTÁTIL",
+  "itens": [
+    {
+      "numero_item": "9",
+      "descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTILTIPO: PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": null,
+      "valor_unitario": 409.0,
+      "valor_total": 409.0,
+      "fornecedor": "WAP",
+      "cnpj_fornecedor": "690.00",
+      "especificacoes": [
+        "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG",
+        "CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA)",
+        "CONTROLE DE VELOCIDADE: AJUSTÁVEL",
+        "ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+      ],
+      "observacoes": "APOIO EVALDO JOAQUIM DE SOUZA"
+    }
+  ],
+  "tokens_usados": 3119,
+  "aviso": null
+}

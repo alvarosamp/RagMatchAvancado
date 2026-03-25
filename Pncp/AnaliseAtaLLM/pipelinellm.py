@@ -32,9 +32,16 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Union
 
+import os
 import ollama
 
-from shared import db  # comente se não quiser persistência aqui
+# Import opcional do módulo shared (persistência). O pacote `Pncp/apiPncp`
+# contém um `shared` que não está no PYTHONPATH por padrão em alguns runners;
+# quem usar persistência deve ajustar o PYTHONPATH ou fornecer um stub.
+try:
+    from shared import db  # comente se não quiser persistência aqui
+except Exception:
+    db = None
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +49,13 @@ logger = logging.getLogger(__name__)
 # Configuração
 # ──────────────────────────────────────────
 
-OLLAMA_MODEL        = "phi3"               # troque pelo modelo que você tem puxado
-OLLAMA_HOST         = "http://localhost:11434"  # padrão do Ollama
+import os
+
+# Modelo default otimizado para baixa latência em CPU; pode ser sobrescrito via
+# variável de ambiente OLLAMA_MODEL. Recomendado: 'llama3.2:1b' para baixa
+# latência. Se preferir outro, exporte OLLAMA_MODEL antes de rodar.
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")  # padrão do Ollama
 MAX_CHARS_POR_CHUNK = 10_000                   
 
 # ──────────────────────────────────────────

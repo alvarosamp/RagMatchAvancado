@@ -1,0 +1,112 @@
+{
+  "id_pncp": "Ata#1126 - BLL",
+  "numero_ata": "10130473",
+  "orgao": "FIOTEC - FUNDACAO PARA O DESENVOLVIMENTO CIENTIFICO E TECNOLOGICO EM SAUDE RIO DE JANEIRO-RJ",
+  "data_assinatura": "22/09/2025 12:11:03",
+  "vigencia": "null",
+  "objeto": "Dispensa Eletrônica Nº 10130473",
+  "itens": [
+    {
+      "numero_item": "450.847,72",
+      "descricao": "Quantidade total do processo.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 450,
+      "unidade": "UN",
+      "valor_unitario": 0.0,
+      "valor_total": 450.847,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Quantidade total do processo.",
+        "Unidade",
+        "Valor unitário",
+        "Valor total"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "284.400,00",
+      "descricao": "Lote 1.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 284,
+      "unidade": "UN",
+      "valor_unitario": 284.4,
+      "valor_total": 284.4,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Lote 1.",
+        "Unidade",
+        "Valor unitário",
+        "Valor total"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "284.400,00",
+      "descricao": "Lote 2.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 166,
+      "unidade": "UN",
+      "valor_unitario": 166.447,
+      "valor_total": 166.447,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Lote 2.",
+        "Unidade",
+        "Valor unitário",
+        "Valor total"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "64.167,58",
+      "descricao": "Lote 3.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 64,
+      "unidade": "UN",
+      "valor_unitario": 64.167,
+      "valor_total": 64.167,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Lote 3.",
+        "Unidade",
+        "Valor unitário",
+        "Valor total"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "102.280,14",
+      "descricao": "Lote 4.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 102,
+      "unidade": "UN",
+      "valor_unitario": 102.28,
+      "valor_total": 102.28,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Lote 4.",
+        "Unidade",
+        "Valor unitário",
+        "Valor total"
+      ],
+      "observacoes": null
+    }
+  ],
+  "tokens_usados": 3380,
+  "aviso": null
+}

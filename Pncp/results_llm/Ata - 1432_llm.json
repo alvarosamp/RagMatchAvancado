@@ -1,0 +1,187 @@
+{
+  "id_pncp": "Ata - 1432",
+  "numero_ata": "00029/2025",
+  "orgao": "E escola superior de bombeiros 'Cel PM Paulo Marques Pereira'",
+  "data_assinatura": "15 de setembro de 2025",
+  "vigencia": "1 ano, contado a partir do 1º dia útil subsequente à data de divulgação no Portal Nacional de Contratações Públicas (PNCP)",
+  "objeto": "Registro de preços para materiais elétricos, hidráulicos e de construção civil diversos",
+  "itens": [
+    {
+      "numero_item": "36",
+      "descricao": "Patch Cord Rj45  - Vo6 cat6 unidade",
+      "tipo": null,
+      "marca": "Vo6",
+      "modelo": "cat6",
+      "quantidade": null,
+      "unidade": "unidade",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "04.378.330/0008-42",
+      "especificacoes": [
+        "Patch Cord Rj45",
+        "Vo6 cat6 unidade"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "37",
+      "descricao": "Switch 16 portas - sg1016 unidade",
+      "tipo": null,
+      "marca": "sg1016",
+      "modelo": "sg1016",
+      "quantidade": null,
+      "unidade": "unidade",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "Tp link",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [
+        "Switch 16 portas",
+        "sg1016 unidade"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Servico Publico",
+      "tipo": "categoria (Servico, Servidor, Serviço)",
+      "marca": "",
+      "modelo": "",
+      "quantidade": 100,
+      "unidade": "Unidade",
+      "valor_unitario": 5000.5,
+      "valor_total": 500000.0,
+      "fornecedor": "Fornecedores Remanescentes",
+      "cnpj_fornecedor": "CNPJ formatado",
+      "especificacoes": [
+        "Portas: 4, Velocidade: 100 Mbps",
+        "Padrão IEEE: 802.11ac"
+      ],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Servico Publico",
+      "tipo": "categoria (Servico, Servidor, Serviço)",
+      "marca": "",
+      "modelo": "",
+      "quantidade": 200,
+      "unidade": "Unidade",
+      "valor_unitario": 15000.5,
+      "valor_total": 300000.0,
+      "fornecedor": "Fornecedores Remanescentes",
+      "cnpj_fornecedor": "CNPJ formatado",
+      "especificacoes": [
+        "Portas: 4, Velocidade: 100 Mbps",
+        "Padrão IEEE: 802.11ac"
+      ],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Servico Publico",
+      "tipo": "categoria (Servico, Servidor, Serviço)",
+      "marca": "",
+      "modelo": "",
+      "quantidade": 300,
+      "unidade": "Unidade",
+      "valor_unitario": 20000.5,
+      "valor_total": 600000.0,
+      "fornecedor": "Fornecedores Remanescentes",
+      "cnpj_fornecedor": "CNPJ formatado",
+      "especificacoes": [
+        "Portas: 4, Velocidade: 100 Mbps",
+        "Padrão IEEE: 802.11ac"
+      ],
+      "observacoes": ""
+    },
+    {
+      "numero_item": "1.2.4",
+      "descricao": "O órgão ou entidade participante deverá informar ao órgão ou entidade gerenciadora as ocorrências de que trata o item 9.1.4, para a finalidade indicada nessa disposição.",
+      "tipo": "Disposição",
+      "marca": "",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "UASG 180202",
+      "cnpj_fornecedor": "01.000.000.001",
+      "especificacoes": [
+        "O órgão ou entidade participante deverá informar ao órgão ou entidade gerenciadora as ocorrências de que trata o item 9.1.4, para a finalidade indicada nessa disposição"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "11.2.3",
+      "descricao": "O fornecedor terá o prazo de 03 (três) dias útiles, contados a partir da data de sua convocação, para comparecer perante a Unidade Contratante para a retirada da nota de empenho ou, alternativamente, solicitar o seu envio por meio eletrônico, sob pena de decadência, sem prejuízo das sanções previstas na Lei nº 14.133, de 2021.",
+      "tipo": "Disposição",
+      "marca": "",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "UASG 180202",
+      "cnpj_fornecedor": "01.000.000.001",
+      "especificacoes": [
+        "O fornecedor terá o prazo de 03 (três) dias útiles, contados a partir da data de sua convocação, para comparecer perante a Unidade Contratante para a retirada da nota de empenho ou, alternativamente, solicitar o seu envio por meio eletrônico, sob pena de decadência, sem prejuízo das sanções previstas na Lei nº 14.133, de 2021"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "11.2.4",
+      "descricao": "Com a finalidade de verificar se o fornecedor mantém as condições de participação no certame, serão novamente consultados, previamente à celebração da contratação, os cadastros especificados no instrumento convocatório mencionado no item 1.1.",
+      "tipo": "Disposição",
+      "marca": "",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "UASG 180202",
+      "cnpj_fornecedor": "01.000.000.001",
+      "especificacoes": [
+        "Com a finalidade de verificar se o fornecedor mantém as condições de participação no certame, serão novamente consultados, previamente à celebração da contratação, os cadastros especificados no instrumento convocatório mencionado no item 1.1"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "11.3.3",
+      "descricao": "As condições gerais de execução do objeto, tais como os prazos para entrega e recebimento, as obrigações da Administração e do fornecedor registrado, penalidades e demais condições do ajuste, encontram-se definidos na documentação que integra o instrumento convocatório mencionado no item 1.1.",
+      "tipo": "Disposição",
+      "marca": "",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "UASG 180202",
+      "cnpj_fornecedor": "01.000.000.001",
+      "especificacoes": [
+        "As condições gerais de execução do objeto, tais como os prazos para entrega e recebimento, as obrigações da Administração e do fornecedor registrado, penalidades e demais condições do ajuste, encontram-se definidos na documentação que integra o instrumento convocatório mencionado no item 1.1"
+      ],
+      "observacoes": null
+    },
+    {
+      "numero_item": "11.5",
+      "descricao": "No caso de adjudicação por preço global de grupo de itens, só será admitida a contratação de item(ns) específico(s) do grupo se houver prévia pesquisa de mercado e demonstração de sua vantagem para o órgão ou entidade.",
+      "tipo": "Disposição",
+      "marca": "",
+      "modelo": "",
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "UASG 180202",
+      "cnpj_fornecedor": "01.000.000.001",
+      "especificacoes": [
+        "No caso de adjudicação por preço global de grupo de itens, só será admitida a contratação de item(ns) específico(s) do grupo se houver prévia pesquisa de mercado e demonstração de sua vantagem para o órgão ou entidade"
+      ],
+      "observacoes": null
+    }
+  ],
+  "tokens_usados": 13149,
+  "aviso": "texto dividido em 3 chunks"
+}
