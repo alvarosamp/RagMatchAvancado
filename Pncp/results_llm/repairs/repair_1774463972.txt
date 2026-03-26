@@ -1,0 +1,65 @@
+{
+  "numero_ata": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "orgao": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "data_assinatura": "2023-12-01",
+  "vigencia": null,
+  "objeto": "Ata de Registro de Preços (ARP) para a compra de produtos farmacêuticos",
+  "itens": [
+    {
+      "numero_item": "155",
+      "descricao": "Unidade: UN Marca: exames Modelo: laboratorio",
+      "tipo": "Exame",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 12,
+      "unidade": "UN",
+      "valor_unitario": 9.04,
+      "valor_total": 108.48,
+      "fornecedor": "exames",
+      "cnpj_fornecedor": "exames",
+      "especificacoes": ["Exame de Hormônio da Paratireoide"],
+      "observações": "Observação: O valor unitário é de R$9,04"
+    },
+    {
+      "numero_item": "156",
+      "descricao": "Unidade: UN Marca: exames Modelo: laboratorio",
+      "tipo": "Exame",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 12,
+      "unidade": "UN",
+      "valor_unitario": 220.75,
+      "valor_total": 2.6490,
+      "fornecedor": "exames",
+      "cnpj_fornecedor": "exames",
+      "especificacoes": ["Exame de RAIVA - Sorologia"],
+      "observações": "Observação: O valor unitário é de R$220,75"
+    },
+    {
+      "numero_item": "157",
+      "descricao": "Unidade: UN Marca: exames Modelo: laboratorio",
+      "tipo": "Exame",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 50,
+      "unidade": "UN",
+      "valor_unitario": 10.64,
+      "valor_total": 5320,
+      "fornecedor": "exames",
+      "cnpj_fornecedor": "exames",
+      "especificacoes": ["Exame de RAST ACARO D.FarinAE"],
+      "observações": "Observação: O valor unitário é de R$10,64"
+    },
+    {
+      "numero_item": "158",
+      "descricao": "Unidade: UN Marca: exames Modelo: laboratorio",
+      "tipo": "Exame",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 2,
+      "unidade": "UN",
+      "valor_unitario": 10.64,
+      "valor_total": 21
+    }
+  ]
+}

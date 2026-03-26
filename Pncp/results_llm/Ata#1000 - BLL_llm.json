@@ -6,6 +6,6 @@
   "vigencia": null,
   "objeto": null,
   "itens": [],
-  "tokens_usados": 0,
-  "aviso": "erro LLM: LLM retornou JSON inválido: Unterminated string starting at: line 330 column 16 (char 10462)"
+  "tokens_usados": 7487,
+  "aviso": null
 }

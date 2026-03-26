@@ -22,7 +22,8 @@
         "Switch de Acesso 48 Portas PoE.",
         "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
     },
     {
       "numero_item": "2",
@@ -39,7 +40,8 @@
       "especificacoes": [
         "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
     },
     {
       "numero_item": "19.25.110001249.0003606",
@@ -57,7 +59,8 @@
         "CNPJ formatado",
         "CNPJ"
       ],
-      "observacoes": ""
+      "observacoes": "",
+      "raw_descricao": null
     },
     {
       "numero_item": "0",
@@ -72,55 +75,8 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": ""
-    },
-    {
-      "numero_item": "2226395",
-      "descricao": "",
-      "tipo": "Código de Verificação",
-      "marca": "2226395v4",
-      "modelo": null,
-      "quantidade": null,
-      "unidade": null,
-      "valor_unitario": 0.0,
-      "valor_total": 1250.5,
-      "fornecedor": "DISTRIBUIDORA DE TELEFONIA LTDA.",
-      "cnpj_fornecedor": "07.789.113/0001-67",
-      "especificacoes": [
-        "Código de Verificação",
-        "Código de Verificação"
-      ],
-      "observacoes": ""
-    },
-    {
-      "numero_item": "4",
-      "descricao": "",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": null,
-      "unidade": null,
-      "valor_unitario": 0.0,
-      "valor_total": null,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": ""
-    },
-    {
-      "numero_item": "65",
-      "descricao": "",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": null,
-      "unidade": null,
-      "valor_unitario": 0.0,
-      "valor_total": null,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": ""
+      "observacoes": "",
+      "raw_descricao": null
     }
   ],
   "tokens_usados": 4832,

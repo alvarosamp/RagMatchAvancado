@@ -8,7 +8,7 @@
   "itens": [
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ACIDO FOLICO",
+      "descricao": "ACIDO FOLICO           ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Bateria, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -25,12 +25,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ACIDO FOLICO"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ACIDO URICO",
+      "descricao": "ACIDO URICO            ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -47,12 +46,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ACIDO URICO"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ACIDO URICO URINARIO",
+      "descricao": "ACIDO URICO URINARIO   ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -69,12 +67,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ACIDO URICO URINARIO"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ACIDO VANIL MANDELICO.",
+      "descricao": "ACIDO VANIL MANDELICO. ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -91,12 +88,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ACIDO VANIL MANDELICO."
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ALBUMINA",
+      "descricao": "ALBUMINA               ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -113,12 +109,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ALBUMINA"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ALDOSTERONA.",
+      "descricao": "ALDOSTERONA.           ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -135,12 +130,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ALDOSTERONA."
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ALFA FETO",
+      "descricao": "ALFA FETO              ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -157,12 +151,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ALFA FETO"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ALFA",
+      "descricao": "ALFA                   ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -179,12 +172,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ALFA"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "AMILASE",
+      "descricao": "AMILASE                                                                                                      ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -201,12 +193,11 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "AMILASE"
+      "observacoes": "null"
     },
     {
       "numero_item": "21.147.495/0001-56 120.000,00     ",
-      "descricao": "ANATOMO PATOLOGICO",
+      "descricao": "ANATOMO PATOLOGICO                                                                                           ",
       "tipo": "categoria (Switch, Roteador, Firewall, Access Point, Servidor,Battery, transceiver etc.)",
       "marca": "CIENLAB ANALISES CLINICAS LTDA",
       "modelo": "laboratorio",
@@ -223,8 +214,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ANATOMO PATOLOGICO"
+      "observacoes": "null"
     },
     {
       "numero_item": "13",
@@ -239,8 +229,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Unidade: UN, Marca: exames, Modelo: laboratorio, Total Item: 335.25"
+      "observacoes": null
     },
     {
       "numero_item": "14",
@@ -255,8 +244,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Unidade: UN, Marca: exames, Valor TIREOGLOBULINA: 12,32, Modelo: laboratorio, Total Item: 72,20"
+      "observacoes": null
     },
     {
       "numero_item": "16",
@@ -271,8 +259,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Unidade: UN, Marca: exames, Valor B: 7,78, Modelo: laboratorio, Total Item: 45,60"
+      "observacoes": null
     },
     {
       "numero_item": "17",
@@ -287,8 +274,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "AnTI HBC IGM HEPATITE, Ref.: 14,13, Modelo: laboratorio, Total Item: 248,40"
+      "observacoes": null
     },
     {
       "numero_item": "18",
@@ -303,8 +289,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "HBS 30, Marca: exames, Valor: 16,15, Modelo: laboratorio, Total Item: 248,40"
+      "observacoes": null
     },
     {
       "numero_item": "19",
@@ -319,8 +304,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTIBIOGRAMA 400, Ref.: 4,78, Marca: exames, Modelo: laboratorio, Total Item: 307,80"
+      "observacoes": null
     },
     {
       "numero_item": "20",
@@ -335,8 +319,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "360, Modelo: laboratorio, Total Item: 120,00"
+      "observacoes": null
     },
     {
       "numero_item": "21",
@@ -351,8 +334,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTICORPOS, Modelo: laboratorio, Total Item: 1.120,00"
+      "observacoes": null
     },
     {
       "numero_item": "22",
@@ -367,8 +349,7 @@
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTI-HIV- WESTERN BLOT, Ref.: 14,20, Modelo: laboratorio, Total Item: 2.995,20"
+      "observacoes": null
     },
     {
       "numero_item": "35",
@@ -386,8 +367,7 @@
         "null",
         "COOMBS INDIRETO"
       ],
-      "observacoes": null,
-      "raw_descricao": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP"
+      "observacoes": null
     },
     {
       "numero_item": "48",
@@ -405,8 +385,7 @@
         "null",
         "COPROCULTURA"
       ],
-      "observacoes": null,
-      "raw_descricao": "DIRETO 20"
+      "observacoes": null
     },
     {
       "numero_item": "49",
@@ -424,8 +403,7 @@
         "null",
         "COPROCULTURA"
       ],
-      "observacoes": null,
-      "raw_descricao": "COPOCRUPTURA"
+      "observacoes": null
     },
     {
       "numero_item": "50",
@@ -442,8 +420,7 @@
       "especificacoes": [
         "DENGUE IGM"
       ],
-      "observacoes": "null",
-      "raw_descricao": "DENGUE IGM"
+      "observacoes": "null"
     },
     {
       "numero_item": "61",
@@ -460,8 +437,24 @@
       "especificacoes": [
         "DESIDROGENASE LATICA"
       ],
-      "observacoes": "null",
-      "raw_descricao": "DESIDROGENASE LATICA"
+      "observacoes": "null"
+    },
+    {
+      "numero_item": "62",
+      "descricao": "DENGUE IGM",
+      "tipo": "item de saúde",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 50,
+      "unidade": "UN",
+      "valor_unitario": 16.34,
+      "valor_total": 816.0,
+      "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+      "cnpj_fornecedor": "null",
+      "especificacoes": [
+        "DENGUE IGM"
+      ],
+      "observacoes": "null"
     },
     {
       "numero_item": "70",
@@ -478,8 +471,7 @@
       "especificacoes": [
         "ESPERMOGRAMA (POS VASECTOMIA)"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ESPERMOGRAMA (POS VASECTOMIA)"
+      "observacoes": "null"
     },
     {
       "numero_item": "71",
@@ -496,8 +488,7 @@
       "especificacoes": [
         "ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
+      "observacoes": "null"
     },
     {
       "numero_item": "72",
@@ -514,8 +505,7 @@
       "especificacoes": [
         "ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
+      "observacoes": "null"
     },
     {
       "numero_item": "73",
@@ -532,8 +522,24 @@
       "especificacoes": [
         "ESTRIOL E3"
       ],
-      "observacoes": "null",
-      "raw_descricao": "ESTRIOL E3"
+      "observacoes": "null"
+    },
+    {
+      "numero_item": "74",
+      "descricao": "ESTRIOL E3",
+      "tipo": "laboratório",
+      "marca": "exames",
+      "modelo": "laboratório",
+      "quantidade": 10,
+      "unidade": "unidade",
+      "valor_unitario": 6.87,
+      "valor_total": 68.7,
+      "fornecedor": "exames",
+      "cnpj_fornecedor": "exames",
+      "especificacoes": [
+        "ESTRIOL E3"
+      ],
+      "observacoes": "null"
     },
     {
       "numero_item": "75",
@@ -550,8 +556,7 @@
       "especificacoes": [
         "EXAME TOXICOLÓGICO"
       ],
-      "observacoes": "null",
-      "raw_descricao": "EXAME TOXICOLÓGICO"
+      "observacoes": "null"
     },
     {
       "numero_item": "76",
@@ -568,8 +573,7 @@
       "especificacoes": [
         "FATOR ANTI NUCLEO"
       ],
-      "observacoes": "null",
-      "raw_descricao": "FATOR ANTI NUCLEO"
+      "observacoes": "null"
     },
     {
       "numero_item": "77",
@@ -586,8 +590,7 @@
       "especificacoes": [
         "FATOR REUMATOIDE - LATEX"
       ],
-      "observacoes": "null",
-      "raw_descricao": "FATOR REUMATOIDE - LATEX"
+      "observacoes": "null"
     },
     {
       "numero_item": "78",
@@ -604,8 +607,24 @@
       "especificacoes": [
         "FERRITINA"
       ],
-      "observacoes": "null",
-      "raw_descricao": "FERRITINA"
+      "observacoes": "null"
+    },
+    {
+      "numero_item": "79",
+      "descricao": "FERRITINA",
+      "tipo": "laboratório",
+      "marca": "exames",
+      "modelo": "laboratório",
+      "quantidade": 300,
+      "unidade": "unidade",
+      "valor_unitario": 6.23,
+      "valor_total": 39600.0,
+      "fornecedor": "laboratório",
+      "cnpj_fornecedor": "laboratório",
+      "especificacoes": [
+        "FERRITINA"
+      ],
+      "observacoes": "null"
     },
     {
       "numero_item": "80",
@@ -622,8 +641,7 @@
       "especificacoes": [
         "transceiver"
       ],
-      "observacoes": "null",
-      "raw_descricao": "transceiver"
+      "observacoes": "null"
     },
     {
       "numero_item": "81",
@@ -640,8 +658,7 @@
       "especificacoes": [
         "access point"
       ],
-      "observacoes": "null",
-      "raw_descricao": "access point"
+      "observacoes": "null"
     },
     {
       "numero_item": "82",
@@ -658,8 +675,7 @@
       "especificacoes": [
         "servidor"
       ],
-      "observacoes": "null",
-      "raw_descricao": "servidor"
+      "observacoes": "null"
     },
     {
       "numero_item": "83",
@@ -676,8 +692,7 @@
       "especificacoes": [
         "bateria"
       ],
-      "observacoes": "null",
-      "raw_descricao": "bateria"
+      "observacoes": "null"
     },
     {
       "numero_item": "84",
@@ -694,8 +709,7 @@
       "especificacoes": [
         "kit de laboratorio"
       ],
-      "observacoes": "null",
-      "raw_descricao": "kit de laboratorio"
+      "observacoes": "null"
     },
     {
       "numero_item": "85",
@@ -712,8 +726,7 @@
       "especificacoes": [
         "instrumento de medicao"
       ],
-      "observacoes": "null",
-      "raw_descricao": "instrumento de medicao"
+      "observacoes": "null"
     },
     {
       "numero_item": "86",
@@ -730,8 +743,7 @@
       "especificacoes": [
         "dispositivo de controle"
       ],
-      "observacoes": "null",
-      "raw_descricao": "dispositivo de controle"
+      "observacoes": "null"
     },
     {
       "numero_item": "87",
@@ -748,8 +760,7 @@
       "especificacoes": [
         "componente elettronico"
       ],
-      "observacoes": "null",
-      "raw_descricao": "componente elettronico"
+      "observacoes": "null"
     },
     {
       "numero_item": "88",
@@ -766,8 +777,7 @@
       "especificacoes": [
         "instrumento de medicao digital"
       ],
-      "observacoes": "null",
-      "raw_descricao": "instrumento de medicao digital"
+      "observacoes": "null"
     },
     {
       "numero_item": "89",
@@ -784,8 +794,7 @@
       "especificacoes": [
         "dispositivo de medicao"
       ],
-      "observacoes": "null",
-      "raw_descricao": "dispositivo de medicao"
+      "observacoes": "null"
     },
     {
       "numero_item": "90",
@@ -802,8 +811,7 @@
       "especificacoes": [
         "componente elettronico digital"
       ],
-      "observacoes": "null",
-      "raw_descricao": "componente elettronico digital"
+      "observacoes": "null"
     },
     {
       "numero_item": "80",
@@ -821,8 +829,7 @@
         "Ferrite",
         "AlÃmido de cobre"
       ],
-      "observacoes": null,
-      "raw_descricao": "FERRO (EXAME)"
+      "observacoes": null
     },
     {
       "numero_item": "81",
@@ -840,8 +847,7 @@
         "Plasma",
         "Fibrina"
       ],
-      "observacoes": null,
-      "raw_descricao": "FIBRINOGENIO."
+      "observacoes": null
     },
     {
       "numero_item": "82",
@@ -859,8 +865,7 @@
         "Enzima",
         "Fosfatase alcalina"
       ],
-      "observacoes": null,
-      "raw_descricao": "FOSFATASE ALCALINA."
+      "observacoes": null
     },
     {
       "numero_item": "83",
@@ -878,8 +883,7 @@
         "Globulina",
         "Fosforo"
       ],
-      "observacoes": null,
-      "raw_descricao": "FÓSFORO."
+      "observacoes": null
     },
     {
       "numero_item": "84",
@@ -897,8 +901,7 @@
         "Enzima",
         "Fosfatase alcalina"
       ],
-      "observacoes": null,
-      "raw_descricao": "FOSFATASE ALCALINA."
+      "observacoes": null
     },
     {
       "numero_item": "85",
@@ -916,8 +919,7 @@
         "Planta de absorção",
         "Absorção de ácido ABS"
       ],
-      "observacoes": null,
-      "raw_descricao": "FTA ABS IGG."
+      "observacoes": null
     },
     {
       "numero_item": "86",
@@ -935,8 +937,7 @@
         "Planta de absorção",
         "Absorção de ácido ABS"
       ],
-      "observacoes": null,
-      "raw_descricao": "FTA ABS IGM."
+      "observacoes": null
     },
     {
       "numero_item": "87",
@@ -954,8 +955,7 @@
         "Enzima",
         "Gama glutamil transferase"
       ],
-      "observacoes": null,
-      "raw_descricao": "GAMA GLUTAMIL TRASNFERASE."
+      "observacoes": null
     },
     {
       "numero_item": "88",
@@ -973,8 +973,7 @@
         "Teste de gasometria",
         "Análise de gases"
       ],
-      "observacoes": null,
-      "raw_descricao": "GASOMETRIA."
+      "observacoes": null
     },
     {
       "numero_item": "89",
@@ -992,8 +991,7 @@
         "Planta de absorção",
         "Absorção de ácido ABS"
       ],
-      "observacoes": null,
-      "raw_descricao": "GLIADINA IGA."
+      "observacoes": null
     },
     {
       "numero_item": "90",
@@ -1011,8 +1009,7 @@
         "Enzima",
         "Gama glutamil transferase"
       ],
-      "observacoes": null,
-      "raw_descricao": "GLIADINA IGM."
+      "observacoes": null
     },
     {
       "numero_item": "91",
@@ -1030,8 +1027,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GLIADINA IGG"
+      "observacoes": null
     },
     {
       "numero_item": "92",
@@ -1049,8 +1045,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GLICOSE JEJUM"
+      "observacoes": null
     },
     {
       "numero_item": "93",
@@ -1068,8 +1063,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GLICOSE POS PRANDIAL"
+      "observacoes": null
     },
     {
       "numero_item": "94",
@@ -1087,8 +1081,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GONADOTROFINA CORIÔNICA - BETA"
+      "observacoes": null
     },
     {
       "numero_item": "95",
@@ -1106,8 +1099,25 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GONADOTROFINA CORIÔNICA QUANTITATIV"
+      "observacoes": null
+    },
+    {
+      "numero_item": "96",
+      "descricao": "GONADOTROFINA CORIÔNICA QUANTITATIV",
+      "tipo": "Desinfetante",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 12,
+      "unidade": "UN",
+      "valor_unitario": 4.55,
+      "valor_total": 54.0,
+      "fornecedor": "exame",
+      "cnpj_fornecedor": "",
+      "especificacoes": [
+        "desinfetante",
+        "antibiótico"
+      ],
+      "observacoes": null
     },
     {
       "numero_item": "97",
@@ -1125,8 +1135,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "GRUPO SANGUINEO"
+      "observacoes": null
     },
     {
       "numero_item": "98",
@@ -1144,8 +1153,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "HDL COLESTEROL"
+      "observacoes": null
     },
     {
       "numero_item": "99",
@@ -1163,8 +1171,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "HEMOGLABINA GLICADA"
+      "observacoes": null
     },
     {
       "numero_item": "100",
@@ -1182,8 +1189,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "HEMOGRAMA COMPLETO"
+      "observacoes": null
     },
     {
       "numero_item": "101",
@@ -1201,8 +1207,7 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "HEPATITE A - ANTI HVA IGG"
+      "observacoes": null
     },
     {
       "numero_item": "102",
@@ -1220,8 +1225,25 @@
         "desinfetante",
         "antibiótico"
       ],
-      "observacoes": null,
-      "raw_descricao": "HEPATITE A - ANTI HVA IGM"
+      "observacoes": null
+    },
+    {
+      "numero_item": "103",
+      "descricao": "HEPATITE A - ANTI HVA IGM",
+      "tipo": "Desinfetante",
+      "marca": "exame",
+      "modelo": "laboratorio",
+      "quantidade": 10,
+      "unidade": "UN",
+      "valor_unitario": 9.79,
+      "valor_total": 979.0,
+      "fornecedor": "exame",
+      "cnpj_fornecedor": "",
+      "especificacoes": [
+        "desinfetante",
+        "antibiótico"
+      ],
+      "observacoes": null
     },
     {
       "numero_item": "122",
@@ -1238,8 +1260,7 @@
       "especificacoes": [
         "Hormonio Luteinizante"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "LH Quantidade: 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "123",
@@ -1256,8 +1277,7 @@
       "especificacoes": [
         "Hormonio Lactato"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "LACTATO Quantidade: 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "124",
@@ -1274,8 +1294,7 @@
       "especificacoes": [
         "Hormonio Lipase"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "LIPASE Quantidade: 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "127",
@@ -1292,8 +1311,7 @@
       "especificacoes": [
         "Hormonio Litu"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "LITIO Quantidade: 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "128",
@@ -1310,8 +1328,7 @@
       "especificacoes": [
         "Hormonio KKM-1"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "LKM-1 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "129",
@@ -1328,8 +1345,7 @@
       "especificacoes": [
         "Hormonio Magnésio"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "MAGNESIO Quantidade: 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "130",
@@ -1346,8 +1362,7 @@
       "especificacoes": [
         "Hormonio Melatonina Sérica"
       ],
-      "observacoes": "Observações não fornecidas",
-      "raw_descricao": "MELATONINA SÉRICA 12"
+      "observacoes": "Observações não fornecidas"
     },
     {
       "numero_item": "134",
@@ -1368,8 +1383,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "MICOLOGICO"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "135",
@@ -1390,8 +1404,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "MITOCONDRIA - ANTICORPOS"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "136",
@@ -1412,8 +1425,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "OXALATO URINARIO 24HRS"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "137",
@@ -1434,8 +1446,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "PAPANICOLAOU"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "138",
@@ -1456,8 +1467,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "PARASITOLOGICO"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "139",
@@ -1478,8 +1488,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "PARASITOLOGICO DE FEZES 2"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "140",
@@ -1500,8 +1509,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "PEPTIDEO NATRIURETICO"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "141",
@@ -1522,8 +1530,7 @@
         "certificações",
         "tensão"
       ],
-      "observacoes": "Observações adicionais",
-      "raw_descricao": "PESQUISA DE BAAR"
+      "observacoes": "Observações adicionais"
     },
     {
       "numero_item": "143",
@@ -1538,8 +1545,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PESQUISA DE OXIURUS"
+      "observacoes": null
     },
     {
       "numero_item": "144",
@@ -1554,8 +1560,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "POTASSIO"
+      "observacoes": null
     },
     {
       "numero_item": "145",
@@ -1570,8 +1575,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROGESTERONA"
+      "observacoes": null
     },
     {
       "numero_item": "146",
@@ -1586,8 +1590,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROLACTINA"
+      "observacoes": null
     },
     {
       "numero_item": "147",
@@ -1602,8 +1605,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROTEINA C REATIVA"
+      "observacoes": null
     },
     {
       "numero_item": "148",
@@ -1618,8 +1620,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROTEINA C ULTRASENSIVEL"
+      "observacoes": null
     },
     {
       "numero_item": "149",
@@ -1634,8 +1635,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROTEINAS TOTAIS E FRACOES"
+      "observacoes": null
     },
     {
       "numero_item": "150",
@@ -1650,8 +1650,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PROTEINURIA DE 24 HORAS"
+      "observacoes": null
     },
     {
       "numero_item": "151",
@@ -1666,8 +1665,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PSA LIVRE Quantidade: 20"
+      "observacoes": null
     },
     {
       "numero_item": "152",
@@ -1682,8 +1680,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PSA TOTAL. Unidade: UN Marca: exames Modelo: laboratorio"
+      "observacoes": null
     },
     {
       "numero_item": "153",
@@ -1698,8 +1695,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "PSA TOTAL E LIVRE Quantidade: 10"
+      "observacoes": null
     },
     {
       "numero_item": "171",
@@ -1716,8 +1712,7 @@
       "especificacoes": [
         "RAST FORMIGA"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST FORMIGA"
+      "observacoes": null
     },
     {
       "numero_item": "172",
@@ -1734,8 +1729,7 @@
       "especificacoes": [
         "RAST FUNGOS E LEVEDURAS"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST FUNGOS E LEVEDURAS"
+      "observacoes": null
     },
     {
       "numero_item": "173",
@@ -1752,8 +1746,7 @@
       "especificacoes": [
         "RAST FX1 ALIMENTOS"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST FX1 ALIMENTOS"
+      "observacoes": null
     },
     {
       "numero_item": "183",
@@ -1768,8 +1761,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RAST LEITE E DERIVADOS"
+      "observacoes": null
     },
     {
       "numero_item": "184",
@@ -1784,8 +1776,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RAST LATEX"
+      "observacoes": null
     },
     {
       "numero_item": "185",
@@ -1800,8 +1791,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RAST MANGA"
+      "observacoes": null
     },
     {
       "numero_item": "186",
@@ -1818,8 +1808,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST MILHO"
+      "observacoes": null
     },
     {
       "numero_item": "187",
@@ -1836,8 +1825,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST OVO (INTEIRO)"
+      "observacoes": null
     },
     {
       "numero_item": "188",
@@ -1854,8 +1842,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST OVOMUCOIDE"
+      "observacoes": null
     },
     {
       "numero_item": "189",
@@ -1872,8 +1859,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST PEIXE BACALHAU"
+      "observacoes": null
     },
     {
       "numero_item": "190",
@@ -1890,8 +1876,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST PERNILONGO"
+      "observacoes": null
     },
     {
       "numero_item": "191",
@@ -1908,8 +1893,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST PO DE CASA"
+      "observacoes": null
     },
     {
       "numero_item": "192",
@@ -1926,8 +1910,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST PROTEINAS DO LEITE"
+      "observacoes": null
     },
     {
       "numero_item": "193",
@@ -1944,8 +1927,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST SOJA"
+      "observacoes": null
     },
     {
       "numero_item": "194",
@@ -1962,8 +1944,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST TABACO"
+      "observacoes": null
     },
     {
       "numero_item": "195",
@@ -1980,8 +1961,7 @@
       "especificacoes": [
         "laboratório"
       ],
-      "observacoes": null,
-      "raw_descricao": "RAST TRIGO"
+      "observacoes": null
     },
     {
       "numero_item": "10",
@@ -1996,8 +1976,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RUBEOLA IGG"
+      "observacoes": null
     },
     {
       "numero_item": "10",
@@ -2012,8 +1991,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RUBEOLA IGM"
+      "observacoes": null
     },
     {
       "numero_item": "200",
@@ -2028,8 +2006,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "SANGUE OCULTO PESQUISA"
+      "observacoes": null
     },
     {
       "numero_item": "201",
@@ -2044,8 +2021,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "SODIO"
+      "observacoes": null
     },
     {
       "numero_item": "202",
@@ -2060,8 +2036,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "SUBSTANCIA REDUTORAS PESQUISA"
+      "observacoes": null
     },
     {
       "numero_item": "203",
@@ -2076,8 +2051,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "SULFATO DE DEHIDROEPIANDROSTERONA"
+      "observacoes": null
     },
     {
       "numero_item": "204",
@@ -2092,8 +2066,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "SHBG - GLOBULINA LIGADORA"
+      "observacoes": null
     },
     {
       "numero_item": "205",
@@ -2108,8 +2081,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "T T P A"
+      "observacoes": null
     },
     {
       "numero_item": "206",
@@ -2124,8 +2096,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "T3 LIVRE"
+      "observacoes": null
     },
     {
       "numero_item": "207",
@@ -2140,8 +2111,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "T4 LIVRE"
+      "observacoes": null
     },
     {
       "numero_item": "208",
@@ -2156,8 +2126,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "TEMPO DE PROTROMBINA"
+      "observacoes": null
     },
     {
       "numero_item": "209",
@@ -2172,8 +2141,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "TEMPO DE SANGRAMENTO"
+      "observacoes": null
     },
     {
       "numero_item": "210",
@@ -2188,8 +2156,7 @@
       "fornecedor": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
       "cnpj_fornecedor": "null",
       "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "TESTOSTERONA LIVRE"
+      "observacoes": null
     },
     {
       "numero_item": "220",
@@ -2206,8 +2173,7 @@
       "especificacoes": [
         "transferrina"
       ],
-      "observacoes": "null",
-      "raw_descricao": "TRANSAMINASE OXALACETICA"
+      "observacoes": "null"
     },
     {
       "numero_item": "221",
@@ -2224,8 +2190,7 @@
       "especificacoes": [
         "transferrina"
       ],
-      "observacoes": "null",
-      "raw_descricao": "TRANSAMINASE PIRUVICA"
+      "observacoes": "null"
     },
     {
       "numero_item": "222",
@@ -2242,8 +2207,7 @@
       "especificacoes": [
         "transferrina"
       ],
-      "observacoes": "null",
-      "raw_descricao": "TRANSFERRINA"
+      "observacoes": "null"
     },
     {
       "numero_item": "223",
@@ -2260,8 +2224,7 @@
       "especificacoes": [
         "transferrina"
       ],
-      "observacoes": "null",
-      "raw_descricao": "TRANSGLUTAMINASE IGA"
+      "observacoes": "null"
     },
     {
       "numero_item": "224",
@@ -2278,8 +2241,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "TRANSGLUTAMINASE IGG"
+      "observacoes": null
     },
     {
       "numero_item": "225",
@@ -2296,8 +2258,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "TRIGLICÉRIDES"
+      "observacoes": null
     },
     {
       "numero_item": "226",
@@ -2314,8 +2275,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "TRIIODOTIRONINA"
+      "observacoes": null
     },
     {
       "numero_item": "227",
@@ -2332,8 +2292,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "UREIA."
+      "observacoes": null
     },
     {
       "numero_item": "228",
@@ -2350,8 +2309,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "URINA TIPO 1"
+      "observacoes": null
     },
     {
       "numero_item": "229",
@@ -2368,8 +2326,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "UROCULTURA"
+      "observacoes": null
     },
     {
       "numero_item": "230",
@@ -2386,8 +2343,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "VDRL"
+      "observacoes": null
     },
     {
       "numero_item": "231",
@@ -2404,8 +2360,7 @@
       "especificacoes": [
         "desenvolvimento de produtos químicos"
       ],
-      "observacoes": null,
-      "raw_descricao": "VELOC. DE HEMOSSEDIMENTACAO"
+      "observacoes": null
     },
     {
       "numero_item": "232",
@@ -2422,8 +2377,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA A"
+      "observacoes": null
     },
     {
       "numero_item": "233",
@@ -2440,8 +2394,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA B 12"
+      "observacoes": null
     },
     {
       "numero_item": "234",
@@ -2458,8 +2411,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA B1"
+      "observacoes": null
     },
     {
       "numero_item": "235",
@@ -2476,8 +2428,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA B6"
+      "observacoes": null
     },
     {
       "numero_item": "236",
@@ -2494,8 +2445,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA C"
+      "observacoes": null
     },
     {
       "numero_item": "237",
@@ -2512,8 +2462,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA D"
+      "observacoes": null
     },
     {
       "numero_item": "238",
@@ -2530,8 +2479,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA E"
+      "observacoes": null
     },
     {
       "numero_item": "239",
@@ -2548,8 +2496,7 @@
       "especificacoes": [
         "desenvolvimento de produtos alimentícios"
       ],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA K"
+      "observacoes": null
     },
     {
       "numero_item": "1",
@@ -2566,8 +2513,7 @@
       "especificacoes": [
         "null"
       ],
-      "observacoes": "null",
-      "raw_descricao": "MEMBRO DE EQUIPE DE APOIO DIVANE APARECIDA SANTOS DE OLIVEIRA"
+      "observacoes": "null"
     },
     {
       "numero_item": "2",
@@ -2584,8 +2530,7 @@
       "especificacoes": [
         "null"
       ],
-      "observacoes": "null",
-      "raw_descricao": "MEMBRO DE EQUIPE DE APOIO MARILENE DE ANDRADE REZENDE"
+      "observacoes": "null"
     },
     {
       "numero_item": "3",
@@ -2602,8 +2547,7 @@
       "especificacoes": [
         "null"
       ],
-      "observacoes": "null",
-      "raw_descricao": "MEMBRO DE APOIO MARISA VERNEQUE RIBAS"
+      "observacoes": "null"
     },
     {
       "numero_item": "4",
@@ -2620,10 +2564,9 @@
       "especificacoes": [
         "null"
       ],
-      "observacoes": "null",
-      "raw_descricao": "APOIO FRAILAN LEANDRO CASTRO DE SOUZA"
+      "observacoes": "null"
     }
   ],
   "tokens_usados": 60189,
-  "aviso": "texto dividido em 19 chunks | erro chunk 5: LLM retornou JSON inválido: Expecting property name enclosed in double quotes: line 121 column 28 (char 4801) | erro chunk 12: unsupported operand type(s) for +: 'NoneType' and 'NoneType'"
+  "aviso": "texto dividido em 19 chunks | erro chunk 5: LLM retornou JSON inválido: Expecting property name enclosed in double quotes: line 121 column 28 (char 4801) | erro chunk 12: LLM retornou JSON inválido: Expecting property name enclosed in double quotes: line 62 column 25 (char 2049)"
 }

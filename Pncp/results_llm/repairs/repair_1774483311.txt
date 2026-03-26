@@ -1,0 +1,37 @@
+{
+  "numero_ata": "12.823.984/0001-90",
+  "orgao": "AFC INFORMATICA &amp; INTERNET LTDA",
+  "data_assinatura": "30/09/2025 11:49:15",
+  "vigencia": null,
+  "objeto": "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.",
+  "itens": [
+    {
+      "numero_item": "12",
+      "descricao": null,
+      "tipo": "SERVÍCIO",
+      "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": "Mês",
+      "valor_unitario": 5.766, 
+      "valor_total": 13.292, 
+      "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": ["SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.", 
+      "observacoes': null"
+    ],
+    "numero_item": "1",
+    "descricao": null,
+    "tipo": "SERVÍCIO",
+    "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+    "modelo": null,
+    "quantidade": 1,
+    "unidade": "Mês",
+    "valor_unitario": 22.204, 
+    "valor_total": 117.900, 
+    "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+    "cnpj_fornecedor": null,
+    "especificacoes": ["SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.", 
+    "observacoes': null"
+  ]
+}

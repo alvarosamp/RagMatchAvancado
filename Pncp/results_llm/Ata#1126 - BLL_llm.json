@@ -24,7 +24,8 @@
         "Valor unitário",
         "Valor total"
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Quantidade total do processo."
     },
     {
       "numero_item": "284.400,00",
@@ -44,7 +45,8 @@
         "Valor unitário",
         "Valor total"
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Lote 1."
     },
     {
       "numero_item": "284.400,00",
@@ -64,7 +66,8 @@
         "Valor unitário",
         "Valor total"
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Lote 2."
     },
     {
       "numero_item": "64.167,58",
@@ -84,7 +87,8 @@
         "Valor unitário",
         "Valor total"
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Lote 3."
     },
     {
       "numero_item": "102.280,14",
@@ -104,7 +108,8 @@
         "Valor unitário",
         "Valor total"
       ],
-      "observacoes": null
+      "observacoes": null,
+      "raw_descricao": "Lote 4."
     }
   ],
   "tokens_usados": 3380,

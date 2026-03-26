@@ -144,13 +144,57 @@ Regras:
 - Se houver vários fornecedores, registre o correto para cada item.\
 """
 
+# Stronger system prompt: require strict JSON, show a compact example, and force raw_descricao
+SYSTEM_PROMPT_STRICT = """\
+Você é um especialista em licitações públicas brasileiras. Sua tarefa é extrair dados de uma ata
+e retornar APENAS um OBJETO JSON válido. Siga essas regras rigorosamente:
+
+- Use sempre aspas duplas para nomes de propriedades e strings.
+- Escape qualquer aspa dupla interna dentro de strings com \".
+- Se algum valor estiver incerto ou truncado, use null (não invente).
+- Nunca inclua texto fora do JSON, comentários ou explicações.
+- Garanta que arrays e objetos estejam bem fechados (nenhum colchete ou chave perdida).
+- Inclua sempre o campo `raw_descricao` em cada item com o texto original do item.
+
+Aqui vai um exemplo mínimo e válido (siga este formato exatamente):
+{
+    "numero_ata": "00029/2025",
+    "orgao": "Prefeitura X",
+    "data_assinatura": "2025-09-15",
+    "vigencia": null,
+    "objeto": "Registro de preços para ...",
+    "itens": [
+        {
+            "numero_item": "1",
+            "descricao": "Switch 16 portas",
+            "raw_descricao": "Switch 16 portas - modelo X",
+            "tipo": "Switch",
+            "marca": "MarcaY",
+            "modelo": "X-1000",
+            "quantidade": 10,
+            "unidade": "unidade",
+            "valor_unitario": 1250.50,
+            "valor_total": 12505.0,
+            "fornecedor": "Empresa Z",
+            "cnpj_fornecedor": "00.000.000/0001-00",
+            "especificacoes": ["48V PoE", "Gigabit"],
+            "observacoes": null
+        }
+    ]
+}
+
+Retorne unicamente JSON seguindo este exemplo. Se uma lista ou string estiver incompleta, use null.
+"""
+
 USER_TEMPLATE = "Analise a ata abaixo e extraia todas as informações:\n\n{texto}"
 
 # Template for per-item extraction: model should return a single item object
 USER_TEMPLATE_ITEM = (
-    "Analise o bloco de texto do ITEM abaixo e retorne APENAS um OBJETO JSON com as chaves do schema de um item:\n"
-    "Inclua também o campo 'raw_descricao' com o texto original do item (sem alterações).\n"
-    "Se não tiver certeza de algum campo, use null. Responda somente com o JSON.\n"
+    "Analise o bloco de texto do ITEM abaixo e retorne APENAS um OBJETO JSON representando UM ITEM.\n"
+    "Regras: use aspas duplas para propriedades e strings; escape aspas internas; inclua 'raw_descricao' com o texto original.\n"
+    "Se algum campo estiver truncado ou incerto, coloque null. NÃO inclua texto fora do JSON.\n"
+    "Exemplo de objeto item:\n"
+    "{\"numero_item\": \"1\", \"descricao\": \"Switch 16 portas\", \"raw_descricao\": \"Switch 16 portas - modelo X\", \"tipo\": \"Switch\", \"marca\": \"MarcaY\", \"modelo\": \"X-1000\", \"quantidade\": 10, \"unidade\": \"unidade\", \"valor_unitario\": 1250.5, \"valor_total\": 12505.0, \"fornecedor\": \"Empresa Z\", \"cnpj_fornecedor\": \"00.000.000/0001-00\", \"especificacoes\": [\"48V PoE\"], \"observacoes\": null}\n"
     "{texto_item}"
 )
 
@@ -168,6 +212,56 @@ def _get_client() -> ollama.Client:
         _client = ollama.Client(host=OLLAMA_HOST)
         logger.info(f"[LLM] Ollama conectado em {OLLAMA_HOST} | modelo: {OLLAMA_MODEL}")
     return _client
+
+
+def _repair_json_with_ollama(resposta_raw: str) -> str:
+    """Pede ao Ollama para consertar uma saída JSON inválida.
+
+    Retorna o texto reparado (string) ou levanta exceção se a chamada falhar.
+    Também salva uma cópia da tentativa em Pncp/results_llm/repairs para auditoria.
+    """
+    client = _get_client()
+    repairs_dir = Path(__file__).resolve().parents[2] / "Pncp" / "results_llm" / "repairs"
+    repairs_dir.mkdir(parents=True, exist_ok=True)
+
+    system = (
+        "Você é um assistente que corrige SAÍDAS JSON malformadas.\n"
+        "O usuário espera um único objeto JSON que corresponda ao schema de uma ata com campos: numero_ata, orgao, data_assinatura, vigencia, objeto, itens (array de objetos de item).\n"
+        "Retorne APENAS o JSON válido. Se algo estiver truncado, use null para o campo. Não inclua nenhum texto extra."
+    )
+
+    user = "Aqui está a saída do modelo que está malformada. Conserte apenas o JSON e nada mais:\n\n" + resposta_raw
+
+    resp = client.chat(
+        model=OLLAMA_MODEL,
+        format="json",
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        options={"temperature": 0.0, "num_predict": 4096},
+    )
+
+    # extrai texto — Ollama pode retornar em diferentes formatos
+    repaired = None
+    try:
+        repaired = resp["message"]["content"].strip()
+    except Exception:
+        try:
+            parts = resp["choices"][0]["message"]["content"]["parts"]
+            repaired = "\n".join(parts)
+        except Exception:
+            repaired = json.dumps(resp, ensure_ascii=False)
+
+    # salvar tentativa para auditoria
+    ts = int(time.time())
+    fname = repairs_dir / f"repair_{ts}.txt"
+    try:
+        fname.write_text(repaired, encoding="utf-8")
+    except Exception:
+        logger.exception("Falha ao salvar repair log")
+
+    return repaired
 
 
 
@@ -332,7 +426,18 @@ def _chamar_llm(texto_chunk: str) -> tuple[dict, int]:
         dados = json.loads(resposta_raw)
     except json.JSONDecodeError as e:
         logger.error(f"[LLM] JSON inválido: {e} | preview: {resposta_raw[:300]}")
-        raise ValueError(f"LLM retornou JSON inválido: {e}") from e
+        # Tenta reparo automático via Ollama (uma tentativa)
+        try:
+            reparado = _repair_json_with_ollama(resposta_raw)
+            try:
+                dados = json.loads(reparado)
+                logger.info("[LLM] Reparo automático por Ollama bem-sucedido")
+            except json.JSONDecodeError:
+                logger.error("[LLM] Reparo automático falhou — mantendo erro")
+                raise ValueError(f"LLM retornou JSON inválido e reparo falhou: {e}") from e
+        except Exception as repair_exc:
+            logger.exception("[LLM] Falha ao chamar reparo automático: %s", repair_exc)
+            raise ValueError(f"LLM retornou JSON inválido: {e}") from e
 
     # Ollama reporta tokens em eval_count (output) e prompt_eval_count (input)
     tokens = response.get("eval_count", 0) + response.get("prompt_eval_count", 0)
@@ -368,7 +473,18 @@ def _chamar_llm_item(texto_item: str) -> tuple[dict, int]:
         dados = json.loads(resposta_raw)
     except json.JSONDecodeError as e:
         logger.error(f"[LLM] JSON inválido (item): {e} | preview: {resposta_raw[:300]}")
-        raise ValueError(f"LLM retornou JSON inválido para item: {e}") from e
+        # tentativa de reparo automático
+        try:
+            reparado = _repair_json_with_ollama(resposta_raw)
+            try:
+                dados = json.loads(reparado)
+                logger.info("[LLM] Reparo automático por Ollama (item) bem-sucedido")
+            except json.JSONDecodeError:
+                logger.error("[LLM] Reparo automático (item) falhou — mantendo erro")
+                raise ValueError(f"LLM retornou JSON inválido para item: {e}") from e
+        except Exception as repair_exc:
+            logger.exception("[LLM] Falha ao chamar reparo automático (item): %s", repair_exc)
+            raise ValueError(f"LLM retornou JSON inválido para item: {e}") from e
 
     tokens = response.get("eval_count", 0) + response.get("prompt_eval_count", 0)
     return dados, tokens

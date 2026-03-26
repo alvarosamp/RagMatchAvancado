@@ -972,6 +972,6 @@
       "raw_descricao": "Carregador para notebook"
     }
   ],
-  "tokens_usados": 33640,
-  "aviso": "texto dividido em 9 chunks"
+  "tokens_usados": 26809,
+  "aviso": "texto dividido em 9 chunks | erro chunk 9: LLM retornou JSON inválido: Unterminated string starting at: line 15 column 29 (char 477)"
 }
