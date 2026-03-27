@@ -1,0 +1,44 @@
+{
+  "id_pncp": "Ata - 1432",
+  "numero_ata": "00029/2025",
+  "orgao": "Escola Superior de Bombeiros 'Cel PM Paulo Marques Pereira'",
+  "data_assinatura": null,
+  "vigencia": "1 (um) ano, contado a partir do 1º (primeiro) dia útil subsequente à data de divulgação no Portal Nacional de Contratações Públicas (PNCP), podendo ser prorrogada por igual período, mediante a anuência do fornecedor, desde que comprovado o preço vantajoso",
+  "objeto": "registro de preços para a eventual contratação de materiais elétricos, hidráulicos e de construção civil diversos",
+  "itens": [
+    {
+      "numero_item": "36",
+      "descricao": "Patch Cord Rj45",
+      "tipo": "produto",
+      "marca": "Vo6",
+      "modelo": "cat6",
+      "quantidade": 45,
+      "unidade": "unidade",
+      "valor_unitario": 8.0,
+      "valor_total": 360.0,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [],
+      "observacoes": "Quantidade mínima a ser cotada: 30. Prazo de garantia ou validade: Item 5.4 do TR.",
+      "raw_descricao": "Patch Cord Rj45"
+    },
+    {
+      "numero_item": "37",
+      "descricao": "Switch 16 portas",
+      "tipo": "produto",
+      "marca": "Tp link",
+      "modelo": "sg1016",
+      "quantidade": 2,
+      "unidade": "unidade",
+      "valor_unitario": 465.4,
+      "valor_total": 930.8,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [],
+      "observacoes": "Quantidade mínima a ser cotada: 2. Prazo de garantia ou validade: Item 5.4 do TR.",
+      "raw_descricao": "Switch 16 portas"
+    }
+  ],
+  "tokens_usados": 9334,
+  "aviso": "texto dividido em 3 chunks"
+}

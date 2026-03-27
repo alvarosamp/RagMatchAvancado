@@ -1,0 +1,412 @@
+{
+  "id_pncp": "Ata#1000 - BLL",
+  "numero_ata": null,
+  "orgao": "MUNICIPIO DE ALTO PIQUIRI ALTO PIQUIRI-PR",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "REGISTRO DE PREÇO",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO",
+      "tipo": "produto",
+      "marca": "ASUS",
+      "modelo": "x1504",
+      "quantidade": 8,
+      "unidade": "UNIDADE",
+      "valor_unitario": 2880.0,
+      "valor_total": 23040.0,
+      "fornecedor": "LICITAINFO LTDA",
+      "cnpj_fornecedor": "52.277.278/0001-04",
+      "especificacoes": [
+        "PROCESSADOR: NO MINIMO 15 13ª GERACAO",
+        "MEM DDR4/5 8GB",
+        "SSD 480NVME",
+        "RJ45 E WIFI",
+        "SISTEMA OPERACIONAL WINDOWS 10 PRO"
+      ],
+      "observacoes": null,
+      "raw_descricao": "NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "NOBREAK 700VA, TECNOLOGIA SENOIDAL POR APROXIMACAO. ENTRADA BIVOLT / SAIDA 115V. BATERIA 12V INCLUSIVA. CONF. ORCAMENTO...",
+      "tipo": "produto",
+      "marca": "CR ENERGIA",
+      "modelo": "700BS",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 432.87,
+      "valor_total": 2164.35,
+      "fornecedor": "A FRENTE SOLUÇÕES INTEGRADAS LTDA",
+      "cnpj_fornecedor": "36.489.366/0001-13",
+      "especificacoes": [
+        "700VA",
+        "TECNOLOGIA SENOIDAL POR APROXIMACAO",
+        "ENTRADA BIVOLT",
+        "SAIDA 115V",
+        "BATERIA 12V INCLUSIVA"
+      ],
+      "observacoes": "CONF. ORCAMENTO...",
+      "raw_descricao": "NOBREAK 700VA, TECNOLOGIA SENOIDAL POR APROXIMACAO. ENTRADA BIVOLT / SAIDA 115V.\n\nBATERIA 12V INCLUSIVA. CONF. ORCAMENTO..."
+    },
+    {
+      "numero_item": "1",
+      "descricao": "SMARTPHONE 128GB 5G 6GB RAM 6,6 CAM TRIPLA + SELFIE 13MP DUAL CHIP",
+      "tipo": "produto",
+      "marca": "Conforme Edital",
+      "modelo": "Conforme Edital",
+      "quantidade": 13,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1100.0,
+      "valor_total": 14300.0,
+      "fornecedor": "LIFEGOV LTDA",
+      "cnpj_fornecedor": "58.923.716/0001-40",
+      "especificacoes": [
+        "128GB",
+        "5G",
+        "6GB RAM",
+        "6,6",
+        "CAM TRIPLA",
+        "SELFIE 13MP",
+        "DUAL CHIP"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SMARTPHONE 128GB 5G 6GB RAM 6,6 CAM TRIPLA + SELFIE 13MP DUAL CHIP"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "SUPORTE UNIVERSAL FIXO, INDICADO PARA TVS PLASMA/3D/LCD/LED COM PESO ATE 100KG E COMPATIVEIS PADRAO DE FIXACAO VESA 75X75, 100X100, CONFORME ORCAMENTO...",
+      "tipo": "produto",
+      "marca": "MULTIVISÃO",
+      "modelo": "FIXO",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 26.6,
+      "valor_total": 133.0,
+      "fornecedor": "CARVALHO ACESSORIOS PARA MOVEIS LTDA",
+      "cnpj_fornecedor": "49.704.499/0002-98",
+      "especificacoes": [
+        "INDICADO PARA TVS PLASMA/3D/LCD/LED",
+        "PESO ATE 100KG",
+        "PADRAO DE FIXACAO VESA 75X75",
+        "100X100"
+      ],
+      "observacoes": "CONFORME ORCAMENTO...",
+      "raw_descricao": "SUPORTE UNIVERSAL FIXO, INDICADO PARA TVS PLASMA/3D/LCD/LED COM PESO ATE 100KG E\n\nCOMPATIVEIS PADRAO DE FIXACAO VESA 75X75, 100X100, CONFORME ORCAMENTO..."
+    },
+    {
+      "numero_item": "1",
+      "descricao": "CAIXA CABO DE REDE 100% COBRE CAT 5 E (305 METROS) PADRAO FURUKAWA",
+      "tipo": "produto",
+      "marca": "SOHO PLUS CAT5E",
+      "modelo": "SOHO PLUS CAT5E",
+      "quantidade": 3,
+      "unidade": "CAIXA",
+      "valor_unitario": 695.7,
+      "valor_total": 2087.1,
+      "fornecedor": "HABITUS DIGITAL COMERCIAL LTDA",
+      "cnpj_fornecedor": "41.010.343/0001-14",
+      "especificacoes": [
+        "100% COBRE",
+        "CAT 5 E",
+        "305 METROS",
+        "PADRAO FURUKAWA"
+      ],
+      "observacoes": null,
+      "raw_descricao": "CAIXA CABO DE REDE 100% COBRE CAT 5 E (305 METROS) PADRAO FURUKAWA"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "CONECTOR RJ 45 MACHO CAT 5E",
+      "tipo": "produto",
+      "marca": "FORTREK",
+      "modelo": "FORTREK FK 120E",
+      "quantidade": 50,
+      "unidade": "UNIDADE",
+      "valor_unitario": 0.4,
+      "valor_total": 20.0,
+      "fornecedor": "HABITUS DIGITAL COMERCIAL LTDA",
+      "cnpj_fornecedor": "41.010.343/0001-14",
+      "especificacoes": [
+        "RJ 45 MACHO",
+        "CAT 5E"
+      ],
+      "observacoes": null,
+      "raw_descricao": "CONECTOR RJ 45 MACHO CAT 5E"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "TOMADA PARA REDE DE COMPUTADOR RJ45 CAT 5E SISTEMA X COM CAIXA SOBREPOR",
+      "tipo": "produto",
+      "marca": "ILUMI",
+      "modelo": "IX Ilumi Box (linha Sobrepor) 6364 Branco",
+      "quantidade": 20,
+      "unidade": "UNIDADE",
+      "valor_unitario": 33.4,
+      "valor_total": 668.0,
+      "fornecedor": "HABITUS DIGITAL COMERCIAL LTDA",
+      "cnpj_fornecedor": "41.010.343/0001-14",
+      "especificacoes": [
+        "RJ45",
+        "CAT 5E",
+        "SISTEMA X",
+        "COM CAIXA SOBREPOR"
+      ],
+      "observacoes": null,
+      "raw_descricao": "TOMADA PARA REDE DE COMPUTADOR RJ45 CAT 5E SISTEMA X COM CAIXA SOBREPOR"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "PATCH PANEL 24 PORTAS CAT 5E SOHO",
+      "tipo": "produto",
+      "marca": "HAMMER CAT5E 24 PORTAS",
+      "modelo": "HAMMER CAT5E 24 PORTAS",
+      "quantidade": 2,
+      "unidade": "UNIDADE",
+      "valor_unitario": 180.55,
+      "valor_total": 361.1,
+      "fornecedor": "HABITUS DIGITAL COMERCIAL LTDA",
+      "cnpj_fornecedor": "41.010.343/0001-14",
+      "especificacoes": [
+        "24 PORTAS",
+        "CAT 5E",
+        "SOHO"
+      ],
+      "observacoes": null,
+      "raw_descricao": "PATCH PANEL 24 PORTAS CAT 5E SOHO"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "HD EXTERNO 1TB - INTERFACE USB 2.0 / 3.0; VELOCIDADE DE TRANSFERENCIA DE DADOS DE ATE 4,8 GBPS; TEMPERATURA EM FUNCIONAMENTO: 5°C A 35°C.",
+      "tipo": "produto",
+      "marca": "SEAGATE",
+      "modelo": "STGX1000400",
+      "quantidade": 3,
+      "unidade": "UNIDADE",
+      "valor_unitario": 257.0,
+      "valor_total": 771.0,
+      "fornecedor": "ICONDATA EQUIPAMENTO DE INFORMATICA",
+      "cnpj_fornecedor": "61.430.508/0001-14",
+      "especificacoes": [
+        "1TB",
+        "INTERFACE USB 2.0 / 3.0",
+        "VELOCIDADE DE TRANSFERENCIA DE DADOS DE ATE 4,8 GBPS",
+        "TEMPERATURA EM FUNCIONAMENTO: 5°C A 35°C"
+      ],
+      "observacoes": null,
+      "raw_descricao": "HD EXTERNO 1TB - INTERFACE USB 2.0 / 3.0; VELOCIDADE DE TRANSFERENCIA DE DADOS DE ATE 4,8 GBPS; TEMPERATURA EM FUNCIONAMENTO: 5°C A 35°C."
+    },
+    {
+      "numero_item": "2",
+      "descricao": "HD INTERNO DE ALTA PERFORMANCE 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA 6.0GB/S FORMATADO DE MEDIDA 3,5",
+      "tipo": "produto",
+      "marca": "WESTERN DIGITAL",
+      "modelo": "WD20EURX",
+      "quantidade": 3,
+      "unidade": "UNIDADE",
+      "valor_unitario": 401.15,
+      "valor_total": 1203.45,
+      "fornecedor": "ICONDATA EQUIPAMENTO DE INFORMATICA",
+      "cnpj_fornecedor": "61.430.508/0001-14",
+      "especificacoes": [
+        "ALTA PERFORMANCE",
+        "7200RPM",
+        "ARMAZENAMENTO 2TB",
+        "INTERFACE SATA 6.0GB/S",
+        "FORMATADO DE MEDIDA 3,5"
+      ],
+      "observacoes": null,
+      "raw_descricao": "HD INTERNO DE ALTA PERFORMANCE 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA\n\n6.0GB/S FORMATADO DE MEDIDA 3,5"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "HD SATA SSD 240 GB MSI/KINGSTON/WD",
+      "tipo": "produto",
+      "marca": "FTX",
+      "modelo": "FT240GB",
+      "quantidade": 15,
+      "unidade": "UNIDADE",
+      "valor_unitario": 121.7,
+      "valor_total": 1825.5,
+      "fornecedor": "ICONDATA EQUIPAMENTO DE INFORMATICA",
+      "cnpj_fornecedor": "61.430.508/0001-14",
+      "especificacoes": [
+        "SATA SSD",
+        "240 GB"
+      ],
+      "observacoes": "Referência de marcas no descritivo: MSI/KINGSTON/WD",
+      "raw_descricao": "HD SATA SSD 240 GB MSI/KINGSTON/WD"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "SWITCH 16 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3AB, IEEE 802.3X ...",
+      "tipo": "produto",
+      "marca": "TENDA",
+      "modelo": "TEG1016D",
+      "quantidade": 3,
+      "unidade": "UNIDADE",
+      "valor_unitario": 379.7,
+      "valor_total": 1139.1,
+      "fornecedor": "VITOR ALFREDO THOMAS LTDA",
+      "cnpj_fornecedor": "53.278.020/0001-95",
+      "especificacoes": [
+        "16 PORTAS",
+        "10/100/1000",
+        "PADROES E PROTOCOLOS IEEE 802.3I",
+        "IEEE 802.3U",
+        "IEEE 802.3AB",
+        "IEEE 802.3X"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SWITCH 16 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE\n\n802.3AB, IEEE 802.3X ..."
+    },
+    {
+      "numero_item": "2",
+      "descricao": "SWITCH 24 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3X, ...",
+      "tipo": "produto",
+      "marca": "TENDA",
+      "modelo": "TEG1024D",
+      "quantidade": 3,
+      "unidade": "UNIDADE",
+      "valor_unitario": 458.3,
+      "valor_total": 1374.9,
+      "fornecedor": "VITOR ALFREDO THOMAS LTDA",
+      "cnpj_fornecedor": "53.278.020/0001-95",
+      "especificacoes": [
+        "24 PORTAS",
+        "10/100/1000",
+        "PADROES E PROTOCOLOS IEEE 802.3I",
+        "IEEE 802.3U",
+        "IEEE 802.3X"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SWITCH 24 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3X,\n\n..."
+    },
+    {
+      "numero_item": "3",
+      "descricao": "SWITCH 8 PORTAS 10/100/1000, 8 PORTAS RJ45 DE AUTONEGOCIACAO 10/100/1000MBPS SUPORTA (AUTO MDI/MDIX), CONTROLE DE FLUXO IEEE 802.3, CONF. ORCAMENTO..",
+      "tipo": "produto",
+      "marca": "KNUP",
+      "modelo": "KP-SW106",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 117.2,
+      "valor_total": 586.0,
+      "fornecedor": "VITOR ALFREDO THOMAS LTDA",
+      "cnpj_fornecedor": "53.278.020/0001-95",
+      "especificacoes": [
+        "8 PORTAS",
+        "10/100/1000",
+        "8 PORTAS RJ45 DE AUTONEGOCIACAO 10/100/1000MBPS",
+        "SUPORTA AUTO MDI/MDIX",
+        "CONTROLE DE FLUXO IEEE 802.3"
+      ],
+      "observacoes": "CONF. ORCAMENTO..",
+      "raw_descricao": "SWITCH 8 PORTAS 10/100/1000, 8 PORTAS RJ45 DE AUTONEGOCIACAO 10/100/1000MBPS\n\nSUPORTA (AUTO MDI/MDIX), CONTROLE DE FLUXO IEEE 802.3, CONF. ORCAMENTO.."
+    },
+    {
+      "numero_item": "1",
+      "descricao": "CABO DE IMPRESSORA, CONECTOR USB A MACHO 2.0 USB B MACHO, COM 1.8MT.",
+      "tipo": "produto",
+      "marca": null,
+      "modelo": "AM/BM",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 16.5,
+      "valor_total": 82.5,
+      "fornecedor": "MICROFORT INFORMÁTICA LTDA",
+      "cnpj_fornecedor": "24.675.507/0001-03",
+      "especificacoes": [
+        "CONECTOR USB A MACHO 2.0",
+        "USB B MACHO",
+        "1.8MT"
+      ],
+      "observacoes": null,
+      "raw_descricao": "CABO DE IMPRESSORA, CONECTOR USB A MACHO 2.0 USB B MACHO, COM 1.8MT."
+    },
+    {
+      "numero_item": "2",
+      "descricao": "IMPRESSORA LASER, CONEXOES: WI-FI 802.11 B/G/N INCORPORADA, CONEXAO WIRELESS, ...",
+      "tipo": "produto",
+      "marca": "PANTUM",
+      "modelo": "P2500W",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 981.7,
+      "valor_total": 4908.5,
+      "fornecedor": "MICROFORT INFORMÁTICA LTDA",
+      "cnpj_fornecedor": "24.675.507/0001-03",
+      "especificacoes": [
+        "CONEXOES: WI-FI 802.11 B/G/N INCORPORADA",
+        "CONEXAO WIRELESS"
+      ],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA LASER, CONEXOES: WI-FI 802.11 B/G/N INCORPORADA, CONEXAO WIRELESS, ..."
+    },
+    {
+      "numero_item": "3",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL LASER,TIPO DE IMPRESSAO: MONOCROMATICA ...",
+      "tipo": "produto",
+      "marca": "PANTUM",
+      "modelo": "BM5100",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 2385.88,
+      "valor_total": 11929.4,
+      "fornecedor": "MICROFORT INFORMÁTICA LTDA",
+      "cnpj_fornecedor": "24.675.507/0001-03",
+      "especificacoes": [
+        "TIPO DE IMPRESSAO: MONOCROMATICA"
+      ],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL LASER,TIPO DE IMPRESSAO: MONOCROMATICA ..."
+    },
+    {
+      "numero_item": "4",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO...",
+      "tipo": "produto",
+      "marca": "EPSON",
+      "modelo": "L 3250",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1520.7,
+      "valor_total": 7603.5,
+      "fornecedor": "MICROFORT INFORMÁTICA LTDA",
+      "cnpj_fornecedor": "24.675.507/0001-03",
+      "especificacoes": [
+        "MULTIFUNCIONAL 3 EM 1",
+        "IMPRIME",
+        "COPIA",
+        "DIGITALIZA",
+        "WI-FI DIRECT"
+      ],
+      "observacoes": "CONF. ORCAMENTO...",
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO..."
+    },
+    {
+      "numero_item": "5",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOMATICO, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW",
+      "tipo": "produto",
+      "marca": "PANTUM",
+      "modelo": "M7105",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1646.4,
+      "valor_total": 8232.0,
+      "fornecedor": "MICROFORT INFORMÁTICA LTDA",
+      "cnpj_fornecedor": "24.675.507/0001-03",
+      "especificacoes": [
+        "COM WIFI",
+        "DUPLEX AUTOMATICO",
+        "MIN 30PPM",
+        "TONER T425U",
+        "MODELO REFERENCIA PANTUM 7105DW"
+      ],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOMATICO, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW"
+    }
+  ],
+  "tokens_usados": 8120,
+  "aviso": null
+}
