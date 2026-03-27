@@ -24,18 +24,18 @@ logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEST_DIR = REPO_ROOT / "Pncp" / "Base de teste do analisador de atas"
-OUT_DIR = REPO_ROOT / "Pncp" / "results_llm"
+OUT_DIR = REPO_ROOT / "Pncp" / "AnaliseAtaGPT" / "resultados"
 
 
 def _load_pipelinellm_module() -> object:
-    path = REPO_ROOT / "Pncp" / "AnaliseAtaLLM" / "pipelinellm_prompt_ajustado.py"
+    path = REPO_ROOT / "Pncp" / "AnaliseAtaGPT" / "pipelinegpt.py"
 
     import sys
     api_shared = REPO_ROOT / "Pncp" / "apiPncp"
     if str(api_shared) not in sys.path:
         sys.path.insert(0, str(api_shared))
 
-    spec = importlib.util.spec_from_file_location("pipelinellm_prompt_ajustado", path)
+    spec = importlib.util.spec_from_file_location("pipelinegpt", path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Não foi possível carregar {path}")
 
