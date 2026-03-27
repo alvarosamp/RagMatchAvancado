@@ -2,83 +2,29 @@
   "id_pncp": "Ata#1039",
   "numero_ata": "40/2025",
   "orgao": "Ministério Público do Estado de Rondônia",
-  "data_assinatura": "12/11/2025",
-  "vigencia": "12 meses, contado a partir da data de divulgação oficial no Diário Eletrônico do Ministério Público do Estado de Rondônia e poderá ser prorrogada por igual período desde que comprovado o preço vantajoso.",
-  "objeto": "Ata de Registro de Preços",
+  "data_assinatura": "10 de novembro de 2025",
+  "vigencia": "12 meses, contados a partir da data de divulgação oficial no Diário Eletrônico do Ministério Público do Estado de Rondônia e poderá ser prorrogada por igual período desde que comprovado o preço vantajoso.",
+  "objeto": "Ata de Registro de Preços nº 40/2025",
   "itens": [
     {
-      "numero_item": "1",
-      "descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",
-      "tipo": "Switch de Acesso 48 Portas PoE.",
-      "marca": "Alcatel Lucent OS6360-PH48- US",
-      "modelo": "OS6360-PH48- US",
-      "quantidade": 120,
-      "unidade": "Portas",
-      "valor_unitario": 15.406,
-      "valor_total": 1.84872,
-      "fornecedor": "Alcatel Lucent OS6360-PH48- US",
-      "cnpj_fornecedor": "04.381.083/0001-67",
-      "especificacoes": [
-        "Switch de Acesso 48 Portas PoE.",
-        "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
-      ],
-      "observacoes": null,
-      "raw_descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
-    },
-    {
-      "numero_item": "2",
-      "descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+.",
-      "tipo": "Licença de upgrade das portas Gigabit SFP para 10G SFP+.",
-      "marca": "Alcatel Lucent OS6360-SW- PERF",
-      "modelo": "OS6360-SW- PERF",
-      "quantidade": 120,
-      "unidade": "Portas",
-      "valor_unitario": 4.594,
-      "valor_total": 551280.0,
-      "fornecedor": "Alcatel Lucent OS6360-SW- PERF",
-      "cnpj_fornecedor": "07.789.113/0001-67",
-      "especificacoes": [
-        "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
-      ],
-      "observacoes": null,
-      "raw_descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+."
-    },
-    {
-      "numero_item": "19.25.110001249.0003606",
-      "descricao": "",
-      "tipo": "CNPJ formatado",
-      "marca": "DISTRIBUIDORA DE TELEFONIA LTDA.",
-      "modelo": "",
-      "quantidade": null,
+      "numero_item": "19.25.110001249.0003606/2025-65",
+      "descricao": "documento autêntico",
+      "tipo": "string",
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
       "unidade": null,
-      "valor_unitario": 0.0,
-      "valor_total": 1250.5,
+      "valor_unitario": null,
+      "valor_total": null,
       "fornecedor": "DISTRIBUIDORA DE TELEFONIA LTDA.",
       "cnpj_fornecedor": "07.789.113/0001-67",
       "especificacoes": [
-        "CNPJ formatado",
-        "CNPJ"
+        "string"
       ],
-      "observacoes": "",
-      "raw_descricao": null
-    },
-    {
-      "numero_item": "0",
-      "descricao": "",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": null,
-      "unidade": null,
-      "valor_unitario": 0.0,
-      "valor_total": null,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": "",
-      "raw_descricao": null
+      "observacoes": null,
+      "raw_descricao": "19.25.110001249.0003606/2025-65"
     }
   ],
-  "tokens_usados": 4832,
+  "tokens_usados": 5318,
   "aviso": "texto dividido em 2 chunks"
 }

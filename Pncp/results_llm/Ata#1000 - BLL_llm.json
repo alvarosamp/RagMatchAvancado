@@ -1,11 +1,87 @@
 {
   "id_pncp": "Ata#1000 - BLL",
-  "numero_ata": null,
-  "orgao": null,
-  "data_assinatura": null,
-  "vigencia": null,
-  "objeto": null,
-  "itens": [],
-  "tokens_usados": 7487,
+  "numero_ata": "string ou null",
+  "orgao": "string ou null",
+  "data_assinatura": "string ou null",
+  "vigencia": "string ou null",
+  "objeto": "string ou null",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO",
+      "tipo": "string ou null",
+      "marca": "ASUS",
+      "modelo": "x1504",
+      "quantidade": 1,
+      "unidade": "UNIDADE",
+      "valor_unitario": 2880.0,
+      "valor_total": 23040.0,
+      "fornecedor": "ASUS",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "UNIDADE",
+        "PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO"
+      ],
+      "observacoes": null,
+      "raw_descricao": "NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "NOBREAK 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA, 6.0GB/S FORMATADO DE MEDIDA 3.5",
+      "tipo": "string ou null",
+      "marca": "WESTERN DIGITAL",
+      "modelo": "WD20EURX",
+      "quantidade": 15,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1815.0,
+      "valor_total": 18295.9,
+      "fornecedor": "WESTERN DIGITAL",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "INTERFACE: SATA, 6.0GB/S FORMATADO DE MEDIDA 3.5"
+      ],
+      "observacoes": null,
+      "raw_descricao": "NOBREAK 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA, 6.0GB/S FORMATADO DE MEDIDA 3.5"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL LASER, CONEXOES: WI-FI 802.11 B/G/N INCORPORADA, CONEXAO WIRELESS, ..., IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO...",
+      "tipo": "string ou null",
+      "marca": "PANTUM",
+      "modelo": "L 3250",
+      "quantidade": 5,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1520.7,
+      "valor_total": 76230.0,
+      "fornecedor": "PANTUM",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "CONEXOES: WI-FI 802.11 B/G/N INCORPORADA, CONEXAO WIRELESS",
+        "IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOmatico, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW"
+      ],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL LASER, CONEXOES: WI-FI 802.11 B/G/N INCORPORADA, CONEXAO WIRELESS, ..., IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO..."
+    },
+    {
+      "numero_item": "4",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOmatico, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW",
+      "tipo": "string ou null",
+      "marca": "PANTUM",
+      "modelo": "M7105",
+      "quantidade": 7,
+      "unidade": "UNIDADE",
+      "valor_unitario": 1646.4,
+      "valor_total": 128071.3,
+      "fornecedor": "PANTUM",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "MIN 30PPM",
+        "TONER T425U - MODELO REFERENCIA PANTUM 7105DW"
+      ],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOmatico, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW"
+    }
+  ],
+  "tokens_usados": 6428,
   "aviso": null
 }

@@ -22,29 +22,24 @@ from typing import List
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEST_DIR = REPO_ROOT / "Pncp" / "Base de teste do analisador de atas"
 OUT_DIR = REPO_ROOT / "Pncp" / "results_llm"
 
 
 def _load_pipelinellm_module() -> object:
-    path = REPO_ROOT / "Pncp" / "AnaliseAtaLLM" / "pipelinellm.py"
-    # garante que o pacote `shared` usado por pipelinellm seja resolvível
-    # (existe em Pncp/apiPncp/shared)
-    api_shared = REPO_ROOT / "Pncp" / "apiPncp"
-    import sys
+    path = REPO_ROOT / "Pncp" / "AnaliseAtaLLM" / "pipelinellm_prompt_ajustado.py"
 
+    import sys
+    api_shared = REPO_ROOT / "Pncp" / "apiPncp"
     if str(api_shared) not in sys.path:
         sys.path.insert(0, str(api_shared))
 
-    spec = importlib.util.spec_from_file_location("pipelinellm", path)
+    spec = importlib.util.spec_from_file_location("pipelinellm_prompt_ajustado", path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Não foi possível carregar {path}")
+
     mod = importlib.util.module_from_spec(spec)
-    import sys
-    # registra o módulo antes de executar para que decoradores/dataclasses
-    # que consultem sys.modules funcione corretamente
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
@@ -63,7 +58,6 @@ def main() -> None:
 
     pipelinellm = _load_pipelinellm_module()
 
-    # import docling parser (fallback to docling_parser present in this branch)
     from app.pipeline.docling_parser import parse_pdf
 
     pdfs = _list_first_n_pdfs(TEST_DIR, 10)
@@ -72,18 +66,29 @@ def main() -> None:
     for pdf in pdfs:
         stem = pdf.stem
         logger.info(f"Processando: {pdf.name}")
+
         try:
             doc = parse_pdf(pdf, filename=pdf.name)
 
-            # chama o wrapper que usa o LLM
-            resultado = pipelinellm.analisar_texto_ata_extraido(doc.full_text, id_pncp=stem, nome_arquivo=pdf.name)
+            if not doc.full_text or not doc.full_text.strip():
+                logger.warning(f"Parser não retornou texto para {pdf.name}")
+                continue
+
+            resultado = pipelinellm.analisar_texto_ata_extraido(
+                doc.full_text,
+                id_pncp=stem,
+                nome_arquivo=pdf.name,
+            )
 
             if resultado is None:
                 logger.warning(f"LLM não retornou resultado para {pdf.name}")
                 continue
 
             out_path = OUT_DIR / f"{stem}_llm.json"
-            out_path.write_text(pipelinellm.resultado_para_json(resultado, indent=2), encoding="utf-8")
+            out_path.write_text(
+                pipelinellm.resultado_para_json(resultado, indent=2),
+                encoding="utf-8",
+            )
             logger.info(f"Resultado salvo: {out_path}")
 
         except Exception as e:

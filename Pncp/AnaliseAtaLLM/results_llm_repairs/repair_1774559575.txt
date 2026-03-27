@@ -1,0 +1,42 @@
+{
+  "numero_ata": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "orgao": "CIENLAB ANALISES CLINICAS LTDA",
+  "data_assinatura": "17/06/2025 11:02:46",
+  "vigencia": null,
+  "objeto": "PREGÃO ELETRÔNICO Nº 18/2025",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "ACIDO FOLICO",
+      "raw_descricao": "ACIDO FOLICO",
+      "tipo": "produto",
+      "marca": "exames Modelo: laboratorio",
+      "quantidade": 180,
+      "unidade": "UN",
+      "valor_unitario": 7.02,
+      "valor_total": 1.26360
+    },
+    {
+      "numero_item": "2",
+      "descricao": "ACIDO URICO",
+      "raw_descricao": "ACIDO URICO",
+      "tipo": "produto",
+      "marca": "exames Modelo: laboratorio",
+      "quantidade": 370,
+      "unidade": "UN",
+      "valor_unitario": 1.05,
+      "valor_total": 38850
+    },
+    {
+      "numero_item": "3",
+      "descricao": "ACIDO URINARIO",
+      "raw_descricao": "ACIDO URINARIO",
+      "tipo": "produto",
+      "marca": "exames Modelo: laboratorio",
+      "quantidade": 30,
+      "unidade": "UN",
+      "valor_unitario": 0.91,
+      "valor_total": 27
+    }
+  ]
+}

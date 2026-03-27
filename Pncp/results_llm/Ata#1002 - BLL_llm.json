@@ -1,11 +1,84 @@
 {
   "id_pncp": "Ata#1002 - BLL",
-  "numero_ata": null,
-  "orgao": null,
+  "numero_ata": "117.900,00",
+  "orgao": "AFC INFORMATICA &amp; INTERNET LTDA",
   "data_assinatura": null,
-  "vigencia": null,
-  "objeto": null,
-  "itens": [],
-  "tokens_usados": 0,
-  "aviso": "erro LLM: LLM retornou JSON inválido: Expecting ',' delimiter: line 37 column 2 (char 2548)"
+  "vigencia": "2025-09-30T11:49:15",
+  "objeto": "PREGÃO ELETRÔNICO Nº 036/2025",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.",
+      "tipo": null,
+      "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": "UNIDADE",
+      "valor_unitario": 22.204,
+      "valor_total": 117.9,
+      "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO."
+    },
+    {
+      "numero_item": "2",
+      "descricao": "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO, ABRANGENDO UM TOTAL DE 287 (DUZENTAS E OITENTA E SETE) CÂMERAS (96 EXISTENTES + 191 NOVAS) E TODOS OS EQUIPAMENTOS ASSOCIADOS, CONFORMAS SLAS DEFINIDAS NESTE TERMO.",
+      "tipo": null,
+      "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "modelo": null,
+      "quantidade": 12,
+      "unidade": "MES",
+      "valor_unitario": 5.19,
+      "valor_total": 62.287,
+      "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO, ABRANGENDO UM TOTAL DE 287 (DUZENTAS E OITENTA E SETE) CÂMERAS (96 EXISTENTES + 191 NOVAS) E TODOS OS EQUIPAMENTOS ASSOCIADOS, CONFORMAS SLAS DEFINIDAS NESTE TERMO."
+    },
+    {
+      "numero_item": "3",
+      "descricao": "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES, UTILIZANDO OS KITS DE MONITORAMENTO DETALHADOS NO ITEM 4.2. O SERVIÇO INCLUI A INTEGRAÇÃO COM O SISTEMA DE IGNIÇÃO DOS VEÍCULOS.",
+      "tipo": null,
+      "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": "UNIDADE",
+      "valor_unitario": 13.292,
+      "valor_total": 117.9,
+      "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES, UTILIZANDO OS KITS DE MONITORAMENTO DETALHADOS NO ITEM 4.2. O SERVIÇO INCLUI A INTEGRAÇÃO COM O SISTEMA DE IGNIÇÃO DOS VEÍCULOS."
+    },
+    {
+      "numero_item": "4",
+      "descricao": "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES, CONFORMAS SLAS DEFINIDAS NESTE TERMO.",
+      "tipo": null,
+      "marca": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "modelo": null,
+      "quantidade": 12,
+      "unidade": "MES",
+      "valor_unitario": 5.766,
+      "valor_total": 20.115,
+      "fornecedor": "AFC INFORMATICA &amp; INTERNET LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES"
+      ],
+      "observacoes": null,
+      "raw_descricao": "SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES, CONFORMAS SLAS DEFINIDAS NESTE TERMO."
+    }
+  ],
+  "tokens_usados": 3518,
+  "aviso": null
 }

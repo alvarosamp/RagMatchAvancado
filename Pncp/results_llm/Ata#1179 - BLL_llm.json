@@ -2,32 +2,74 @@
   "id_pncp": "Ata#1179 - BLL",
   "numero_ata": "690,00",
   "orgao": "MUNICIPIO DE UBATUBA UBATUBA-SP",
-  "data_assinatura": "17/09/2025 08:11:53",
-  "vigencia": "descrição do objeto geral da ata",
-  "objeto": "PARAFUSADEIRA ELÉTRICA PORTÁTIL",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "PREGÃO ELETRÔNICO Nº 72/2025",
   "itens": [
     {
-      "numero_item": "9",
-      "descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTILTIPO: PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA",
+      "numero_item": "690,00",
+      "descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTIL",
       "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": 1,
+      "marca": "WAP",
+      "modelo": "Wf 12k3.2",
+      "quantidade": 4,
       "unidade": null,
       "valor_unitario": 409.0,
-      "valor_total": 409.0,
-      "fornecedor": "WAP",
-      "cnpj_fornecedor": "690.00",
+      "valor_total": 1628.0,
+      "fornecedor": "LAST MOON EQUIPAMENTOS LTDA",
+      "cnpj_fornecedor": null,
       "especificacoes": [
         "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG",
         "CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA)",
         "CONTROLE DE VELOCIDADE: AJUSTÁVEL",
         "ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
       ],
-      "observacoes": "APOIO EVALDO JOAQUIM DE SOUZA",
-      "raw_descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTILTIPO: PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+      "observacoes": null,
+      "raw_descricao": "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+    },
+    {
+      "numero_item": "559,49",
+      "descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTIL",
+      "tipo": null,
+      "marca": "WAP",
+      "modelo": "Wf 12k3.2",
+      "quantidade": 1,
+      "unidade": null,
+      "valor_unitario": 559.0,
+      "valor_total": 409.0,
+      "fornecedor": "LAST MOON EQUIPAMENTOS LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG",
+        "CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA)",
+        "CONTROLE DE VELOCIDADE: AJUSTÁVEL",
+        "ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+      ],
+      "observacoes": null,
+      "raw_descricao": "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+    },
+    {
+      "numero_item": "401,94",
+      "descricao": "PARAFUSADEIRA ELÉTRICA PORTÁTIL",
+      "tipo": null,
+      "marca": "WAP",
+      "modelo": "Wf 12k3.2",
+      "quantidade": 4,
+      "unidade": null,
+      "valor_unitario": 401.0,
+      "valor_total": 1636.0,
+      "fornecedor": "LAST MOON EQUIPAMENTOS LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG",
+        "CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA)",
+        "CONTROLE DE VELOCIDADE: AJUSTÁVEL",
+        "ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
+      ],
+      "observacoes": null,
+      "raw_descricao": "PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA"
     }
   ],
-  "tokens_usados": 3119,
+  "tokens_usados": 6734,
   "aviso": null
 }
