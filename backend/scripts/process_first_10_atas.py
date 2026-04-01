@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TEST_DIR = REPO_ROOT / "Pncp" / "Base de teste do analisador de atas"
-OUT_DIR = REPO_ROOT / "Pncp" / "AnaliseAtaGPT" / "resultados"
+OUT_DIR = REPO_ROOT / "Pncp" / "AnaliseAtaGPT" / "resultado_modelo_menor"
 
 
 def _load_pipelinellm_module() -> object:

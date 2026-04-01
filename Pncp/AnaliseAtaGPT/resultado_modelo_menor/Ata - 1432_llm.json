@@ -1,0 +1,44 @@
+{
+  "id_pncp": "Ata - 1432",
+  "numero_ata": "00029/2025",
+  "orgao": "Polícia Militar do Estado de São Paulo",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "Registro de preços para contratação de materiais elétricos, hidráulicos e de construção civil diversos.",
+  "itens": [
+    {
+      "numero_item": "36",
+      "descricao": "Patch Cord Rj45",
+      "tipo": null,
+      "marca": "Vo6",
+      "modelo": "cat6",
+      "quantidade": 45,
+      "unidade": "unidade",
+      "valor_unitario": 8.0,
+      "valor_total": null,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [],
+      "observacoes": "Item 5.4 do TR",
+      "raw_descricao": "Patch Cord Rj45"
+    },
+    {
+      "numero_item": "37",
+      "descricao": "Switch 16 portas",
+      "tipo": null,
+      "marca": "Tp link",
+      "modelo": "sg1016",
+      "quantidade": 2,
+      "unidade": "unidade",
+      "valor_unitario": 465.4,
+      "valor_total": null,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [],
+      "observacoes": "Item 5.4 do TR",
+      "raw_descricao": "Switch 16 portas"
+    }
+  ],
+  "tokens_usados": 9202,
+  "aviso": "texto dividido em 3 chunks"
+}
