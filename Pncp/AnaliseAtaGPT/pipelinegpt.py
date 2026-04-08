@@ -18,7 +18,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5nano") #5-nano
 MAX_CHARS_POR_CHUNK = 10_000
 
 # =========================
