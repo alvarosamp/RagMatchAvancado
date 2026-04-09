@@ -1,0 +1,399 @@
+numero_item,descricao,tipo,marca,modelo,quantidade,unidade,valor_unitario,valor_total,fornecedor,cnpj_fornecedor,especificacoes,observacoes,raw_descricao,arquivo_origem
+1,"Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",produto,Alcatel Lucent,OS6360-PH48- US,120.0,Und,15406.0,1848720.0,LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.,07.789.113/0001-67,"['Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.']",,"1 | Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência. | Marca: Alcatel Lucent OS6360-PH48- US | Und | 120 | R$15.406,00 | R$1.848.720,00",Ata#1039_llm.json
+2,"Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",produto,Alcatel Lucent,OS6360-SW- PERF,120.0,Und,4594.0,551280.0,LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.,07.789.113/0001-67,"['Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.']",,"2 | Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência. | Marca: Alcatel Lucent OS6360-SW- PERF | Und | 120 | R$ 4.594,00 | R$ 551.280,00",Ata#1039_llm.json
+36,Patch Cord RJ45,produto,Vo6,cat6,45.0,unidade,8.0,,Moura Eletronicos e Importação Ltda Me,10.636.064/0001-37,"['Patch Cord RJ45', 'Vo6', 'cat6', 'unidade', 'quantidade máxima 45', 'quantidade mínima 30', 'valor unitário 8,00']",Item 5.4 do TR,"Patch Cord Rj45 Vo6 cat6 unidade 45 30 R$ 8,00 Item 5.4 do TR",Ata - 1432_llm.json
+37,Switch 16 portas,produto,Tp link,sg1016,2.0,unidade,465.4,,Moura Eletronicos e Importação Ltda Me,10.636.064/0001-37,"['Switch 16 portas', 'Tp link', 'sg1016', 'unidade', 'quantidade máxima 02', 'quantidade mínima 02', 'valor unitário 465,40']",Item 5.4 do TR,"Switch 16 portas Tp link sg1016 unidade 02 02 R$ 465,40 Item 5.4 do TR",Ata - 1432_llm.json
+1,Switch - Tipo I,produto,H3C,S9850-32H,2.0,unidade,82044.0,164088.0,Roost Ltda,78.931.474/0009-00,"['Marca: H3C', 'Modelo: S9850-32H', 'Unidade: unidade', 'Quantidade: 2', 'Valor Unitário: 82.044,00', 'Valor Total: 164.088,00']",,Switch - Tipo I,Ata#1022_llm.json
+2,Switch - Tipo II,produto,H3C,S6850-56HF,8.0,unidade,106000.0,848000.0,Roost Ltda,78.931.474/0009-00,"['Marca: H3C', 'Modelo: S6850-56HF', 'Unidade: unidade', 'Quantidade: 8', 'Valor Unitário: 106.000,00', 'Valor Total: 848.000,00']",,Switch - Tipo II,Ata#1022_llm.json
+3,Transceiver 1 GE Base-T,produto,Skylane,SGT00P10DR0A000,12.0,unidade,400.0,4800.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: SGT00P10DR0A000', 'Unidade: unidade', 'Quantidade: 12', 'Valor Unitário: 400,00', 'Valor Total: 4.800,00']",,Transceiver 1 GE Base-T,Ata#1022_llm.json
+4,Transceiver 10 GE Base-T,produto,Skylane,SPT00M301000000,20.0,unidade,1000.0,20000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: SPT00M301000000', 'Unidade: unidade', 'Quantidade: 20', 'Valor Unitário: 1.000,00', 'Valor Total: 20.000,00']",,Transceiver 10 GE Base-T,Ata#1022_llm.json
+5,Transceivers 10GE-Base-LR,produto,Skylane,SPP13010100B000,20.0,unidade,200.0,4000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: SPP13010100B000', 'Unidade: unidade', 'Quantidade: 20', 'Valor Unitário: 200,00', 'Valor Total: 4.000,00']",,Transceivers 10GE-Base-LR,Ata#1022_llm.json
+6,Transceivers 25GE-Base-LR,produto,Skylane,S2813010250F000,20.0,unidade,600.0,12000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: S2813010250F000', 'Unidade: unidade', 'Quantidade: 20', 'Valor Unitário: 600,00', 'Valor Total: 12.000,00']",,Transceivers 25GE-Base-LR,Ata#1022_llm.json
+7,Transceivers 40GE-Base-LR,produto,Skylane,QFPQL010400D000,20.0,unidade,1500.0,30000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: QFPQL010400D000', 'Unidade: unidade', 'Quantidade: 20', 'Valor Unitário: 1.500,00', 'Valor Total: 30.000,00']",,Transceivers 40GE-Base-LR,Ata#1022_llm.json
+8,Transceivers 100GE-Base- LR,produto,Skylane,Q28QD010C00D000,20.0,unidade,2000.0,40000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: Q28QD010C00D000', 'Unidade: unidade', 'Quantidade: 20', 'Valor Unitário: 2.000,00', 'Valor Total: 40.000,00']",,Transceivers 100GE-Base- LR,Ata#1022_llm.json
+9,Cabo de interligaçao 10G (DAC) 5 metros,produto,Skylane,DAPSSM051000000,10.0,unidade,300.0,3000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: DAPSSM051000000', 'Unidade: unidade', 'Quantidade: 10', 'Valor Unitário: 300,00', 'Valor Total: 3.000,00']",,Cabo de interligaçao 10G (DAC) 5 metros,Ata#1022_llm.json
+10,Cabo de interligaçao  10G (DAC) 10 metros,produto,Skylane,DAPSSM101000000,10.0,unidade,800.0,8000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: DAPSSM101000000', 'Unidade: unidade', 'Quantidade: 10', 'Valor Unitário: 800,00', 'Valor Total: 8.000,00']",,Cabo de interligaçao 10G (DAC) 10 metros,Ata#1022_llm.json
+11,Cabo de interligaçao 40G (DAC) 3 metros,produto,Skylane,DAPQQM034000000,10.0,unidade,600.0,6000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: DAPQQM034000000', 'Unidade: unidade', 'Quantidade: 10', 'Valor Unitário: 600,00', 'Valor Total: 6.000,00']",,Cabo de interligaçao 40G (DAC) 3 metros,Ata#1022_llm.json
+12,Cabo de interligaçao 40G (DAC) 10 metros,produto,Skylane,DAAQQM104000000,15.0,unidade,2000.0,30000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Skylane', 'Modelo: DAAQQM104000000', 'Unidade: unidade', 'Quantidade: 15', 'Valor Unitário: 2.000,00', 'Valor Total: 30.000,00']",,Cabo de interligação 40G (DAC) 10 metros,Ata#1022_llm.json
+13,Software de Gerenciamento,software,H3C,AD-DC,2.0,unidade,700000.0,1400000.0,Roost Ltda,78.931.474/0009-00,"['Marca: H3C', 'Modelo: AD-DC', 'Unidade: unidade', 'Quantidade: 2', 'Valor Unitário: 700.000,00', 'Valor Total: 1.400.000,00']",,Software de Gerenciamento,Ata#1022_llm.json
+14,Serviço de Instalação Serviços: Roost,serviço,Roost,-,1.0,unidade,30000.0,30000.0,Roost Ltda,78.931.474/0009-00,"['Marca: Roost', 'Modelo: -', 'Unidade: unidade', 'Quantidade: 1', 'Valor Unitário: 30.000,00', 'Valor Total: 30.000,00']",,Serviço de Instalação Serviços: Roost,Ata#1022_llm.json
+1,"SERVIDORES DE REDE COM GABINETE PARA RACK 19 POLEGADAS COM AS SEGUINTES ESPECIFICAÇÕES: GABINETE PARA RACK PADRÃO 19 POLEGADAS, COM ALTURA MÁXIMA DE 2U; PAINEL FRONTAL COM LEDS OU DISPLAY PARA IDENTIFICAÇÃO DE FALHAS; TRILHOS DESLIZANTES PARA INSTALAÇÃO EM RACK; COM 2 (DOIS) PROCESSADORES DE 64 BITS, FREQUÊNCIA MÍNIMA DE 2.20GHZ CADA, COM PELO MENOS 12 NÚCLEOS POR PROCESSADOR; COM 2 (DOIS) SSD NVME DE 1TB CADA, PARA SISTEMA OPERACIONAL; CAPACIDADE DE INSTALAÇÃO PARA, PELO MENOS, 8 DISCOS SAS DE 3,5 POLEGADAS, COM SUPORTE A ³ HOT-SWAP ´ COM 4 (QUATRO) DISCOS NO PADRÃO SAS DE 3,5 POLEGADAS INSTALADOS. CAPACIDADE MÍNIMA DE 4TB PARA CADA DISCO; CONTROLADORA DE DISCOS COMPATÍVEL COM RAID 1, RAID 5 E RAID 6; MEMÓRIA RAM INSTALADA COM, NO MÍNIMO, 2 MÓDULOS DE 64GB DDR4 RDIMM E SUPORTE A ADVANCED ECC OU SDDC; UNIDADE EXTERNA DE CD-ROM/DVD-ROM USB; PELO MENOS 2 (DUAS) INTERFACES GIGABIT ETHERNET (1000BASE-T); PELO MENOS 2 (DUAS) INTERFACES 10 GIGABIT ETHERNET (10GBASE-T); PELO MENOS 2 (DUAS) INTERFACES SFP COMPATÍVEIS COM 10 GIGABIT ETHERNET (10GBASE-SR); COM 2 (DOIS) CABOS DE REDE CATEGORIA 6A DE 5 METROS CADA; COM 4 (QUATRO) TRANSCEIVERS GBIC 10GBASE-SR PARA INTERFACES SFP ; COM 2 (DOIS) CABOS DE FIBRA ÓPTICA DUAL LC DE 10 METROS CADA; FONTES DE ALIMENTAÇÃO REDUNDANTES HOT-SWAP (2 FONTES); PLACA SFP HBA DE 8GB OU 12GB COM 2 (DUAS) PORTAS; SUPORTE A TRUSTED PLATFORM MODULE 2.0; PORTA DE VÍDEO VGA, COM SUPORTE À RESOLUÇÃO 1024X768 (MÍNIMO 1 PORTA); NÃO DEVERÁ SER ACOMPANHADO POR MONITOR DE VÍDEO; PORTA DE COMUNICAÇÃO USB 2.0 (MÍNIMO 1 PORTA); SISTEMA OPERACIONAL WINDOWS SERVER 2022 STANDARD, LICENCIADO DE FORMA PERPÉTUA; COMPATIBILIDADE GARANTIDA COM MICROSOFT WINDOWS SERVER 2022, VMWARE ESXI, SUSE LINUX ENTERPRISE SERVER E RED HAT ENTERPRISE LINUX; EQUIPAMENTOS NOVOS, EM LINHA DE PRODUÇÃO DO FABRICANTE; HARDWARE DE UM ÚNICO FABRICANTE OU OEM HOMOLOGADO; CERTIFICAÇÃO DE EFICIÊNCIA ENERGÉTICA CONFORME IEC 60950 OU EQUIVALENTE, ACREDITADO PELO INMETRO OU ORGANISMO INTERNACIONAL EQUIVALENTE; ATENDIMENTO À LEI Nº 12.305/2010 (POLÍTICA NACIONAL DE RESÍDUOS SÓLIDOS); INCLUSÃO DE MANUAIS, CABOS DE ALIMENTAÇÃO PADRÃO C13/NBR14136 (MÍNIMO 1,5M DE COMPRIMENTO) E KITS DE FIXAÇÃO EM RACK; EMBALAGEM INDIVIDUAL ADEQUADA PARA TRANSPORTE E ARMAZENAMENTO, ATENDENDO REQUISITOS DE SUSTENTABILIDADE; GARANTIA MÍNIMA DE 3 (TRÊS) ANOS, COM SUPORTE TÉCNICO ON-SITE EM SALVADOR - BA SEM CUSTOS ADICIONAIS, COM INSTALAÇÃO E TESTAGEM INCLUSA.",,,,,,94800.0,284400.0,LOGAN-IT COMÉRCIO E SERVIÇOS LTDA,,"['GABINETE PARA RACK 19 POLEGADAS', 'ALTURA MÁXIMA DE 2U', '2 processadores de 64 bits a 2.20 GHz, pelo menos 12 núcleos por processador', '2 SSD NVMe de 1TB cada', 'capacidade para 8 discos SAS de 3,5 polegadas com hot-swap, 4 discos instalados', 'capacidade mínima de 4 TB por disco', 'controladora de discos compatível com RAID 1, RAID 5 e RAID 6', 'memória RAM de no mínimo 2 módulos de 64GB DDR4 RDIMM com ECC', 'unidade externa de CD-ROM/DVD-ROM USB', 'interfaces: 2x Gigabit Ethernet, 2x 10 Gigabit Ethernet, 2x SFP 10GBASE-SR', '2 cabos de rede Cat6A de 5m', '4 transceivers GBIC 10GBASE-SR', '2 cabos de fibra óptica dual LC de 10m', 'fontes de alimentação redundantes hot-swap (2 fontes)', 'placa SFP HBA de 8GB ou 12GB com 2 portas', 'suporte a TPM 2.0', 'porta de vídeo VGA (1 porta mínimo) sem monitor', 'porta USB 2.0 (1 porta mínimo)', 'SISTEMA OPERACIONAL Windows Server 2022 Standard, licenciado perpétuo', 'compatibilidade com Windows Server 2022, VMware ESXi, SUSE Linux Enterprise Server e Red Hat Enterprise Linux', 'equipamentos novos, em linha de produção', 'hardware de único fabricante (OEM) homologado', 'certificação de eficiência energética IEC 60950 (ou equivalente)', 'conformidade com leis de resíduos sólidos', 'manuais, cabos de alimentação C13/NBR14136 (mínimo 1,5m) e kits de fixação em rack', 'embalagem individual para transporte e armazenamento', 'garantia mínima de 3 anos com suporte técnico on-site em Salvador - BA']",,"Descrição:  SERVIDORES DE REDE COM GABINETE PARA RACK 19 POLEGADAS COM AS SEGUINTES ESPECIFICAÇÕES: GABINETE PARA RACK PADRÃO 19 POLEGADAS, COM ALTURA MÁXIMA DE 2U; PAINEL FRONTAL COM LEDS OU DISPLAY PARA IDENTIFICAÇÃO DE FALHAS; TRILHOS DESLIZANTES PARA INSTALAÇÃO EM RACK; COM 2 (DOIS) PROCESSADORES DE 64 BITS, FREQUÊNCIA MÍNIMA DE 2.20GHZ CADA, COM PELO MENOS 12 NÚCLEOS POR PROCESSADOR; COM 2 (DOIS) SSD NVME DE 1TB CADA, PARA SISTEMA OPERACIONAL; CAPACIDADE DE INSTALAÇÃO PARA, PELO MENOS, 8 DISCOS SAS DE 3,5 POLEGADAS, COM SUPORTE A ³ HOT-SWAP ´ COM 4 (QUATRO) DISCOS NO PADRÃO SAS DE 3,5 POLEGADAS INSTALADOS. CAPACIDADE MÍNIMA DE 4TB PARA CADA DISCO; CONTROLADORA DE DISCOS COMPATÍVEL COM RAID 1, RAID 5 E RAID 6; MEMÓRIA RAM INSTALADA COM, NO MÍNIMO, 2 MÓDULOS DE 64GB DDR4 RDIMM E SUPORTE A ADVANCED ECC OU SDDC; UNIDADE EXTERNA DE CD-ROM/DVD-ROM USB; PELO MENOS 2 (DUAS) INTERFACES GIGABIT ETHERNET (1000BASE-T); PELO MENOS 2 (DUAS) INTERFACES 10 GIGABIT ETHERNET (10GBASE-T); PELO MENOS 2 (DUAS) INTERFACES SFP COMPATÍVEIS COM 10 GIGABIT ETHERNET (10GBASE-SR); COM 2 (DOIS) CABOS DE REDE CATEGORIA 6A DE 5 METROS CADA; COM 4 (QUATRO) TRANSCEIVERS GBIC 10GBASE-SR PARA INTERFACES SFP ; COM 2 (DOIS) CABOS DE FIBRA ÓPTICA DUAL LC DE 10 METROS CADA; FONTES DE ALIMENTAÇÃO REDUNDANTES HOT-SWAP (2 FONTES); PLACA SFP HBA DE 8GB OU 12GB COM 2 (DUAS) PORTAS; SUPORTE A TRUSTED PLATFORM MODULE 2.0; PORTA DE VÍDEO VGA, COM SUPORTE À RESOLUÇÃO 1024X768 (MÍNIMO 1 PORTA); NÃO DEVERÁ SER ACOMPANHADO POR MONITOR DE VÍDEO; PORTA DE COMUNICAÇÃO USB 2.0 (MÍNIMO 1 PORTA); SISTEMA OPERACIONAL WINDOWS SERVER 2022 STANDARD, LICENCIADO DE FORMA PERPÉTUA; COMPATIBILIDADE GARANTIDA COM MICROSOFT WINDOWS SERVER 2022, VMWARE ESXI, SUSE LINUX ENTERPRISE SERVER E RED HAT ENTERPRISE LINUX; EQUIPAMENTOS NOVOS, EM LINHA DE PRODUÇÃO DO FABRICANTE; HARDWARE DE UM ÚNICO FABRICANTE OU OEM HOMOLOGADO; CERTIFICAÇÃO DE EFICIÊNCIA ENERGÉTICA CONFORME IEC 60950 OU EQUIVALENTE, ACREDITADO PELO INMETRO OU ORGANISMO INTERNACIONAL EQUIVALENTE; ATENDIMENTO À LEI Nº 12.305/2010 (POLÍTICA NACIONAL DE RESÍDUOS SÓLIDOS); INCLUSÃO DE MANUAIS, CABOS DE ALIMENTAÇÃO PADRÃO C13/NBR14136 (MÍNIMO 1,5M DE COMPRIMENTO) E KITS DE FIXAÇÃO EM RACK; EMBALAGEM INDIVIDUAL ADEQUADA PARA TRANSPORTE E ARMAZENAMENTO, ATENDENDO REQUISITOS DE SUSTENTABILIDADE; GARANTIA MÍNIMA DE 3 (TRÊS) ANOS, COM SUPORTE TÉCNICO ON-SITE EM SALVADOR - BA SEM CUSTOS ADICIONAIS, COM INSTALAÇÃO E TESTAGEM INCLUSA.",Ata#1126 - BLL_llm.json
+2,"SWITCH DE AGREGAÇÃO MODELO HUAWEI S6730-H24X6C; TIPO: FIBRA, 24 PORTAS; QUATRO FONTES DE ENERGIA REDUNDANTES; INCLUSÃO DE LICENÇA PERPÉTUA PARA HABILITAÇÃO DE: IPV4/IPV6; MPLS; SVF; INCLUSÃO DE LICENÇA PERPÉTUA PARA HABILITAÇÃO DE PORTAS 40GE E 100GE; FONTE DE ENERGIA MODELO 02312FFU ± 600W AC POWER MODULE, PART NUMBERS DOS PRODUTOS A SEREM FORNECIDOS: 02354HHV; 02312FFU-002; 81401367; 88037BNN; 88134UFA-4DX, COM INSTALAÇÃO E TESTAGEM INCLUSA.",,,,,,32083.79,64167.58,LOGAN-IT COMÉRCIO E SERVIÇOS LTDA,,"['SWITCH DE AGREGAÇÃO HUAWEI S6730-H24X6C', 'Tipo: fibra, 24 portas', 'Quatro fontes de energia redundantes', 'Licença perpétua IPV4/IPV6, MPLS, SVF', 'Licença perpétua para portas 40GE e 100GE', 'Fonte de energia modelo 02312FFU ± 600W', 'Part numbers dos produtos: 02354HHV; 02312FFU-002; 81401367; 88037BNN; 88134UFA-4DX', 'Instalação e testagem inclusas']",,"Descrição:  SWITCH DE AGREGAÇÃO MODELO HUAWEI S6730-H24X6C; TIPO: FIBRA, 24 PORTAS; QUATRO FONTES DE ENERGIA REDUNDANTES; INCLUSÃO DE LICENÇA PERPÉTUA PARA HABILITAÇÃO DE: IPV4/IPV6; MPLS; SVF; INCLUSÃO DE LICENÇA PERPÉTUA PARA HABILITAÇÃO DE PORTAS 40GE E 100GE; FONTE DE ENERGIA MODELO 02312FFU ± 600W AC POWER MODULE, PART NUMBERS DOS PRODUTOS A SEREM FORNECIDOS: 02354HHV; 02312FFU-002; 81401367; 88037BNN; 88134UFA-4DX, COM INSTALAÇÃO E TESTAGEM INCLUSA.",Ata#1126 - BLL_llm.json
+3,"SWITCH DE ACESSO MODELO HUAWEI CLOUDENGINE S5732-H24UM2C. TIPO: FIBRA, 24 PORTAS. QUATRO FONTES DE ENERGIA REDUNDANTES. CONDIÇÕES GERAIS PARA AMBOS MODELOS: GARANTIA MÍNIMA DE 3 (TRÊS) ANOS COM COBERTURA ON-SITE EM SALVADOR; SUPORTE TÉCNICO DO FABRICANTE INCLUSO, COM FORNECIMENTO DE PEÇAS. EQUIPAMENTOS NOVOS, EM LINHA DE PRODUÇÃO. ACOMPANHADOS DE: MANUAIS TÉCNICOS; CABOS DE ALIMENTAÇÃO PADRÃO C13/NBR14136; SUPORTES PARA FIXAÇÃO EM RACK; MÍDIAS DE INSTALAÇÃO, SE APLICÁVEIS. PART NUMBERS DOS PRODUTOS A SEREM FORNECIDOS: 02354VCM-002; 0231PAC; 88037BNJ; 88134UFA-4VC.",,,,,,51140.07,102280.14,LOGAN-IT COMÉRCIO E SERVIÇOS LTDA,,"['SWITCH DE ACESSO HUAWEI CLOUDENGINE S5732-H24UM2C', 'Tipo: fibra, 24 portas', 'Quatro fontes de energia redundantes', 'Condições gerais: garantia 3 anos onsite em Salvador', 'Suporte técnico do fabricante incluso', 'Equipamentos novos', 'Acompanhados de manuais técnicos', 'Part numbers: 02354VCM-002; 0231PAC; 88037BNJ; 88134UFA-4VC']",,"Descrição:  SWITCH DE ACESSO MODELO HUAWEI CLOUDENGINE S5732-H24UM2C. TIPO: FIBRA, 24 PORTAS. QUATRO FONTES DE ENERGIA REDUNDANTES. CONDIÇÕES GERAIS PARA AMBOS MODELOS: GARANTIA MÍNIMA DE 3 (TRÊS) ANOS COM COBERTURA ON-SITE EM SALVADOR; SUPORTE TÉCNICO DO FABRICANTE INCLUSO, COM FORNECIMENTO DE PEÇAS. EQUIPAMENTOS NOVOS, EM LINHA DE PRODUÇÃO. ACOMPANHADOS DE: MANUAIS TÉCNICOS; CABOS DE ALIMENTAÇÃO PADRÃO C13/NBR14136; SUPORTES PARA FIXAÇÃO EM RACK; MÍDIAS DE INSTALAÇÃO, SE APLICÁVEIS. PART NUMBERS DOS PRODUTOS A SEREM FORNECIDOS: 02354VCM-002; 0231PAC; 88037BNJ; 88134UFA-4VC.",Ata#1126 - BLL_llm.json
+1,"Teclado usb, ABNT2, padrão",produto,Multilaser,Multilaser,33.0,UNID,13.28,438.24,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['ABNT2', 'padrão']",,"Descrição: Teclado usb, ABNT2, padrão",Ata#1004 - BLL_llm.json
+2,"Mouse usb, 3 botões, 1000, DPI, padrão",produto,Multilaser,Multilaser,33.0,UNID,5.39,177.87,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['3 botões', '1000 DPI', 'padrão']",,"Descrição: Mouse usb, 3 botões, 1000, DPI, padrão",Ata#1004 - BLL_llm.json
+3,Teclado e mouse sem fio,produto,Multilaser,Multilaser,33.0,UNID,74.3,2451.9,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Teclado e mouse sem fio'],,Descrição: Teclado e mouse sem fio,Ata#1004 - BLL_llm.json
+4,Suporte de refrigeração para notebook,produto,B-Max,B-Max,17.0,UNID,41.51,705.67,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Suporte de refrigeração para notebook'],,Descrição: Suporte de refrigeração para notebook ¶,Ata#1004 - BLL_llm.json
+5,"Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",produto,Knup,Knup,13.0,UNID,6.22,80.86,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['Cabo USB 2.0 1,80m', 'A Macho']",,"Descrição: Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",Ata#1004 - BLL_llm.json
+6,Cabo HDMI de 2 metros,produto,Exbom,Exbom,17.0,UNID,10.37,176.29,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Cabo HDMI 2m'],,Descrição: Cabo HDMI de 2 metros,Ata#1004 - BLL_llm.json
+7,Cabo HDMI de 3 metros,produto,Exbom,Exbom,33.0,UNID,15.77,520.41,,,"['comprimento: 3 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 3 metros,Ata#1004 - BLL_llm.json
+8,Cabo HDMI de 5 metros,produto,Exbom,Exbom,17.0,UNID,20.75,352.75,,,"['comprimento: 5 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 5 metros,Ata#1004 - BLL_llm.json
+9,Cabo HDMI de 10 metros,produto,Exbom,Exbom,17.0,UNID,24.9,423.3,,,"['comprimento: 10 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 10 metros,Ata#1004 - BLL_llm.json
+11,Cabo HDMI de 20 metros,produto,Exbom,Exbom,12.0,UNID,47.73,572.76,,,"['comprimento: 20 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 20 metros,Ata#1004 - BLL_llm.json
+12,Cabo HDMI de 30 metros,produto,Exbom,Exbom,10.0,UNID,66.41,664.1,,,"['comprimento: 30 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 30 metros,Ata#1004 - BLL_llm.json
+13,Cabo HDMI de 50 metros,produto,Exbom,Exbom,7.0,UNID,205.47,1438.29,,,"['comprimento: 50 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 50 metros,Ata#1004 - BLL_llm.json
+14,Cabo VGA 3 metros,produto,Exbom,Exbom,17.0,UNID,16.6,282.2,,,[],,Descrição: Cabo VGA 3 metros,Ata#1004 - BLL_llm.json
+15,Adaptador de HDMI para VGA,produto,Exbom,Exbom,3.0,UNID,12.45,37.35,,,[],,Descrição: Adaptador de HDMI para VGA,Ata#1004 - BLL_llm.json
+16,Bateria para BIOS Voltagem 3v,produto,Easy Top,Easy Top,17.0,UNID,3.6,61.2,,,[],,Descrição: Bateria para BIOS Voltagem 3v,Ata#1004 - BLL_llm.json
+17,Pilha AA,produto,Easy Top,Easy Top,33.0,UNID,3.44,113.52,,,[],,Descrição: Pilha AA,Ata#1004 - BLL_llm.json
+18,Pilha AAA,produto,Easy Top,Easy Top,33.0,UNID,3.44,113.52,,,[],,Descrição: Pilha AAA,Ata#1004 - BLL_llm.json
+19,Mouse PAD preto,produto,Isoprene,Isoprene,33.0,UNID,3.32,109.56,,,[],,Descrição: Mouse PAD preto,Ata#1004 - BLL_llm.json
+20,Fone de Ouvido Headphone,produto,Multilaser,Multilaser,27.0,UNID,56.03,1512.81,,,[],,Descrição: Fone de Ouvido Headphone,Ata#1004 - BLL_llm.json
+22,"Alicate de Crimpar com catraca 3 em 1, corta, decapa e crimpa",produto,Multilaser,Multilaser,7.0,UNID,39.43,276.01,,,[],,"Descrição: Alicate de Crimpar com catraca 3 em 1, corta, decapa e crimpa",Ata#1004 - BLL_llm.json
+23,Cabo para internet cat5cx c/ 305 mt,produto,Multilaser,Multilaser,10.0,UNID,367.36,3673.6,,,[],,Descrição: Cabo para internet cat5cx c/ 305 mt,Ata#1004 - BLL_llm.json
+24,Conector rj45,produto,Forceline,Forceline,8.0,UNID,0.41,3.28,,,[],,Descrição: Conector rj45,Ata#1004 - BLL_llm.json
+25,Estabilizador bivol 300va,produto,Forceline,Forceline,33.0,UNID,63.51,2095.83,,,[],,Descrição: Estabilizador bivol 300va,Ata#1004 - BLL_llm.json
+26,Estabilizador bivolt 500va,produto,Forceline,Forceline,33.0,UNID,78.86,2602.38,,,[],,Descrição: Estabilizador bivolt 500va,Ata#1004 - BLL_llm.json
+27,Nobreak bivolt 600va,produto,Forceline,Forceline,17.0,UNID,244.91,4163.47,,,[],,Descrição: Nobreak bivolt 600va,Ata#1004 - BLL_llm.json
+28,Nobreak bivolt de 1200va,produto,Forceline,Forceline,3.0,UNID,410.95,1232.85,,,[],,Descrição: Nobreak bivolt de 1200va,Ata#1004 - BLL_llm.json
+29,Transformador de 1500va,produto,Forceline,Forceline,3.0,UNID,658.92,1976.76,,,[],,Descrição: Transformador de 1500va,Ata#1004 - BLL_llm.json
+1,Memoria DDR3 4gb para desktop,produto,Hynix,Hynix,8.0,UNID,16.6,132.8,,,[],,Memoria DDR3 4gb para desktop,Ata#1004 - BLL_llm.json
+2,Memoria DDR3 8gb para desktop,produto,Hynix,Hynix,8.0,UNID,120.0,960.0,,,[],,Memoria DDR3 8gb para desktop,Ata#1004 - BLL_llm.json
+3,Memoria DDR4 4GB para desktop,produto,Hynix,Hynix,8.0,UNID,110.0,880.0,,,[],,Memoria DDR4 4GB para desktop,Ata#1004 - BLL_llm.json
+4,Memoria DDR4 8GB para desktop,produto,Hynix,Hynix,8.0,UNID,130.0,1040.0,,,[],,Memoria DDR4 8GB para desktop,Ata#1004 - BLL_llm.json
+5,Memória DDR4 4GB para notebook,produto,Hynix,Hynix,8.0,UNID,60.0,480.0,,,[],,Memória DDR4 4GB para notebook,Ata#1004 - BLL_llm.json
+6,Memória DDR4 8GB para notebook,produto,Hynix,Hynix,8.0,UNID,85.0,680.0,,,[],,Memória DDR4 8GB para notebook,Ata#1004 - BLL_llm.json
+7,"Placa mãe, LGA 1151, DDR4 para desktop",produto,MSI,,7.0,UNID,450.0,3150.0,,,[],,"Placa mãe, LGA 1151, DDR4 para desktop",Ata#1004 - BLL_llm.json
+8,"Placa mãe, LGA 1155, DDR3 para desktop",produto,MSI,,7.0,UNID,178.57,1249.99,,,[],,"Placa mãe, LGA 1155, DDR3 para desktop",Ata#1004 - BLL_llm.json
+9,"Placa mãe, LGA 1150, DDR3 para desktop",produto,MSI,,7.0,UNID,200.0,1400.0,,,[],,"Placa mãe, LGA 1150, DDR3 para desktop",Ata#1004 - BLL_llm.json
+10,"Placa mãe, DDR4 para desktop",produto,MSI,,7.0,UNID,800.0,5600.0,,,[],,"Placa mãe, DDR4 para desktop",Ata#1004 - BLL_llm.json
+11,"Placa mãe, LGA 1200, DDR4 para desktop",produto,MSI,,,UNID,,,,,[],,"Placa mãe, LGA 1200, DDR4 para desktop",Ata#1004 - BLL_llm.json
+12,Hd externo 1tb 3.0,produto,WD,,7.0,UNID,800.0,5600.0,,,"['HD externo', '1TB', '3.0 USB']",,"Item: 12; Unidade: UNID; Marca: WD; Descrição: Hd externo 1tb 3.0; Quantidade: 7; Valor Unit.: 800,00; Total Item: 5.600,00",Ata#1004 - BLL_llm.json
+13,Hd interno 1TB,produto,WD,,7.0,UNID,200.0,1400.0,,,"['HD interno', '1TB']",,"Item: 13; Unidade: UNID; Marca: WD; Descrição: Hd interno 1TB; Quantidade: 7; Valor Unit.: 200,00; Total Item: 1.400,00",Ata#1004 - BLL_llm.json
+14,Hd ssd120gb,produto,WD,,7.0,UNID,600.0,4200.0,,,"['HD SSD', '120GB']",,"Item: 14; Unidade: UNID; Marca: WD; Descrição: Hd ssd120gb; Quantidade: 7; Valor Unit.: 600,00; Total Item: 4.200,00",Ata#1004 - BLL_llm.json
+15,HD SSD 240GB,produto,WD,,7.0,UNID,120.0,840.0,,,"['HD SSD', '240GB']",,"Item: 15; Unidade: UNID; Marca: WD; Descrição: HD SSD 240GB; Quantidade: 7; Valor Unit.: 120,00; Total Item: 840,00",Ata#1004 - BLL_llm.json
+16,HD SSD 480GB,produto,WD,,17.0,UNID,250.0,4250.0,,,"['HD SSD', '480GB']",,"Item: 16; Unidade: UNID; Marca: WD; Descrição: HD SSD 480GB; Quantidade: 17; Valor Unit.: 250,00; Total Item: 4.250,00",Ata#1004 - BLL_llm.json
+11,Processador core i5 3 geração ddr3,produto,Intel,,5.0,UNID,214.7,1073.5,,,"['Intel Core i5', '3ª geração', 'DDR3']",,"Item: 11; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 3 geração ddr3; Quantidade: 5; Valor Unit.: 214,70; Total Item: 1.073,50",Ata#1004 - BLL_llm.json
+12,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,214.7,1073.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 12; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 214,70; Total Item: 1.073,50",Ata#1004 - BLL_llm.json
+13,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,76.3,381.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 13; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 76,30; Total Item: 381,50",Ata#1004 - BLL_llm.json
+14,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,76.3,381.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 14; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 76,30; Total Item: 381,50",Ata#1004 - BLL_llm.json
+15,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,171.7,858.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 15; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 171,70; Total Item: 858,50",Ata#1004 - BLL_llm.json
+21,Cartão de memória 16gb,produto,Multilaser,,5.0,UNID,29.0,145.0,Multilaser,,[],,"Item: 21 Unidade: UNID Marca: Multilaser | Descrição: Cartão de memória 16gb | Quantidade: 5 Val. Ref.: 0,00 | Total Item: 145,00 Valor Unit.: 29,00",Ata#1004 - BLL_llm.json
+22,Cartão de memória 16gb,produto,Multilaser,,5.0,UNID,46.7,233.5,Multilaser,,[],,"Item: 22 Unidade: UNID Marca: Multilaser | Descrição: Cartão de memória 16gb | Quantidade: 5 Val. Ref.: 0,00 | Total Item: 233,50 Valor Unit.: 46,70",Ata#1004 - BLL_llm.json
+23,Cartão de memória 64gb,produto,Multilaser,,6.0,UNID,61.0,366.0,Multilaser,,[],,"Item: 23 Unidade: UNID Marca: Multilaser Descrição: Cartão de memória 64gb Quantidade: 6 Valor Unit.: 61,00",Ata#1004 - BLL_llm.json
+24,Cartão de memória 128gb,produto,Multilaser,,6.0,UNID,61.0,366.0,Multilaser,,[],,"Item: 24 Unidade: UNID Marca: Multilaser Descrição: Cartão de memória 128gb Quantidade: 6 Valor Unit.: 61,00",Ata#1004 - BLL_llm.json
+25,Cartão de memória 256gb,produto,Multilaser,Multilaser,6.0,UNID,111.6,669.6,,,[],,Descrição: Cartão de memória 256gb,Ata#1004 - BLL_llm.json
+26,Hub 4 portas,produto,Multilaser,Multilaser,4.0,UNID,28.6,114.4,,,[],,Descrição: Hub 4 portas,Ata#1004 - BLL_llm.json
+27,Hub 7 portas,produto,Multilaser,Multilaser,4.0,UNID,47.7,190.8,,,[],,Descrição: Hub 7 portas,Ata#1004 - BLL_llm.json
+28,Switch 8 portas,produto,Intelbras,Intelbras,5.0,UNID,166.9,834.5,,,[],,Descrição: Switch 8 portas,Ata#1004 - BLL_llm.json
+29,Switch 16 portas,produto,Intelbras,Intelbras,5.0,UNID,677.5,3387.5,,,[],,Descrição: Switch 16 portas,Ata#1004 - BLL_llm.json
+30,Switch 24 portas,produto,Intelbras,Intelbras,3.0,UNID,959.0,2877.0,,,[],,Descrição: Switch 24 portas,Ata#1004 - BLL_llm.json
+31,Carregador para notebook,produto,Multilaser,Multilaser,20.0,UNID,114.5,2290.0,,,[],,Descrição: Carregador para notebook,Ata#1004 - BLL_llm.json
+36,Leitor de Código de Barras 1D,produto,,,6.0,,190.8,1144.8,,,[],,Descrição: Leitor de Código de Barras 1D,Ata#1004 - BLL_llm.json
+37,Impressora Térmica 80 Colunas,produto,Elgin,Elgin,2.0,UNID,667.0,1334.0,,,[],,Descrição: Impressora Térmica 80 Colunas,Ata#1004 - BLL_llm.json
+38,"IMPRESSORA MULTIFUNCIONAL Tanque de Tinta, com book, Tecnologia de impressão: Jato de tinta Heat-FreeMicroPiezo, Resolução mínima de impressão: 5760 x 1440 dpi, Velocidade de impressão ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressão: Até 33 ppm em preto e 15 ppm em cores (rascunho, A4/carta). Velocidade de cópia ISO: 7,7 cpm em preto e 3,8 cpm em cores (A4/carta). Especificações do scanner: Resolução óptica: 1.200 dpi x 2.400 dpi, Velocidade de digitalização: 11 segundos por página em preto e 28 segundos por página em cores (200 dpi). Capacidade de entrada de papel: 100 folhas de papel A4 Capacidade de bandeja de saída: 30 folhas de papel A4. Garantia mínima de 12 meses.",produto,Epson,Epson,6.0,UNID,1525.8,9154.8,,,[],,"Descrição:  IMPRESSORA MULTIFUNCIONAL Tanque de Tinta, com book, Tecnologia de impressão: Jato de tinta Heat-FreeMicroPiezo, Resolução mínima de impressão: 5760 x 1440 dpi, Velocidade de impressão ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressão: Até 33 ppm em preto e 15 ppm em cores (rascunho, A4/carta). Velocidade de cópia ISO: 7,7 cpm em preto e 3,8 cpm em cores (A4/carta). Especificações do scanner: Resolução óptica: 1.200 dpi x 2.400 dpi, Velocidade de digitalização: 11 segundos por página em preto e 28 segundos por página em cores (200 dpi). Capacidade de entrada de papel: 100 folhas de papel A4 Capacidade de bandeja de saída: 30 folhas de papel A4. Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+39,"IMPRESSORA multifuncional, com cartucho de toner; Laser monocromático; com visor; Voltagem: 127V; Velocidade mínima impressão 30 ppm; Resolução de copia 600 x 600 dpi; bandeja de entrada para 250 folhas; Digitaliação, Garantia mínima de 12 meses.",produto,Epson,Epson,6.0,UNID,1956.2,11737.2,,,[],,"Descrição:  IMPRESSORA multifuncional, com cartucho de toner; Laser monocromático; com visor; Voltagem: 127V; Velocidade mínima impressão 30 ppm; Resolução de copia 600 x 600 dpi; bandeja de entrada para 250 folhas; Digitalização, Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+40,"Placa de vídeo 4GB DDR5, resolução 128bits.",produto,Vxpro,Vxpro,4.0,UNID,1903.7,7614.8,,,[],,"Descrição:  Placa de vídeo 4GB DDR5, resolução 128bits.",Ata#1004 - BLL_llm.json
+41,"Computador com processador core i3 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memória ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",produto,Pixxo,Pixxo,7.0,UNID,1697.6,11883.2,,,[],,"Descrição:  Computador com processador core i3 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memória ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+42,"Computador com processador core i5 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memoria ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",produto,Pixxo,Pixxo,7.0,UNID,1938.5,13569.5,,,[],,"Descrição:  Computador com processador core i5 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memoria ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+43,"Notebook core i3 4gb de memória, SSD 120GB no mínimo 8 geração ddr4, Garantia mínima de 12 meses.",produto,Lenovo,Lenovo,5.0,UNID,2652.8,13264.0,,,[],,"Descrição:  Notebook core i3 4gb de memória, SSD 120GB no mínimo 8 geração ddr4, Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+44,"Notebook core i5 8gb de memória, SSD 120GB no mínimo 8 geração ddr4 com hdssd 120gb, Garantia mínima de 12 meses.",produto,Lenovo,Lenovo,5.0,UNID,3338.9,16694.5,,,[],,"Descrição:  Notebook core i5 8gb de memória, SSD 120GB no mínimo 8 geração ddr4 com hdssd 120gb, Garantia mínima de 12 meses.",Ata#1004 - BLL_llm.json
+1,Switch SAN de 48 portas SFP+ 32 Gbps para Site,produto,CISCO,MDS9148T,2.0,UNID,253145.02,506290.04,WISEPATH TECNOLOGIA LTDA,50.420.622/0001-47,"['48 portas SFP+', '32 Gbps', 'Site', 'Marca CISCO', 'Modelo MDS9148T']",,Switch SAN de 48 portas SFP+ 32 Gbps para Site,Ata#1018_llm.json
+2,"Switch SAN de 48 portas SFP+ 32 Gbps para Site Secundário, com no mínimo 24 portas licenciadas. MARCA CISCO, MODELO MDS9148T",produto,CISCO,MDS9148T,2.0,UNID,138928.95,277857.9,WISEPATH TECNOLOGIA LTDA,50.420.622/0001-47,"['48 portas SFP+', '32 Gbps', 'Site Secundário', 'Portas licenciadas: no mínimo 24', 'Marca CISCO', 'Modelo MDS9148T']",,"Switch SAN de 48 portas SFP+ 32 Gbps para Site Secundário, com no mínimo 24 portas licenciadas. MARCA CISCO, MODELO MDS9148T",Ata#1018_llm.json
+3,"Transceivers Long Wave Length (LWL), de no mínimo, 16 Gbps. MARCA CISCO, MODELO DS-SFP-FC16G-LW.P16 GBPS FIBRE CHAN- NEL LW SFP+, LC",produto,CISCO,"DS-SFP-FC16G-LW.P16 GBPS FIBRE CHAN LW SFP+, LC",12.0,UNID,17031.83,204381.96,WISEPATH TECNOLOGIA LTDA,50.420.622/0001-47,"['Transceivers Long Wave Length (LWL)', '16 Gbps', 'Marca CISCO', 'Modelo DS-SFP-FC16G-LW.P16GBPSFIBRECHANNELLWSFP+LC']",,"Transceivers Long Wave Length (LWL), de no mínimo, 16 Gbps. MARCA CISCO, MODELO DS-SFP-FC16G- LW.P16 GBPS FIBRE CHAN- NEL LW SFP+, LC",Ata#1018_llm.json
+1,CARRINHO TRANSPORTE PESOCAPACIDADE DE CARGA: 120 KG;TIPO DE RODA: TRIPLA EM EIXO CENTRAL COM PNEU BORRACHA;MATERIAL: AÇO CARBONO;ALÇA RETRÁTIL: SIM;EMPUNHADURA: POLIPROPILENO COM PROTETOR;PROTEÇÃO NAS RODAS: SIM;ALTURA: 1130MM;LARGURA: 680MM;COMPRIMENTO: 490MM;BASE INFERIOR ARTICULADA : 290 X 310MM;,,,,1.0,UN,1297.31,1297.31,,,[],,"Item: 1
+Unidade: UN
+Num: 997
+Descrição:  CARRINHO TRANSPORTE PESOCAPACIDADE DE CARGA: 120 KG;TIPO DE RODA: TRIPLA EM EIXO CENTRAL COM PNEU BORRACHA;MATERIAL: AÇO CARBONO;ALÇA RETRÁTIL: SIM;EMPUNHADURA: POLIPROPILENO COM PROTETOR;PROTEÇÃO NAS RODAS: SIM;ALTURA: 1130MM;LARGURA: 680MM;COMPRIMENTO: 490MM;BASE INFERIOR ARTICULADA : 290 X 310MM;
+
+Quantidade: 1
+Val. Ref.: 1.300,00
+Total Item: 1.297,31
+Valor Unit.: 1.297,31",Ata#1179 - BLL_llm.json
+3,,,reisan,4x4,1.0,UN,910.23,910.23,,,[],,"Item: 3
+Unidade: UN
+Marca: reisan
+Modelo: 4x4
+Quant.: 1
+Total: 910,23",Ata#1179 - BLL_llm.json
+547,"ESCADA MULTIFUNÇÃO ARTICULADAMontagem: SISTEMA DE TRAVAMENTO DE ARTICULAÇÕES MONTANTES E DEGRAUS DE DURALUMÍNIO DE ALTA RESISTÊNCIAARTICULAÇÕES DE AÇO GALVANIZADOPOSIÇÕES: ANDAIME / PINTOR, DE ABRIR / SINGELA, DE ENCOSTAR SAPATAS: BORRACHA ANTIDERRAPANTESBASE: LARGURA SUPERIOR À DIMENSÃO DO CORPODIMENSÕES (M): ALTURA FECHADA 1,14 / ALTURA ABERTA PINTOR 1,91 /ALTURA ESTENDIDA 4,23 / ALTURA ANDAIME 1,11 LARGURA DA ESCADA: 38 CMLARGURA DA BASE DA ESCADA: 63 CMDEGRAUS 4 X 4CAPACIDADE ADMISSÍVEL: 150KGPESO MÁXIMO: 12,500 KG",,,,1.0,,910.23,910.23,,,[],,"LOTE 3
+
+Num: 547
+Lance: 910,23
+Descrição:  ESCADA MULTIFUNÇÃO ARTICULADAMONTAGEM: SISTEMA DE TRAVAMENTO DE ARTICULAÇÕES MONTANTES E DEGRAUS DE DURALUMÍNIO DE ALTA RESISTÊNCIAARTICULAÇÕES DE AÇO GALVANIZADOPOSIÇÕES: ANDAIME / PINTOR, DE ABRIR / SINGELA, DE ENCOSTAR SAPATAS: BORRACHA ANTIDERRAPANTESBASE: LARGURA SUPERIOR À DIMENSÃO DO CORPODIMENSÕES (M): ALTURA FECHADA 1,14 / ALTURA ABERTA PINTOR 1,91 /ALTURA ESTENDIDA 4,23 / ALTURA ANDAIME 1,11 LARGURA DA ESCADA: 38 CM LARGURA DA BASE DA ESCADA: 63 CM DEGRAUS 4 X 4 CAPACIDADE ADMISSÍVEL: 150
+
+KGPESO MÁXIMO: 12,500 KG
+
+Quantidade: 1
+Val. Ref.: 1.042,92
+Total Item: 910,23
+Valor Unit.: 910,23",Ata#1179 - BLL_llm.json
+4,,,nagano,102067126,1.0,UN,920.88,920.88,,,[],,"Item: 4
+Unidade: UN
+Marca: nagano
+Modelo: 102067126
+Quant.: 1
+Total: 920,88",Ata#1179 - BLL_llm.json
+5,"ESMERILHADEIRA ANGULARDIMENSÕES MÁXIMAS: COMPRIMENTO 280MM LARGURA 100MMPOTÊNCIA NOMINAL ABSORVIDA: 900 WNº DE ROTAÇÕES EM VAZIO: DE 2.800 A 11.000 RPM VIA SELETORØ DO DISCO : 125 MMTENSÃO ELÉTRICA: 127 VPOTÊNCIA ÚTIL MÍNIMA: 450 WTIPO DE ROSCA DO EIXO DE ESMERILHAMENTO: M14PESO MÁXIMO: 1,9 KGTIPO DE INTERRUPTOR: BLOQUEÁVELVALORES TOTAIS DE VIBRAÇÃO PARA DESBASTAR SUPERFÍCIES ÁSPERAS: VALOR DE EMISSÃO DE VIBRAÇÕES AH: 7,5 M/S² /  INCERTEZA K: 1,5 M/S² VALORES TOTAIS DE VIBRAÇÃO PARA LIXAR COM FOLHA DE LIXA: VALOR DE EMISSÃO DE VIBRAÇÕES AH: 7,5 M/S ² /  INCERTEZA K: 1,5 M/S² DESBASTAR SUPERFÍCIES ÁSPERAS: VALOR DE EMISSÃO DE VIBRAÇÕES AH: 7,5 M/S ² /  INCERTEZA K: 1,5 M/S² LIXAR COM FOLHA DE LIXA: VALOR DE EMISSÃO DE VIBRAÇÕES AH: 7,5 M/S ² / INCERTEZA K: 1,5 M/S²
+
+3.940,20
+
+3.128,42
+
+Total: 1.297,31
+
+Valor Unit.: 920,88
+
+55.913.536/0001-90
+
+Lance: 401,94
+
+Total Item: 920,88
+
+811,78
+
+Total: 401,94",,WAP,Wf Es01,1.0,UN,920.88,920.88,,,[],,,Ata#1179 - BLL_llm.json
+9,"PARAFUSADEIRA ELÉTRICA PORTÁTILTIPO: PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA AUTONOMIA: MÍNIMO 600 PARAFUSAMENTOS POR CARGA (MADEIRA MACIA, Ø3,5 X 35 MM)MANDRIL: APERTO RÁPIDO APLICAÇÕES: PERFURAÇÃO EM MADEIRA: ATÉ 10 MM / PERFURAÇÃO EM AÇO: ATÉ 6 MM / PARAFUSAMENTO: ATÉ 6 MM DE DIÂMETROVELOCIDADE DE ROTAÇÃO: ATÉ 700 RPMACESSÓRIOS INCLUSOS: 1 CARREGADOR / 1 MALETA PLÁSTICA / 1 EXTENSOR UNIVERSAL
+
+Quantidade: 1
+
+Val. Ref.: 559,49
+
+Total Item: 409,84",,WAP,Wf 12k3.2,1.0,UN,409.84,409.84,,,[],,"Item: 9
+Unidade: UN
+Marca: WAP
+Modelo: Wf 12k3.2
+Quant.: 1
+Total: 409,84
+LOTE 9
+Num: 420
+Lance: 409,84
+Descrição:  PARAFUSADEIRA ELÉTRICA PORTÁTILTIPO: PARAFUSADEIRA COMPACTA A BATERIA PESO MÁXIMO : 0,9 KG CARREGADOR: BIVOLT RÁPIDO (CARGA COMPLETA EM ATÉ 1 HORA) CONTROLE DE VELOCIDADE: AJUSTÁVEL ILUMINAÇÃO: LUZ DE LED INDICADOR DE BATERIA: INDICAÇÃO DE NÍVEL DE CARGA ERGONOMIA: PUNHO EMBORRACHADO E ERGONÔMICO PARA REDUÇÃO DA FADIGA AUTONOMIA: MÍNIMO 600 PARAFUSAMENTOS POR CARGA (MADEIRA MACIA, Ø3,5 X 35 MM)MANDRIL: APERTO RÁPIDO APLICAÇÕES: PERFURAÇÃO EM MADEIRA: ATÉ 10 MM / PERFURAÇÃO EM AÇO: ATÉ 6 MM / PARAFUSAMENTO: ATÉ 6 MM DE DIÂMETROVELOCIDADE DE ROTAÇÃO: ATÉ 700 RPMACESSÓRIOS INCLUSOS: 1 CARREGADOR / 1 MALETA PLÁSTICA / 1 EXTENSOR UNIVERSAL
+
+Quantidade: 1
+
+Val. Ref.: 559,49
+
+Total Item: 409,84",Ata#1179 - BLL_llm.json
+1,"SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.",serviço,Serviço,,1.0,UNIDADE,22204.5,22204.5,AFC INFORMATICA & INTERNET LTDA,12.823.984/0001-90,"['Inclui instalação de 191 câmeras fixas, gravadores, nobreaks, racks, switches e HDS, com cabeamento estruturado (rede e energia).', 'SLAs definidos neste termo.']",,"SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE MONITORAMENTO POR CÂMERAS FIXAS, INCLUINDO A INSTALAÇÃO DE 191 (CENTO E NOVENTA E UMA) CÂMERAS NOVAS E DEMAIS EQUIPAMENTOS (GRAVADORES, NOBREAKS, RACKS, SWITCHES, HDS), CONFORME DETALHADO NO ITEM 4.2. O SERVIÇO INCLUI TODO O CABEAMENTO ESTRUTURADO (REDE E ENERGIA) NECESSÁRIO.",Ata#1002 - BLL_llm.json
+2,"SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO, ABRANGENDO UM TOTAL DE 287 (DUZENTAS E OITENTA E SETE) CÂMERAS (96 EXISTENTES + 191 NOVAS) E TODOS OS EQUIPAMENTOS ASSOCIADOS, CONFORME SLAS DEFINIDOS NESTE TERMO.",serviço,Serviço,,12.0,Mês,5190.6,62287.2,AFC INFORMATICA & INTERNET LTDA,12.823.984/0001-90,['SLAs definidos neste termo.'],,"SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV FIXO, ABRANGENDO UM TOTAL DE 287 (DUZENTAS E OITENTA E SETE) CÂMERAS (96 EXISTENTES + 191 NOVAS) E TODOS OS EQUIPAMENTOS ASSOCIADOS, CONFORME SLAS DEFINIDOS NESTE TERMO.",Ata#1002 - BLL_llm.json
+3,"SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES, UTILIZANDO OS KITS DE MONITORAMENTO DETALHADOS NO ITEM 4.2. O SERVIÇO INCLUI A INTEGRAÇÃO COM O SISTEMA DE IGNIÇÃO DOS VEÍCULOS.",serviço,Serviço,,1.0,UNIDADE,13292.7,13292.7,AFC INFORMATICA & INTERNET LTDA,12.823.984/0001-90,['Inclui integração com o sistema de ignição dos veículos.'],,"SERVIÇO DE INSTALAÇÃO E CONFIGURAÇÃO DE SISTEMA DE CFTV VEICULAR EM 20 (VINTE) ÔNIBUS ESCOLARES, UTILIZANDO OS KITS DE MONITORAMENTO DETALHADOS NO ITEM 4.2. O SERVIÇO INCLUI A INTEGRAÇÃO COM O SISTEMA DE IGNIÇÃO DOS VEÍCULOS.",Ata#1002 - BLL_llm.json
+4,"SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES, CONFORME SLAS DEFINIDOS NESTE TERMO.",serviço,Serviço,,12.0,Mês,1676.3,20115.6,AFC INFORMATICA & INTERNET LTDA,12.823.984/0001-90,['SLAs definidos neste termo.'],,"SERVIÇO CONTÍNUO DE MANUTENÇÃO PREVENTIVA E CORRETIVA PARA O SISTEMA DE CFTV VEICULAR INSTALADO NOS 20 (VINTE) ÔNIBUS ESCOLARES, CONFORME SLAS DEFINIDOS NESTE TERMO.",Ata#1002 - BLL_llm.json
+1,"NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO",produto,ASUS,x1504,8.0,UNIDADE,2880.0,23040.0,LICITAINFO LTDA,52.277.278/0001-04,[],,"NOTEBOOK, PROCESSADOR: NO MINIMO 15 13ª GERACAO, MEN DDR4/5 8GB / SSD 480NVME, RJ45 E WIFI, SISTEMA OPERACIONAL WINDOWS 10 PRO",Ata#1000 - BLL_llm.json
+1,"NOBREAK 700VA, TECNOLOGIA SENOIDAL POR APROXIMACAO. ENTRADA BIVOLT / SAIDA 115V. BATERIA 12V INCLUSIVA. CONF. ORCAMENTO...",produto,CR ENERGIA,700BS,5.0,UNIDADE,432.87,2164.35,A FRENTE SOLUÇÕES INTEGRADAS LTDA,36.489.366/0001-13,[],,"NOBREAK 700VA, TECNOLOGIA SENOIDAL POR APROXIMACAO. ENTRADA BIVOLT / SAIDA 115V.",Ata#1000 - BLL_llm.json
+1,"SMARTPHONE 128GB 5G 6GB RAM 6,6 CAM TRIPLA + SELFIE 13MP DUAL CHIP",produto,Conforme Edital,Conforme Edital,13.0,UNIDADE,1100.0,14300.0,A FRENTE SOLUÇÕES INTEGRADAS LTDA,36.489.366/0001-13,[],,"SMARTPHONE 128GB 5G 6GB RAM 6,6 CAM TRIPLA + SELFIE 13MP DUAL CHIP",Ata#1000 - BLL_llm.json
+1,"SUPORTE UNIVERSAL FIXO, INDICADO PARA TVS PLASMA/3D/LCD/LED COM PESO ATE 100KG E COMPATIVEIS PADRAO DE FIXACAO VESA 75X75, 100X100, CONFORME ORCAMENTO...",produto,MULTIVISÃO,FIXO,5.0,UNIDADE,26.6,133.0,HABITUS DIGITAL COMERCIAL LTDA,41.010.343/0001-14,[],,"SUPORTE UNIVERSAL FIXO, INDICADO PARA TVS PLASMA/3D/LCD/LED COM PESO ATE 100KG E COMPATIVEIS PADRAO DE FIXACAO VESA 75X75, 100X100, CONFORME ORCAMENTO...",Ata#1000 - BLL_llm.json
+1,CAIXA CABO DE REDE 100% COBRE CAT 5 E (305 METROS) PADRAO FURUKAWA,produto,SOHO PLUS  CAT5E,SOHO PLUS  CAT5E,3.0,CAIXA,695.7,2087.1,CARVALHO ACESSORIOS PARA MOVEIS LTDA,49.704.499/0002-98,[],,CAIXA CABO DE REDE 100% COBRE CAT 5 E (305 METROS) PADRAO FURUKAWA,Ata#1000 - BLL_llm.json
+2,CONECTOR RJ 45 MACHO CAT 5E,produto,FORTREK,FORTREK FK 120E,50.0,UNIDADE,0.4,20.0,CARVALHO ACESSORIOS PARA MOVEIS LTDA,49.704.499/0002-98,[],,CONECTOR RJ 45 MACHO CAT 5E,Ata#1000 - BLL_llm.json
+1,"HD EXTERNO 1TB - INTERFACE USB 2.0 / 3.0; VELOCIDADE DE TRANSFERENCIA DE DADOS DE ATE 4,8 GBPS; TEMPERATURA EM FUNCIONAMENTO: 5°C A 35°C.",produto,SEAGATE,STGX1000400,18.0,UNIDADE,257.0,4626.0,,,[],,"HD EXTERNO 1TB - INTERFACE USB 2.0 / 3.0; VELOCIDADE DE TRANSFERENCIA DE DADOS DE ATE 4,8 GBPS; TEMPERATURA EM FUNCIONAMENTO: 5°C A 35°C.",Ata#1000 - BLL_llm.json
+2,"HD INTERNO DE ALTA PERFORMANCE 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA 6.0GB/S FORMATADO DE MEDIDA 3,5",produto,WESTERN DIGITAL,WD20EURX,18.0,UNIDADE,401.15,7220.7,,,[],,"HD INTERNO DE ALTA PERFORMANCE 7200RPM ARMAZENAMENTO 2TB INTERFACE: SATA 6.0GB/S FORMATADO DE MEDIDA 3,5",Ata#1000 - BLL_llm.json
+3,HD SATA SSD 240 GB MSI/KINGSTON/WD,produto,FTX,FT240GB,90.0,UNIDADE,121.7,10953.0,,,[],,HD SATA SSD 240 GB MSI/KINGSTON/WD,Ata#1000 - BLL_llm.json
+1,"SWITCH 16 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3AB, IEEE 802.3X ...",produto,TENDA,TEG1016D,18.0,UNIDADE,379.7,6834.6,ICONDATA EQUIPAMENTO DE INFORMATICA,61.430.508/0001-14,[],,"SWITCH 16 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3AB, IEEE 802.3X ...",Ata#1000 - BLL_llm.json
+2,"SWITCH 24 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3X,",produto,TENDA,TEG1024D,18.0,UNIDADE,458.3,8249.4,ICONDATA EQUIPAMENTO DE INFORMATICA,61.430.508/0001-14,[],,"SWITCH 24 PORTAS 10/100/1000, PADROES E PROTOCOLOS IEEE 802.3I, IEEE 802.3U, IEEE 802.3X,",Ata#1000 - BLL_llm.json
+3,"SWITCH 8 PORTAS 10/100/1000, 8 PORTAS RJ45 DE AUTONEGOCIACAO 10/100/1000MBPS SUPORTA (AUTO MDI/MDIX), CONTROLE DE FLUXO IEEE 802.3, CONF. ORCAMENTO..",produto,KNUP,KP-SW106,30.0,UNIDADE,117.2,3516.0,ICONDATA EQUIPAMENTO DE INFORMATICA,61.430.508/0001-14,[],,"SWITCH 8 PORTAS 10/100/1000, 8 PORTAS RJ45 DE AUTONEGOCIACAO 10/100/1000MBPS SUPORTA (AUTO MDI/MDIX), CONTROLE DE FLUXO IEEE 802.3, CONF. ORCAMENTO..",Ata#1000 - BLL_llm.json
+1,IMPRESSORA LASER PANTUM P2500W,produto,PANTUM,P2500W,5.0,UNIDADE,981.7,4908.5,MUNICIPIO DE ALTO PIQUIRI ALTO PIQUIRI-PR,,[],,IMPRESSORA LASER PANTUM P2500W,Ata#1000 - BLL_llm.json
+3,IMPRESSORA MULTIFUNCIONAL LASER MONOCROMATICA BM5100,produto,PANTUM,BM5100,5.0,UNIDADE,2385.88,11929.4,MUNICIPIO DE ALTO PIQUIRI ALTO PIQUIRI-PR,,[],,IMPRESSORA MULTIFUNCIONAL LASER MONOCROMATICA BM5100,Ata#1000 - BLL_llm.json
+4,"IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO...",produto,EPSON,L 3250,5.0,UNIDADE,1520.7,7603.5,MUNICIPIO DE ALTO PIQUIRI ALTO PIQUIRI-PR,,[],,"IMPRESSORA MULTIFUNCIONAL TINTA COLORIDA, MULTIFUNCIONAL 3 EM 1, IMPRIME, COPIA E DIGITALIZA / WI-FI DIRECT, CONF. ORCAMENTO...",Ata#1000 - BLL_llm.json
+5,"IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOMATICO, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW",produto,PANTUM,M7105,5.0,UNIDADE,1646.4,8232.0,MUNICIPIO DE ALTO PIQUIRI ALTO PIQUIRI-PR,,[],,"IMPRESSORA MULTIFUNCIONAL LASER MONO, COM WIFI, DUPLE X AUTOMATICO, MIN 30PPM, TONER T425U - MODELO REFERENCIA PANTUM 7105DW",Ata#1000 - BLL_llm.json
+1,ACIDO FOLICO,produto,exames,laboratorio,180.0,UN,7.02,1263.6,,,[],,"Item: 1\nUnidade: UN\nDescrição: ACIDO FOLICO\nQuantidade: 180\nVal. Ref.: 11,98\nValor Unit.: 7,02\nTotal Item: 1.263,60",Ata#1009 - BLL_llm.json
+2,ACIDO URICO,produto,exames,laboratorio,370.0,UN,1.05,388.5,,,[],,"Item: 2\nUnidade: UN\nDescrição: ACIDO URICO\nQuantidade: 370\nVal. Ref.: 1,80\nValor Unit.: 1,05\nTotal Item: 388,50",Ata#1009 - BLL_llm.json
+3,ACIDO URICO URINARIO,produto,exames,laboratorio,30.0,UN,0.91,27.3,,,[],,"Item: 3\nUnidade: UN\nDescrição: ACIDO URICO URINARIO\nQuantidade: 30\nVal. Ref.: 1,56\nValor Unit.: 0,91\nTotal Item: 27,30",Ata#1009 - BLL_llm.json
+4,ACIDO VANIL MANDELICO.,produto,exames,laboratorio,20.0,UN,143.81,2876.2,,,[],,"Item: 4\nUnidade: UN\nDescrição: ACIDO VANIL MANDELICO.\nQuantidade: 20\nVal. Ref.: 245,38\nValor Unit.: 143,81\nTotal Item: 2.876,20",Ata#1009 - BLL_llm.json
+5,ALBUMINA,produto,exames,laboratorio,20.0,UN,1.07,21.4,,,[],,"Item: 5\nUnidade: UN\nDescrição: ALBUMINA\nQuantidade: 20\nVal. Ref.: 1,82\nValor Unit.: 1,07\nTotal Item: 21,40",Ata#1009 - BLL_llm.json
+6,ALDOSTERONA.,produto,exames,laboratorio,10.0,UN,5.76,57.6,,,[],,"Item: 6\nUnidade: UN\nDescrição: ALDOSTERONA.\nQuantidade: 10\nVal. Ref.: 9,82\nValor Unit.: 5,76\nTotal Item: 57,60",Ata#1009 - BLL_llm.json
+7,ALFA FETO,produto,exames,laboratorio,15.0,UN,5.76,86.4,,,[],,"Item: 7\nUnidade: UN\nDescrição: ALFA FETO\nQuantidade: 15\nVal. Ref.: 9,83\nValor Unit.: 5,76\nTotal Item: 86,40",Ata#1009 - BLL_llm.json
+8,ALFA,produto,exames,laboratorio,12.0,UN,10.36,124.32,,,[],,"Item: 8\nUnidade: UN\nDescrição: ALFA\nQuantidade: 12\nVal. Ref.: 17,68\nValor Unit.: 10,36\nTotal Item: 124,32",Ata#1009 - BLL_llm.json
+9,ALFA1 ANTITRIPSINA,produto,exames,laboratorio,12.0,UN,4.26,51.12,,,[],,"Item: 9\nUnidade: UN\nDescrição: ALFA1 ANTITRIPSINA\nQuantidade: 12\nVal. Ref.: 7,27\nValor Unit.: 4,26\nTotal Item: 51,12",Ata#1009 - BLL_llm.json
+11,ALFA1 GLICOPROTEINA,produto,exames,laboratorio,12.0,UN,2.77,33.24,,,[],,"Item: 11\nUnidade: UN\nDescrição: ALFA1 GLICOPROTEINA\nQuantidade: 12\nVal. Ref.: 4,72\nValor Unit.: 2,77\nTotal Item: 33,24",Ata#1009 - BLL_llm.json
+12,ANATOMO PATOLOGICO,produto,exames,laboratorio,100.0,UN,23.66,2366.0,,,[],,"Item: 12\nUnidade: UN\nMarca: exames\nModelo: laboratorio\nDescrição: ANATOMO PATOLOGICO\nQuantidade: 100\nValor Unit.: 23,66\nTotal Item: 2.366,00",Ata#1009 - BLL_llm.json
+23,ANTIESTREPTOLISINA O,produto,exames,laboratorio,25.0,UN,1.77,44.25,,,[],,"Unidade: UN Marca: exames Descrição: ANTIESTREPTOLISINA O Quantidade: 25 Val. Ref.: 3,02 Total Item: 44,25",Ata#1009 - BLL_llm.json
+24,ANTÍGENO CARCINOEMBRIÔGENICO,produto,exames,laboratorio,10.0,UN,5.25,52.5,,,[],,"Unidade: UN Marca: exames Descrição: ANTÍGENO CARCINOEMBRIÔGENICO Quantidade: 10 Val. Ref.: 8,96 Valor Unit.: 5,25 Total Item: 52,50",Ata#1009 - BLL_llm.json
+25,ANTI RECEPTOR DE TSH,produto,exames,laboratorio,,UN,,307.8,,,[],,Unidade: UN Marca: exames Descrição: ANTI RECEPTOR DE TSH Modelo: laboratorio,Ata#1009 - BLL_llm.json
+26,BACTERIOSCOPIA (GRAM),produto,,laboratorio,10.0,UN,7.54,75.4,,,[],,Descrição: BACTERIOSCOPIA (GRAM),Ata#1009 - BLL_llm.json
+27,BETA LACTOGLOBULINA,produto,,laboratorio,10.0,UN,11.0,110.0,,,[],,Descrição: BETA LACTOGLOBULINA,Ata#1009 - BLL_llm.json
+28,BILIRRUBINA TOTAL E FRACOES,produto,,laboratorio,60.0,UN,1.09,65.4,,,[],,Descrição: BILIRRUBINA TOTAL E FRACOES Quantidade: 60,Ata#1009 - BLL_llm.json
+29,BLOMIA TROPICALIS,produto,,laboratorio,10.0,UN,8.56,85.6,,,[],,Descrição: BLOMIA TROPICALIS,Ata#1009 - BLL_llm.json
+30,CA-125 (MARCADOR TUMORAL DE OVÁRIO),produto,,laboratorio,25.0,UN,5.75,143.75,,,[],,Descrição: CA-125 (MARCADOR TUMORAL DE OVÁRIO),Ata#1009 - BLL_llm.json
+31,CA15-3 (MARCADOR TUMORAL CA 15-3),produto,,laboratorio,25.0,UN,14.25,356.25,,,[],,Descrição: CA15-3 (MARCADOR TUMORAL CA 15-3),Ata#1009 - BLL_llm.json
+32,CALCIO,produto,,laboratorio,200.0,UN,1.01,202.0,,,[],,Descrição: CALCIO,Ata#1009 - BLL_llm.json
+33,CALCIO IONIZADO,produto,,laboratorio,14.0,UN,1.92,26.88,,,[],,Descrição: CALCIO IONIZADO,Ata#1009 - BLL_llm.json
+34,CAPTURA HIBRIDA,produto,,laboratorio,10.0,UN,85.31,853.1,,,[],,Descrição: CAPTURA HIBRIDA,Ata#1009 - BLL_llm.json
+35,DENGUE IGG,produto,,,,UN,,,,,[],,Descrição:  DENGUE IGG,Ata#1009 - BLL_llm.json
+48,COOMBS INDIRETO,produto,,laboratorio,20.0,UN,7.19,143.8,,,[],,Descrição: COOMBS INDIRETO,Ata#1009 - BLL_llm.json
+49,COPROCULTURA,produto,,laboratorio,,UN,,,,,[],,Descrição: COPROCULTURA,Ata#1009 - BLL_llm.json
+50,CORTISOL BASAL,produto,exames,laboratorio,12.0,UN,16.34,196.08,,,[],,Descrição: CORTISOL BASAL,Ata#1009 - BLL_llm.json
+51,CORTISOL LIVRE URINA 24HRS,produto,exames,laboratorio,5.0,UN,12.1,60.5,,,[],,Descrição: CORTISOL LIVRE URINA 24HRS,Ata#1009 - BLL_llm.json
+52,CREATININA,produto,exames,laboratorio,700.0,UN,0.99,693.0,,,[],,Descrição: CREATININA,Ata#1009 - BLL_llm.json
+53,CREATINO FOSFOQ. FRACAO MB,produto,exames,laboratorio,80.0,UN,2.14,171.2,,,[],,Descrição: CREATINO FOSFOQ. FRACAO MB,Ata#1009 - BLL_llm.json
+54,CREATINOFOSFOQUINASE,produto,exames,laboratorio,80.0,UN,1.86,148.8,,,[],,Descrição: CREATINOFOSFOQUINASE,Ata#1009 - BLL_llm.json
+55,CULTURA DE BAAR,produto,exames,laboratorio,36.0,UN,16.46,592.56,,,[],,Descrição: CULTURA DE BAAR,Ata#1009 - BLL_llm.json
+56,CULTURA GERAL,produto,exames,laboratorio,36.0,UN,10.67,384.12,,,[],,Descrição: CULTURA GERAL,Ata#1009 - BLL_llm.json
+57,CURVA GLICEMICA.,produto,exames,laboratorio,30.0,UN,5.1,153.0,,,[],,Descrição: CURVA GLICEMICA.,Ata#1009 - BLL_llm.json
+58,DEHIDROEPIANDROSTERONA.,produto,exames,laboratorio,20.0,UN,25.65,513.0,,,[],,Descrição: DEHIDROEPIANDROSTERONA.,Ata#1009 - BLL_llm.json
+60,DENGUE IGM,produto,exames,laboratorio,50.0,UN,11.18,559.0,,,[],,Descrição: DENGUE IGM,Ata#1009 - BLL_llm.json
+61,DESIDROGENASE LATICA,produto,exames,laboratorio,90.0,UN,9.65,549.7,,,[],,Descrição: DESIDROGENASE LATICA,Ata#1009 - BLL_llm.json
+63,ELETROFORESE DE HEMOGLOBINA,exame,exames,,36.0,UN,9.39,338.04,,,[],,Descrição: ELETROFORESE DE HEMOGLOBINA,Ata#1009 - BLL_llm.json
+64,ELETROFORESE DE PROTEINAS,exame,exames,,12.0,UN,2.71,32.52,,,[],,Descrição: ELETROFORESE DE PROTEINAS,Ata#1009 - BLL_llm.json
+65,ENDOMISIO IGA,exame,exames,,12.0,UN,25.15,301.8,,,[],,Descrição: ENDOMISIO IGA,Ata#1009 - BLL_llm.json
+66,ENDOMISIO IGM,exame,exames,,12.0,UN,26.42,317.04,,,[],,Descrição: ENDOMISIO IGM,Ata#1009 - BLL_llm.json
+67,EPSTEIN BARR VIRUS IGM,exame,exames,,12.0,UN,9.47,113.64,,,[],,Descrição: EPSTEIN BARR VIRUS IGM,Ata#1009 - BLL_llm.json
+68,EPSTEIN BARR VIRUS IGG,exame,exames,,12.0,UN,8.1,97.2,,,[],,Descrição: EPSTEIN BARR VIRUS IGG,Ata#1009 - BLL_llm.json
+69,ESPERMOCULTURA,exame,exames,,12.0,UN,22.03,264.36,,,[],,Descrição: ESPERMOCULTURA,Ata#1009 - BLL_llm.json
+70,ESPERMOGRAMA (POS VASECTOMIA),EXAME,exames,laboratorio,12.0,UN,9.45,113.4,,,"['Val. Ref.: 16,13', 'Valor Unit.: 9,45']",,Descrição: ESPERMOGRAMA (POS VASECTOMIA),Ata#1009 - BLL_llm.json
+71,ESTRADIOL,EXAME,exames,laboratorio,15.0,UN,4.91,73.65,,,"['Val. Ref.: 8,37', 'Unit.: 4,91']",,Descrição: ESTRADIOL,Ata#1009 - BLL_llm.json
+72,ESTREPTOCOCOS BETA HEMOLITICOS PESQ,EXAME,exames,laboratorio,60.0,UN,8.73,523.8,,,"['Val. Ref.: 14,89', 'Valor Unit.: 8,73']",,Descrição: ESTREPTOCOCOS BETA HEMOLITICOS PESQ,Ata#1009 - BLL_llm.json
+73,ESTRIOL E3,EXAME,exames,laboratorio,10.0,UN,6.87,68.7,,,"['Val. Ref.: 11,72', 'Valor Unit.: 6,87']",,Descrição: ESTRIOL E3,Ata#1009 - BLL_llm.json
+74,ESTRONA,EXAME,exames,laboratorio,10.0,UN,6.62,66.2,,,"['Val. Ref.: 11,29', 'Valor Unit.: 6,62']",,Descrição: ESTRONA,Ata#1009 - BLL_llm.json
+75,EXAME TOXICOLÓGICO,EXAME,exames,laboratorio,15.0,UN,77.17,1157.55,,,"['Val. Ref.: 131,67', 'Valor Unit.: 77,17']",,Descrição: EXAME TOXICOLÓGICO,Ata#1009 - BLL_llm.json
+76,FATOR ANTI NUCLEO,EXAME,exames,laboratorio,12.0,UN,9.05,108.6,,,"['Val. Ref.: 15,45', 'Valor Unit.: 9,05']",,Descrição: FATOR ANTI NUCLEO,Ata#1009 - BLL_llm.json
+77,FATOR REUMATOIDE - LATEX,EXAME,exames,laboratorio,12.0,UN,2.54,30.48,,,"['Val. Ref.: 4,34', 'Valor Unit.: 2,54']",,Descrição: FATOR REUMATOIDE - LATEX,Ata#1009 - BLL_llm.json
+79,FERRITINA,EXAME,exames,laboratorio,300.0,UN,6.23,1869.0,,,"['Val. Ref.: 10,63', 'Valor Unit.: 6,23']",,Descrição: FERRITINA,Ata#1009 - BLL_llm.json
+80,FERRO (EXAME),serviço,exames,laboratorio,300.0,UN,2.02,606.0,,,[],,FERRO (EXAME),Ata#1009 - BLL_llm.json
+81,FIBRINOGENIO.,serviço,exames,laboratorio,10.0,UN,9.38,93.8,,,[],,FIBRINOGENIO.,Ata#1009 - BLL_llm.json
+82,FOSFATASE ALCALINA.,serviço,exames,laboratorio,100.0,UN,1.41,141.0,,,[],,FOSFATASE ALCALINA.,Ata#1009 - BLL_llm.json
+83,FÓSFORO,serviço,exames,laboratorio,24.0,UN,1.31,31.44,,,[],,FÓSFORO,Ata#1009 - BLL_llm.json
+85,FTA ABS IGG,serviço,exames,laboratorio,10.0,UN,5.17,51.7,,,[],,FTA ABS IGG,Ata#1009 - BLL_llm.json
+86,FTA ABS IGM,serviço,exames,laboratorio,10.0,UN,4.94,49.4,,,[],,FTA ABS IGM,Ata#1009 - BLL_llm.json
+87,GAMA GLUTAMIL TRASNFERASE,serviço,exames,laboratorio,85.0,UN,2.19,186.15,,,[],,GAMA GLUTAMIL TRASNFERASE,Ata#1009 - BLL_llm.json
+88,GASOMETRIA,serviço,exames,laboratorio,12.0,UN,19.98,239.76,,,[],,GASOMETRIA,Ata#1009 - BLL_llm.json
+89,GLIADINA IGA,serviço,exames,laboratorio,24.0,UN,13.16,315.84,,,[],,GLIADINA IGA,Ata#1009 - BLL_llm.json
+90,GLIADINA IGM,serviço,exames,laboratorio,24.0,UN,26.26,630.24,,,[],,GLIADINA IGM,Ata#1009 - BLL_llm.json
+91,GLIADINA IGG,produto,exames,laboratorio,24.0,UN,14.77,354.48,,,[],,Descrição: GLIADINA IGG,Ata#1009 - BLL_llm.json
+92,GLICOSE JEJUM,produto,exames,laboratorio,1200.0,UN,1.03,1236.0,,,[],,Descrição: GLICOSE JEJUM,Ata#1009 - BLL_llm.json
+93,GLICOSE POS PRANDIAL,produto,exames,laboratorio,10.0,UN,1.1,11.0,,,[],,Descrição: GLICOSE POS PRANDIAL,Ata#1009 - BLL_llm.json
+94,GONADOTROFINA CORIÔNICA - BETA,produto,exames,laboratorio,12.0,UN,4.55,54.6,,,[],,Descrição: GONADOTROFINA CORIÔNICA - BETA,Ata#1009 - BLL_llm.json
+95,GONADOTROFINA CORIÔNICA QUANTITATIV,produto,exames,laboratorio,12.0,UN,4.55,54.6,,,[],,Descrição: GONADOTROFINA CORIÔNICA QUANTITATIV,Ata#1009 - BLL_llm.json
+96,GORDURA FECAL PESQUISA,produto,exames,laboratorio,,UN,,,,,[],,Descrição:  GORDURA FECAL PESQUISA,Ata#1009 - BLL_llm.json
+97,GRUPO SANGUINEO,produto,exames,laboratorio,300.0,UN,5.54,1662.0,,,[],,Descrição: GRUPO SANGUINEO,Ata#1009 - BLL_llm.json
+98,HDL COLESTEROL,produto,exames,laboratorio,700.0,UN,1.9,1330.0,,,[],,Descrição: HDL COLESTEROL,Ata#1009 - BLL_llm.json
+99,HEMOGLOBINA GLICADA,produto,exames,laboratorio,800.0,UN,4.01,3208.0,,,[],,Descrição: HEMOGLOBINA GLICADA,Ata#1009 - BLL_llm.json
+100,HEMOGRAMA COMPLETO,produto,exames,laboratorio,1600.0,UN,2.51,4016.0,,,[],,Descrição: HEMOGRAMA COMPLETO,Ata#1009 - BLL_llm.json
+101,HEPATITE A - ANTI HVA IGG,produto,exames,laboratorio,10.0,UN,9.78,97.8,,,[],,Descrição: HEPATITE A - ANTI HVA IGG,Ata#1009 - BLL_llm.json
+102,HEPATITE A - ANTI HVA IGM,produto,exames,laboratorio,20.0,UN,9.79,195.8,,,[],,Descrição: HEPATITE A - ANTI HVA IGM,Ata#1009 - BLL_llm.json
+104,HEPATITE C,exame,exames,laboratorio,100.0,UN,9.85,985.0,,,[],,HEPATITE C,Ata#1009 - BLL_llm.json
+106,HOMOCISTEINA NO SANGUE,exame,exames,laboratorio,10.0,UN,11.72,117.2,,,[],,HOMOCISTEINA NO SANGUE,Ata#1009 - BLL_llm.json
+107,HORMONIO ADRENO CORTICOTROFICO,exame,exames,laboratorio,10.0,UN,8.39,83.9,,,[],,HORMONIO ADRENO CORTICOTROFICO,Ata#1009 - BLL_llm.json
+108,HORMONIO TIREOESTIMULANTE (TSH),exame,exames,laboratorio,1130.0,UN,4.79,5412.7,,,[],,HORMONIO TIREOESTIMULANTE (TSH),Ata#1009 - BLL_llm.json
+122,LDL COLESTEROL,exame,exames,laboratorio,900.0,UN,2.48,2232.0,,,[],,LDL COLESTEROL,Ata#1009 - BLL_llm.json
+123,LACTATO,exame,exames,laboratorio,12.0,UN,2.27,27.24,,,[],,LACTATO,Ata#1009 - BLL_llm.json
+124,LIPASE,exame,exames,laboratorio,12.0,UN,1.85,22.2,,,[],,LIPASE,Ata#1009 - BLL_llm.json
+126,LIPIDOGRAMA 12,exame,exames,laboratorio,12.0,UN,12.45,149.4,,,[],,LIPIDOGRAMA 12,Ata#1009 - BLL_llm.json
+127,LITIO,exame,exames,laboratorio,12.0,UN,5.07,60.84,,,[],,LITIO,Ata#1009 - BLL_llm.json
+128,LKM-1 12,exame,exames,laboratorio,,UN,,,,,[],,LKM-1 12,Ata#1009 - BLL_llm.json
+129,MAGNESIO,exame,exames,laboratorio,24.0,UN,1.16,27.84,,,[],,MAGNESIO,Ata#1009 - BLL_llm.json
+130,MELATONINA SÉRICA 12,exame,exames,laboratorio,12.0,UN,,,,,[],,MELATONINA SÉRICA 12,Ata#1009 - BLL_llm.json
+131,,DIRETO,exames,laboratorio,12.0,UN,102.72,1232.64,,,[],,"Item: 131 | Descrição:                                                                        |                                               |                                                 |                                                                                           | Total Item: 1.232,64 | Quantidade:                                                                       | Val. Ref.: 19,73                              |                                                 | Modelo:                                                                                   | 12                                                                                | DIRETO                                        | Marca: exames                                   | laboratorio                                                                               |",Ata#1009 - BLL_llm.json
+132,MICOLOGICO,,exames,laboratorio,12.0,,11.56,138.72,,,[],,"Item: 132 | Descrição: | MICOLOGICO | 11,56",Ata#1009 - BLL_llm.json
+134,MICROALBUMINURIA AMOSTRA ISOLADA,,exames,laboratorio,100.0,UN,3.88,388.0,,,[],,"Item: 134 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MICROALBUMINURIA AMOSTRA ISOLADA | Quantidade: | 100 Val. Ref.: | 6,62 Valor Unit.: | 3,88 | Total Item: 388,00",Ata#1009 - BLL_llm.json
+135,MITOCONDRIA - ANTICORPOS,,exames,laboratorio,10.0,UN,8.7,87.0,,,[],,"Item: 135 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MITOCONDRIA - ANTICORPOS | Quantidade: 10 | Val. Ref.: |  Valor Unit.: 8,70 | Total Item: 87,00",Ata#1009 - BLL_llm.json
+136,OXALATO URINARIO 24HRS,,exames,laboratorio,10.0,UN,72.96,729.6,,,[],,"Item: 136 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: OXALATO URINARIO 24HRS | Quantidade: 10 | Val. | Ref.: 124,50 Valor | Unit.: 72,96 | Total Item: 729,60",Ata#1009 - BLL_llm.json
+137,PAPANICOLAOU,,exames,laboratorio,100.0,UN,8.36,836.0,,,[],,"Item: 137 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PAPANICOLAOU | Quantidade: 100 | Val. | Ref.: 14,27 Valor | Unit.: 8,36 | Total Item: 836,00",Ata#1009 - BLL_llm.json
+138,PARASITOLOGICO DE FEZES,,exames,laboratorio,400.0,UN,4.71,1884.0,,,[],,"Item: 138 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO | DE | FEZES | Total Item: 1.884,00",Ata#1009 - BLL_llm.json
+139,PARASITOLOGICO DE FEZES 2,,exames,laboratorio,200.0,UN,4.71,942.0,,,[],,"Item: 139 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 2 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00",Ata#1009 - BLL_llm.json
+140,PARASITOLOGICO DE FEZES 3,,exames,laboratorio,200.0,UN,4.71,942.0,,,[],,"Item: 140 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 3 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00",Ata#1009 - BLL_llm.json
+141,PEPTIDEO NATRIURETICO,,exames,laboratorio,10.0,UN,96.01,960.1,,,[],,"Item: 141 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PEPTIDEO NATRIURETICO | Quantidade: 10 | Val.: | Ref.: 163,83 Valor | Unit.: 96,01 | Total Item: 960,10",Ata#1009 - BLL_llm.json
+142,PESQUISA DE BAAR,,exames,laboratorio,36.0,UN,11.76,423.36,,,[],,"Item: 142 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PESQUISA DE BAAR | Quantidade: 36 | Val. Ref.: 20,06 | Valor Unit.: 11,76 | Total Item: 423,36",Ata#1009 - BLL_llm.json
+143,PESQUISA DE OXIURUS,servico,exames,laboratorio,10.0,UN,17.52,175.2,,,[],,PESQUISA DE OXIURUS,Ata#1009 - BLL_llm.json
+144,POTASSIO,servico,exames,laboratorio,800.0,UN,1.1,880.0,,,[],,POTASSIO,Ata#1009 - BLL_llm.json
+145,PROGESTERONA,servico,exames,laboratorio,30.0,UN,4.35,130.5,,,[],,PROGESTERONA,Ata#1009 - BLL_llm.json
+146,PROLACTINA,servico,exames,laboratorio,30.0,UN,4.67,140.1,,,[],,PROLACTINA,Ata#1009 - BLL_llm.json
+147,PROTEINA C REATIVA,servico,exames,laboratorio,12.0,UN,4.41,52.92,,,[],,PROTEINA C REATIVA,Ata#1009 - BLL_llm.json
+148,PROTEINA C ULTRASENSIVEL,servico,exames,laboratorio,12.0,UN,2.95,35.4,,,[],,PROTEINA C ULTRASENSIVEL,Ata#1009 - BLL_llm.json
+149,PROTEINAS TOTAIS E FRACOES,servico,exames,laboratorio,24.0,UN,2.05,49.2,,,[],,PROTEINAS TOTAIS E FRACOES,Ata#1009 - BLL_llm.json
+150,PROTEINURIA DE 24 HORAS,servico,exames,laboratorio,80.0,UN,1.51,120.8,,,[],,PROTEINURIA DE 24 HORAS,Ata#1009 - BLL_llm.json
+151,PSA LIVRE,servico,exames,laboratorio,20.0,UN,5.25,105.0,,,[],,PSA LIVRE,Ata#1009 - BLL_llm.json
+152,PSA TOTAL,servico,exames,laboratorio,250.0,UN,9.44,2360.0,,,[],,PSA TOTAL,Ata#1009 - BLL_llm.json
+153,PSA TOTAL E LIVRE,servico,exames,laboratorio,10.0,UN,10.88,108.8,,,[],,PSA TOTAL E LIVRE,Ata#1009 - BLL_llm.json
+155,RAIVA - SOROLOGIA,produto,exames,laboratorio,12.0,UN,9.04,108.48,,,[],,Descrição: RAIVA - SOROLOGIA,Ata#1009 - BLL_llm.json
+156,RAST ABELHA,produto,exames,laboratorio,12.0,UN,220.75,2649.0,,,[],,Descrição: RAST ABELHA,Ata#1009 - BLL_llm.json
+157,RAST ACARO D.FARINAE,produto,exames,laboratorio,50.0,UN,10.64,532.0,,,[],,Descrição: RAST ACARO D.FARINAE,Ata#1009 - BLL_llm.json
+158,RAST ACARO D.PTERONYSSINUS,produto,exames,laboratorio,12.0,UN,10.64,127.68,,,[],,Descrição: RAST ACARO D.PTERONYSSINUS,Ata#1009 - BLL_llm.json
+159,RAST ACARUS SIRO,produto,exames,laboratorio,12.0,UN,10.64,127.68,,,[],,Descrição: RAST ACARUS SIRO,Ata#1009 - BLL_llm.json
+160,RAST ACAROS MICROCERAS,produto,exames,laboratorio,24.0,UN,10.64,255.36,,,[],,Descrição: RAST ACAROS MICROCERAS,Ata#1009 - BLL_llm.json
+161,RAST AMENDOIM,produto,exames,laboratorio,36.0,UN,8.54,385.2,,,[],,Descrição: RAST AMENDOIM,Ata#1009 - BLL_llm.json
+164,RAST CACAU,produto,exames,laboratorio,30.0,UN,10.82,324.6,,,[],,Descrição: RAST CACAU,Ata#1009 - BLL_llm.json
+165,RAST CASEINA,produto,exames,laboratorio,12.0,UN,8.93,107.16,,,[],,Descrição: RAST CASEINA,Ata#1009 - BLL_llm.json
+166,RAST CLARA DE OVO,produto,exames,laboratorio,12.0,UN,37.11,445.32,,,[],,Descrição: RAST CLARA DE OVO,Ata#1009 - BLL_llm.json
+167,RAST CORANTE AMARELO,produto,exames,laboratorio,12.0,UN,14.56,174.72,,,[],,Descrição: RAST CORANTE AMARELO,Ata#1009 - BLL_llm.json
+169,RAST CORANTE VERMELHO,produto,exames,laboratorio,30.0,UN,12.47,374.1,,,[],,Descrição: RAST CORANTE VERMELHO,Ata#1009 - BLL_llm.json
+170,RAST FEIJAO BRANCO,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição:  RAST FEIJAO BRANCO,Ata#1009 - BLL_llm.json
+171,RAST FORMIGA,produto,exames,laboratorio,12.0,UN,8.74,104.88,,,[],,Descrição: RAST FORMIGA,Ata#1009 - BLL_llm.json
+172,RAST FUNGOS E LEVEDURAS,produto,exames,laboratorio,50.0,UN,7.79,389.5,,,[],,Descrição: RAST FUNGOS E LEVEDURAS,Ata#1009 - BLL_llm.json
+173,RAST FX1 ALIMENTOS,produto,exames,laboratorio,12.0,UN,17.97,215.64,,,[],,Descrição: RAST FX1 ALIMENTOS,Ata#1009 - BLL_llm.json
+175,RAST FX3 ALIMENTOS,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: RAST FX3 ALIMENTOS,Ata#1009 - BLL_llm.json
+176,RAST FX5 ALIMENTOS,produto,exames,laboratorio,12.0,UN,14.16,169.92,,,[],,Descrição: RAST FX5 ALIMENTOS,Ata#1009 - BLL_llm.json
+177,RAST GLUTEN,produto,exames,laboratorio,12.0,UN,6.83,81.96,,,[],,Descrição: RAST GLUTEN,Ata#1009 - BLL_llm.json
+178,RAST GX1 GRAMINEAS (TABELA),produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: RAST GX1 GRAMINEAS (TABELA),Ata#1009 - BLL_llm.json
+179,RAST IBUPROFENO,produto,exames,laboratorio,12.0,UN,37.11,445.32,,,[],,Descrição: RAST IBUPROFENO,Ata#1009 - BLL_llm.json
+180,RAST INALANTES (IX6),produto,exames,laboratorio,12.0,UN,16.17,194.04,,,[],,Descrição: RAST INALANTES (IX6),Ata#1009 - BLL_llm.json
+181,RAST INSETO BARATA,produto,exames,laboratorio,12.0,UN,9.88,118.56,,,[],,Descrição: RAST INSETO BARATA,Ata#1009 - BLL_llm.json
+182,RAST LARANJA,produto,exames,laboratorio,12.0,UN,12.15,145.8,,,[],,Descrição: RAST LARANJA,Ata#1009 - BLL_llm.json
+183,RAST LEITE E DERIVADOS,produto,exames,laboratorio,12.0,UN,7.94,95.28,,,[],,Descrição: RAST LEITE E DERIVADOS,Ata#1009 - BLL_llm.json
+184,RAST LATEX,produto,exames,laboratorio,12.0,UN,3.49,41.88,,,[],,Descrição: RAST LATEX,Ata#1009 - BLL_llm.json
+185,RAST MANGA,produto,exames,laboratorio,12.0,UN,20.23,242.76,,,[],,Descrição: RAST MANGA,Ata#1009 - BLL_llm.json
+186,RAST MILHO,produto,exames,laboratorio,24.0,UN,8.47,203.28,,,[],,RAST MILHO,Ata#1009 - BLL_llm.json
+187,RAST OVO (INTEIRO),produto,exames,laboratorio,30.0,UN,8.45,253.5,,,[],,RAST OVO (INTEIRO),Ata#1009 - BLL_llm.json
+188,RAST OVOMUCOIDE,produto,exames,laboratorio,12.0,UN,9.77,117.24,,,[],,RAST OVOMUCOIDE,Ata#1009 - BLL_llm.json
+189,RAST PEIXE BACALHAU,produto,exames,laboratorio,12.0,UN,11.15,133.8,,,[],,RAST PEIXE BACALHAU,Ata#1009 - BLL_llm.json
+190,RAST PERNILONGO,produto,exames,laboratorio,12.0,UN,9.28,111.36,,,[],,RAST PERNILONGO,Ata#1009 - BLL_llm.json
+191,RAST PO DE CASA,produto,exames,laboratorio,60.0,UN,9.96,597.6,,,[],,RAST PO DE CASA,Ata#1009 - BLL_llm.json
+192,RAST PROTEINAS DO LEITE,produto,exames,laboratorio,50.0,UN,8.42,421.0,,,[],,RAST PROTEINAS DO LEITE,Ata#1009 - BLL_llm.json
+193,RAST SOJA,produto,exames,laboratorio,24.0,UN,5.92,142.08,,,[],,RAST SOJA,Ata#1009 - BLL_llm.json
+194,RAST TABACO,produto,exames,laboratorio,12.0,UN,13.83,165.96,,,[],,RAST TABACO,Ata#1009 - BLL_llm.json
+196,RENINA.,produto,exames,laboratorio,60.0,UN,9.34,560.4,,,[],,RENINA.,Ata#1009 - BLL_llm.json
+197,RETICULOCITOS,produto,exames,laboratorio,10.0,UN,6.37,63.7,,,[],,RETICULOCITOS,Ata#1009 - BLL_llm.json
+199,RUBEOLA IGG,,exames,laboratorio,10.0,UN,6.09,60.9,,,[],,Descrição: RUBEOLA IGG,Ata#1009 - BLL_llm.json
+200,RUBEOLA IGM,,exames,laboratorio,10.0,UN,6.09,60.9,,,[],,Descrição: RUBEOLA IGM,Ata#1009 - BLL_llm.json
+201,SANGUE OCULTO PESQUISA,,exames,laboratorio,150.0,UN,2.17,325.5,,,[],,Descrição: SANGUE OCULTO PESQUISA,Ata#1009 - BLL_llm.json
+202,SODIO,,exames,laboratorio,650.0,UN,1.07,695.5,,,[],,Descrição: SODIO,Ata#1009 - BLL_llm.json
+203,SUBSTANCIA REDUTORAS PESQUISA,,exames,laboratorio,12.0,UN,7.11,85.32,,,[],,Descrição: SUBSTANCIA REDUTORAS PESQUISA,Ata#1009 - BLL_llm.json
+204,SULFATO DE DEHIDROEPIANDROSTERONA,,exames,laboratorio,5.0,UN,8.98,44.9,,,[],,Descrição: SULFATO DE DEHIDROEPIANDROSTERONA,Ata#1009 - BLL_llm.json
+205,SHBG - GLOBULINA LIGADORA,,exames,laboratorio,12.0,UN,5.9,70.8,,,[],,Descrição: SHBG - GLOBULINA LIGADORA,Ata#1009 - BLL_llm.json
+206,T T P A,,exames,laboratorio,12.0,UN,2.34,28.08,,,[],,Descrição: T T P A,Ata#1009 - BLL_llm.json
+208,TEMPO DE PROTROMBINA,,exames,laboratorio,12.0,UN,2.09,25.08,,,[],,Descrição: TEMPO DE PROTROMBINA,Ata#1009 - BLL_llm.json
+209,TEMPO DE SANGRAMENTO,,exames,laboratorio,12.0,UN,1.59,19.08,,,[],,Descrição: TEMPO DE SANGRAMENTO,Ata#1009 - BLL_llm.json
+210,TESTOSTERONA LIVRE,,exames,laboratorio,,UN,,,,,[],,Descrição: TESTOSTERONA LIVRE,Ata#1009 - BLL_llm.json
+211,TESTOSTERON TOTAL.,produto,exames,laboratorio,10.0,UN,7.2,72.0,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 10                           | Val. Ref.: 12,28                         | Valor Unit.: 7,20                        |                                          | Total Item: 72,00                        |
+Item: 211                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |
+Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           |",Ata#1009 - BLL_llm.json
+212,TIREOGLOBULINA DOSAGEM,produto,exames,laboratorio,10.0,UN,6.68,66.8,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 10                           | Val. Ref.: 9,51                          | Valor Unit.: 6,68                        |                                          | Total Item: 66,80                        |
+Item: 212                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição:                               | TIREOGLOBULINA                           | DOSAGEM                                  |                                          |                                          |",Ata#1009 - BLL_llm.json
+213,TIROXINA,produto,exames,laboratorio,40.0,UN,4.76,190.4,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 40                           | Val. Ref.: 8,13                          | Valor Unit.: 4,76                        |                                          | Total Item: 190,40                       |
+Item: 213                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      |",Ata#1009 - BLL_llm.json
+214,TIROXINA LIVRE,produto,exames,laboratorio,370.0,UN,6.46,2390.2,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 370                          | Val. Ref.: 11,02                         | Valor Unit.: 6,46                        | Total Item: 2.390,20                     |
+Item: 214                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                |",Ata#1009 - BLL_llm.json
+215,TOLERANCIA A LACTOSE - 30 MIN,produto,exames,laboratorio,12.0,UN,8.64,103.68,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val. Ref.: 14,75                         | Valor Unit.: 8,64                        |                                          | Total Item: 103,68                       |
+Item: 215                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - 30 MIN",Ata#1009 - BLL_llm.json
+216,TOLERANCIA A LACTOSE - 60 MIN,produto,exames,laboratorio,12.0,UN,8.97,107.64,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val. Ref.: 15,30                         | Valor Unit.: 8,97                        | Total Item: 107,64                       |
+Item: 216                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - 60 MIN",Ata#1009 - BLL_llm.json
+217,TOLERANCIA A LACTOSE - BASAL,produto,exames,laboratorio,12.0,UN,9.25,111.0,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val.                                     | Ref.: 15,79                              | Valor Unit.: 9,25                        | Total Item: 111,00                       |
+Item: 217                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - BASAL",Ata#1009 - BLL_llm.json
+218,TOXOPLASMOSE ELISA IGG,produto,exames,laboratorio,80.0,UN,6.56,524.8,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 80                           | Val. Ref.: 11,19                         | Valor Unit.: 6,56                        | Total Item: 524,80                       |
+Item: 218                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        |",Ata#1009 - BLL_llm.json
+219,TOXOPLASMOSE ELISA IGM,produto,exames,laboratorio,80.0,UN,6.83,546.4,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 80                           | Val. Ref.: 11,65                         | Valor Unit.: 6,83                        | Total Item: 546,40                       |
+Item: 219                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        |",Ata#1009 - BLL_llm.json
+220,TRANSAMINASE OXALACETICA,produto,exames,laboratorio,620.0,UN,1.13,700.6,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 620                         | Val. Ref.: 1,92                                         | Valor Unit.: 1,13                                       | Total Item: 700,60                                      |
+Item: 220                                               | Unidade: UN                                             | Marca: exames                                           |                                                         | Modelo: laboratorio                                     |
+Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     |",Ata#1009 - BLL_llm.json
+221,TRANSAMINASE PIRUVICA,produto,exames,laboratorio,620.0,UN,1.11,688.2,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 620                         | Val. Ref.: 1,90                                         | Valor Unit.: 1,11                                       |                                                         | Total Item: 688,20                                      |
+Item: 221 Unidade: UN Marca: exames Modelo: laboratorio | Descrição: TRANSAMINASE PIRUVICA",Ata#1009 - BLL_llm.json
+222,TRANSFERRINA,produto,exames,laboratorio,12.0,UN,2.41,28.92,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                                          | Val. Ref.:                                              | 4,11 Valor                                              | Unit.: 2,41                                             | Total Item: 28,92                                       |
+Item: 222                                               | Unidade:                                      | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |
+Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 |",Ata#1009 - BLL_llm.json
+223,TRANSGLUTAMINASE IGA,produto,exames,laboratorio,24.0,UN,22.68,544.32,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 24                                          | Val.                                                    | Ref.: 38,70 Valor                                       | Unit.: 22,68                                            | Total Item: 544,32                                      |
+Item: 223                                               | Unidade: UN                                             | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |
+Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         |",Ata#1009 - BLL_llm.json
+224,TRANSGLUTAMINASE IGG,produto,exames,laboratorio,2.0,UN,14.49,28.98,,,[],,Descrição: TRANSGLUTAMINASE IGG,Ata#1009 - BLL_llm.json
+225,TRIGLICÉRIDES,produto,exames,laboratorio,1000.0,UN,1.9,1900.0,,,[],,Descrição: TRIGLICÉRIDES,Ata#1009 - BLL_llm.json
+226,TRIIODOTIRONINA,produto,exames,laboratorio,12.0,UN,4.11,49.32,,,[],,Descrição: TRIIODOTIRONINA,Ata#1009 - BLL_llm.json
+227,UREIA....,produto,exames,laboratorio,600.0,UN,1.08,648.0,,,[],,Descrição: UREIA....,Ata#1009 - BLL_llm.json
+228,URINA TIPO 1,produto,exames,laboratorio,1165.0,UN,4.54,5289.1,,,[],,Descrição: URINA TIPO 1,Ata#1009 - BLL_llm.json
+229,UROCULTURA,produto,exames,laboratorio,380.0,UN,11.19,4252.2,,,[],,Descrição: UROCULTURA,Ata#1009 - BLL_llm.json
+230,VDRL,produto,exames,laboratorio,170.0,UN,1.69,287.3,,,[],,Descrição: VDRL,Ata#1009 - BLL_llm.json
+231,VELOC. DE HEMOSSEDIMENTACAO,produto,exames,laboratorio,30.0,UN,2.45,73.5,,,[],,Descrição: VELOC. DE HEMOSSEDIMENTACAO,Ata#1009 - BLL_llm.json
+233,VITAMINA A,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: VITAMINA A,Ata#1009 - BLL_llm.json
+234,VITAMINA B1,produto,exames,laboratorio,,UN,,898.44,,,[],,Descrição: VITAMINA B1,Ata#1009 - BLL_llm.json
+235,VITAMINA B6,produto,exames,laboratorio,12.0,UN,,134.76,,,[],,Descrição: VITAMINA B6,Ata#1009 - BLL_llm.json
+237,VITAMINA C (ÁCIDO ASCÓRBICO),produto,exames,laboratorio,12.0,UN,11.23,134.76,,,[],,Descrição: VITAMINA C (ÁCIDO ASCÓRBICO),Ata#1009 - BLL_llm.json
+238,VITAMINA D 25.,produto,exames,laboratorio,250.0,UN,8.76,2190.0,,,[],,Descrição: VITAMINA D 25.,Ata#1009 - BLL_llm.json
+239,VITAMINA E (EXAME),produto,exames,laboratorio,20.0,UN,48.89,977.8,,,[],,Descrição: VITAMINA E (EXAME),Ata#1009 - BLL_llm.json
+240,WAALER-ROSE,produto,exames,laboratorio,20.0,UN,101.58,2031.6,,,[],,Descrição: WAALER-ROSE,Ata#1009 - BLL_llm.json
+241,ZINCO,produto,exames,,60.0,UN,9.11,546.6,,,[],,"Descrição: ZINCO Quantidade: 60\nVal. Ref.: 15,54\nUnit.: 9,11\nTotal 546,60",Ata#1009 - BLL_llm.json
