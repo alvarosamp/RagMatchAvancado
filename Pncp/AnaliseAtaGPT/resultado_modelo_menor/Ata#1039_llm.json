@@ -1,44 +1,48 @@
 {
   "id_pncp": "Ata#1039",
   "numero_ata": "40/2025",
-  "orgao": "Ministério Público do Estado de Rondônia",
-  "data_assinatura": "10 de novembro de 2025",
-  "vigencia": "12 meses a partir do primeiro dia útil subsequente à divulgação oficial",
-  "objeto": null,
+  "orgao": "MINISTÉRIO PÚBLICO DO ESTADO DE RONDÔNIA",
+  "data_assinatura": "12/11/2025",
+  "vigencia": "12 meses, contado do primeiro dia útil subsequente à divulgação oficial; prorrogável por igual período mediante preço vantajoso",
+  "objeto": "Registro de Preços para aquisição de Switch de Acesso 48 Portas PoE e Licença de upgrade das portas Gigabit SFP para 10G SFP+, conforme Edital PE 90018/2025",
   "itens": [
     {
       "numero_item": "1",
-      "descricao": "Switch de Acesso 48 Portas PoE",
-      "tipo": null,
-      "marca": "Alcatel Lucent OS6360-PH48- US",
-      "modelo": null,
+      "descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",
+      "tipo": "produto",
+      "marca": "Alcatel Lucent",
+      "modelo": "OS6360-PH48- US",
       "quantidade": 120,
       "unidade": "Und",
       "valor_unitario": 15406.0,
       "valor_total": 1848720.0,
       "fornecedor": "LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.",
       "cnpj_fornecedor": "07.789.113/0001-67",
-      "especificacoes": [],
+      "especificacoes": [
+        "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      ],
       "observacoes": null,
-      "raw_descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      "raw_descricao": "1 | Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência. | Marca: Alcatel Lucent OS6360-PH48- US | Und | 120 | R$15.406,00 | R$1.848.720,00"
     },
     {
       "numero_item": "2",
-      "descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+",
-      "tipo": null,
-      "marca": "Alcatel Lucent OS6360-SW- PERF",
-      "modelo": null,
+      "descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência.",
+      "tipo": "produto",
+      "marca": "Alcatel Lucent",
+      "modelo": "OS6360-SW- PERF",
       "quantidade": 120,
       "unidade": "Und",
       "valor_unitario": 4594.0,
       "valor_total": 551280.0,
       "fornecedor": "LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.",
       "cnpj_fornecedor": "07.789.113/0001-67",
-      "especificacoes": [],
+      "especificacoes": [
+        "Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      ],
       "observacoes": null,
-      "raw_descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      "raw_descricao": "2 | Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência. | Marca: Alcatel Lucent OS6360-SW- PERF | Und | 120 | R$ 4.594,00 | R$ 551.280,00"
     }
   ],
-  "tokens_usados": 3708,
+  "tokens_usados": 10498,
   "aviso": "texto dividido em 2 chunks"
 }

@@ -1,7 +1,7 @@
 {
   "id_pncp": "Ata#1009 - BLL",
   "numero_ata": null,
-  "orgao": "MUNICIPIO DE BOM SUCESSO DE ITARARE",
+  "orgao": null,
   "data_assinatura": null,
   "vigencia": null,
   "objeto": null,
@@ -9,343 +9,199 @@
     {
       "numero_item": "1",
       "descricao": "ACIDO FOLICO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 180,
       "unidade": "UN",
       "valor_unitario": 7.02,
       "valor_total": 1263.6,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ACIDO FOLICO"
+      "raw_descricao": "Item: 1\\nUnidade: UN\\nDescrição: ACIDO FOLICO\\nQuantidade: 180\\nVal. Ref.: 11,98\\nValor Unit.: 7,02\\nTotal Item: 1.263,60"
     },
     {
       "numero_item": "2",
       "descricao": "ACIDO URICO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 370,
       "unidade": "UN",
       "valor_unitario": 1.05,
       "valor_total": 388.5,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ACIDO URICO"
+      "raw_descricao": "Item: 2\\nUnidade: UN\\nDescrição: ACIDO URICO\\nQuantidade: 370\\nVal. Ref.: 1,80\\nValor Unit.: 1,05\\nTotal Item: 388,50"
     },
     {
       "numero_item": "3",
       "descricao": "ACIDO URICO URINARIO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
       "unidade": "UN",
       "valor_unitario": 0.91,
       "valor_total": 27.3,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ACIDO URICO URINARIO"
+      "raw_descricao": "Item: 3\\nUnidade: UN\\nDescrição: ACIDO URICO URINARIO\\nQuantidade: 30\\nVal. Ref.: 1,56\\nValor Unit.: 0,91\\nTotal Item: 27,30"
     },
     {
       "numero_item": "4",
-      "descricao": "ACIDO VANIL MANDELICO",
-      "tipo": null,
+      "descricao": "ACIDO VANIL MANDELICO.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 20,
       "unidade": "UN",
       "valor_unitario": 143.81,
       "valor_total": 2876.2,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ACIDO VANIL MANDELICO."
+      "raw_descricao": "Item: 4\\nUnidade: UN\\nDescrição: ACIDO VANIL MANDELICO.\\nQuantidade: 20\\nVal. Ref.: 245,38\\nValor Unit.: 143,81\\nTotal Item: 2.876,20"
     },
     {
       "numero_item": "5",
       "descricao": "ALBUMINA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 20,
       "unidade": "UN",
       "valor_unitario": 1.07,
       "valor_total": 21.4,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALBUMINA"
+      "raw_descricao": "Item: 5\\nUnidade: UN\\nDescrição: ALBUMINA\\nQuantidade: 20\\nVal. Ref.: 1,82\\nValor Unit.: 1,07\\nTotal Item: 21,40"
     },
     {
       "numero_item": "6",
-      "descricao": "ALDOSTERONA",
-      "tipo": null,
+      "descricao": "ALDOSTERONA.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
       "valor_unitario": 5.76,
       "valor_total": 57.6,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALDOSTERONA."
+      "raw_descricao": "Item: 6\\nUnidade: UN\\nDescrição: ALDOSTERONA.\\nQuantidade: 10\\nVal. Ref.: 9,82\\nValor Unit.: 5,76\\nTotal Item: 57,60"
     },
     {
       "numero_item": "7",
-      "descricao": "ALFA FETO PROTEINA",
-      "tipo": null,
+      "descricao": "ALFA FETO",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 15,
       "unidade": "UN",
       "valor_unitario": 5.76,
       "valor_total": 86.4,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALFA FETO PROTEINA"
+      "raw_descricao": "Item: 7\\nUnidade: UN\\nDescrição: ALFA FETO\\nQuantidade: 15\\nVal. Ref.: 9,83\\nValor Unit.: 5,76\\nTotal Item: 86,40"
     },
     {
       "numero_item": "8",
-      "descricao": "ALFA LACTOALBUMINA",
-      "tipo": null,
+      "descricao": "ALFA",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 10.36,
       "valor_total": 124.32,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALFA LACTOALBUMINA"
+      "raw_descricao": "Item: 8\\nUnidade: UN\\nDescrição: ALFA\\nQuantidade: 12\\nVal. Ref.: 17,68\\nValor Unit.: 10,36\\nTotal Item: 124,32"
     },
     {
       "numero_item": "9",
       "descricao": "ALFA1 ANTITRIPSINA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 4.26,
       "valor_total": 51.12,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALFA1 ANTITRIPSINA"
+      "raw_descricao": "Item: 9\\nUnidade: UN\\nDescrição: ALFA1 ANTITRIPSINA\\nQuantidade: 12\\nVal. Ref.: 7,27\\nValor Unit.: 4,26\\nTotal Item: 51,12"
     },
     {
-      "numero_item": "10",
-      "descricao": "ALFA1 GLICOPROTEINA ACIDA",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
+      "numero_item": "11",
+      "descricao": "ALFA1 GLICOPROTEINA",
+      "tipo": "produto",
+      "marca": "exames",
+      "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 2.77,
       "valor_total": 33.24,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ALFA1 GLICOPROTEINA ACIDA"
-    },
-    {
-      "numero_item": "11",
-      "descricao": "AMILASE",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 1.01,
-      "valor_total": 10.1,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "AMILASE"
+      "raw_descricao": "Item: 11\\nUnidade: UN\\nDescrição: ALFA1 GLICOPROTEINA\\nQuantidade: 12\\nVal. Ref.: 4,72\\nValor Unit.: 2,77\\nTotal Item: 33,24"
     },
     {
       "numero_item": "12",
       "descricao": "ANATOMO PATOLOGICO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 100,
       "unidade": "UN",
       "valor_unitario": 23.66,
       "valor_total": 2366.0,
-      "fornecedor": "CIENLAB ANALISES CLINICAS LTDA",
-      "cnpj_fornecedor": "21.147.495/0001-56",
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANATOMO PATOLOGICO"
-    },
-    {
-      "numero_item": "13",
-      "descricao": "ANTI CORPOS ANTI ANDROSTENEDIONA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 38.14,
-      "valor_total": 335.25,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ANTI CORPOS ANTI ANDROSTENEDIONA"
-    },
-    {
-      "numero_item": "14",
-      "descricao": "TIREOGLOBULINA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 22.35,
-      "valor_total": 72.2,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "TIREOGLOBULINA"
-    },
-    {
-      "numero_item": "16",
-      "descricao": "ANTI HBC IGG HEPATITE B",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 30,
-      "unidade": "UN",
-      "valor_unitario": 14.13,
-      "valor_total": 45.6,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTI HBC IGG HEPATITE B"
-    },
-    {
-      "numero_item": "17",
-      "descricao": "ANTI HBC IGM HEPATITE",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": 30,
-      "unidade": "UN",
-      "valor_unitario": 8.28,
-      "valor_total": 248.4,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTI HBC IGM HEPATITE"
-    },
-    {
-      "numero_item": "18",
-      "descricao": "HBS",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": null,
-      "quantidade": 30,
-      "unidade": "UN",
-      "valor_unitario": 16.15,
-      "valor_total": 248.4,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "HBS"
-    },
-    {
-      "numero_item": "19",
-      "descricao": "ANTI MICROSSOMAL",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 400,
-      "unidade": "UN",
-      "valor_unitario": 17.5,
-      "valor_total": 283.8,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTI MICROSSOMAL"
-    },
-    {
-      "numero_item": "20",
-      "descricao": "ANTIBIOGRAMA",
-      "tipo": null,
-      "marca": null,
-      "modelo": null,
-      "quantidade": 360,
-      "unidade": "UN",
-      "valor_unitario": 2.8,
-      "valor_total": 307.8,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTIBIOGRAMA"
-    },
-    {
-      "numero_item": "22",
-      "descricao": "ANTI HIV- WESTERN BLOT",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
-      "unidade": "UN",
-      "valor_unitario": 8.32,
-      "valor_total": 2995.2,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "ANTI HIV- WESTERN BLOT"
+      "raw_descricao": "Item: 12\\nUnidade: UN\\nMarca: exames\\nModelo: laboratorio\\nDescrição: ANATOMO PATOLOGICO\\nQuantidade: 100\\nValor Unit.: 23,66\\nTotal Item: 2.366,00"
     },
     {
       "numero_item": "23",
       "descricao": "ANTIESTREPTOLISINA O",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 12,
+      "quantidade": 25,
       "unidade": "UN",
-      "valor_unitario": 156.35,
-      "valor_total": 1876.2,
+      "valor_unitario": 1.77,
+      "valor_total": 44.25,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ANTIESTREPTOLISINA O"
+      "raw_descricao": "Unidade: UN Marca: exames Descrição: ANTIESTREPTOLISINA O Quantidade: 25 Val. Ref.: 3,02 Total Item: 44,25"
     },
     {
       "numero_item": "24",
       "descricao": "ANTÍGENO CARCINOEMBRIÔGENICO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -356,13 +212,29 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "ANTÍGENO CARCINOEMBRIÔGENICO"
+      "raw_descricao": "Unidade: UN Marca: exames Descrição: ANTÍGENO CARCINOEMBRIÔGENICO Quantidade: 10 Val. Ref.: 8,96 Valor Unit.: 5,25 Total Item: 52,50"
+    },
+    {
+      "numero_item": "25",
+      "descricao": "ANTI RECEPTOR DE TSH",
+      "tipo": "produto",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": null,
+      "unidade": "UN",
+      "valor_unitario": null,
+      "valor_total": 307.8,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Unidade: UN Marca: exames Descrição: ANTI RECEPTOR DE TSH Modelo: laboratorio"
     },
     {
       "numero_item": "26",
       "descricao": "BACTERIOSCOPIA (GRAM)",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
@@ -372,29 +244,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "BACTERIOSCOPIA (GRAM)"
+      "raw_descricao": "Descrição: BACTERIOSCOPIA (GRAM)"
     },
     {
       "numero_item": "27",
       "descricao": "BETA LACTOGLOBULINA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 19.36,
-      "valor_total": 193.6,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "BETA LACTOGLOBULINA"
-    },
-    {
-      "numero_item": "28",
-      "descricao": "BILIRRUBINA TOTAL E FRACOES",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
@@ -404,13 +260,29 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "BILIRRUBINA TOTAL E FRACOES Quantidade: 60"
+      "raw_descricao": "Descrição: BETA LACTOGLOBULINA"
+    },
+    {
+      "numero_item": "28",
+      "descricao": "BILIRRUBINA TOTAL E FRACOES",
+      "tipo": "produto",
+      "marca": null,
+      "modelo": "laboratorio",
+      "quantidade": 60,
+      "unidade": "UN",
+      "valor_unitario": 1.09,
+      "valor_total": 65.4,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Descrição: BILIRRUBINA TOTAL E FRACOES Quantidade: 60"
     },
     {
       "numero_item": "29",
       "descricao": "BLOMIA TROPICALIS",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
@@ -420,13 +292,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "BLOMIA TROPICALIS"
+      "raw_descricao": "Descrição: BLOMIA TROPICALIS"
     },
     {
       "numero_item": "30",
       "descricao": "CA-125 (MARCADOR TUMORAL DE OVÁRIO)",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 25,
       "unidade": "UN",
@@ -436,13 +308,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "CA-125 (MARCADOR TUMORAL DE OVÁRIO)"
+      "raw_descricao": "Descrição: CA-125 (MARCADOR TUMORAL DE OVÁRIO)"
     },
     {
       "numero_item": "31",
       "descricao": "CA15-3 (MARCADOR TUMORAL CA 15-3)",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 25,
       "unidade": "UN",
@@ -452,13 +324,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "CA15-3 (MARCADOR TUMORAL CA 15-3)"
+      "raw_descricao": "Descrição: CA15-3 (MARCADOR TUMORAL CA 15-3)"
     },
     {
       "numero_item": "32",
       "descricao": "CALCIO",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 200,
       "unidade": "UN",
@@ -468,13 +340,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "CALCIO"
+      "raw_descricao": "Descrição: CALCIO"
     },
     {
       "numero_item": "33",
       "descricao": "CALCIO IONIZADO",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 14,
       "unidade": "UN",
@@ -484,13 +356,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "CALCIO IONIZADO"
+      "raw_descricao": "Descrição: CALCIO IONIZADO"
     },
     {
       "numero_item": "34",
       "descricao": "CAPTURA HIBRIDA",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
@@ -500,13 +372,29 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "CAPTURA HIBRIDA"
+      "raw_descricao": "Descrição: CAPTURA HIBRIDA"
+    },
+    {
+      "numero_item": "35",
+      "descricao": "DENGUE IGG",
+      "tipo": "produto",
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": "UN",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Descrição:  DENGUE IGG"
     },
     {
       "numero_item": "48",
-      "descricao": "COOMBS DIRETO",
-      "tipo": null,
-      "marca": "exames",
+      "descricao": "COOMBS INDIRETO",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": 20,
       "unidade": "UN",
@@ -516,13 +404,13 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "COOMBS DIRETO"
+      "raw_descricao": "Descrição: COOMBS INDIRETO"
     },
     {
       "numero_item": "49",
       "descricao": "COPROCULTURA",
-      "tipo": null,
-      "marca": "exames",
+      "tipo": "produto",
+      "marca": null,
       "modelo": "laboratorio",
       "quantidade": null,
       "unidade": "UN",
@@ -532,12 +420,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "COPROCULTURA"
+      "raw_descricao": "Descrição: COPROCULTURA"
     },
     {
       "numero_item": "50",
       "descricao": "CORTISOL BASAL",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -553,23 +441,7 @@
     {
       "numero_item": "51",
       "descricao": "CORTISOL LIVRE URINA 24HRS",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 6.78,
-      "valor_total": 67.8,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: CORTISOL LIVRE URINA 24HRS"
-    },
-    {
-      "numero_item": "52",
-      "descricao": "CREATININA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 5,
@@ -580,12 +452,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CREATININA"
+      "raw_descricao": "Descrição: CORTISOL LIVRE URINA 24HRS"
     },
     {
-      "numero_item": "53",
-      "descricao": "CREATINO FOSFOQ. FRACAO MB",
-      "tipo": null,
+      "numero_item": "52",
+      "descricao": "CREATININA",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 700,
@@ -596,12 +468,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CREATINO FOSFOQ. FRACAO MB"
+      "raw_descricao": "Descrição: CREATININA"
     },
     {
-      "numero_item": "54",
-      "descricao": "CREATINOFOSFOQUINASE",
-      "tipo": null,
+      "numero_item": "53",
+      "descricao": "CREATINO FOSFOQ. FRACAO MB",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 80,
@@ -612,12 +484,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CREATINOFOSFOQUINASE"
+      "raw_descricao": "Descrição: CREATINO FOSFOQ. FRACAO MB"
     },
     {
-      "numero_item": "55",
-      "descricao": "CULTURA DE BAAR",
-      "tipo": null,
+      "numero_item": "54",
+      "descricao": "CREATINOFOSFOQUINASE",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 80,
@@ -628,12 +500,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CULTURA DE BAAR"
+      "raw_descricao": "Descrição: CREATINOFOSFOQUINASE"
     },
     {
-      "numero_item": "56",
-      "descricao": "CULTURA GERAL",
-      "tipo": null,
+      "numero_item": "55",
+      "descricao": "CULTURA DE BAAR",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 36,
@@ -644,12 +516,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CULTURA GERAL"
+      "raw_descricao": "Descrição: CULTURA DE BAAR"
     },
     {
-      "numero_item": "57",
-      "descricao": "CURVA GLICEMICA.",
-      "tipo": null,
+      "numero_item": "56",
+      "descricao": "CULTURA GERAL",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 36,
@@ -660,12 +532,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: CURVA GLICEMICA."
+      "raw_descricao": "Descrição: CULTURA GERAL"
     },
     {
-      "numero_item": "58",
-      "descricao": "DEHIDROEPIANDROSTERONA.",
-      "tipo": null,
+      "numero_item": "57",
+      "descricao": "CURVA GLICEMICA.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -676,12 +548,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: DEHIDROEPIANDROSTERONA."
+      "raw_descricao": "Descrição: CURVA GLICEMICA."
     },
     {
-      "numero_item": "59",
-      "descricao": "DENGUE IGM",
-      "tipo": null,
+      "numero_item": "58",
+      "descricao": "DEHIDROEPIANDROSTERONA.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 20,
@@ -692,15 +564,47 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
+      "raw_descricao": "Descrição: DEHIDROEPIANDROSTERONA."
+    },
+    {
+      "numero_item": "60",
+      "descricao": "DENGUE IGM",
+      "tipo": "produto",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 50,
+      "unidade": "UN",
+      "valor_unitario": 11.18,
+      "valor_total": 559.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
       "raw_descricao": "Descrição: DENGUE IGM"
+    },
+    {
+      "numero_item": "61",
+      "descricao": "DESIDROGENASE LATICA",
+      "tipo": "produto",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 90,
+      "unidade": "UN",
+      "valor_unitario": 9.65,
+      "valor_total": 549.7,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Descrição: DESIDROGENASE LATICA"
     },
     {
       "numero_item": "63",
       "descricao": "ELETROFORESE DE HEMOGLOBINA",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
+      "modelo": null,
+      "quantidade": 36,
       "unidade": "UN",
       "valor_unitario": 9.39,
       "valor_total": 338.04,
@@ -713,10 +617,10 @@
     {
       "numero_item": "64",
       "descricao": "ELETROFORESE DE PROTEINAS",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
+      "modelo": null,
+      "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 2.71,
       "valor_total": 32.52,
@@ -729,7 +633,7 @@
     {
       "numero_item": "65",
       "descricao": "ENDOMISIO IGA",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": null,
       "quantidade": 12,
@@ -744,27 +648,11 @@
     },
     {
       "numero_item": "66",
-      "descricao": "ENDOMISIO IGG",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
-      "unidade": "UN",
-      "valor_unitario": 22.83,
-      "valor_total": 273.96,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: ENDOMISIO IGG"
-    },
-    {
-      "numero_item": "67",
       "descricao": "ENDOMISIO IGM",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
+      "modelo": null,
+      "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 26.42,
       "valor_total": 317.04,
@@ -775,12 +663,12 @@
       "raw_descricao": "Descrição: ENDOMISIO IGM"
     },
     {
-      "numero_item": "68",
+      "numero_item": "67",
       "descricao": "EPSTEIN BARR VIRUS IGM",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
+      "modelo": null,
+      "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 9.47,
       "valor_total": 113.64,
@@ -791,12 +679,12 @@
       "raw_descricao": "Descrição: EPSTEIN BARR VIRUS IGM"
     },
     {
-      "numero_item": "69",
+      "numero_item": "68",
       "descricao": "EPSTEIN BARR VIRUS IGG",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": null,
+      "modelo": null,
+      "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 8.1,
       "valor_total": 97.2,
@@ -807,13 +695,13 @@
       "raw_descricao": "Descrição: EPSTEIN BARR VIRUS IGG"
     },
     {
-      "numero_item": null,
+      "numero_item": "69",
       "descricao": "ESPERMOCULTURA",
-      "tipo": null,
-      "marca": null,
+      "tipo": "exame",
+      "marca": "exames",
       "modelo": null,
-      "quantidade": null,
-      "unidade": null,
+      "quantidade": 12,
+      "unidade": "UN",
       "valor_unitario": 22.03,
       "valor_total": 264.36,
       "fornecedor": null,
@@ -825,7 +713,7 @@
     {
       "numero_item": "70",
       "descricao": "ESPERMOGRAMA (POS VASECTOMIA)",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -834,14 +722,17 @@
       "valor_total": 113.4,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 16,13",
+        "Valor Unit.: 9,45"
+      ],
       "observacoes": null,
-      "raw_descricao": "ESPERMOGRAMA (POS VASECTOMIA)"
+      "raw_descricao": "Descrição: ESPERMOGRAMA (POS VASECTOMIA)"
     },
     {
       "numero_item": "71",
       "descricao": "ESTRADIOL",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 15,
@@ -850,14 +741,17 @@
       "valor_total": 73.65,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 8,37",
+        "Unit.: 4,91"
+      ],
       "observacoes": null,
-      "raw_descricao": "ESTRADIOL"
+      "raw_descricao": "Descrição: ESTRADIOL"
     },
     {
       "numero_item": "72",
       "descricao": "ESTREPTOCOCOS BETA HEMOLITICOS PESQ",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 60,
@@ -866,14 +760,17 @@
       "valor_total": 523.8,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 14,89",
+        "Valor Unit.: 8,73"
+      ],
       "observacoes": null,
-      "raw_descricao": "ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
+      "raw_descricao": "Descrição: ESTREPTOCOCOS BETA HEMOLITICOS PESQ"
     },
     {
       "numero_item": "73",
       "descricao": "ESTRIOL E3",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -882,14 +779,17 @@
       "valor_total": 68.7,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 11,72",
+        "Valor Unit.: 6,87"
+      ],
       "observacoes": null,
-      "raw_descricao": "ESTRIOL E3"
+      "raw_descricao": "Descrição: ESTRIOL E3"
     },
     {
       "numero_item": "74",
       "descricao": "ESTRONA",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -898,14 +798,17 @@
       "valor_total": 66.2,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 11,29",
+        "Valor Unit.: 6,62"
+      ],
       "observacoes": null,
-      "raw_descricao": "ESTRONA"
+      "raw_descricao": "Descrição: ESTRONA"
     },
     {
       "numero_item": "75",
       "descricao": "EXAME TOXICOLÓGICO",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 15,
@@ -914,14 +817,17 @@
       "valor_total": 1157.55,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 131,67",
+        "Valor Unit.: 77,17"
+      ],
       "observacoes": null,
-      "raw_descricao": "EXAME TOXICOLÓGICO"
+      "raw_descricao": "Descrição: EXAME TOXICOLÓGICO"
     },
     {
       "numero_item": "76",
       "descricao": "FATOR ANTI NUCLEO",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -930,14 +836,17 @@
       "valor_total": 108.6,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 15,45",
+        "Valor Unit.: 9,05"
+      ],
       "observacoes": null,
-      "raw_descricao": "FATOR ANTI NUCLEO"
+      "raw_descricao": "Descrição: FATOR ANTI NUCLEO"
     },
     {
       "numero_item": "77",
       "descricao": "FATOR REUMATOIDE - LATEX",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -946,14 +855,17 @@
       "valor_total": 30.48,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 4,34",
+        "Valor Unit.: 2,54"
+      ],
       "observacoes": null,
-      "raw_descricao": "FATOR REUMATOIDE - LATEX"
+      "raw_descricao": "Descrição: FATOR REUMATOIDE - LATEX"
     },
     {
       "numero_item": "79",
       "descricao": "FERRITINA",
-      "tipo": "produto",
+      "tipo": "EXAME",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 300,
@@ -962,14 +874,17 @@
       "valor_total": 1869.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Val. Ref.: 10,63",
+        "Valor Unit.: 6,23"
+      ],
       "observacoes": null,
-      "raw_descricao": "FERRITINA"
+      "raw_descricao": "Descrição: FERRITINA"
     },
     {
       "numero_item": "80",
       "descricao": "FERRO (EXAME)",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 300,
@@ -985,7 +900,7 @@
     {
       "numero_item": "81",
       "descricao": "FIBRINOGENIO.",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1001,13 +916,13 @@
     {
       "numero_item": "82",
       "descricao": "FOSFATASE ALCALINA.",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 50,
+      "quantidade": 100,
       "unidade": "UN",
       "valor_unitario": 1.41,
-      "valor_total": 70.5,
+      "valor_total": 141.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
@@ -1017,7 +932,7 @@
     {
       "numero_item": "83",
       "descricao": "FÓSFORO",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1033,7 +948,7 @@
     {
       "numero_item": "85",
       "descricao": "FTA ABS IGG",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1049,7 +964,7 @@
     {
       "numero_item": "86",
       "descricao": "FTA ABS IGM",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1065,7 +980,7 @@
     {
       "numero_item": "87",
       "descricao": "GAMA GLUTAMIL TRASNFERASE",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 85,
@@ -1081,7 +996,7 @@
     {
       "numero_item": "88",
       "descricao": "GASOMETRIA",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1097,7 +1012,7 @@
     {
       "numero_item": "89",
       "descricao": "GLIADINA IGA",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1113,7 +1028,7 @@
     {
       "numero_item": "90",
       "descricao": "GLIADINA IGM",
-      "tipo": null,
+      "tipo": "serviço",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1129,7 +1044,7 @@
     {
       "numero_item": "91",
       "descricao": "GLIADINA IGG",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1140,12 +1055,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GLIADINA IGG"
+      "raw_descricao": "Descrição: GLIADINA IGG"
     },
     {
       "numero_item": "92",
       "descricao": "GLICOSE JEJUM",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 1200,
@@ -1156,12 +1071,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GLICOSE JEJUM"
+      "raw_descricao": "Descrição: GLICOSE JEJUM"
     },
     {
       "numero_item": "93",
       "descricao": "GLICOSE POS PRANDIAL",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1172,12 +1087,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GLICOSE POS PRANDIAL"
+      "raw_descricao": "Descrição: GLICOSE POS PRANDIAL"
     },
     {
       "numero_item": "94",
       "descricao": "GONADOTROFINA CORIÔNICA - BETA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1188,12 +1103,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GONADOTROFINA CORIÔNICA - BETA"
+      "raw_descricao": "Descrição: GONADOTROFINA CORIÔNICA - BETA"
     },
     {
       "numero_item": "95",
       "descricao": "GONADOTROFINA CORIÔNICA QUANTITATIV",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1204,28 +1119,28 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GONADOTROFINA CORIÔNICA QUANTITATIV"
+      "raw_descricao": "Descrição: GONADOTROFINA CORIÔNICA QUANTITATIV"
     },
     {
       "numero_item": "96",
       "descricao": "GORDURA FECAL PESQUISA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 20,
+      "quantidade": null,
       "unidade": "UN",
-      "valor_unitario": 4.06,
-      "valor_total": 81.2,
+      "valor_unitario": null,
+      "valor_total": null,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GORDURA FECAL PESQUISA"
+      "raw_descricao": "Descrição:  GORDURA FECAL PESQUISA"
     },
     {
       "numero_item": "97",
       "descricao": "GRUPO SANGUINEO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 300,
@@ -1236,12 +1151,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "GRUPO SANGUINEO"
+      "raw_descricao": "Descrição: GRUPO SANGUINEO"
     },
     {
       "numero_item": "98",
       "descricao": "HDL COLESTEROL",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 700,
@@ -1252,12 +1167,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "HDL COLESTEROL"
+      "raw_descricao": "Descrição: HDL COLESTEROL"
     },
     {
       "numero_item": "99",
-      "descricao": "HEMOGLABINA GLICADA",
-      "tipo": null,
+      "descricao": "HEMOGLOBINA GLICADA",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 800,
@@ -1268,12 +1183,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "HEMOGLABINA GLICADA"
+      "raw_descricao": "Descrição: HEMOGLOBINA GLICADA"
     },
     {
       "numero_item": "100",
       "descricao": "HEMOGRAMA COMPLETO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 1600,
@@ -1284,12 +1199,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "HEMOGRAMA COMPLETO"
+      "raw_descricao": "Descrição: HEMOGRAMA COMPLETO"
     },
     {
       "numero_item": "101",
       "descricao": "HEPATITE A - ANTI HVA IGG",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1300,60 +1215,44 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "HEPATITE A - ANTI HVA IGG"
+      "raw_descricao": "Descrição: HEPATITE A - ANTI HVA IGG"
     },
     {
       "numero_item": "102",
       "descricao": "HEPATITE A - ANTI HVA IGM",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 10,
+      "quantidade": 20,
       "unidade": "UN",
       "valor_unitario": 9.79,
-      "valor_total": 97.9,
+      "valor_total": 195.8,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "HEPATITE A - ANTI HVA IGM"
+      "raw_descricao": "Descrição: HEPATITE A - ANTI HVA IGM"
     },
     {
       "numero_item": "104",
-      "descricao": "HEPATITE B HBSAG",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 50,
-      "unidade": "UN",
-      "valor_unitario": 10.18,
-      "valor_total": 509.0,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: HEPATITE B HBSAG"
-    },
-    {
-      "numero_item": "105",
       "descricao": "HEPATITE C",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 50,
+      "quantidade": 100,
       "unidade": "UN",
       "valor_unitario": 9.85,
-      "valor_total": 492.5,
+      "valor_total": 985.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: HEPATITE C"
+      "raw_descricao": "HEPATITE C"
     },
     {
       "numero_item": "106",
       "descricao": "HOMOCISTEINA NO SANGUE",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1364,12 +1263,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: HOMOCISTEINA NO SANGUE"
+      "raw_descricao": "HOMOCISTEINA NO SANGUE"
     },
     {
       "numero_item": "107",
       "descricao": "HORMONIO ADRENO CORTICOTROFICO",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1380,28 +1279,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: HORMONIO ADRENO CORTICOTROFICO"
-    },
-    {
-      "numero_item": "108",
-      "descricao": "HORMONIO DO CRESCIMENTO",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 10.13,
-      "valor_total": 101.3,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: HORMONIO DO CRESCIMENTO"
+      "raw_descricao": "HORMONIO ADRENO CORTICOTROFICO"
     },
     {
       "numero_item": "108",
       "descricao": "HORMONIO TIREOESTIMULANTE (TSH)",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 1130,
@@ -1412,12 +1295,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: HORMONIO TIREOESTIMULANTE (TSH)"
+      "raw_descricao": "HORMONIO TIREOESTIMULANTE (TSH)"
     },
     {
       "numero_item": "122",
       "descricao": "LDL COLESTEROL",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 900,
@@ -1428,28 +1311,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: LDL COLESTEROL"
+      "raw_descricao": "LDL COLESTEROL"
     },
     {
       "numero_item": "123",
-      "descricao": "LH - HORMONIO LUTEINIZANTE",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 12,
-      "unidade": "UN",
-      "valor_unitario": 4.52,
-      "valor_total": 54.24,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: LH - HORMONIO LUTEINIZANTE"
-    },
-    {
-      "numero_item": "124",
       "descricao": "LACTATO",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1460,12 +1327,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: LACTATO"
+      "raw_descricao": "LACTATO"
     },
     {
-      "numero_item": "125",
+      "numero_item": "124",
       "descricao": "LIPASE",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1476,28 +1343,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: LIPASE"
+      "raw_descricao": "LIPASE"
     },
     {
       "numero_item": "126",
-      "descricao": "LIPOPROTEINAS",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 12,
-      "unidade": "UN",
-      "valor_unitario": 5.07,
-      "valor_total": 64.2,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: LIPOPROTEINAS"
-    },
-    {
-      "numero_item": "127",
-      "descricao": "LITIO",
-      "tipo": null,
+      "descricao": "LIPIDOGRAMA 12",
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1508,28 +1359,44 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: LITIO"
+      "raw_descricao": "LIPIDOGRAMA 12"
     },
     {
-      "numero_item": "128",
-      "descricao": "LKM-1",
-      "tipo": null,
+      "numero_item": "127",
+      "descricao": "LITIO",
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
-      "valor_unitario": 9.18,
-      "valor_total": 110.16,
+      "valor_unitario": 5.07,
+      "valor_total": 60.84,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: LKM-1"
+      "raw_descricao": "LITIO"
+    },
+    {
+      "numero_item": "128",
+      "descricao": "LKM-1 12",
+      "tipo": "exame",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": null,
+      "unidade": "UN",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "LKM-1 12"
     },
     {
       "numero_item": "129",
       "descricao": "MAGNESIO",
-      "tipo": null,
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1540,30 +1407,30 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: MAGNESIO"
+      "raw_descricao": "MAGNESIO"
     },
     {
       "numero_item": "130",
-      "descricao": "MELATONINA SÉRICA",
-      "tipo": null,
+      "descricao": "MELATONINA SÉRICA 12",
+      "tipo": "exame",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
-      "valor_unitario": 134.22,
-      "valor_total": 1610.64,
+      "valor_unitario": null,
+      "valor_total": null,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: MELATONINA SÉRICA"
+      "raw_descricao": "MELATONINA SÉRICA 12"
     },
     {
       "numero_item": "131",
-      "descricao": "laboratorio",
-      "tipo": "exames",
+      "descricao": null,
+      "tipo": "DIRETO",
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 102.72,
@@ -1572,62 +1439,46 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "laboratorio"
+      "raw_descricao": "Item: 131 | Descrição:                                                                        |                                               |                                                 |                                                                                           | Total Item: 1.232,64 | Quantidade:                                                                       | Val. Ref.: 19,73                              |                                                 | Modelo:                                                                                   | 12                                                                                | DIRETO                                        | Marca: exames                                   | laboratorio                                                                               |"
     },
     {
       "numero_item": "132",
       "descricao": "MICOLOGICO",
       "tipo": null,
-      "marca": null,
-      "modelo": null,
+      "marca": "exames",
+      "modelo": "laboratorio",
       "quantidade": 12,
-      "unidade": "UN",
+      "unidade": null,
       "valor_unitario": 11.56,
       "valor_total": 138.72,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "MICOLOGICO"
-    },
-    {
-      "numero_item": "133",
-      "descricao": "MICROALBUMINURIA 24 HORAS",
-      "tipo": "exames",
-      "marca": "exames",
-      "modelo": null,
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 8.7,
-      "valor_total": 87.0,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "MICROALBUMINURIA 24 HORAS"
+      "raw_descricao": "Item: 132 | Descrição: | MICOLOGICO | 11,56"
     },
     {
       "numero_item": "134",
       "descricao": "MICROALBUMINURIA AMOSTRA ISOLADA",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
-      "quantidade": 10,
+      "modelo": "laboratorio",
+      "quantidade": 100,
       "unidade": "UN",
-      "valor_unitario": 4.31,
-      "valor_total": 43.1,
+      "valor_unitario": 3.88,
+      "valor_total": 388.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "MICROALBUMINURIA AMOSTRA ISOLADA"
+      "raw_descricao": "Item: 134 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MICROALBUMINURIA AMOSTRA ISOLADA | Quantidade: | 100 Val. Ref.: | 6,62 Valor Unit.: | 3,88 | Total Item: 388,00"
     },
     {
       "numero_item": "135",
       "descricao": "MITOCONDRIA - ANTICORPOS",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
       "valor_unitario": 8.7,
@@ -1636,14 +1487,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "MITOCONDRIA - ANTICORPOS"
+      "raw_descricao": "Item: 135 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MITOCONDRIA - ANTICORPOS | Quantidade: 10 | Val. Ref.: |  Valor Unit.: 8,70 | Total Item: 87,00"
     },
     {
       "numero_item": "136",
       "descricao": "OXALATO URINARIO 24HRS",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
       "valor_unitario": 72.96,
@@ -1652,14 +1503,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "OXALATO URINARIO 24HRS"
+      "raw_descricao": "Item: 136 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: OXALATO URINARIO 24HRS | Quantidade: 10 | Val. | Ref.: 124,50 Valor | Unit.: 72,96 | Total Item: 729,60"
     },
     {
       "numero_item": "137",
       "descricao": "PAPANICOLAOU",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 100,
       "unidade": "UN",
       "valor_unitario": 8.36,
@@ -1668,14 +1519,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PAPANICOLAOU"
+      "raw_descricao": "Item: 137 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PAPANICOLAOU | Quantidade: 100 | Val. | Ref.: 14,27 Valor | Unit.: 8,36 | Total Item: 836,00"
     },
     {
       "numero_item": "138",
       "descricao": "PARASITOLOGICO DE FEZES",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 400,
       "unidade": "UN",
       "valor_unitario": 4.71,
@@ -1684,14 +1535,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PARASITOLOGICO DE FEZES"
+      "raw_descricao": "Item: 138 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO | DE | FEZES | Total Item: 1.884,00"
     },
     {
       "numero_item": "139",
       "descricao": "PARASITOLOGICO DE FEZES 2",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 200,
       "unidade": "UN",
       "valor_unitario": 4.71,
@@ -1700,14 +1551,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PARASITOLOGICO DE FEZES 2"
+      "raw_descricao": "Item: 139 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 2 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00"
     },
     {
       "numero_item": "140",
       "descricao": "PARASITOLOGICO DE FEZES 3",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 200,
       "unidade": "UN",
       "valor_unitario": 4.71,
@@ -1716,14 +1567,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PARASITOLOGICO DE FEZES 3"
+      "raw_descricao": "Item: 140 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 3 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00"
     },
     {
       "numero_item": "141",
       "descricao": "PEPTIDEO NATRIURETICO",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 10,
       "unidade": "UN",
       "valor_unitario": 96.01,
@@ -1732,14 +1583,14 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PEPTIDEO NATRIURETICO"
+      "raw_descricao": "Item: 141 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PEPTIDEO NATRIURETICO | Quantidade: 10 | Val.: | Ref.: 163,83 Valor | Unit.: 96,01 | Total Item: 960,10"
     },
     {
       "numero_item": "142",
       "descricao": "PESQUISA DE BAAR",
-      "tipo": "exames",
+      "tipo": null,
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 36,
       "unidade": "UN",
       "valor_unitario": 11.76,
@@ -1748,12 +1599,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PESQUISA DE BAAR"
+      "raw_descricao": "Item: 142 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PESQUISA DE BAAR | Quantidade: 36 | Val. Ref.: 20,06 | Valor Unit.: 11,76 | Total Item: 423,36"
     },
     {
       "numero_item": "143",
       "descricao": "PESQUISA DE OXIURUS",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1769,7 +1620,7 @@
     {
       "numero_item": "144",
       "descricao": "POTASSIO",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 800,
@@ -1785,7 +1636,7 @@
     {
       "numero_item": "145",
       "descricao": "PROGESTERONA",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -1801,9 +1652,9 @@
     {
       "numero_item": "146",
       "descricao": "PROLACTINA",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 30,
       "unidade": "UN",
       "valor_unitario": 4.67,
@@ -1817,7 +1668,7 @@
     {
       "numero_item": "147",
       "descricao": "PROTEINA C REATIVA",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1833,7 +1684,7 @@
     {
       "numero_item": "148",
       "descricao": "PROTEINA C ULTRASENSIVEL",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1849,7 +1700,7 @@
     {
       "numero_item": "149",
       "descricao": "PROTEINAS TOTAIS E FRACOES",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -1865,7 +1716,7 @@
     {
       "numero_item": "150",
       "descricao": "PROTEINURIA DE 24 HORAS",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 80,
@@ -1881,7 +1732,7 @@
     {
       "numero_item": "151",
       "descricao": "PSA LIVRE",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 20,
@@ -1897,7 +1748,7 @@
     {
       "numero_item": "152",
       "descricao": "PSA TOTAL",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 250,
@@ -1913,7 +1764,7 @@
     {
       "numero_item": "153",
       "descricao": "PSA TOTAL E LIVRE",
-      "tipo": null,
+      "tipo": "servico",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -1928,8 +1779,8 @@
     },
     {
       "numero_item": "155",
-      "descricao": "PTH - HORMONIO DA PARATIREOIDE",
-      "tipo": null,
+      "descricao": "RAIVA - SOROLOGIA",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1940,12 +1791,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "PTH - HORMONIO DA PARATIREOIDE"
+      "raw_descricao": "Descrição: RAIVA - SOROLOGIA"
     },
     {
       "numero_item": "156",
-      "descricao": "RAIVA - SOROLOGIA",
-      "tipo": null,
+      "descricao": "RAST ABELHA",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -1956,28 +1807,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAIVA - SOROLOGIA"
+      "raw_descricao": "Descrição: RAST ABELHA"
     },
     {
       "numero_item": "157",
-      "descricao": "RAST ABELHA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 10,
-      "unidade": "UN",
-      "valor_unitario": 6.19,
-      "valor_total": 61.9,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "RAST ABELHA"
-    },
-    {
-      "numero_item": "158",
       "descricao": "RAST ACARO D.FARINAE",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 50,
@@ -1988,12 +1823,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAST ACARO D.FARINAE"
+      "raw_descricao": "Descrição: RAST ACARO D.FARINAE"
     },
     {
-      "numero_item": "159",
+      "numero_item": "158",
       "descricao": "RAST ACARO D.PTERONYSSINUS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2004,28 +1839,28 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAST ACARO D.PTERONYSSINUS"
+      "raw_descricao": "Descrição: RAST ACARO D.PTERONYSSINUS"
     },
     {
-      "numero_item": "160",
+      "numero_item": "159",
       "descricao": "RAST ACARUS SIRO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
-      "valor_unitario": 14.76,
-      "valor_total": 177.12,
+      "valor_unitario": 10.64,
+      "valor_total": 127.68,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAST ACARUS SIRO"
+      "raw_descricao": "Descrição: RAST ACARUS SIRO"
     },
     {
-      "numero_item": "161",
+      "numero_item": "160",
       "descricao": "RAST ACAROS MICROCERAS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -2036,28 +1871,28 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAST ACAROS MICROCERAS"
+      "raw_descricao": "Descrição: RAST ACAROS MICROCERAS"
     },
     {
-      "numero_item": "162",
+      "numero_item": "161",
       "descricao": "RAST AMENDOIM",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": 12,
+      "quantidade": 36,
       "unidade": "UN",
       "valor_unitario": 8.54,
-      "valor_total": 102.48,
+      "valor_total": 385.2,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "RAST AMENDOIM"
+      "raw_descricao": "Descrição: RAST AMENDOIM"
     },
     {
       "numero_item": "164",
       "descricao": "RAST CACAU",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -2073,7 +1908,7 @@
     {
       "numero_item": "165",
       "descricao": "RAST CASEINA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2087,15 +1922,15 @@
       "raw_descricao": "Descrição: RAST CASEINA"
     },
     {
-      "numero_item": "167",
+      "numero_item": "166",
       "descricao": "RAST CLARA DE OVO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
-      "valor_unitario": 7.38,
-      "valor_total": 88.56,
+      "valor_unitario": 37.11,
+      "valor_total": 445.32,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
@@ -2103,9 +1938,9 @@
       "raw_descricao": "Descrição: RAST CLARA DE OVO"
     },
     {
-      "numero_item": null,
+      "numero_item": "167",
       "descricao": "RAST CORANTE AMARELO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2121,7 +1956,7 @@
     {
       "numero_item": "169",
       "descricao": "RAST CORANTE VERMELHO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -2137,7 +1972,7 @@
     {
       "numero_item": "170",
       "descricao": "RAST FEIJAO BRANCO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2148,12 +1983,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST FEIJAO BRANCO"
+      "raw_descricao": "Descrição:  RAST FEIJAO BRANCO"
     },
     {
       "numero_item": "171",
       "descricao": "RAST FORMIGA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2169,7 +2004,7 @@
     {
       "numero_item": "172",
       "descricao": "RAST FUNGOS E LEVEDURAS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 50,
@@ -2185,7 +2020,7 @@
     {
       "numero_item": "173",
       "descricao": "RAST FX1 ALIMENTOS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2201,7 +2036,7 @@
     {
       "numero_item": "175",
       "descricao": "RAST FX3 ALIMENTOS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2217,7 +2052,7 @@
     {
       "numero_item": "176",
       "descricao": "RAST FX5 ALIMENTOS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2233,7 +2068,7 @@
     {
       "numero_item": "177",
       "descricao": "RAST GLUTEN",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2249,7 +2084,7 @@
     {
       "numero_item": "178",
       "descricao": "RAST GX1 GRAMINEAS (TABELA)",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2265,7 +2100,7 @@
     {
       "numero_item": "179",
       "descricao": "RAST IBUPROFENO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2281,7 +2116,7 @@
     {
       "numero_item": "180",
       "descricao": "RAST INALANTES (IX6)",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2297,7 +2132,7 @@
     {
       "numero_item": "181",
       "descricao": "RAST INSETO BARATA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2313,7 +2148,7 @@
     {
       "numero_item": "182",
       "descricao": "RAST LARANJA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2329,7 +2164,7 @@
     {
       "numero_item": "183",
       "descricao": "RAST LEITE E DERIVADOS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2345,9 +2180,9 @@
     {
       "numero_item": "184",
       "descricao": "RAST LATEX",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
-      "modelo": null,
+      "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 3.49,
@@ -2361,7 +2196,7 @@
     {
       "numero_item": "185",
       "descricao": "RAST MANGA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2377,7 +2212,7 @@
     {
       "numero_item": "186",
       "descricao": "RAST MILHO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -2388,12 +2223,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST MILHO"
+      "raw_descricao": "RAST MILHO"
     },
     {
       "numero_item": "187",
       "descricao": "RAST OVO (INTEIRO)",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -2404,12 +2239,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST OVO (INTEIRO)"
+      "raw_descricao": "RAST OVO (INTEIRO)"
     },
     {
       "numero_item": "188",
       "descricao": "RAST OVOMUCOIDE",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2420,12 +2255,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST OVOMUCOIDE"
+      "raw_descricao": "RAST OVOMUCOIDE"
     },
     {
       "numero_item": "189",
       "descricao": "RAST PEIXE BACALHAU",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2436,12 +2271,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST PEIXE BACALHAU"
+      "raw_descricao": "RAST PEIXE BACALHAU"
     },
     {
       "numero_item": "190",
       "descricao": "RAST PERNILONGO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2452,12 +2287,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST PERNILONGO"
+      "raw_descricao": "RAST PERNILONGO"
     },
     {
       "numero_item": "191",
       "descricao": "RAST PO DE CASA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 60,
@@ -2468,12 +2303,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST PO DE CASA"
+      "raw_descricao": "RAST PO DE CASA"
     },
     {
       "numero_item": "192",
       "descricao": "RAST PROTEINAS DO LEITE",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 50,
@@ -2484,12 +2319,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST PROTEINAS DO LEITE"
+      "raw_descricao": "RAST PROTEINAS DO LEITE"
     },
     {
       "numero_item": "193",
       "descricao": "RAST SOJA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -2500,12 +2335,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST SOJA"
+      "raw_descricao": "RAST SOJA"
     },
     {
       "numero_item": "194",
       "descricao": "RAST TABACO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2516,12 +2351,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RAST TABACO"
+      "raw_descricao": "RAST TABACO"
     },
     {
-      "numero_item": "195",
-      "descricao": "RAST TRIGO",
-      "tipo": null,
+      "numero_item": "196",
+      "descricao": "RENINA.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 60,
@@ -2532,28 +2367,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição:  RAST TRIGO"
-    },
-    {
-      "numero_item": "196",
-      "descricao": "RENINA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 5,
-      "unidade": "UN",
-      "valor_unitario": 18.23,
-      "valor_total": 91.15,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: RENINA."
+      "raw_descricao": "RENINA."
     },
     {
       "numero_item": "197",
       "descricao": "RETICULOCITOS",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -2564,7 +2383,7 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Descrição: RETICULOCITOS"
+      "raw_descricao": "RETICULOCITOS"
     },
     {
       "numero_item": "199",
@@ -2695,39 +2514,7 @@
       "raw_descricao": "Descrição: T T P A"
     },
     {
-      "numero_item": "207",
-      "descricao": "T3 LIVRE",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 12,
-      "unidade": "UN",
-      "valor_unitario": 5.91,
-      "valor_total": 70.92,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: T3 LIVRE"
-    },
-    {
       "numero_item": "208",
-      "descricao": "TAXA DE FILTRAÇÃO GLOMERULAR",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 12,
-      "unidade": "UN",
-      "valor_unitario": 7.1,
-      "valor_total": 85.2,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "Descrição: TAXA DE FILTRAÇÃO GLOMERULAR"
-    },
-    {
-      "numero_item": "209",
       "descricao": "TEMPO DE PROTROMBINA",
       "tipo": null,
       "marca": "exames",
@@ -2743,7 +2530,7 @@
       "raw_descricao": "Descrição: TEMPO DE PROTROMBINA"
     },
     {
-      "numero_item": "210",
+      "numero_item": "209",
       "descricao": "TEMPO DE SANGRAMENTO",
       "tipo": null,
       "marca": "exames",
@@ -2759,9 +2546,25 @@
       "raw_descricao": "Descrição: TEMPO DE SANGRAMENTO"
     },
     {
-      "numero_item": "211",
-      "descricao": "TESTOSTERONA TOTAL.",
+      "numero_item": "210",
+      "descricao": "TESTOSTERONA LIVRE",
       "tipo": null,
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": null,
+      "unidade": "UN",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Descrição: TESTOSTERONA LIVRE"
+    },
+    {
+      "numero_item": "211",
+      "descricao": "TESTOSTERON TOTAL.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -2770,14 +2573,17 @@
       "valor_total": 72.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TESTOSTERONA TOTAL."
+      "raw_descricao": "Quantidade: 10                           | Val. Ref.: 12,28                         | Valor Unit.: 7,20                        |                                          | Total Item: 72,00                        |\nItem: 211                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |\nDescrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           |"
     },
     {
       "numero_item": "212",
       "descricao": "TIREOGLOBULINA DOSAGEM",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 10,
@@ -2786,30 +2592,17 @@
       "valor_total": 66.8,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TIREOGLOBULINA DOSAGEM"
+      "raw_descricao": "Quantidade: 10                           | Val. Ref.: 9,51                          | Valor Unit.: 6,68                        |                                          | Total Item: 66,80                        |\nItem: 212                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição:                               | TIREOGLOBULINA                           | DOSAGEM                                  |                                          |                                          |"
     },
     {
       "numero_item": "213",
       "descricao": "TIROXINA",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 12,
-      "unidade": "UN",
-      "valor_unitario": 6.39,
-      "valor_total": 76.68,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "TIROXINA"
-    },
-    {
-      "numero_item": "214",
-      "descricao": "TIROXINA LIVRE",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 40,
@@ -2818,14 +2611,17 @@
       "valor_total": 190.4,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TIROXINA LIVRE"
+      "raw_descricao": "Quantidade: 40                           | Val. Ref.: 8,13                          | Valor Unit.: 4,76                        |                                          | Total Item: 190,40                       |\nItem: 213                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      |"
     },
     {
-      "numero_item": "215",
-      "descricao": "TOLERANCIA A LACTOSE - 30 MIN",
-      "tipo": null,
+      "numero_item": "214",
+      "descricao": "TIROXINA LIVRE",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 370,
@@ -2834,14 +2630,17 @@
       "valor_total": 2390.2,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TOLERANCIA A LACTOSE - 30 MIN"
+      "raw_descricao": "Quantidade: 370                          | Val. Ref.: 11,02                         | Valor Unit.: 6,46                        | Total Item: 2.390,20                     |\nItem: 214                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                |"
     },
     {
-      "numero_item": "216",
-      "descricao": "TOLERANCIA A LACTOSE - 60 MIN",
-      "tipo": null,
+      "numero_item": "215",
+      "descricao": "TOLERANCIA A LACTOSE - 30 MIN",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2850,14 +2649,17 @@
       "valor_total": 103.68,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TOLERANCIA A LACTOSE - 60 MIN"
+      "raw_descricao": "Quantidade: 12                           | Val. Ref.: 14,75                         | Valor Unit.: 8,64                        |                                          | Total Item: 103,68                       |\nItem: 215                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TOLERANCIA A LACTOSE - 30 MIN"
     },
     {
-      "numero_item": "217",
-      "descricao": "TOLERANCIA A LACTOSE - BASAL",
-      "tipo": null,
+      "numero_item": "216",
+      "descricao": "TOLERANCIA A LACTOSE - 60 MIN",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2866,14 +2668,17 @@
       "valor_total": 107.64,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TOLERANCIA A LACTOSE - BASAL"
+      "raw_descricao": "Quantidade: 12                           | Val. Ref.: 15,30                         | Valor Unit.: 8,97                        | Total Item: 107,64                       |\nItem: 216                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TOLERANCIA A LACTOSE - 60 MIN"
     },
     {
-      "numero_item": "218",
-      "descricao": "TOXOPLASMOSE ELISA IGG",
-      "tipo": null,
+      "numero_item": "217",
+      "descricao": "TOLERANCIA A LACTOSE - BASAL",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2882,14 +2687,17 @@
       "valor_total": 111.0,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TOXOPLASMOSE ELISA IGG"
+      "raw_descricao": "Quantidade: 12                           | Val.                                     | Ref.: 15,79                              | Valor Unit.: 9,25                        | Total Item: 111,00                       |\nItem: 217                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TOLERANCIA A LACTOSE - BASAL"
     },
     {
-      "numero_item": "219",
-      "descricao": "TOXOPLASMOSE ELISA IGM",
-      "tipo": null,
+      "numero_item": "218",
+      "descricao": "TOXOPLASMOSE ELISA IGG",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 80,
@@ -2898,14 +2706,36 @@
       "valor_total": 524.8,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TOXOPLASMOSE ELISA IGM"
+      "raw_descricao": "Quantidade: 80                           | Val. Ref.: 11,19                         | Valor Unit.: 6,56                        | Total Item: 524,80                       |\nItem: 218                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        |"
+    },
+    {
+      "numero_item": "219",
+      "descricao": "TOXOPLASMOSE ELISA IGM",
+      "tipo": "produto",
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 80,
+      "unidade": "UN",
+      "valor_unitario": 6.83,
+      "valor_total": 546.4,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Quantidade: 80                           | Val. Ref.: 11,65                         | Valor Unit.: 6,83                        | Total Item: 546,40                       |\nItem: 219                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |\nDescrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        |"
     },
     {
       "numero_item": "220",
       "descricao": "TRANSAMINASE OXALACETICA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 620,
@@ -2914,14 +2744,17 @@
       "valor_total": 700.6,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TRANSAMINASE OXALACETICA"
+      "raw_descricao": "Quantidade: 620                         | Val. Ref.: 1,92                                         | Valor Unit.: 1,13                                       | Total Item: 700,60                                      |\nItem: 220                                               | Unidade: UN                                             | Marca: exames                                           |                                                         | Modelo: laboratorio                                     |\nDescrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     |"
     },
     {
       "numero_item": "221",
       "descricao": "TRANSAMINASE PIRUVICA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 620,
@@ -2930,14 +2763,17 @@
       "valor_total": 688.2,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TRANSAMINASE PIRUVICA"
+      "raw_descricao": "Quantidade: 620                         | Val. Ref.: 1,90                                         | Valor Unit.: 1,11                                       |                                                         | Total Item: 688,20                                      |\nItem: 221 Unidade: UN Marca: exames Modelo: laboratorio | Descrição: TRANSAMINASE PIRUVICA"
     },
     {
       "numero_item": "222",
       "descricao": "TRANSFERRINA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -2946,14 +2782,17 @@
       "valor_total": 28.92,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TRANSFERRINA"
+      "raw_descricao": "Quantidade: 12                                          | Val. Ref.:                                              | 4,11 Valor                                              | Unit.: 2,41                                             | Total Item: 28,92                                       |\nItem: 222                                               | Unidade:                                      | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |\nDescrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 |"
     },
     {
       "numero_item": "223",
       "descricao": "TRANSGLUTAMINASE IGA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 24,
@@ -2962,14 +2801,17 @@
       "valor_total": 544.32,
       "fornecedor": null,
       "cnpj_fornecedor": null,
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: exames",
+        "Modelo: laboratorio"
+      ],
       "observacoes": null,
-      "raw_descricao": "TRANSGLUTAMINASE IGA"
+      "raw_descricao": "Quantidade: 24                                          | Val.                                                    | Ref.: 38,70 Valor                                       | Unit.: 22,68                                            | Total Item: 544,32                                      |\nItem: 223                                               | Unidade: UN                                             | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |\nDescrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         |"
     },
     {
       "numero_item": "224",
       "descricao": "TRANSGLUTAMINASE IGG",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 2,
@@ -2980,12 +2822,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "TRANSGLUTAMINASE IGG"
+      "raw_descricao": "Descrição: TRANSGLUTAMINASE IGG"
     },
     {
       "numero_item": "225",
       "descricao": "TRIGLICÉRIDES",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 1000,
@@ -2996,12 +2838,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "TRIGLICÉRIDES"
+      "raw_descricao": "Descrição: TRIGLICÉRIDES"
     },
     {
       "numero_item": "226",
       "descricao": "TRIIODOTIRONINA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -3012,12 +2854,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "TRIIODOTIRONINA"
+      "raw_descricao": "Descrição: TRIIODOTIRONINA"
     },
     {
       "numero_item": "227",
-      "descricao": "UREIA",
-      "tipo": null,
+      "descricao": "UREIA....",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 600,
@@ -3028,12 +2870,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "UREIA...."
+      "raw_descricao": "Descrição: UREIA...."
     },
     {
       "numero_item": "228",
       "descricao": "URINA TIPO 1",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 1165,
@@ -3044,12 +2886,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "URINA TIPO 1"
+      "raw_descricao": "Descrição: URINA TIPO 1"
     },
     {
       "numero_item": "229",
       "descricao": "UROCULTURA",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 380,
@@ -3060,12 +2902,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "UROCULTURA"
+      "raw_descricao": "Descrição: UROCULTURA"
     },
     {
       "numero_item": "230",
       "descricao": "VDRL",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 170,
@@ -3076,12 +2918,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VDRL"
+      "raw_descricao": "Descrição: VDRL"
     },
     {
       "numero_item": "231",
       "descricao": "VELOC. DE HEMOSSEDIMENTACAO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 30,
@@ -3092,12 +2934,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VELOC. DE HEMOSSEDIMENTACAO"
+      "raw_descricao": "Descrição: VELOC. DE HEMOSSEDIMENTACAO"
     },
     {
-      "numero_item": "232",
+      "numero_item": "233",
       "descricao": "VITAMINA A",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
@@ -3108,28 +2950,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA A"
-    },
-    {
-      "numero_item": "233",
-      "descricao": "VITAMINA B 12",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 350,
-      "unidade": "UN",
-      "valor_unitario": 7.6,
-      "valor_total": 2660.0,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA B 12"
+      "raw_descricao": "Descrição: VITAMINA A"
     },
     {
       "numero_item": "234",
       "descricao": "VITAMINA B1",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": null,
@@ -3140,44 +2966,44 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA B1"
+      "raw_descricao": "Descrição: VITAMINA B1"
     },
     {
       "numero_item": "235",
       "descricao": "VITAMINA B6",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
-      "valor_unitario": 75.26,
-      "valor_total": 903.12,
+      "valor_unitario": null,
+      "valor_total": 134.76,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA B6"
+      "raw_descricao": "Descrição: VITAMINA B6"
     },
     {
-      "numero_item": "236",
+      "numero_item": "237",
       "descricao": "VITAMINA C (ÁCIDO ASCÓRBICO)",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 12,
       "unidade": "UN",
       "valor_unitario": 11.23,
-      "valor_total": null,
+      "valor_total": 134.76,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA C (ÁCIDO ASCÓRBICO)"
+      "raw_descricao": "Descrição: VITAMINA C (ÁCIDO ASCÓRBICO)"
     },
     {
-      "numero_item": "237",
-      "descricao": "VITAMINA D 25",
-      "tipo": null,
+      "numero_item": "238",
+      "descricao": "VITAMINA D 25.",
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 250,
@@ -3188,12 +3014,12 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA D 25."
+      "raw_descricao": "Descrição: VITAMINA D 25."
     },
     {
-      "numero_item": "238",
+      "numero_item": "239",
       "descricao": "VITAMINA E (EXAME)",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
       "quantidade": 20,
@@ -3204,31 +3030,15 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "VITAMINA E (EXAME)"
-    },
-    {
-      "numero_item": "239",
-      "descricao": "VITAMINA K",
-      "tipo": null,
-      "marca": "exames",
-      "modelo": "laboratorio",
-      "quantidade": 20,
-      "unidade": "UN",
-      "valor_unitario": null,
-      "valor_total": null,
-      "fornecedor": null,
-      "cnpj_fornecedor": null,
-      "especificacoes": [],
-      "observacoes": null,
-      "raw_descricao": "VITAMINA K"
+      "raw_descricao": "Descrição: VITAMINA E (EXAME)"
     },
     {
       "numero_item": "240",
       "descricao": "WAALER-ROSE",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": "laboratorio",
-      "quantidade": null,
+      "quantidade": 20,
       "unidade": "UN",
       "valor_unitario": 101.58,
       "valor_total": 2031.6,
@@ -3236,25 +3046,25 @@
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "WAALER-ROSE"
+      "raw_descricao": "Descrição: WAALER-ROSE"
     },
     {
       "numero_item": "241",
       "descricao": "ZINCO",
-      "tipo": null,
+      "tipo": "produto",
       "marca": "exames",
       "modelo": null,
       "quantidade": 60,
       "unidade": "UN",
-      "valor_unitario": 15.54,
+      "valor_unitario": 9.11,
       "valor_total": 546.6,
       "fornecedor": null,
       "cnpj_fornecedor": null,
       "especificacoes": [],
       "observacoes": null,
-      "raw_descricao": "Item: 241 Unidade: UN Descrição: ZINCO Quantidade: 60 Val. Ref.: 15,54 Valor Total 546,60"
+      "raw_descricao": "Descrição: ZINCO Quantidade: 60\\nVal. Ref.: 15,54\\nUnit.: 9,11\\nTotal 546,60"
     }
   ],
-  "tokens_usados": 64039,
+  "tokens_usados": 213310,
   "aviso": "texto dividido em 19 chunks"
 }

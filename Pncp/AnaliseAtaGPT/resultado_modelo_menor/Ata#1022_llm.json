@@ -4,12 +4,12 @@
   "orgao": "Tribunal Regional Eleitoral do Paraná",
   "data_assinatura": null,
   "vigencia": null,
-  "objeto": "Registro de Preços para eventual aquisição de equipamentos de Infraestrutura, Core de rede, e contratação de serviços de instalação",
+  "objeto": "Registro de Preços para eventual aquisição de equipamentos de Infraestrutura, Core de rede, e contratação de serviços de instalação, visando atender às necessidades do Tribunal Regional Eleitoral do Paraná, conforme o edital, as especificações e condições do Anexo I - Termo de Referência e a proposta de preços apresentada, os quais, independentemente de transcrição, fazem parte deste instrumento, naquilo que não o contrarie.",
   "itens": [
     {
       "numero_item": "1",
       "descricao": "Switch - Tipo I",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "H3C",
       "modelo": "S9850-32H",
       "quantidade": 2,
@@ -18,14 +18,21 @@
       "valor_total": 164088.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: H3C",
+        "Modelo: S9850-32H",
+        "Unidade: unidade",
+        "Quantidade: 2",
+        "Valor Unitário: 82.044,00",
+        "Valor Total: 164.088,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Switch - Tipo I"
     },
     {
       "numero_item": "2",
       "descricao": "Switch - Tipo II",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "H3C",
       "modelo": "S6850-56HF",
       "quantidade": 8,
@@ -34,14 +41,21 @@
       "valor_total": 848000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: H3C",
+        "Modelo: S6850-56HF",
+        "Unidade: unidade",
+        "Quantidade: 8",
+        "Valor Unitário: 106.000,00",
+        "Valor Total: 848.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Switch - Tipo II"
     },
     {
       "numero_item": "3",
       "descricao": "Transceiver 1 GE Base-T",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "SGT00P10DR0A000",
       "quantidade": 12,
@@ -50,14 +64,21 @@
       "valor_total": 4800.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: SGT00P10DR0A000",
+        "Unidade: unidade",
+        "Quantidade: 12",
+        "Valor Unitário: 400,00",
+        "Valor Total: 4.800,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceiver 1 GE Base-T"
     },
     {
       "numero_item": "4",
       "descricao": "Transceiver 10 GE Base-T",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "SPT00M301000000",
       "quantidade": 20,
@@ -66,14 +87,21 @@
       "valor_total": 20000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: SPT00M301000000",
+        "Unidade: unidade",
+        "Quantidade: 20",
+        "Valor Unitário: 1.000,00",
+        "Valor Total: 20.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceiver 10 GE Base-T"
     },
     {
       "numero_item": "5",
       "descricao": "Transceivers 10GE-Base-LR",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "SPP13010100B000",
       "quantidade": 20,
@@ -82,14 +110,21 @@
       "valor_total": 4000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: SPP13010100B000",
+        "Unidade: unidade",
+        "Quantidade: 20",
+        "Valor Unitário: 200,00",
+        "Valor Total: 4.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceivers 10GE-Base-LR"
     },
     {
       "numero_item": "6",
       "descricao": "Transceivers 25GE-Base-LR",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "S2813010250F000",
       "quantidade": 20,
@@ -98,14 +133,21 @@
       "valor_total": 12000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: S2813010250F000",
+        "Unidade: unidade",
+        "Quantidade: 20",
+        "Valor Unitário: 600,00",
+        "Valor Total: 12.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceivers 25GE-Base-LR"
     },
     {
       "numero_item": "7",
       "descricao": "Transceivers 40GE-Base-LR",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "QFPQL010400D000",
       "quantidade": 20,
@@ -114,14 +156,21 @@
       "valor_total": 30000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: QFPQL010400D000",
+        "Unidade: unidade",
+        "Quantidade: 20",
+        "Valor Unitário: 1.500,00",
+        "Valor Total: 30.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceivers 40GE-Base-LR"
     },
     {
       "numero_item": "8",
       "descricao": "Transceivers 100GE-Base- LR",
-      "tipo": "Equipamento",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "Q28QD010C00D000",
       "quantidade": 20,
@@ -130,14 +179,21 @@
       "valor_total": 40000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: Q28QD010C00D000",
+        "Unidade: unidade",
+        "Quantidade: 20",
+        "Valor Unitário: 2.000,00",
+        "Valor Total: 40.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Transceivers 100GE-Base- LR"
     },
     {
       "numero_item": "9",
-      "descricao": "Cabo de interligação 10G (DAC) 5 metros",
-      "tipo": "Equipamento",
+      "descricao": "Cabo de interligaçao 10G (DAC) 5 metros",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "DAPSSM051000000",
       "quantidade": 10,
@@ -146,14 +202,21 @@
       "valor_total": 3000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: DAPSSM051000000",
+        "Unidade: unidade",
+        "Quantidade: 10",
+        "Valor Unitário: 300,00",
+        "Valor Total: 3.000,00"
+      ],
       "observacoes": null,
-      "raw_descricao": "Cabo de interligação 10G (DAC) 5 metros"
+      "raw_descricao": "Cabo de interligaçao 10G (DAC) 5 metros"
     },
     {
       "numero_item": "10",
-      "descricao": "Cabo de interligação 10G (DAC) 10 metros",
-      "tipo": "Equipamento",
+      "descricao": "Cabo de interligaçao  10G (DAC) 10 metros",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "DAPSSM101000000",
       "quantidade": 10,
@@ -162,14 +225,21 @@
       "valor_total": 8000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: DAPSSM101000000",
+        "Unidade: unidade",
+        "Quantidade: 10",
+        "Valor Unitário: 800,00",
+        "Valor Total: 8.000,00"
+      ],
       "observacoes": null,
-      "raw_descricao": "Cabo de interligação 10G (DAC) 10 metros"
+      "raw_descricao": "Cabo de interligaçao 10G (DAC) 10 metros"
     },
     {
       "numero_item": "11",
-      "descricao": "Cabo de interligação 40G (DAC) 3 metros",
-      "tipo": "Equipamento",
+      "descricao": "Cabo de interligaçao 40G (DAC) 3 metros",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "DAPQQM034000000",
       "quantidade": 10,
@@ -178,14 +248,21 @@
       "valor_total": 6000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: DAPQQM034000000",
+        "Unidade: unidade",
+        "Quantidade: 10",
+        "Valor Unitário: 600,00",
+        "Valor Total: 6.000,00"
+      ],
       "observacoes": null,
-      "raw_descricao": "Cabo de interligação 40G (DAC) 3 metros"
+      "raw_descricao": "Cabo de interligaçao 40G (DAC) 3 metros"
     },
     {
       "numero_item": "12",
-      "descricao": "Cabo de interligação 40G (DAC) 10 metros",
-      "tipo": "Equipamento",
+      "descricao": "Cabo de interligaçao 40G (DAC) 10 metros",
+      "tipo": "produto",
       "marca": "Skylane",
       "modelo": "DAAQQM104000000",
       "quantidade": 15,
@@ -194,14 +271,21 @@
       "valor_total": 30000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Skylane",
+        "Modelo: DAAQQM104000000",
+        "Unidade: unidade",
+        "Quantidade: 15",
+        "Valor Unitário: 2.000,00",
+        "Valor Total: 30.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Cabo de interligação 40G (DAC) 10 metros"
     },
     {
       "numero_item": "13",
       "descricao": "Software de Gerenciamento",
-      "tipo": "Software",
+      "tipo": "software",
       "marca": "H3C",
       "modelo": "AD-DC",
       "quantidade": 2,
@@ -210,27 +294,41 @@
       "valor_total": 1400000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: H3C",
+        "Modelo: AD-DC",
+        "Unidade: unidade",
+        "Quantidade: 2",
+        "Valor Unitário: 700.000,00",
+        "Valor Total: 1.400.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Software de Gerenciamento"
     },
     {
       "numero_item": "14",
-      "descricao": "Serviço de Instalação",
-      "tipo": "Serviço",
+      "descricao": "Serviço de Instalação Serviços: Roost",
+      "tipo": "serviço",
       "marca": "Roost",
-      "modelo": null,
+      "modelo": "-",
       "quantidade": 1,
       "unidade": "unidade",
       "valor_unitario": 30000.0,
       "valor_total": 30000.0,
       "fornecedor": "Roost Ltda",
       "cnpj_fornecedor": "78.931.474/0009-00",
-      "especificacoes": [],
+      "especificacoes": [
+        "Marca: Roost",
+        "Modelo: -",
+        "Unidade: unidade",
+        "Quantidade: 1",
+        "Valor Unitário: 30.000,00",
+        "Valor Total: 30.000,00"
+      ],
       "observacoes": null,
       "raw_descricao": "Serviço de Instalação Serviços: Roost"
     }
   ],
-  "tokens_usados": 11133,
+  "tokens_usados": 24046,
   "aviso": "texto dividido em 3 chunks"
 }
