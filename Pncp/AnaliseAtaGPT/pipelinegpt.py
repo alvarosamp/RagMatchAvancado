@@ -27,6 +27,7 @@ MAX_CHARS_POR_CHUNK = 10_000
 
 @dataclass
 class ItemAta:
+    lote: str | None = None
     numero_item: str | None = None
     descricao: str | None = None
     tipo: str | None = None
@@ -57,47 +58,102 @@ class ResultadoAnalise:
 
 
 # =========================
-# PROMPT AJUSTADO
+# PROMPT (ENGLISH, PROMPT-ENGINEERED)
 # =========================
 
-SYSTEM_PROMPT = """Você é um especialista em licitações públicas brasileiras e Atas de Registro de Preços (ARP).
+SYSTEM_PROMPT = """You are an expert in Brazilian public procurement and Price Registration Minutes (Atas de Registro de Preços – ARP).
 
-Sua tarefa é extrair APENAS os ITENS reais da ata.
+CONTEXT
+- The input text is the full content of an ata, in Brazilian Portuguese.
+- The text may contain legal clauses, terms of reference, conditions, penalties, headers, footers, and other administrative sections.
 
-IMPORTANTE:
-- Ignore cláusulas jurídicas, penalidades, reajustes, artigos de lei, cabeçalhos e rodapés.
-- Considere item válido apenas quando representar produto, equipamento ou serviço contratável.
-- Não invente dados.
-- Se um campo não existir com confiança, use null.
-- Preserve o texto original em raw_descricao.
-- Limpe prefixos como "ITEM 1", "LOTE 2", se aparecerem no início da descrição.
+YOUR GOAL
+- Extract ONLY the REAL CONTRACT ITEMS from the ata.
+- Each returned object in the "itens" list must correspond to a product, service, material, equipment, or LOT of supply that can actually be contracted.
 
-Retorne APENAS JSON válido com este formato:
+IMPORTANT FILTERING RULES
+- STRICTLY IGNORE:
+    - Legal/administrative clauses (e.g. "NEGOCIAÇÃO DE PREÇOS", "DAS SANÇÕES", "DA VIGÊNCIA", "DISPOSIÇÕES GERAIS").
+    - Articles of law and legal references.
+    - General conditions of participation, penalties, reajuste, cancelamento, adesão, recursos.
+    - Pure headers, page numbers, logos, footers, or institutional texts.
+    - Any text that is NOT clearly an item, lot, product or service description.
+
+DEFINITION OF A VALID ITEM
+- A valid item generally contains at least some of:
+    - Description of product/service.
+    - Quantity and unit.
+    - Unit price and/or total price.
+    - Supplier data.
+    - Technical specifications.
+- You MUST still return incomplete items when they are clearly real items (e.g. description + supplier but no price).
+
+HANDLING LOTES (LOTS)
+- Many atas organize items into LOTES (e.g. "LOTE 1", "LOTE ÚNICO", "LOTE 05").
+- When the text is organized by lots:
+    - Detect the lot identifier (for example: "LOTE 1", "LOTE ÚNICO", "Lote 03").
+    - For every item that belongs to that lot, fill the field "lote" with the lot label (e.g. "LOTE 1").
+- If the entire lot corresponds to a single product/service (a lot with only one item):
+    - You may treat the lot as a single item.
+    - Set "lote" with the lot label and "descricao" with the product/service name.
+- If a lot contains multiple items:
+    - Return one JSON object per item, all with the same "lote" value.
+
+TEXT CLEANING RULES
+- Always preserve the original text of the item in "raw_descricao" exactly as it appears in the ata.
+- For the field "descricao", you may clean the beginning of the text by removing prefixes like:
+    - "ITEM 1", "ITEM 2:", "Item 03 -"
+    - "LOTE 1", "LOTE 2 -", "Lote Único:"
+    when they are only structural markers and not part of the product name.
+
+VALUE NORMALIZATION RULES
+- Use numeric values (no quotes) for "quantidade", "valor_unitario" and "valor_total".
+- Remove currency symbols (e.g. "R$"), thousands separators, and spaces before parsing.
+- Use dot as decimal separator.
+- If the value is not clearly present or is unreliable, use null.
+
+SPECIFICATIONS RULES
+- "especificacoes" must contain ONLY real technical characteristics explicitly present in the text, such as:
+    - capacity, speed, ports, voltage, color, dimensions, category (e.g. Cat6), IEEE standards, etc.
+- Do NOT invent generic specifications.
+- If no clear technical specs exist, use an empty list.
+
+MISSING OR UNCERTAIN FIELDS
+- NEVER invent data.
+- If a field is missing, not clearly stated, or not reliable, set it to null.
+
+OUTPUT FORMAT (STRICT)
+- Return EXACTLY ONE valid JSON object (no markdown, no comments, no explanation).
+- Do NOT include any text before or after the JSON.
+- The JSON MUST follow this schema (keys and types exactly as below):
 {
-  "numero_ata": "string ou null",
-  "orgao": "string ou null",
-  "data_assinatura": "string ou null",
-  "vigencia": "string ou null",
-  "objeto": "string ou null",
-  "itens": [
-    {
-      "numero_item": "string ou null",
-      "descricao": "string ou null",
-      "raw_descricao": "string ou null",
-      "tipo": "string ou null",
-      "marca": "string ou null",
-      "modelo": "string ou null",
-      "quantidade": number ou null,
-      "unidade": "string ou null",
-      "valor_unitario": number ou null,
-      "valor_total": number ou null,
-      "fornecedor": "string ou null",
-      "cnpj_fornecedor": "string ou null",
-      "especificacoes": ["lista"],
-      "observacoes": "string ou null"
-    }
-  ]
+    "numero_ata": "string or null",
+    "orgao": "string or null",
+    "data_assinatura": "string or null",
+    "vigencia": "string or null",
+    "objeto": "string or null",
+    "itens": [
+        {
+            "lote": "string or null",
+            "numero_item": "string or null",
+            "descricao": "string or null",
+            "raw_descricao": "string or null",
+            "tipo": "string or null",
+            "marca": "string or null",
+            "modelo": "string or null",
+            "quantidade": number or null,
+            "unidade": "string or null",
+            "valor_unitario": number or null,
+            "valor_total": number or null,
+            "fornecedor": "string or null",
+            "cnpj_fornecedor": "string or null",
+            "especificacoes": ["string"],
+            "observacoes": "string or null"
+        }
+    ]
 }
+
+If you are unsure about any field, use null for that field.
 """
 
 USER_TEMPLATE = "Analise a ata abaixo e extraia somente os itens válidos:\n\n{texto}"
@@ -146,7 +202,7 @@ def _normalize_text_for_dedupe(s: str) -> str:
 
     stopwords = {
         "de", "da", "do", "para", "com",
-        "item", "lote", "registro",
+        "item", "registro",
         "ata", "contrato", "processo"
     }
     tokens = [t for t in s.split() if t not in stopwords]
@@ -205,6 +261,7 @@ def _dividir_em_chunks(texto: str, max_chars: int = MAX_CHARS_POR_CHUNK) -> list
 
 def _para_item(d: dict) -> ItemAta:
     return ItemAta(
+        lote=d.get("lote"),
         numero_item=d.get("numero_item"),
         descricao=d.get("descricao"),
         tipo=d.get("tipo"),

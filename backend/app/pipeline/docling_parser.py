@@ -129,6 +129,36 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 
         # Extrai chunks por elemento estrutural (parágrafos / tabelas)
         raw_chunks = _extract_chunks_from_doc(doc)
+
+        # Estatísticas por página para diagnóstico de quedas de página/cabeçalho/rodapé
+        try:
+            page_counts: dict[int, int] = {}
+            for c in raw_chunks:
+                if c.page is not None:
+                    page_counts[c.page] = page_counts.get(c.page, 0) + 1
+
+            total_pages: int | None = None
+            if hasattr(doc, "num_pages"):
+                total_pages = int(getattr(doc, "num_pages") or 0) or None
+            elif hasattr(doc, "pages"):
+                try:
+                    total_pages = len(getattr(doc, "pages"))
+                except Exception:
+                    total_pages = None
+
+            if page_counts:
+                sorted_counts = sorted(page_counts.items())
+                logger.info("[Docling] '%s' distribuição de chunks por página: %s", filename, sorted_counts)
+
+            if page_counts and total_pages:
+                presentes = set(page_counts.keys())
+                esperadas = set(range(1, total_pages + 1))
+                faltando = sorted(esperadas - presentes)
+                if faltando:
+                    logger.warning("[Docling] '%s' páginas sem chunks extraídos: %s (total=%s)", filename, faltando, total_pages)
+        except Exception:
+            # Logs de diagnóstico nunca devem quebrar o parser principal
+            logger.debug("[Docling] Falha ao calcular estatísticas por página para '%s'", filename)
     else:
         global _docling_warning_emitted
         if not _docling_warning_emitted:
@@ -163,6 +193,34 @@ def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
     idx = 0
     current_section = "Início"
 
+    def _guess_page(it) -> int | None:
+        """Tenta inferir o número da página a partir dos atributos do item.
+
+        Docling pode expor essa info em diferentes campos (page_idx, page_number,
+        bbox.page, etc.). Aqui usamos heurísticas seguras apenas para logging.
+        """
+        # page_idx (0‑based)
+        page = getattr(it, "page_idx", None)
+        if isinstance(page, int):
+            return page + 1
+
+        # page_number (1‑based)
+        page = getattr(it, "page_number", None)
+        if isinstance(page, int):
+            return page
+
+        # bbox.page ou bbox.page_index
+        bbox = getattr(it, "bbox", None)
+        if bbox is not None:
+            page = getattr(bbox, "page_index", None)
+            if isinstance(page, int):
+                return page + 1
+            page = getattr(bbox, "page", None)
+            if isinstance(page, int):
+                return page
+
+        return None
+
     for item, _ in doc.iterate_items():
         label = getattr(item, "label", "")
         text  = getattr(item, "text",  "").strip()
@@ -179,9 +237,12 @@ def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
         if label in _SKIP_LABELS:
             continue
 
+        page = _guess_page(item)
+
         chunks.append(ParsedChunk(
             chunk_idx = idx,
             text      = text,
+            page      = page,
             section   = current_section,
         ))
         idx += 1
