@@ -14,9 +14,14 @@ TEST_BASE = ROOT / "Pncp" / "Base de teste do analisador de atas"
 RESULTS_DIR = TEST_BASE / "results_test"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# Ensure repo root on sys.path so we can import the module
+# Ensure repo root on sys.path so we can resolve project-relative paths
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# The pipeline module lives under Pncp/AnaliseAtaLLM (not repo root)
+PIPELINE_DIR = ROOT / "Pncp" / "AnaliseAtaLLM"
+if str(PIPELINE_DIR) not in sys.path:
+    sys.path.insert(0, str(PIPELINE_DIR))
 
 import pipelinellm_prompt_ajustado as plc
 
