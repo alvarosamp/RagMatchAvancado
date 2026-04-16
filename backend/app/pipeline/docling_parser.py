@@ -336,6 +336,8 @@ def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChu
             skipped_label += 1
             continue
 
+        page = _guess_page(item)
+
         chunks.append(ParsedChunk(
             chunk_idx = idx,
             text      = text,

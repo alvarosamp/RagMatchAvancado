@@ -27,6 +27,7 @@ MAX_CHARS_POR_CHUNK = 10_000
 
 @dataclass
 class ItemAta:
+    lote: str | None = None
     numero_item: str | None = None
     descricao: str | None = None
     tipo: str | None = None
@@ -57,7 +58,7 @@ class ResultadoAnalise:
 
 
 # =========================
-# PROMPT AJUSTADO
+# PROMPT (ENGLISH, PROMPT-ENGINEERED)
 # =========================
 
 SYSTEM_PROMPT = """Você é um especialista em licitações públicas brasileiras e Atas de Registro de Preços (ARP).
@@ -83,30 +84,33 @@ IMPORTANTE:
 
 Retorne APENAS JSON válido com este formato:
 {
-  "numero_ata": "string ou null",
-  "orgao": "string ou null",
-  "data_assinatura": "string ou null",
-  "vigencia": "string ou null",
-  "objeto": "string ou null",
-  "itens": [
-    {
-      "numero_item": "string ou null",
-      "descricao": "string ou null",
-      "raw_descricao": "string ou null",
-      "tipo": "string ou null",
-      "marca": "string ou null",
-      "modelo": "string ou null",
-      "quantidade": number ou null,
-      "unidade": "string ou null",
-      "valor_unitario": number ou null,
-      "valor_total": number ou null,
-      "fornecedor": "string ou null",
-      "cnpj_fornecedor": "string ou null",
-      "especificacoes": ["lista"],
-      "observacoes": "string ou null"
-    }
-  ]
+    "numero_ata": "string or null",
+    "orgao": "string or null",
+    "data_assinatura": "string or null",
+    "vigencia": "string or null",
+    "objeto": "string or null",
+    "itens": [
+        {
+            "lote": "string or null",
+            "numero_item": "string or null",
+            "descricao": "string or null",
+            "raw_descricao": "string or null",
+            "tipo": "string or null",
+            "marca": "string or null",
+            "modelo": "string or null",
+            "quantidade": number or null,
+            "unidade": "string or null",
+            "valor_unitario": number or null,
+            "valor_total": number or null,
+            "fornecedor": "string or null",
+            "cnpj_fornecedor": "string or null",
+            "especificacoes": ["string"],
+            "observacoes": "string or null"
+        }
+    ]
 }
+
+If you are unsure about any field, use null for that field.
 """
 
 USER_TEMPLATE = "Analise a ata abaixo e extraia somente os itens válidos:\n\n{texto}"
@@ -155,7 +159,7 @@ def _normalize_text_for_dedupe(s: str) -> str:
 
     stopwords = {
         "de", "da", "do", "para", "com",
-        "item", "lote", "registro",
+        "item", "registro",
         "ata", "contrato", "processo"
     }
     tokens = [t for t in s.split() if t not in stopwords]
@@ -374,6 +378,7 @@ def _dividir_em_chunks(texto: str, max_chars: int = MAX_CHARS_POR_CHUNK) -> list
 
 def _para_item(d: dict) -> ItemAta:
     return ItemAta(
+        lote=d.get("lote"),
         numero_item=d.get("numero_item"),
         descricao=d.get("descricao"),
         tipo=d.get("tipo"),
