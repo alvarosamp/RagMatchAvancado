@@ -18,7 +18,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-nano") #5-nano
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 MAX_CHARS_POR_CHUNK = 10_000
 
 # =========================
@@ -61,71 +61,28 @@ class ResultadoAnalise:
 # PROMPT (ENGLISH, PROMPT-ENGINEERED)
 # =========================
 
-SYSTEM_PROMPT = """You are an expert in Brazilian public procurement and Price Registration Minutes (Atas de Registro de Preços – ARP).
+SYSTEM_PROMPT = """Você é um especialista em licitações públicas brasileiras e Atas de Registro de Preços (ARP).
 
-CONTEXT
-- The input text is the full content of an ata, in Brazilian Portuguese.
-- The text may contain legal clauses, terms of reference, conditions, penalties, headers, footers, and other administrative sections.
+Sua tarefa é extrair APENAS os ITENS reais da ata.
 
-YOUR GOAL
-- Extract ONLY the REAL CONTRACT ITEMS from the ata.
-- Each returned object in the "itens" list must correspond to a product, service, material, equipment, or LOT of supply that can actually be contracted.
+IMPORTANTE:
+- Ignore cláusulas jurídicas, penalidades, reajustes, artigos de lei, cabeçalhos e rodapés.
+- Considere item válido apenas quando representar produto, equipamento ou serviço contratável.
+- Atenção a LOTES: em muitos documentos, "LOTE X" é apenas um agrupador de um ou mais ITENS.
+    - Se houver "LOTE X" e também "Item: Y"/"ITEM Y" com produto/serviço, NÃO crie um item separado só para o lote.
+    - Em vez disso, associe o lote ao item preenchendo o campo "observacoes" com "LOTE X".
+    - Se existir lote sem item explícito, e o lote representar um fornecimento contratável (com descrição/quantidade/valores), trate-o como item.
+- QUEBRA DE PÁGINA: PDFs multi-página podem ter o cabeçalho de um item (Item: N, Unidade, Marca)
+  no final de uma página e a Descrição/Quantidade/Valor na página seguinte (separados por cabeçalhos
+  repetidos ou marcadores de imagem). Nesses casos, associe as informações ao mesmo item pelo
+  contexto e pela sequência numérica (ex.: se Item: 9 tem Descrição e Item: 11 tem Descrição,
+  o bloco de dados entre eles sem número de item pertence ao Item: 10).
+- Não invente dados.
+- Se um campo não existir com confiança, use null.
+- Preserve o texto original em raw_descricao.
+- Limpe prefixos como "ITEM 1", "LOTE 2", se aparecerem no início da descrição.
 
-IMPORTANT FILTERING RULES
-- STRICTLY IGNORE:
-    - Legal/administrative clauses (e.g. "NEGOCIAÇÃO DE PREÇOS", "DAS SANÇÕES", "DA VIGÊNCIA", "DISPOSIÇÕES GERAIS").
-    - Articles of law and legal references.
-    - General conditions of participation, penalties, reajuste, cancelamento, adesão, recursos.
-    - Pure headers, page numbers, logos, footers, or institutional texts.
-    - Any text that is NOT clearly an item, lot, product or service description.
-
-DEFINITION OF A VALID ITEM
-- A valid item generally contains at least some of:
-    - Description of product/service.
-    - Quantity and unit.
-    - Unit price and/or total price.
-    - Supplier data.
-    - Technical specifications.
-- You MUST still return incomplete items when they are clearly real items (e.g. description + supplier but no price).
-
-HANDLING LOTES (LOTS)
-- Many atas organize items into LOTES (e.g. "LOTE 1", "LOTE ÚNICO", "LOTE 05").
-- When the text is organized by lots:
-    - Detect the lot identifier (for example: "LOTE 1", "LOTE ÚNICO", "Lote 03").
-    - For every item that belongs to that lot, fill the field "lote" with the lot label (e.g. "LOTE 1").
-- If the entire lot corresponds to a single product/service (a lot with only one item):
-    - You may treat the lot as a single item.
-    - Set "lote" with the lot label and "descricao" with the product/service name.
-- If a lot contains multiple items:
-    - Return one JSON object per item, all with the same "lote" value.
-
-TEXT CLEANING RULES
-- Always preserve the original text of the item in "raw_descricao" exactly as it appears in the ata.
-- For the field "descricao", you may clean the beginning of the text by removing prefixes like:
-    - "ITEM 1", "ITEM 2:", "Item 03 -"
-    - "LOTE 1", "LOTE 2 -", "Lote Único:"
-    when they are only structural markers and not part of the product name.
-
-VALUE NORMALIZATION RULES
-- Use numeric values (no quotes) for "quantidade", "valor_unitario" and "valor_total".
-- Remove currency symbols (e.g. "R$"), thousands separators, and spaces before parsing.
-- Use dot as decimal separator.
-- If the value is not clearly present or is unreliable, use null.
-
-SPECIFICATIONS RULES
-- "especificacoes" must contain ONLY real technical characteristics explicitly present in the text, such as:
-    - capacity, speed, ports, voltage, color, dimensions, category (e.g. Cat6), IEEE standards, etc.
-- Do NOT invent generic specifications.
-- If no clear technical specs exist, use an empty list.
-
-MISSING OR UNCERTAIN FIELDS
-- NEVER invent data.
-- If a field is missing, not clearly stated, or not reliable, set it to null.
-
-OUTPUT FORMAT (STRICT)
-- Return EXACTLY ONE valid JSON object (no markdown, no comments, no explanation).
-- Do NOT include any text before or after the JSON.
-- The JSON MUST follow this schema (keys and types exactly as below):
+Retorne APENAS JSON válido com este formato:
 {
     "numero_ata": "string or null",
     "orgao": "string or null",
@@ -211,6 +168,159 @@ def _normalize_text_for_dedupe(s: str) -> str:
     return s
 
 
+_RE_LOTE_LINE = re.compile(r"(?im)^\s*lote\s*(\d+)\s*$")
+_RE_ITEM_LINE = re.compile(r"(?im)^\s*(?:item\s*:|item\b)\s*(\d+)\s*$")
+
+# Helpers para reparo de quebra de página
+_RE_ITEM_REF   = re.compile(r"(?i)\bitem\s*:\s*(\d+)")
+_RE_DESCRICAO  = re.compile(r"(?i)descri[çc][aã]o\s*:")
+_MAX_LOOKAHEAD = 35  # máximo de linhas para buscar Descrição após um Item: sem Descrição
+
+
+def _reparar_quebra_pagina(texto: str) -> str:
+    """
+    Reconecta informações de itens partidos por quebras de página no markdown do Docling.
+
+    Problema típico (ata 1004, item 10):
+      Página 1 termina com: | Item: 10  Unidade: UNID  Marca: X |  (SEM Descrição)
+      <!-- image -->  ← logotipo / cabeçalho repetido
+      Página 2 inicia com: | Descrição: Produto Y | Quantidade: N |  (SEM Item:)
+
+    Fix: ao encontrar 'Item: N' sem 'Descrição:' na mesma linha, procura nas próximas
+    _MAX_LOOKAHEAD linhas por uma 'Descrição:' sem 'Item:' precedente e injeta 'Item: N'
+    imediatamente antes dessa linha.
+    """
+    if not texto:
+        return texto
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    n = len(lines)
+    injections: dict[int, str] = {}  # índice da linha → número do item a injetar
+
+    for i, line in enumerate(lines):
+        m_item = _RE_ITEM_REF.search(line)
+        if not m_item:
+            continue
+        # Item: N encontrado — mas já tem Descrição na mesma linha? então está completo
+        if _RE_DESCRICAO.search(line):
+            continue
+
+        item_num = m_item.group(1)
+
+        # Busca adiante por Descrição: órfã (sem Item: na mesma linha)
+        for j in range(i + 1, min(i + _MAX_LOOKAHEAD + 1, n)):
+            next_line = lines[j]
+            # Novo Item: N encontrado antes → este item já estava completo ou há novo item
+            if _RE_ITEM_REF.search(next_line):
+                break
+            # Descrição: sem Item: → é órfã, injeta número do item pendente
+            if _RE_DESCRICAO.search(next_line) and not _RE_ITEM_REF.search(next_line):
+                if j not in injections:
+                    injections[j] = item_num
+                    logger.debug(
+                        "[GPT] quebra_pagina: Item %s será injetado antes da linha %s: %.80s",
+                        item_num, j, next_line,
+                    )
+                break
+
+    if not injections:
+        return texto
+
+    result: list[str] = []
+    for i, line in enumerate(lines):
+        if i in injections:
+            result.append(f"Item: {injections[i]}")
+        result.append(line)
+
+    logger.info("[GPT] _reparar_quebra_pagina: %s injeção(ões) realizadas", len(injections))
+    return "\n".join(result)
+
+
+def _inferir_lote_por_item(texto: str, max_line_distance: int = 60) -> dict[str, str]:
+    """Inferir mapa item->lote a partir do texto extraído.
+
+    Heurística: para cada linha com 'Item: N', busca a ocorrência de 'LOTE M'
+    mais próxima (acima/abaixo) dentro de uma janela.
+    """
+    if not texto:
+        return {}
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    lote_positions: list[tuple[int, str]] = []
+    item_positions: list[tuple[int, str]] = []
+
+    for idx, line in enumerate(lines):
+        m_lote = _RE_LOTE_LINE.match(line)
+        if m_lote:
+            lote_positions.append((idx, m_lote.group(1)))
+            continue
+        m_item = _RE_ITEM_LINE.match(line)
+        if m_item:
+            item_positions.append((idx, m_item.group(1)))
+
+    if not lote_positions or not item_positions:
+        return {}
+
+    mapping: dict[str, str] = {}
+    for item_idx, item_num in item_positions:
+        best: tuple[int, str] | None = None
+        for lote_idx, lote_num in lote_positions:
+            dist = abs(item_idx - lote_idx)
+            if dist > max_line_distance:
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, lote_num)
+        if best is not None:
+            mapping[str(item_num).strip()] = str(best[1]).strip()
+    return mapping
+
+
+def _anexar_lote_em_observacoes(itens: list[ItemAta], lote_por_item: dict[str, str]) -> None:
+    if not itens or not lote_por_item:
+        return
+    for item in itens:
+        num = (item.numero_item or "").strip()
+        if not num:
+            continue
+        lote = lote_por_item.get(num)
+        if not lote:
+            continue
+        tag = f"LOTE {lote}"
+        if not item.observacoes:
+            item.observacoes = tag
+        elif tag.lower() not in item.observacoes.lower():
+            item.observacoes = f"{tag} | {item.observacoes}"
+
+
+def _remover_itens_cabecalho_lote(items: list[dict]) -> list[dict]:
+    """Remove itens que são apenas cabeçalho 'LOTE X' (sem dados de item)."""
+    cleaned: list[dict] = []
+    for d in items:
+        texto = str(d.get("raw_descricao") or d.get("descricao") or "").strip()
+        texto_norm = re.sub(r"\s+", " ", texto).strip()
+
+        is_only_lote = bool(re.fullmatch(r"(?i)lote\s*\d+\s*[:\-\)]?", texto_norm))
+        has_any_payload = any(
+            d.get(k) not in (None, "", [])
+            for k in (
+                "quantidade",
+                "unidade",
+                "valor_unitario",
+                "valor_total",
+                "marca",
+                "modelo",
+                "fornecedor",
+                "cnpj_fornecedor",
+                "especificacoes",
+            )
+        )
+
+        if is_only_lote and not has_any_payload:
+            continue
+        cleaned.append(d)
+    return cleaned
+
+
 def _dedupe_items(items: list[dict]) -> list[dict]:
     grupos: dict[str, dict] = {}
 
@@ -250,7 +360,14 @@ def _dividir_em_chunks(texto: str, max_chars: int = MAX_CHARS_POR_CHUNK) -> list
         if len(texto) <= max_chars:
             chunks.append(texto)
             break
-        corte = texto.rfind("\n", 0, max_chars)
+        # Preferir cortes em parágrafo/linha para reduzir risco de "quebrar" tabelas/itens.
+        corte = texto.rfind("\n\n", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind("\n", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind(". ", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind(" ", 0, max_chars)
         if corte == -1:
             corte = max_chars
         chunks.append(texto[:corte].strip())
@@ -342,8 +459,14 @@ def analisar_ata(
     label = id_pncp or "ata"
     logger.info(f"[GPT] Iniciando análise: {label}")
 
+    # Repara itens partidos por quebras de página antes de qualquer processamento
+    texto = _reparar_quebra_pagina(texto)
+
     chunks = _dividir_em_chunks(texto)
     aviso = f"texto dividido em {len(chunks)} chunks" if len(chunks) > 1 else None
+
+    # Inferência de lote->item usando o texto original (ajuda em casos como Ata#1179)
+    lote_por_item = _inferir_lote_por_item(texto)
 
     resultados_raw: list[dict] = []
     total_tokens = 0
@@ -356,8 +479,12 @@ def analisar_ata(
 
     dados = _mesclar_chunks(resultados_raw)
 
-    itens_clean = _dedupe_items(dados.get("itens") or [])
+    itens_raw = dados.get("itens") or []
+    itens_raw = _remover_itens_cabecalho_lote(itens_raw)
+    itens_clean = _dedupe_items(itens_raw)
     itens = [_para_item(d) for d in itens_clean]
+
+    _anexar_lote_em_observacoes(itens, lote_por_item)
 
     return ResultadoAnalise(
         id_pncp=id_pncp,

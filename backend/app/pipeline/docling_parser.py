@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import os
 import tempfile
+import time
 from io import BytesIO
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,6 +30,80 @@ except ImportError:
     DOCLING_DISPONIVEL = False
 
 from app.logs.config import logger
+
+
+def _env_flag(name: str, default: bool = True) -> bool:
+    v = os.environ.get(name)
+    if v is None:
+        return default
+    return str(v).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _try_pdf_page_count(source: Union[str, Path, bytes], filename: str) -> int | None:
+    """Tenta obter número de páginas do PDF para diagnóstico de páginas perdidas."""
+    try:
+        import pypdf
+    except Exception:
+        return None
+
+    try:
+        if isinstance(source, bytes):
+            reader = pypdf.PdfReader(BytesIO(source))
+        else:
+            reader = pypdf.PdfReader(str(source))
+        return len(reader.pages)
+    except Exception as exc:
+        logger.warning("[Docling] Falha ao contar páginas (pypdf) para '%s': %s", filename, exc)
+        return None
+
+
+def _try_pdf_size_bytes(source: Union[str, Path, bytes]) -> int | None:
+    try:
+        if isinstance(source, bytes):
+            return len(source)
+        return Path(source).stat().st_size
+    except Exception:
+        return None
+
+
+_MARKER_PATTERNS: list[str] = [
+    r"LOTE\s+\d+",
+    r"Item\s*:\s*\d+",
+    r"Unidade\s*:\s*\S+",
+    r"Quant(?:\.|idade)\s*:\s*\d+",
+    r"Descrição\s*:\s*",
+    r"Marca\s*:\s*",
+    r"Modelo\s*:\s*",
+    r"Lance\s*:\s*",
+    r"Num\s*:\s*\d+",
+    r"Val\.\s*Ref\.\s*:\s*",
+    r"Total\s*Item\s*:\s*",
+    r"Valor\s*Unit\.?\s*:\s*",
+    r"Total\s*:\s*",
+]
+
+
+def _normalize_extracted_text(text: str) -> str:
+    """Normaliza quebras de linha/colagens típicas de OCR.
+
+    Objetivo: reduzir casos onde marcadores (LOTE, Item, etc.) ficam colados
+    em outras palavras/linhas, o que costuma "sumir" linhas na leitura do LLM.
+    """
+    if not text:
+        return ""
+
+    t = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Colagens recorrentes (ex.: "150\n\nKGPESO" ou "KGPESO")
+    t = re.sub(r"(?i)\bKG(?=PESO\b)", "KG\n\n", t)
+
+    # Garante que marcadores iniciem em nova linha quando estiverem colados.
+    for pat in _MARKER_PATTERNS:
+        t = re.sub(rf"(?i)(?<!\n)({pat})", r"\n\1", t)
+
+    # Colapsa excesso de linhas em branco
+    t = re.sub(r"\n{3,}", "\n\n", t)
+    return t
 
 
 # ──────────────────────────────────────────
@@ -107,64 +182,84 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
     Returns:
         ParsedDocument com texto completo e chunks
     """
+    normalize_text = _env_flag("DOCLING_NORMALIZE_TEXT", default=True)
+    page_count = _try_pdf_page_count(source, filename)
+    size_bytes = _try_pdf_size_bytes(source)
+    size_kb = f"{(size_bytes / 1024):.1f}KB" if size_bytes is not None else "n/a"
+
     if DOCLING_DISPONIVEL:
         converter = _get_converter()
 
+        t0 = time.perf_counter()
+
         # Se vier como bytes, salva em temp
-        if isinstance(source, bytes):
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                tmp.write(source)
-                tmp_path = tmp.name
-            try:
-                result = converter.convert(tmp_path)
-            finally:
-                os.unlink(tmp_path)
-        else:
-            result = converter.convert(str(source))
+        try:
+            if isinstance(source, bytes):
+                with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                    tmp.write(source)
+                    tmp_path = tmp.name
+                try:
+                    result = converter.convert(tmp_path)
+                finally:
+                    os.unlink(tmp_path)
+            else:
+                result = converter.convert(str(source))
+        except Exception as exc:
+            logger.exception(
+                "[Docling] Falha no convert('%s') pages=%s size=%s: %s — usando fallback pypdf",
+                filename,
+                page_count if page_count is not None else "n/a",
+                size_kb,
+                exc,
+            )
+            full_text = _extrair_texto_pypdf(source, filename)
+            if normalize_text:
+                full_text = _normalize_extracted_text(full_text)
+            raw_chunks = []
+            if full_text.strip():
+                raw_chunks = _full_text_fallback(full_text, filename)
+            logger.info(
+                "[Docling] '%s' fallback(pypdf) pages=%s size=%s chars=%s chunks=%s",
+                filename,
+                page_count if page_count is not None else "n/a",
+                size_kb,
+                len(full_text),
+                len(raw_chunks),
+            )
+            return ParsedDocument(filename=filename, full_text=full_text, chunks=raw_chunks)
+
+        t_convert = time.perf_counter()
 
         doc = result.document
 
         # Exporta markdown (preserva estrutura de seções e tabelas)
-        full_text: str = doc.export_to_markdown()
+        full_text_raw: str = doc.export_to_markdown()
+        t_export = time.perf_counter()
+        full_text = _normalize_extracted_text(full_text_raw) if normalize_text else full_text_raw
 
         # Extrai chunks por elemento estrutural (parágrafos / tabelas)
-        raw_chunks = _extract_chunks_from_doc(doc)
+        raw_chunks = _extract_chunks_from_doc(doc, normalize_text=normalize_text)
+        t_chunks = time.perf_counter()
 
-        # Estatísticas por página para diagnóstico de quedas de página/cabeçalho/rodapé
-        try:
-            page_counts: dict[int, int] = {}
-            for c in raw_chunks:
-                if c.page is not None:
-                    page_counts[c.page] = page_counts.get(c.page, 0) + 1
-
-            total_pages: int | None = None
-            if hasattr(doc, "num_pages"):
-                total_pages = int(getattr(doc, "num_pages") or 0) or None
-            elif hasattr(doc, "pages"):
-                try:
-                    total_pages = len(getattr(doc, "pages"))
-                except Exception:
-                    total_pages = None
-
-            if page_counts:
-                sorted_counts = sorted(page_counts.items())
-                logger.info("[Docling] '%s' distribuição de chunks por página: %s", filename, sorted_counts)
-
-            if page_counts and total_pages:
-                presentes = set(page_counts.keys())
-                esperadas = set(range(1, total_pages + 1))
-                faltando = sorted(esperadas - presentes)
-                if faltando:
-                    logger.warning("[Docling] '%s' páginas sem chunks extraídos: %s (total=%s)", filename, faltando, total_pages)
-        except Exception:
-            # Logs de diagnóstico nunca devem quebrar o parser principal
-            logger.debug("[Docling] Falha ao calcular estatísticas por página para '%s'", filename)
+        logger.info(
+            "[Docling] '%s' pages=%s size=%s convert=%.2fs export=%.2fs chunks=%.2fs markdown_chars=%s chunks=%s",
+            filename,
+            page_count if page_count is not None else "n/a",
+            size_kb,
+            t_convert - t0,
+            t_export - t_convert,
+            t_chunks - t_export,
+            len(full_text),
+            len(raw_chunks),
+        )
     else:
         global _docling_warning_emitted
         if not _docling_warning_emitted:
             logger.warning("Docling não encontrado. Usando fallback sem OCR (texto nativo do PDF).")
             _docling_warning_emitted = True
         full_text = _extrair_texto_pypdf(source, filename)
+        if normalize_text:
+            full_text = _normalize_extracted_text(full_text)
         raw_chunks = []
 
     # Fallback: se não extraiu nenhum chunk estrutural, divide o markdown por parágrafos
@@ -172,7 +267,14 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
         logger.warning(f"[Docling] '{filename}' -> 0 chunks estruturais, ativando fallback por paragrafo")
         raw_chunks = _full_text_fallback(full_text, filename)
 
-    logger.info(f"[Docling] '{filename}' -> {len(full_text)} chars, {len(raw_chunks)} chunks")
+    logger.info(
+        "[Docling] '%s' pages=%s size=%s -> %s chars, %s chunks",
+        filename,
+        page_count if page_count is not None else "n/a",
+        size_kb,
+        len(full_text),
+        len(raw_chunks),
+    )
     return ParsedDocument(filename=filename, full_text=full_text, chunks=raw_chunks)
 
 
@@ -183,7 +285,7 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 # Labels que não carregam conteúdo útil — ignorados
 _SKIP_LABELS = {"page_footer", "page_header", "page_number", "picture"}
 
-def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
+def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChunk]:
     """
     Itera pelos elementos do documento Docling e cria chunks por seção.
     Aceita QUALQUER label de conteúdo (parágrafo, tabela, lista, etc.),
@@ -193,48 +295,45 @@ def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
     idx = 0
     current_section = "Início"
 
-    def _guess_page(it) -> int | None:
-        """Tenta inferir o número da página a partir dos atributos do item.
-
-        Docling pode expor essa info em diferentes campos (page_idx, page_number,
-        bbox.page, etc.). Aqui usamos heurísticas seguras apenas para logging.
-        """
-        # page_idx (0‑based)
-        page = getattr(it, "page_idx", None)
-        if isinstance(page, int):
-            return page + 1
-
-        # page_number (1‑based)
-        page = getattr(it, "page_number", None)
-        if isinstance(page, int):
-            return page
-
-        # bbox.page ou bbox.page_index
-        bbox = getattr(it, "bbox", None)
-        if bbox is not None:
-            page = getattr(bbox, "page_index", None)
-            if isinstance(page, int):
-                return page + 1
-            page = getattr(bbox, "page", None)
-            if isinstance(page, int):
-                return page
-
-        return None
+    total_items = 0
+    skipped_empty = 0
+    skipped_label = 0
+    section_headers = 0
+    page_chunks: dict[int | str, int] = {}   # page -> nº de chunks nessa página
 
     for item, _ in doc.iterate_items():
+        total_items += 1
         label = getattr(item, "label", "")
-        text  = getattr(item, "text",  "").strip()
+        text = getattr(item, "text", "")
+        text = text.strip() if isinstance(text, str) else ""
 
         if not text:
+            skipped_empty += 1
             continue
+
+        if normalize_text:
+            text = _normalize_extracted_text(text)
+
+        # Tentativa best-effort de capturar número de página, se o item carregar.
+        page = (
+            getattr(item, "page", None)
+            or getattr(item, "page_no", None)
+            or getattr(item, "page_number", None)
+        )
+        if isinstance(page, str) and page.isdigit():
+            page = int(page)
+        if not isinstance(page, int):
+            page = None
 
         # Atualiza seção corrente mas não vira chunk
         if label in ("section_header", "title"):
             current_section = text
+            section_headers += 1
             continue
 
         # Pula elementos sem conteúdo relevante
         if label in _SKIP_LABELS:
+            skipped_label += 1
             continue
 
         page = _guess_page(item)
@@ -246,6 +345,28 @@ def _extract_chunks_from_doc(doc) -> list[ParsedChunk]:
             section   = current_section,
         ))
         idx += 1
+
+        # Contabiliza chunk por página para diagnóstico
+        page_key: int | str = page if page is not None else "?"
+        page_chunks[page_key] = page_chunks.get(page_key, 0) + 1
+
+    logger.info(
+        "[Docling] iterate_items: total=%s sections=%s skipped_empty=%s skipped_label=%s chunks=%s",
+        total_items,
+        section_headers,
+        skipped_empty,
+        skipped_label,
+        len(chunks),
+    )
+
+    # Log por página — ajuda a identificar páginas inteiras perdidas
+    if page_chunks:
+        sorted_pages = sorted(
+            page_chunks.items(),
+            key=lambda kv: (0, kv[0]) if isinstance(kv[0], int) else (1, str(kv[0])),
+        )
+        for pg_key, pg_count in sorted_pages:
+            logger.info("[Docling]   page=%s chunks=%s", pg_key, pg_count)
 
     return chunks
 

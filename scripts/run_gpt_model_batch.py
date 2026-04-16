@@ -22,7 +22,19 @@ if not arquivos:
     print(f"Nenhum arquivo de texto encontrado em {entrada_path}")
     sys.exit(1)
 
-print(f"Processando {len(arquivos)} arquivos com modelo GPT: {os.environ.get('OPENAI_MODEL', 'gpt-5.4')}")
+limit_env = os.environ.get("GPT_BATCH_LIMIT")
+if limit_env:
+    try:
+        limit_n = int(limit_env)
+    except ValueError:
+        print("GPT_BATCH_LIMIT deve ser um inteiro (ex.: 10)")
+        sys.exit(2)
+    if limit_n <= 0:
+        print("GPT_BATCH_LIMIT deve ser um inteiro maior que zero")
+        sys.exit(2)
+    arquivos = arquivos[:limit_n]
+
+print(f"Processando {len(arquivos)} arquivos com modelo GPT: {os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')}")
 
 for arq in arquivos:
     nome_base = arq.stem
