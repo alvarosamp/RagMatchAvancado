@@ -1,0 +1,30 @@
+{
+  "id_pncp": "Ata#1039",
+  "numero_ata": "40/2025",
+  "orgao": "Ministério Público do Estado de Rondônia",
+  "data_assinatura": "10 de novembro de 2025",
+  "vigencia": "12 meses, contados a partir da data de divulgação oficial no Diário Eletrônico do Ministério Público do Estado de Rondônia e poderá ser prorrogada por igual período desde que comprovado o preço vantajoso.",
+  "objeto": "Ata de Registro de Preços nº 40/2025",
+  "itens": [
+    {
+      "numero_item": "19.25.110001249.0003606/2025-65",
+      "descricao": "documento autêntico",
+      "tipo": "string",
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "string"
+      ],
+      "observacoes": null,
+      "raw_descricao": "19.25.110001249.0003606/2025-65"
+    }
+  ],
+  "tokens_usados": 5318,
+  "aviso": "texto dividido em 2 chunks"
+}

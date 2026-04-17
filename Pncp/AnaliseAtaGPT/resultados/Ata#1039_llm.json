@@ -1,0 +1,50 @@
+{
+  "id_pncp": "Ata#1039",
+  "numero_ata": "40/2025",
+  "orgao": "Ministério Público do Estado de Rondônia",
+  "data_assinatura": "2025-11-10",
+  "vigencia": "12 (doze) meses",
+  "objeto": "fornecer os produtos/serviços constantes da planilha abaixo, nas quantidades máximas referidas, pelo preço registrado",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Switch de Acesso 48 Portas PoE",
+      "tipo": "equipamento",
+      "marca": "Alcatel Lucent",
+      "modelo": "OS6360-PH48-US",
+      "quantidade": 120,
+      "unidade": "Und",
+      "valor_unitario": 15406.0,
+      "valor_total": 1848720.0,
+      "fornecedor": "LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "48 Portas PoE",
+        "Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch de Acesso 48 Portas PoE. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+",
+      "tipo": "serviço",
+      "marca": "Alcatel Lucent",
+      "modelo": "OS6360-SW-PERF",
+      "quantidade": 120,
+      "unidade": "Und",
+      "valor_unitario": 4594.0,
+      "valor_total": 551280.0,
+      "fornecedor": "LETTEL DISTRIBUIDORA DE TELEFONIA LTDA.",
+      "cnpj_fornecedor": "07.789.113/0001-67",
+      "especificacoes": [
+        "upgrade das portas Gigabit SFP para 10G SFP+",
+        "Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+      ],
+      "observacoes": null,
+      "raw_descricao": "Licença de upgrade das portas Gigabit SFP para 10G SFP+. Especificação completa consta no Edital PE 90018/2025, Anexo VI - Termo de Referência."
+    }
+  ],
+  "tokens_usados": 3823,
+  "aviso": "texto dividido em 2 chunks"
+}

@@ -1,0 +1,213 @@
+numero_item,descricao,tipo,marca,modelo,quantidade,unidade,valor_unitario,valor_total,fornecedor,cnpj_fornecedor,especificacoes,observacoes,raw_descricao
+1,ACIDO FOLICO,produto,exames,laboratorio,180.0,UN,7.02,1263.6,,,[],,"Item: 1\nUnidade: UN\nDescrição: ACIDO FOLICO\nQuantidade: 180\nVal. Ref.: 11,98\nValor Unit.: 7,02\nTotal Item: 1.263,60"
+2,ACIDO URICO,produto,exames,laboratorio,370.0,UN,1.05,388.5,,,[],,"Item: 2\nUnidade: UN\nDescrição: ACIDO URICO\nQuantidade: 370\nVal. Ref.: 1,80\nValor Unit.: 1,05\nTotal Item: 388,50"
+3,ACIDO URICO URINARIO,produto,exames,laboratorio,30.0,UN,0.91,27.3,,,[],,"Item: 3\nUnidade: UN\nDescrição: ACIDO URICO URINARIO\nQuantidade: 30\nVal. Ref.: 1,56\nValor Unit.: 0,91\nTotal Item: 27,30"
+4,ACIDO VANIL MANDELICO.,produto,exames,laboratorio,20.0,UN,143.81,2876.2,,,[],,"Item: 4\nUnidade: UN\nDescrição: ACIDO VANIL MANDELICO.\nQuantidade: 20\nVal. Ref.: 245,38\nValor Unit.: 143,81\nTotal Item: 2.876,20"
+5,ALBUMINA,produto,exames,laboratorio,20.0,UN,1.07,21.4,,,[],,"Item: 5\nUnidade: UN\nDescrição: ALBUMINA\nQuantidade: 20\nVal. Ref.: 1,82\nValor Unit.: 1,07\nTotal Item: 21,40"
+6,ALDOSTERONA.,produto,exames,laboratorio,10.0,UN,5.76,57.6,,,[],,"Item: 6\nUnidade: UN\nDescrição: ALDOSTERONA.\nQuantidade: 10\nVal. Ref.: 9,82\nValor Unit.: 5,76\nTotal Item: 57,60"
+7,ALFA FETO,produto,exames,laboratorio,15.0,UN,5.76,86.4,,,[],,"Item: 7\nUnidade: UN\nDescrição: ALFA FETO\nQuantidade: 15\nVal. Ref.: 9,83\nValor Unit.: 5,76\nTotal Item: 86,40"
+8,ALFA,produto,exames,laboratorio,12.0,UN,10.36,124.32,,,[],,"Item: 8\nUnidade: UN\nDescrição: ALFA\nQuantidade: 12\nVal. Ref.: 17,68\nValor Unit.: 10,36\nTotal Item: 124,32"
+9,ALFA1 ANTITRIPSINA,produto,exames,laboratorio,12.0,UN,4.26,51.12,,,[],,"Item: 9\nUnidade: UN\nDescrição: ALFA1 ANTITRIPSINA\nQuantidade: 12\nVal. Ref.: 7,27\nValor Unit.: 4,26\nTotal Item: 51,12"
+11,ALFA1 GLICOPROTEINA,produto,exames,laboratorio,12.0,UN,2.77,33.24,,,[],,"Item: 11\nUnidade: UN\nDescrição: ALFA1 GLICOPROTEINA\nQuantidade: 12\nVal. Ref.: 4,72\nValor Unit.: 2,77\nTotal Item: 33,24"
+12,ANATOMO PATOLOGICO,produto,exames,laboratorio,100.0,UN,23.66,2366.0,,,[],,"Item: 12\nUnidade: UN\nMarca: exames\nModelo: laboratorio\nDescrição: ANATOMO PATOLOGICO\nQuantidade: 100\nValor Unit.: 23,66\nTotal Item: 2.366,00"
+23,ANTIESTREPTOLISINA O,produto,exames,laboratorio,25.0,UN,1.77,44.25,,,[],,"Unidade: UN Marca: exames Descrição: ANTIESTREPTOLISINA O Quantidade: 25 Val. Ref.: 3,02 Total Item: 44,25"
+24,ANTÍGENO CARCINOEMBRIÔGENICO,produto,exames,laboratorio,10.0,UN,5.25,52.5,,,[],,"Unidade: UN Marca: exames Descrição: ANTÍGENO CARCINOEMBRIÔGENICO Quantidade: 10 Val. Ref.: 8,96 Valor Unit.: 5,25 Total Item: 52,50"
+25,ANTI RECEPTOR DE TSH,produto,exames,laboratorio,,UN,,307.8,,,[],,Unidade: UN Marca: exames Descrição: ANTI RECEPTOR DE TSH Modelo: laboratorio
+26,BACTERIOSCOPIA (GRAM),produto,,laboratorio,10.0,UN,7.54,75.4,,,[],,Descrição: BACTERIOSCOPIA (GRAM)
+27,BETA LACTOGLOBULINA,produto,,laboratorio,10.0,UN,11.0,110.0,,,[],,Descrição: BETA LACTOGLOBULINA
+28,BILIRRUBINA TOTAL E FRACOES,produto,,laboratorio,60.0,UN,1.09,65.4,,,[],,Descrição: BILIRRUBINA TOTAL E FRACOES Quantidade: 60
+29,BLOMIA TROPICALIS,produto,,laboratorio,10.0,UN,8.56,85.6,,,[],,Descrição: BLOMIA TROPICALIS
+30,CA-125 (MARCADOR TUMORAL DE OVÁRIO),produto,,laboratorio,25.0,UN,5.75,143.75,,,[],,Descrição: CA-125 (MARCADOR TUMORAL DE OVÁRIO)
+31,CA15-3 (MARCADOR TUMORAL CA 15-3),produto,,laboratorio,25.0,UN,14.25,356.25,,,[],,Descrição: CA15-3 (MARCADOR TUMORAL CA 15-3)
+32,CALCIO,produto,,laboratorio,200.0,UN,1.01,202.0,,,[],,Descrição: CALCIO
+33,CALCIO IONIZADO,produto,,laboratorio,14.0,UN,1.92,26.88,,,[],,Descrição: CALCIO IONIZADO
+34,CAPTURA HIBRIDA,produto,,laboratorio,10.0,UN,85.31,853.1,,,[],,Descrição: CAPTURA HIBRIDA
+35,DENGUE IGG,produto,,,,UN,,,,,[],,Descrição:  DENGUE IGG
+48,COOMBS INDIRETO,produto,,laboratorio,20.0,UN,7.19,143.8,,,[],,Descrição: COOMBS INDIRETO
+49,COPROCULTURA,produto,,laboratorio,,UN,,,,,[],,Descrição: COPROCULTURA
+50,CORTISOL BASAL,produto,exames,laboratorio,12.0,UN,16.34,196.08,,,[],,Descrição: CORTISOL BASAL
+51,CORTISOL LIVRE URINA 24HRS,produto,exames,laboratorio,5.0,UN,12.1,60.5,,,[],,Descrição: CORTISOL LIVRE URINA 24HRS
+52,CREATININA,produto,exames,laboratorio,700.0,UN,0.99,693.0,,,[],,Descrição: CREATININA
+53,CREATINO FOSFOQ. FRACAO MB,produto,exames,laboratorio,80.0,UN,2.14,171.2,,,[],,Descrição: CREATINO FOSFOQ. FRACAO MB
+54,CREATINOFOSFOQUINASE,produto,exames,laboratorio,80.0,UN,1.86,148.8,,,[],,Descrição: CREATINOFOSFOQUINASE
+55,CULTURA DE BAAR,produto,exames,laboratorio,36.0,UN,16.46,592.56,,,[],,Descrição: CULTURA DE BAAR
+56,CULTURA GERAL,produto,exames,laboratorio,36.0,UN,10.67,384.12,,,[],,Descrição: CULTURA GERAL
+57,CURVA GLICEMICA.,produto,exames,laboratorio,30.0,UN,5.1,153.0,,,[],,Descrição: CURVA GLICEMICA.
+58,DEHIDROEPIANDROSTERONA.,produto,exames,laboratorio,20.0,UN,25.65,513.0,,,[],,Descrição: DEHIDROEPIANDROSTERONA.
+60,DENGUE IGM,produto,exames,laboratorio,50.0,UN,11.18,559.0,,,[],,Descrição: DENGUE IGM
+61,DESIDROGENASE LATICA,produto,exames,laboratorio,90.0,UN,9.65,549.7,,,[],,Descrição: DESIDROGENASE LATICA
+63,ELETROFORESE DE HEMOGLOBINA,exame,exames,,36.0,UN,9.39,338.04,,,[],,Descrição: ELETROFORESE DE HEMOGLOBINA
+64,ELETROFORESE DE PROTEINAS,exame,exames,,12.0,UN,2.71,32.52,,,[],,Descrição: ELETROFORESE DE PROTEINAS
+65,ENDOMISIO IGA,exame,exames,,12.0,UN,25.15,301.8,,,[],,Descrição: ENDOMISIO IGA
+66,ENDOMISIO IGM,exame,exames,,12.0,UN,26.42,317.04,,,[],,Descrição: ENDOMISIO IGM
+67,EPSTEIN BARR VIRUS IGM,exame,exames,,12.0,UN,9.47,113.64,,,[],,Descrição: EPSTEIN BARR VIRUS IGM
+68,EPSTEIN BARR VIRUS IGG,exame,exames,,12.0,UN,8.1,97.2,,,[],,Descrição: EPSTEIN BARR VIRUS IGG
+69,ESPERMOCULTURA,exame,exames,,12.0,UN,22.03,264.36,,,[],,Descrição: ESPERMOCULTURA
+70,ESPERMOGRAMA (POS VASECTOMIA),EXAME,exames,laboratorio,12.0,UN,9.45,113.4,,,"['Val. Ref.: 16,13', 'Valor Unit.: 9,45']",,Descrição: ESPERMOGRAMA (POS VASECTOMIA)
+71,ESTRADIOL,EXAME,exames,laboratorio,15.0,UN,4.91,73.65,,,"['Val. Ref.: 8,37', 'Unit.: 4,91']",,Descrição: ESTRADIOL
+72,ESTREPTOCOCOS BETA HEMOLITICOS PESQ,EXAME,exames,laboratorio,60.0,UN,8.73,523.8,,,"['Val. Ref.: 14,89', 'Valor Unit.: 8,73']",,Descrição: ESTREPTOCOCOS BETA HEMOLITICOS PESQ
+73,ESTRIOL E3,EXAME,exames,laboratorio,10.0,UN,6.87,68.7,,,"['Val. Ref.: 11,72', 'Valor Unit.: 6,87']",,Descrição: ESTRIOL E3
+74,ESTRONA,EXAME,exames,laboratorio,10.0,UN,6.62,66.2,,,"['Val. Ref.: 11,29', 'Valor Unit.: 6,62']",,Descrição: ESTRONA
+75,EXAME TOXICOLÓGICO,EXAME,exames,laboratorio,15.0,UN,77.17,1157.55,,,"['Val. Ref.: 131,67', 'Valor Unit.: 77,17']",,Descrição: EXAME TOXICOLÓGICO
+76,FATOR ANTI NUCLEO,EXAME,exames,laboratorio,12.0,UN,9.05,108.6,,,"['Val. Ref.: 15,45', 'Valor Unit.: 9,05']",,Descrição: FATOR ANTI NUCLEO
+77,FATOR REUMATOIDE - LATEX,EXAME,exames,laboratorio,12.0,UN,2.54,30.48,,,"['Val. Ref.: 4,34', 'Valor Unit.: 2,54']",,Descrição: FATOR REUMATOIDE - LATEX
+79,FERRITINA,EXAME,exames,laboratorio,300.0,UN,6.23,1869.0,,,"['Val. Ref.: 10,63', 'Valor Unit.: 6,23']",,Descrição: FERRITINA
+80,FERRO (EXAME),serviço,exames,laboratorio,300.0,UN,2.02,606.0,,,[],,FERRO (EXAME)
+81,FIBRINOGENIO.,serviço,exames,laboratorio,10.0,UN,9.38,93.8,,,[],,FIBRINOGENIO.
+82,FOSFATASE ALCALINA.,serviço,exames,laboratorio,100.0,UN,1.41,141.0,,,[],,FOSFATASE ALCALINA.
+83,FÓSFORO,serviço,exames,laboratorio,24.0,UN,1.31,31.44,,,[],,FÓSFORO
+85,FTA ABS IGG,serviço,exames,laboratorio,10.0,UN,5.17,51.7,,,[],,FTA ABS IGG
+86,FTA ABS IGM,serviço,exames,laboratorio,10.0,UN,4.94,49.4,,,[],,FTA ABS IGM
+87,GAMA GLUTAMIL TRASNFERASE,serviço,exames,laboratorio,85.0,UN,2.19,186.15,,,[],,GAMA GLUTAMIL TRASNFERASE
+88,GASOMETRIA,serviço,exames,laboratorio,12.0,UN,19.98,239.76,,,[],,GASOMETRIA
+89,GLIADINA IGA,serviço,exames,laboratorio,24.0,UN,13.16,315.84,,,[],,GLIADINA IGA
+90,GLIADINA IGM,serviço,exames,laboratorio,24.0,UN,26.26,630.24,,,[],,GLIADINA IGM
+91,GLIADINA IGG,produto,exames,laboratorio,24.0,UN,14.77,354.48,,,[],,Descrição: GLIADINA IGG
+92,GLICOSE JEJUM,produto,exames,laboratorio,1200.0,UN,1.03,1236.0,,,[],,Descrição: GLICOSE JEJUM
+93,GLICOSE POS PRANDIAL,produto,exames,laboratorio,10.0,UN,1.1,11.0,,,[],,Descrição: GLICOSE POS PRANDIAL
+94,GONADOTROFINA CORIÔNICA - BETA,produto,exames,laboratorio,12.0,UN,4.55,54.6,,,[],,Descrição: GONADOTROFINA CORIÔNICA - BETA
+95,GONADOTROFINA CORIÔNICA QUANTITATIV,produto,exames,laboratorio,12.0,UN,4.55,54.6,,,[],,Descrição: GONADOTROFINA CORIÔNICA QUANTITATIV
+96,GORDURA FECAL PESQUISA,produto,exames,laboratorio,,UN,,,,,[],,Descrição:  GORDURA FECAL PESQUISA
+97,GRUPO SANGUINEO,produto,exames,laboratorio,300.0,UN,5.54,1662.0,,,[],,Descrição: GRUPO SANGUINEO
+98,HDL COLESTEROL,produto,exames,laboratorio,700.0,UN,1.9,1330.0,,,[],,Descrição: HDL COLESTEROL
+99,HEMOGLOBINA GLICADA,produto,exames,laboratorio,800.0,UN,4.01,3208.0,,,[],,Descrição: HEMOGLOBINA GLICADA
+100,HEMOGRAMA COMPLETO,produto,exames,laboratorio,1600.0,UN,2.51,4016.0,,,[],,Descrição: HEMOGRAMA COMPLETO
+101,HEPATITE A - ANTI HVA IGG,produto,exames,laboratorio,10.0,UN,9.78,97.8,,,[],,Descrição: HEPATITE A - ANTI HVA IGG
+102,HEPATITE A - ANTI HVA IGM,produto,exames,laboratorio,20.0,UN,9.79,195.8,,,[],,Descrição: HEPATITE A - ANTI HVA IGM
+104,HEPATITE C,exame,exames,laboratorio,100.0,UN,9.85,985.0,,,[],,HEPATITE C
+106,HOMOCISTEINA NO SANGUE,exame,exames,laboratorio,10.0,UN,11.72,117.2,,,[],,HOMOCISTEINA NO SANGUE
+107,HORMONIO ADRENO CORTICOTROFICO,exame,exames,laboratorio,10.0,UN,8.39,83.9,,,[],,HORMONIO ADRENO CORTICOTROFICO
+108,HORMONIO TIREOESTIMULANTE (TSH),exame,exames,laboratorio,1130.0,UN,4.79,5412.7,,,[],,HORMONIO TIREOESTIMULANTE (TSH)
+122,LDL COLESTEROL,exame,exames,laboratorio,900.0,UN,2.48,2232.0,,,[],,LDL COLESTEROL
+123,LACTATO,exame,exames,laboratorio,12.0,UN,2.27,27.24,,,[],,LACTATO
+124,LIPASE,exame,exames,laboratorio,12.0,UN,1.85,22.2,,,[],,LIPASE
+126,LIPIDOGRAMA 12,exame,exames,laboratorio,12.0,UN,12.45,149.4,,,[],,LIPIDOGRAMA 12
+127,LITIO,exame,exames,laboratorio,12.0,UN,5.07,60.84,,,[],,LITIO
+128,LKM-1 12,exame,exames,laboratorio,,UN,,,,,[],,LKM-1 12
+129,MAGNESIO,exame,exames,laboratorio,24.0,UN,1.16,27.84,,,[],,MAGNESIO
+130,MELATONINA SÉRICA 12,exame,exames,laboratorio,12.0,UN,,,,,[],,MELATONINA SÉRICA 12
+131,,DIRETO,exames,laboratorio,12.0,UN,102.72,1232.64,,,[],,"Item: 131 | Descrição:                                                                        |                                               |                                                 |                                                                                           | Total Item: 1.232,64 | Quantidade:                                                                       | Val. Ref.: 19,73                              |                                                 | Modelo:                                                                                   | 12                                                                                | DIRETO                                        | Marca: exames                                   | laboratorio                                                                               |"
+132,MICOLOGICO,,exames,laboratorio,12.0,,11.56,138.72,,,[],,"Item: 132 | Descrição: | MICOLOGICO | 11,56"
+134,MICROALBUMINURIA AMOSTRA ISOLADA,,exames,laboratorio,100.0,UN,3.88,388.0,,,[],,"Item: 134 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MICROALBUMINURIA AMOSTRA ISOLADA | Quantidade: | 100 Val. Ref.: | 6,62 Valor Unit.: | 3,88 | Total Item: 388,00"
+135,MITOCONDRIA - ANTICORPOS,,exames,laboratorio,10.0,UN,8.7,87.0,,,[],,"Item: 135 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: MITOCONDRIA - ANTICORPOS | Quantidade: 10 | Val. Ref.: |  Valor Unit.: 8,70 | Total Item: 87,00"
+136,OXALATO URINARIO 24HRS,,exames,laboratorio,10.0,UN,72.96,729.6,,,[],,"Item: 136 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: OXALATO URINARIO 24HRS | Quantidade: 10 | Val. | Ref.: 124,50 Valor | Unit.: 72,96 | Total Item: 729,60"
+137,PAPANICOLAOU,,exames,laboratorio,100.0,UN,8.36,836.0,,,[],,"Item: 137 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PAPANICOLAOU | Quantidade: 100 | Val. | Ref.: 14,27 Valor | Unit.: 8,36 | Total Item: 836,00"
+138,PARASITOLOGICO DE FEZES,,exames,laboratorio,400.0,UN,4.71,1884.0,,,[],,"Item: 138 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO | DE | FEZES | Total Item: 1.884,00"
+139,PARASITOLOGICO DE FEZES 2,,exames,laboratorio,200.0,UN,4.71,942.0,,,[],,"Item: 139 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 2 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00"
+140,PARASITOLOGICO DE FEZES 3,,exames,laboratorio,200.0,UN,4.71,942.0,,,[],,"Item: 140 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PARASITOLOGICO DE FEZES 3 | Quantidade: 200 | Val. Ref.: 8,03 | Valor Unit.: 4,71 | Total Item: 942,00"
+141,PEPTIDEO NATRIURETICO,,exames,laboratorio,10.0,UN,96.01,960.1,,,[],,"Item: 141 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PEPTIDEO NATRIURETICO | Quantidade: 10 | Val.: | Ref.: 163,83 Valor | Unit.: 96,01 | Total Item: 960,10"
+142,PESQUISA DE BAAR,,exames,laboratorio,36.0,UN,11.76,423.36,,,[],,"Item: 142 | Unidade: UN | Marca: exames | Modelo: laboratorio | Descrição: PESQUISA DE BAAR | Quantidade: 36 | Val. Ref.: 20,06 | Valor Unit.: 11,76 | Total Item: 423,36"
+143,PESQUISA DE OXIURUS,servico,exames,laboratorio,10.0,UN,17.52,175.2,,,[],,PESQUISA DE OXIURUS
+144,POTASSIO,servico,exames,laboratorio,800.0,UN,1.1,880.0,,,[],,POTASSIO
+145,PROGESTERONA,servico,exames,laboratorio,30.0,UN,4.35,130.5,,,[],,PROGESTERONA
+146,PROLACTINA,servico,exames,laboratorio,30.0,UN,4.67,140.1,,,[],,PROLACTINA
+147,PROTEINA C REATIVA,servico,exames,laboratorio,12.0,UN,4.41,52.92,,,[],,PROTEINA C REATIVA
+148,PROTEINA C ULTRASENSIVEL,servico,exames,laboratorio,12.0,UN,2.95,35.4,,,[],,PROTEINA C ULTRASENSIVEL
+149,PROTEINAS TOTAIS E FRACOES,servico,exames,laboratorio,24.0,UN,2.05,49.2,,,[],,PROTEINAS TOTAIS E FRACOES
+150,PROTEINURIA DE 24 HORAS,servico,exames,laboratorio,80.0,UN,1.51,120.8,,,[],,PROTEINURIA DE 24 HORAS
+151,PSA LIVRE,servico,exames,laboratorio,20.0,UN,5.25,105.0,,,[],,PSA LIVRE
+152,PSA TOTAL,servico,exames,laboratorio,250.0,UN,9.44,2360.0,,,[],,PSA TOTAL
+153,PSA TOTAL E LIVRE,servico,exames,laboratorio,10.0,UN,10.88,108.8,,,[],,PSA TOTAL E LIVRE
+155,RAIVA - SOROLOGIA,produto,exames,laboratorio,12.0,UN,9.04,108.48,,,[],,Descrição: RAIVA - SOROLOGIA
+156,RAST ABELHA,produto,exames,laboratorio,12.0,UN,220.75,2649.0,,,[],,Descrição: RAST ABELHA
+157,RAST ACARO D.FARINAE,produto,exames,laboratorio,50.0,UN,10.64,532.0,,,[],,Descrição: RAST ACARO D.FARINAE
+158,RAST ACARO D.PTERONYSSINUS,produto,exames,laboratorio,12.0,UN,10.64,127.68,,,[],,Descrição: RAST ACARO D.PTERONYSSINUS
+159,RAST ACARUS SIRO,produto,exames,laboratorio,12.0,UN,10.64,127.68,,,[],,Descrição: RAST ACARUS SIRO
+160,RAST ACAROS MICROCERAS,produto,exames,laboratorio,24.0,UN,10.64,255.36,,,[],,Descrição: RAST ACAROS MICROCERAS
+161,RAST AMENDOIM,produto,exames,laboratorio,36.0,UN,8.54,385.2,,,[],,Descrição: RAST AMENDOIM
+164,RAST CACAU,produto,exames,laboratorio,30.0,UN,10.82,324.6,,,[],,Descrição: RAST CACAU
+165,RAST CASEINA,produto,exames,laboratorio,12.0,UN,8.93,107.16,,,[],,Descrição: RAST CASEINA
+166,RAST CLARA DE OVO,produto,exames,laboratorio,12.0,UN,37.11,445.32,,,[],,Descrição: RAST CLARA DE OVO
+167,RAST CORANTE AMARELO,produto,exames,laboratorio,12.0,UN,14.56,174.72,,,[],,Descrição: RAST CORANTE AMARELO
+169,RAST CORANTE VERMELHO,produto,exames,laboratorio,30.0,UN,12.47,374.1,,,[],,Descrição: RAST CORANTE VERMELHO
+170,RAST FEIJAO BRANCO,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição:  RAST FEIJAO BRANCO
+171,RAST FORMIGA,produto,exames,laboratorio,12.0,UN,8.74,104.88,,,[],,Descrição: RAST FORMIGA
+172,RAST FUNGOS E LEVEDURAS,produto,exames,laboratorio,50.0,UN,7.79,389.5,,,[],,Descrição: RAST FUNGOS E LEVEDURAS
+173,RAST FX1 ALIMENTOS,produto,exames,laboratorio,12.0,UN,17.97,215.64,,,[],,Descrição: RAST FX1 ALIMENTOS
+175,RAST FX3 ALIMENTOS,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: RAST FX3 ALIMENTOS
+176,RAST FX5 ALIMENTOS,produto,exames,laboratorio,12.0,UN,14.16,169.92,,,[],,Descrição: RAST FX5 ALIMENTOS
+177,RAST GLUTEN,produto,exames,laboratorio,12.0,UN,6.83,81.96,,,[],,Descrição: RAST GLUTEN
+178,RAST GX1 GRAMINEAS (TABELA),produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: RAST GX1 GRAMINEAS (TABELA)
+179,RAST IBUPROFENO,produto,exames,laboratorio,12.0,UN,37.11,445.32,,,[],,Descrição: RAST IBUPROFENO
+180,RAST INALANTES (IX6),produto,exames,laboratorio,12.0,UN,16.17,194.04,,,[],,Descrição: RAST INALANTES (IX6)
+181,RAST INSETO BARATA,produto,exames,laboratorio,12.0,UN,9.88,118.56,,,[],,Descrição: RAST INSETO BARATA
+182,RAST LARANJA,produto,exames,laboratorio,12.0,UN,12.15,145.8,,,[],,Descrição: RAST LARANJA
+183,RAST LEITE E DERIVADOS,produto,exames,laboratorio,12.0,UN,7.94,95.28,,,[],,Descrição: RAST LEITE E DERIVADOS
+184,RAST LATEX,produto,exames,laboratorio,12.0,UN,3.49,41.88,,,[],,Descrição: RAST LATEX
+185,RAST MANGA,produto,exames,laboratorio,12.0,UN,20.23,242.76,,,[],,Descrição: RAST MANGA
+186,RAST MILHO,produto,exames,laboratorio,24.0,UN,8.47,203.28,,,[],,RAST MILHO
+187,RAST OVO (INTEIRO),produto,exames,laboratorio,30.0,UN,8.45,253.5,,,[],,RAST OVO (INTEIRO)
+188,RAST OVOMUCOIDE,produto,exames,laboratorio,12.0,UN,9.77,117.24,,,[],,RAST OVOMUCOIDE
+189,RAST PEIXE BACALHAU,produto,exames,laboratorio,12.0,UN,11.15,133.8,,,[],,RAST PEIXE BACALHAU
+190,RAST PERNILONGO,produto,exames,laboratorio,12.0,UN,9.28,111.36,,,[],,RAST PERNILONGO
+191,RAST PO DE CASA,produto,exames,laboratorio,60.0,UN,9.96,597.6,,,[],,RAST PO DE CASA
+192,RAST PROTEINAS DO LEITE,produto,exames,laboratorio,50.0,UN,8.42,421.0,,,[],,RAST PROTEINAS DO LEITE
+193,RAST SOJA,produto,exames,laboratorio,24.0,UN,5.92,142.08,,,[],,RAST SOJA
+194,RAST TABACO,produto,exames,laboratorio,12.0,UN,13.83,165.96,,,[],,RAST TABACO
+196,RENINA.,produto,exames,laboratorio,60.0,UN,9.34,560.4,,,[],,RENINA.
+197,RETICULOCITOS,produto,exames,laboratorio,10.0,UN,6.37,63.7,,,[],,RETICULOCITOS
+199,RUBEOLA IGG,,exames,laboratorio,10.0,UN,6.09,60.9,,,[],,Descrição: RUBEOLA IGG
+200,RUBEOLA IGM,,exames,laboratorio,10.0,UN,6.09,60.9,,,[],,Descrição: RUBEOLA IGM
+201,SANGUE OCULTO PESQUISA,,exames,laboratorio,150.0,UN,2.17,325.5,,,[],,Descrição: SANGUE OCULTO PESQUISA
+202,SODIO,,exames,laboratorio,650.0,UN,1.07,695.5,,,[],,Descrição: SODIO
+203,SUBSTANCIA REDUTORAS PESQUISA,,exames,laboratorio,12.0,UN,7.11,85.32,,,[],,Descrição: SUBSTANCIA REDUTORAS PESQUISA
+204,SULFATO DE DEHIDROEPIANDROSTERONA,,exames,laboratorio,5.0,UN,8.98,44.9,,,[],,Descrição: SULFATO DE DEHIDROEPIANDROSTERONA
+205,SHBG - GLOBULINA LIGADORA,,exames,laboratorio,12.0,UN,5.9,70.8,,,[],,Descrição: SHBG - GLOBULINA LIGADORA
+206,T T P A,,exames,laboratorio,12.0,UN,2.34,28.08,,,[],,Descrição: T T P A
+208,TEMPO DE PROTROMBINA,,exames,laboratorio,12.0,UN,2.09,25.08,,,[],,Descrição: TEMPO DE PROTROMBINA
+209,TEMPO DE SANGRAMENTO,,exames,laboratorio,12.0,UN,1.59,19.08,,,[],,Descrição: TEMPO DE SANGRAMENTO
+210,TESTOSTERONA LIVRE,,exames,laboratorio,,UN,,,,,[],,Descrição: TESTOSTERONA LIVRE
+211,TESTOSTERON TOTAL.,produto,exames,laboratorio,10.0,UN,7.2,72.0,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 10                           | Val. Ref.: 12,28                         | Valor Unit.: 7,20                        |                                          | Total Item: 72,00                        |
+Item: 211                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |
+Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           | Descrição: TESTOSTERON TOTAL.           |"
+212,TIREOGLOBULINA DOSAGEM,produto,exames,laboratorio,10.0,UN,6.68,66.8,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 10                           | Val. Ref.: 9,51                          | Valor Unit.: 6,68                        |                                          | Total Item: 66,80                        |
+Item: 212                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição:                               | TIREOGLOBULINA                           | DOSAGEM                                  |                                          |                                          |"
+213,TIROXINA,produto,exames,laboratorio,40.0,UN,4.76,190.4,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 40                           | Val. Ref.: 8,13                          | Valor Unit.: 4,76                        |                                          | Total Item: 190,40                       |
+Item: 213                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      | Descrição: TIROXINA                      |"
+214,TIROXINA LIVRE,produto,exames,laboratorio,370.0,UN,6.46,2390.2,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 370                          | Val. Ref.: 11,02                         | Valor Unit.: 6,46                        | Total Item: 2.390,20                     |
+Item: 214                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                | Descrição: TIROXINA LIVRE                |"
+215,TOLERANCIA A LACTOSE - 30 MIN,produto,exames,laboratorio,12.0,UN,8.64,103.68,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val. Ref.: 14,75                         | Valor Unit.: 8,64                        |                                          | Total Item: 103,68                       |
+Item: 215                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - 30 MIN"
+216,TOLERANCIA A LACTOSE - 60 MIN,produto,exames,laboratorio,12.0,UN,8.97,107.64,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val. Ref.: 15,30                         | Valor Unit.: 8,97                        | Total Item: 107,64                       |
+Item: 216                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - 60 MIN"
+217,TOLERANCIA A LACTOSE - BASAL,produto,exames,laboratorio,12.0,UN,9.25,111.0,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                           | Val.                                     | Ref.: 15,79                              | Valor Unit.: 9,25                        | Total Item: 111,00                       |
+Item: 217                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOLERANCIA A LACTOSE - BASAL"
+218,TOXOPLASMOSE ELISA IGG,produto,exames,laboratorio,80.0,UN,6.56,524.8,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 80                           | Val. Ref.: 11,19                         | Valor Unit.: 6,56                        | Total Item: 524,80                       |
+Item: 218                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        | Descrição: TOXOPLASMOSE ELISA IGG        |"
+219,TOXOPLASMOSE ELISA IGM,produto,exames,laboratorio,80.0,UN,6.83,546.4,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 80                           | Val. Ref.: 11,65                         | Valor Unit.: 6,83                        | Total Item: 546,40                       |
+Item: 219                                | Unidade: UN                              | Marca: exames                            | Modelo: laboratorio                      |                                          |
+Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        | Descrição: TOXOPLASMOSE ELISA IGM        |"
+220,TRANSAMINASE OXALACETICA,produto,exames,laboratorio,620.0,UN,1.13,700.6,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 620                         | Val. Ref.: 1,92                                         | Valor Unit.: 1,13                                       | Total Item: 700,60                                      |
+Item: 220                                               | Unidade: UN                                             | Marca: exames                                           |                                                         | Modelo: laboratorio                                     |
+Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     | Descrição: TRANSAMINASE OXALACETICA                     |"
+221,TRANSAMINASE PIRUVICA,produto,exames,laboratorio,620.0,UN,1.11,688.2,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 620                         | Val. Ref.: 1,90                                         | Valor Unit.: 1,11                                       |                                                         | Total Item: 688,20                                      |
+Item: 221 Unidade: UN Marca: exames Modelo: laboratorio | Descrição: TRANSAMINASE PIRUVICA"
+222,TRANSFERRINA,produto,exames,laboratorio,12.0,UN,2.41,28.92,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 12                                          | Val. Ref.:                                              | 4,11 Valor                                              | Unit.: 2,41                                             | Total Item: 28,92                                       |
+Item: 222                                               | Unidade:                                      | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |
+Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 | Descrição: TRANSFERRINA                                 |"
+223,TRANSGLUTAMINASE IGA,produto,exames,laboratorio,24.0,UN,22.68,544.32,,,"['Marca: exames', 'Modelo: laboratorio']",,"Quantidade: 24                                          | Val.                                                    | Ref.: 38,70 Valor                                       | Unit.: 22,68                                            | Total Item: 544,32                                      |
+Item: 223                                               | Unidade: UN                                             | Marca: exames                                           | Modelo: laboratorio                                     |                                                         |
+Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         | Descrição: TRANSGLUTAMINASE IGA                         |"
+224,TRANSGLUTAMINASE IGG,produto,exames,laboratorio,2.0,UN,14.49,28.98,,,[],,Descrição: TRANSGLUTAMINASE IGG
+225,TRIGLICÉRIDES,produto,exames,laboratorio,1000.0,UN,1.9,1900.0,,,[],,Descrição: TRIGLICÉRIDES
+226,TRIIODOTIRONINA,produto,exames,laboratorio,12.0,UN,4.11,49.32,,,[],,Descrição: TRIIODOTIRONINA
+227,UREIA....,produto,exames,laboratorio,600.0,UN,1.08,648.0,,,[],,Descrição: UREIA....
+228,URINA TIPO 1,produto,exames,laboratorio,1165.0,UN,4.54,5289.1,,,[],,Descrição: URINA TIPO 1
+229,UROCULTURA,produto,exames,laboratorio,380.0,UN,11.19,4252.2,,,[],,Descrição: UROCULTURA
+230,VDRL,produto,exames,laboratorio,170.0,UN,1.69,287.3,,,[],,Descrição: VDRL
+231,VELOC. DE HEMOSSEDIMENTACAO,produto,exames,laboratorio,30.0,UN,2.45,73.5,,,[],,Descrição: VELOC. DE HEMOSSEDIMENTACAO
+233,VITAMINA A,produto,exames,laboratorio,12.0,UN,10.2,122.4,,,[],,Descrição: VITAMINA A
+234,VITAMINA B1,produto,exames,laboratorio,,UN,,898.44,,,[],,Descrição: VITAMINA B1
+235,VITAMINA B6,produto,exames,laboratorio,12.0,UN,,134.76,,,[],,Descrição: VITAMINA B6
+237,VITAMINA C (ÁCIDO ASCÓRBICO),produto,exames,laboratorio,12.0,UN,11.23,134.76,,,[],,Descrição: VITAMINA C (ÁCIDO ASCÓRBICO)
+238,VITAMINA D 25.,produto,exames,laboratorio,250.0,UN,8.76,2190.0,,,[],,Descrição: VITAMINA D 25.
+239,VITAMINA E (EXAME),produto,exames,laboratorio,20.0,UN,48.89,977.8,,,[],,Descrição: VITAMINA E (EXAME)
+240,WAALER-ROSE,produto,exames,laboratorio,20.0,UN,101.58,2031.6,,,[],,Descrição: WAALER-ROSE
+241,ZINCO,produto,exames,,60.0,UN,9.11,546.6,,,[],,"Descrição: ZINCO Quantidade: 60\nVal. Ref.: 15,54\nUnit.: 9,11\nTotal 546,60"

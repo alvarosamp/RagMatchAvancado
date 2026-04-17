@@ -1,0 +1,19 @@
+{
+  "numero_ata": "90010/2025",
+  "orgao": "TRT22",
+  "data_assinatura": "30/09/2025",
+  "vigencia": "1 ano, contado a partir do primeiro dia útil subsequente à data de divulgação no PNCP",
+  "objeto": "Contratação de empresa para fornecer solução de comutação e conectividade SAN (switches SAN e transceivers), incluindo os cordões de fibra óptica LC/LC para cada porta licenciada, serviços de instalação, integração e configuração da solução",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Switch SAN de 48 portas SFP+ 32 Gbps para Site Secundário, com no mínimo 24 portas licenciadas.",
+      "tipo": "Switch SAN",
+      "marca": "CISCO",
+      "modelo": "MDS 9148T",
+      "quantidade": 2,
+      "unidade": "Unidades",
+      "valor_unitario": null
+    }
+  ]
+}

@@ -1,0 +1,556 @@
+from __future__ import annotations
+
+import json
+import logging
+import os
+import re
+import time
+import unicodedata
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Union
+
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# carrega .env
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+MAX_CHARS_POR_CHUNK = 10_000
+
+# =========================
+# DATACLASSES
+# =========================
+
+@dataclass
+class ItemAta:
+    lote: str | None = None
+    numero_item: str | None = None
+    descricao: str | None = None
+    tipo: str | None = None
+    marca: str | None = None
+    modelo: str | None = None
+    quantidade: int | None = None
+    unidade: str | None = None
+    valor_unitario: float | None = None
+    valor_total: float | None = None
+    fornecedor: str | None = None
+    cnpj_fornecedor: str | None = None
+    especificacoes: list[str] = field(default_factory=list)
+    observacoes: str | None = None
+    raw_descricao: str | None = None
+
+
+@dataclass
+class ResultadoAnalise:
+    id_pncp: str | None = None
+    numero_ata: str | None = None
+    orgao: str | None = None
+    data_assinatura: str | None = None
+    vigencia: str | None = None
+    objeto: str | None = None
+    itens: list[ItemAta] = field(default_factory=list)
+    tokens_usados: int = 0
+    aviso: str | None = None
+
+
+# =========================
+# PROMPT (ENGLISH, PROMPT-ENGINEERED)
+# =========================
+
+SYSTEM_PROMPT = """Você é um especialista em licitações públicas brasileiras e Atas de Registro de Preços (ARP).
+
+Sua tarefa é extrair APENAS os ITENS reais da ata.
+
+IMPORTANTE:
+- Ignore cláusulas jurídicas, penalidades, reajustes, artigos de lei, cabeçalhos e rodapés.
+- Considere item válido apenas quando representar produto, equipamento ou serviço contratável.
+- Atenção a LOTES: em muitos documentos, "LOTE X" é apenas um agrupador de um ou mais ITENS.
+    - Se houver "LOTE X" e também "Item: Y"/"ITEM Y" com produto/serviço, NÃO crie um item separado só para o lote.
+    - Em vez disso, associe o lote ao item preenchendo o campo "observacoes" com "LOTE X".
+    - Se existir lote sem item explícito, e o lote representar um fornecimento contratável (com descrição/quantidade/valores), trate-o como item.
+- QUEBRA DE PÁGINA: PDFs multi-página podem ter o cabeçalho de um item (Item: N, Unidade, Marca)
+  no final de uma página e a Descrição/Quantidade/Valor na página seguinte (separados por cabeçalhos
+  repetidos ou marcadores de imagem). Nesses casos, associe as informações ao mesmo item pelo
+  contexto e pela sequência numérica (ex.: se Item: 9 tem Descrição e Item: 11 tem Descrição,
+  o bloco de dados entre eles sem número de item pertence ao Item: 10).
+- Não invente dados.
+- Se um campo não existir com confiança, use null.
+- Preserve o texto original em raw_descricao.
+- Limpe prefixos como "ITEM 1", "LOTE 2", se aparecerem no início da descrição.
+
+Retorne APENAS JSON válido com este formato:
+{
+    "numero_ata": "string or null",
+    "orgao": "string or null",
+    "data_assinatura": "string or null",
+    "vigencia": "string or null",
+    "objeto": "string or null",
+    "itens": [
+        {
+            "lote": "string or null",
+            "numero_item": "string or null",
+            "descricao": "string or null",
+            "raw_descricao": "string or null",
+            "tipo": "string or null",
+            "marca": "string or null",
+            "modelo": "string or null",
+            "quantidade": number or null,
+            "unidade": "string or null",
+            "valor_unitario": number or null,
+            "valor_total": number or null,
+            "fornecedor": "string or null",
+            "cnpj_fornecedor": "string or null",
+            "especificacoes": ["string"],
+            "observacoes": "string or null"
+        }
+    ]
+}
+
+If you are unsure about any field, use null for that field.
+"""
+
+USER_TEMPLATE = "Analise a ata abaixo e extraia somente os itens válidos:\n\n{texto}"
+
+
+# =========================
+# CLIENTE OPENAI
+# =========================
+
+_client: OpenAI | None = None
+
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        _client = OpenAI()
+        logger.info(f"[LLM] OpenAI inicializado | modelo: {OPENAI_MODEL}")
+    return _client
+
+
+# =========================
+# HELPERS
+# =========================
+
+def _int(v) -> int | None:
+    try:
+        return int(v) if v is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _float(v) -> float | None:
+    try:
+        return float(str(v).replace(",", ".")) if v is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _normalize_text_for_dedupe(s: str) -> str:
+    if not s:
+        return ""
+
+    s = s.lower()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9\s]", " ", s)
+
+    stopwords = {
+        "de", "da", "do", "para", "com",
+        "item", "registro",
+        "ata", "contrato", "processo"
+    }
+    tokens = [t for t in s.split() if t not in stopwords]
+    s = " ".join(tokens)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+_RE_LOTE_LINE = re.compile(r"(?im)^\s*lote\s*(\d+)\s*$")
+_RE_ITEM_LINE = re.compile(r"(?im)^\s*(?:item\s*:|item\b)\s*(\d+)\s*$")
+
+# Helpers para reparo de quebra de página
+_RE_ITEM_REF   = re.compile(r"(?i)\bitem\s*:\s*(\d+)")
+_RE_DESCRICAO  = re.compile(r"(?i)descri[çc][aã]o\s*:")
+_MAX_LOOKAHEAD = 35  # máximo de linhas para buscar Descrição após um Item: sem Descrição
+
+
+def _reparar_quebra_pagina(texto: str) -> str:
+    """
+    Reconecta informações de itens partidos por quebras de página no markdown do Docling.
+
+    Problema típico (ata 1004, item 10):
+      Página 1 termina com: | Item: 10  Unidade: UNID  Marca: X |  (SEM Descrição)
+      <!-- image -->  ← logotipo / cabeçalho repetido
+      Página 2 inicia com: | Descrição: Produto Y | Quantidade: N |  (SEM Item:)
+
+    Fix: ao encontrar 'Item: N' sem 'Descrição:' na mesma linha, procura nas próximas
+    _MAX_LOOKAHEAD linhas por uma 'Descrição:' sem 'Item:' precedente e injeta 'Item: N'
+    imediatamente antes dessa linha.
+    """
+    if not texto:
+        return texto
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    n = len(lines)
+    injections: dict[int, str] = {}  # índice da linha → número do item a injetar
+
+    for i, line in enumerate(lines):
+        m_item = _RE_ITEM_REF.search(line)
+        if not m_item:
+            continue
+        # Item: N encontrado — mas já tem Descrição na mesma linha? então está completo
+        if _RE_DESCRICAO.search(line):
+            continue
+
+        item_num = m_item.group(1)
+
+        # Busca adiante por Descrição: órfã (sem Item: na mesma linha)
+        for j in range(i + 1, min(i + _MAX_LOOKAHEAD + 1, n)):
+            next_line = lines[j]
+            # Novo Item: N encontrado antes → este item já estava completo ou há novo item
+            if _RE_ITEM_REF.search(next_line):
+                break
+            # Descrição: sem Item: → é órfã, injeta número do item pendente
+            if _RE_DESCRICAO.search(next_line) and not _RE_ITEM_REF.search(next_line):
+                if j not in injections:
+                    injections[j] = item_num
+                    logger.debug(
+                        "[GPT] quebra_pagina: Item %s será injetado antes da linha %s: %.80s",
+                        item_num, j, next_line,
+                    )
+                break
+
+    if not injections:
+        return texto
+
+    result: list[str] = []
+    for i, line in enumerate(lines):
+        if i in injections:
+            result.append(f"Item: {injections[i]}")
+        result.append(line)
+
+    logger.info("[GPT] _reparar_quebra_pagina: %s injeção(ões) realizadas", len(injections))
+    return "\n".join(result)
+
+
+def _inferir_lote_por_item(texto: str, max_line_distance: int = 60) -> dict[str, str]:
+    """Inferir mapa item->lote a partir do texto extraído.
+
+    Heurística: para cada linha com 'Item: N', busca a ocorrência de 'LOTE M'
+    mais próxima (acima/abaixo) dentro de uma janela.
+    """
+    if not texto:
+        return {}
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    lote_positions: list[tuple[int, str]] = []
+    item_positions: list[tuple[int, str]] = []
+
+    for idx, line in enumerate(lines):
+        m_lote = _RE_LOTE_LINE.match(line)
+        if m_lote:
+            lote_positions.append((idx, m_lote.group(1)))
+            continue
+        m_item = _RE_ITEM_LINE.match(line)
+        if m_item:
+            item_positions.append((idx, m_item.group(1)))
+
+    if not lote_positions or not item_positions:
+        return {}
+
+    mapping: dict[str, str] = {}
+    for item_idx, item_num in item_positions:
+        best: tuple[int, str] | None = None
+        for lote_idx, lote_num in lote_positions:
+            dist = abs(item_idx - lote_idx)
+            if dist > max_line_distance:
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, lote_num)
+        if best is not None:
+            mapping[str(item_num).strip()] = str(best[1]).strip()
+    return mapping
+
+
+def _anexar_lote_em_observacoes(itens: list[ItemAta], lote_por_item: dict[str, str]) -> None:
+    if not itens or not lote_por_item:
+        return
+    for item in itens:
+        num = (item.numero_item or "").strip()
+        if not num:
+            continue
+        lote = lote_por_item.get(num)
+        if not lote:
+            continue
+        tag = f"LOTE {lote}"
+        if not item.observacoes:
+            item.observacoes = tag
+        elif tag.lower() not in item.observacoes.lower():
+            item.observacoes = f"{tag} | {item.observacoes}"
+
+
+def _remover_itens_cabecalho_lote(items: list[dict]) -> list[dict]:
+    """Remove itens que são apenas cabeçalho 'LOTE X' (sem dados de item)."""
+    cleaned: list[dict] = []
+    for d in items:
+        texto = str(d.get("raw_descricao") or d.get("descricao") or "").strip()
+        texto_norm = re.sub(r"\s+", " ", texto).strip()
+
+        is_only_lote = bool(re.fullmatch(r"(?i)lote\s*\d+\s*[:\-\)]?", texto_norm))
+        has_any_payload = any(
+            d.get(k) not in (None, "", [])
+            for k in (
+                "quantidade",
+                "unidade",
+                "valor_unitario",
+                "valor_total",
+                "marca",
+                "modelo",
+                "fornecedor",
+                "cnpj_fornecedor",
+                "especificacoes",
+            )
+        )
+
+        if is_only_lote and not has_any_payload:
+            continue
+        cleaned.append(d)
+    return cleaned
+
+
+def _dedupe_items(items: list[dict]) -> list[dict]:
+    grupos: dict[str, dict] = {}
+
+    for d in items:
+        chave = _normalize_text_for_dedupe(
+            d.get("raw_descricao") or d.get("descricao") or ""
+        )
+        if not chave:
+            continue
+
+        if chave not in grupos:
+            grupos[chave] = d.copy()
+        else:
+            existente = grupos[chave]
+
+            if existente.get("quantidade") is not None and d.get("quantidade") is not None:
+                existente["quantidade"] += d["quantidade"]
+
+            if existente.get("valor_total") is not None and d.get("valor_total") is not None:
+                existente["valor_total"] += d["valor_total"]
+
+            if len(str(d.get("descricao") or "")) > len(str(existente.get("descricao") or "")):
+                existente["descricao"] = d.get("descricao")
+
+            if not existente.get("raw_descricao") and d.get("raw_descricao"):
+                existente["raw_descricao"] = d["raw_descricao"]
+
+    return list(grupos.values())
+
+
+def _dividir_em_chunks(texto: str, max_chars: int = MAX_CHARS_POR_CHUNK) -> list[str]:
+    if len(texto) <= max_chars:
+        return [texto]
+
+    chunks: list[str] = []
+    while texto:
+        if len(texto) <= max_chars:
+            chunks.append(texto)
+            break
+        # Preferir cortes em parágrafo/linha para reduzir risco de "quebrar" tabelas/itens.
+        corte = texto.rfind("\n\n", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind("\n", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind(". ", 0, max_chars)
+        if corte == -1:
+            corte = texto.rfind(" ", 0, max_chars)
+        if corte == -1:
+            corte = max_chars
+        chunks.append(texto[:corte].strip())
+        texto = texto[corte:].strip()
+
+    return chunks
+
+
+def _para_item(d: dict) -> ItemAta:
+    return ItemAta(
+        lote=d.get("lote"),
+        numero_item=d.get("numero_item"),
+        descricao=d.get("descricao"),
+        tipo=d.get("tipo"),
+        marca=d.get("marca"),
+        modelo=d.get("modelo"),
+        quantidade=_int(d.get("quantidade")),
+        unidade=d.get("unidade"),
+        valor_unitario=_float(d.get("valor_unitario")),
+        valor_total=_float(d.get("valor_total")),
+        fornecedor=d.get("fornecedor"),
+        cnpj_fornecedor=d.get("cnpj_fornecedor"),
+        especificacoes=d.get("especificacoes") or [],
+        observacoes=d.get("observacoes"),
+        raw_descricao=d.get("raw_descricao"),
+    )
+
+
+def _mesclar_chunks(resultados: list[dict]) -> dict:
+    if not resultados:
+        return {}
+    base = resultados[0].copy()
+    todos_itens = list(base.get("itens") or [])
+    for r in resultados[1:]:
+        todos_itens.extend(r.get("itens") or [])
+    base["itens"] = todos_itens
+    return base
+
+
+# =========================
+# CHAMADA AO GPT
+# =========================
+
+def _chamar_gpt_json(texto_chunk: str) -> tuple[dict, int]:
+    client = _get_client()
+
+    response = client.responses.create(
+        model=OPENAI_MODEL,
+        input=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": USER_TEMPLATE.format(texto=texto_chunk)},
+        ],
+        text={
+            "format": {
+                "type": "json_object"
+            }
+        }
+    )
+
+    raw = response.output_text.strip()
+
+    try:
+        dados = json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.error(f"[GPT] JSON inválido: {e} | preview: {raw[:400]}")
+        raise ValueError(f"Resposta inválida em JSON: {e}") from e
+
+    usage = getattr(response, "usage", None)
+    total_tokens = 0
+    if usage:
+        input_tokens = getattr(usage, "input_tokens", 0) or 0
+        output_tokens = getattr(usage, "output_tokens", 0) or 0
+        total_tokens = input_tokens + output_tokens
+
+    return dados, total_tokens
+
+
+# =========================
+# FUNÇÃO PRINCIPAL
+# =========================
+
+def analisar_ata(
+    texto: str,
+    id_pncp: str | None = None,
+) -> ResultadoAnalise:
+    if not texto or not texto.strip():
+        return ResultadoAnalise(id_pncp=id_pncp, aviso="texto vazio")
+
+    label = id_pncp or "ata"
+    logger.info(f"[GPT] Iniciando análise: {label}")
+
+    # Repara itens partidos por quebras de página antes de qualquer processamento
+    texto = _reparar_quebra_pagina(texto)
+
+    chunks = _dividir_em_chunks(texto)
+    aviso = f"texto dividido em {len(chunks)} chunks" if len(chunks) > 1 else None
+
+    # Inferência de lote->item usando o texto original (ajuda em casos como Ata#1179)
+    lote_por_item = _inferir_lote_por_item(texto)
+
+    resultados_raw: list[dict] = []
+    total_tokens = 0
+
+    for i, chunk in enumerate(chunks, 1):
+        logger.info(f"[GPT] Chunk {i}/{len(chunks)}")
+        dados, tokens = _chamar_gpt_json(chunk)
+        resultados_raw.append(dados)
+        total_tokens += tokens
+
+    dados = _mesclar_chunks(resultados_raw)
+
+    itens_raw = dados.get("itens") or []
+    itens_raw = _remover_itens_cabecalho_lote(itens_raw)
+    itens_clean = _dedupe_items(itens_raw)
+    itens = [_para_item(d) for d in itens_clean]
+
+    _anexar_lote_em_observacoes(itens, lote_por_item)
+
+    return ResultadoAnalise(
+        id_pncp=id_pncp,
+        numero_ata=dados.get("numero_ata"),
+        orgao=dados.get("orgao"),
+        data_assinatura=dados.get("data_assinatura"),
+        vigencia=dados.get("vigencia"),
+        objeto=dados.get("objeto"),
+        itens=itens,
+        tokens_usados=total_tokens,
+        aviso=aviso,
+    )
+
+
+# =========================
+# EXPORTAÇÃO
+# =========================
+
+def resultado_para_dict(resultado: ResultadoAnalise) -> dict:
+    return asdict(resultado)
+
+
+def resultado_para_json(resultado: ResultadoAnalise, indent: int = 2) -> str:
+    return json.dumps(resultado_para_dict(resultado), ensure_ascii=False, indent=indent)
+
+
+# =========================
+# WRAPPER PARA O PIPELINE
+# =========================
+
+def analisar_texto_ata_extraido(
+    texto_ocr: str,
+    id_pncp: str,
+    nome_arquivo: str = "",
+) -> ResultadoAnalise | None:
+    if not texto_ocr or not texto_ocr.strip():
+        logger.warning(f"[GPT] Texto vazio — {id_pncp} / {nome_arquivo}")
+        return None
+    try:
+        return analisar_ata(texto_ocr, id_pncp=id_pncp)
+    except Exception as e:
+        logger.error(f"[GPT] Falha em {nome_arquivo} ({id_pncp}): {e}")
+        return None
+
+
+# =========================
+# CLI
+# =========================
+
+def run_arquivo(caminho: Union[str, Path], id_pncp: str | None = None) -> ResultadoAnalise:
+    caminho = Path(caminho)
+    texto = caminho.read_text(encoding="utf-8")
+    return analisar_ata(texto, id_pncp=id_pncp or caminho.stem)
+
+
+if __name__ == "__main__":
+    import sys
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
+
+    if len(sys.argv) < 2:
+        print("Uso: python pipelinellm_openai.py <arquivo.md> [id_pncp]")
+        raise SystemExit(1)
+
+    resultado = run_arquivo(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+    print(resultado_para_json(resultado))

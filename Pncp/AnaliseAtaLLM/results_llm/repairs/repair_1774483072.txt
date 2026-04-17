@@ -1,0 +1,13 @@
+{
+  "data": {
+    "id": "1",
+    "nome": "Impressora",
+    "modelo": "HP DeskJet 2130",
+    "marca": "HP",
+    "ano_de_publicacao": "2012",
+    "preco_atual": "399,90",
+    "preco_antigo": "299,00"
+  },
+  "quantidade": "1",
+  "disponibilidade": "Sim"
+}

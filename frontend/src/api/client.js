@@ -78,6 +78,16 @@ export const exportApi = {
   csv:  (id) => api.get(`/editais/${id}/export/csv`,  { responseType: 'blob' }),
 }
 
+// ── RAG Chat ─────────────────────────────────────────────────────────────────
+export const ragApi = {
+  /**
+   * Envia uma pergunta sobre um edital específico.
+   * @param {number|string} editalId
+   * @param {{ question: string, model: 'gpt'|'ollama', history: Array }} body
+   */
+  chat: (editalId, body) => api.post(`/editais/${editalId}/chat`, body, { timeout: 60_000 }),
+}
+
 // ── Utilidade para download de blob ──────────────────────────────────────────
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)

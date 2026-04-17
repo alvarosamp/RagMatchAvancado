@@ -1,0 +1,28 @@
+{
+  "id_pncp": "Ata - 1432",
+  "numero_ata": "00029/2025",
+  "orgao": "ESCOLA SUPERIOR DE BOMBEIROS 'CEL PM PAULO MARQUES PEREIRA'",
+  "data_assinatura": "15 de setembro de 2025",
+  "vigencia": "1 ano, contado a partir do 1º dia útil subsequente à data de divulgação no Portal Nacional de Contratações Públicas (PNCP)",
+  "objeto": "Registro de preços para a eventual contratação de materiais elétricos, hidráulicos e de construção civil diversos",
+  "itens": [
+    {
+      "numero_item": "3",
+      "descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "3. 8.2. O órgão ou entidade gerenciadora que tiver estimado as quantidades que pretende contratar será considerado participante para fins do remanejamento."
+    }
+  ],
+  "tokens_usados": 4312,
+  "aviso": null
+}

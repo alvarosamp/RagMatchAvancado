@@ -9,9 +9,10 @@ import Login        from './pages/Login'
 import Dashboard    from './pages/Dashboard'
 import Upload       from './pages/Upload'
 import EditalDetail from './pages/EditalDetail'
+import EditalChat   from './pages/EditalChat'
 import Jobs         from './pages/Jobs'
 import Usuarios     from './pages/Usuarios'
-import Analytics    from './pages/Analytics'       // ← NOVO
+import Analytics    from './pages/Analytics'
 import Layout       from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -41,7 +42,8 @@ createRoot(document.getElementById('root')).render(
           <Route path="/upload"       element={<PrivateRoute><Upload /></PrivateRoute>} />
           <Route path="/jobs"         element={<PrivateRoute><Jobs /></PrivateRoute>} />
           <Route path="/analytics"    element={<PrivateRoute><Analytics /></PrivateRoute>} />
-          <Route path="/editais/:id"  element={<PrivateRoute><EditalDetail /></PrivateRoute>} />
+          <Route path="/editais/:id"       element={<PrivateRoute><EditalDetail /></PrivateRoute>} />
+          <Route path="/editais/:id/chat" element={<PrivateRoute><EditalChat   /></PrivateRoute>} />
 
           <Route path="/usuarios" element={
             <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>

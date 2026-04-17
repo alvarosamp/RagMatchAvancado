@@ -31,6 +31,7 @@ NOTA: Este worker está preparado para Prefect mas roda SEM ele
 
 import logging
 import time
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -250,15 +251,13 @@ class PipelineWorker:
         O decorador @task faz o Prefect rastrear esta etapa individualmente.
         Se falhar, o Prefect re-executa só esta task (não o pipeline todo).
         '''
-        from app.pipeline.docling_parser import DoclingParser
+        from app.pipeline.docling_parser import parse_pdf
         from app.pipeline.chunker import Chunker
         from app.pipeline.embedder import Embedder
 
         # OCR + extração de texto estruturado
-        parser = DoclingParser()
-        # BUG CORRIGIDO: era texto = chunker.chunk(texto) antes de chunker ser criado
-        # Ordem correta: parser → chunker → embedder
-        texto = parser.parse(pdf_path)
+        doc   = parse_pdf(pdf_path, filename=Path(pdf_path).name)
+        texto = doc.full_text
 
         # Divide em chunks semânticos
         chunker = Chunker()

@@ -1,0 +1,75 @@
+{
+  "id_pncp": "Ata#1018",
+  "numero_ata": "016/2025",
+  "orgao": "Tribunal Regional do Trabalho da 22ª Região",
+  "data_assinatura": null,
+  "vigencia": "1 (um) ano, contado a partir do primeiro dia útil subsequente à data de divulgação no PNCP, podendo ser prorrogada por igual período",
+  "objeto": "Contratação de empresa, mediante Sistema de Registro de Preços (SRP), para fornecimento de solução de comutação e conectividade SAN (switches SAN e transceivers), incluindo os cordões de fibra óptica LC/LC para cada porta licenciada, serviços de instalação, integração e configuração da solução",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Switch SAN de 48 portas SFP+ 32 Gbps para Site Principal, com todas portas licenciadas.",
+      "tipo": "equipamento",
+      "marca": "CISCO",
+      "modelo": "MDS 9148T",
+      "quantidade": 2,
+      "unidade": "UNID",
+      "valor_unitario": 253145.02,
+      "valor_total": 506290.04,
+      "fornecedor": "WISEPATH TECNOLOGIA LTDA",
+      "cnpj_fornecedor": "50.420.622/0001-47",
+      "especificacoes": [
+        "48 portas SFP+",
+        "32 Gbps",
+        "para Site Principal",
+        "com todas portas licenciadas"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch SAN de 48 portas SFP+ 32 Gbps para Site Principal, com todas portas licenciadas. MARCA : CISCO, MODELO MDS 9148T"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Switch SAN de 48 portas SFP+ 32 Gbps para Site Secundário, com no mínimo 24 portas licenciadas.",
+      "tipo": "equipamento",
+      "marca": "CISCO",
+      "modelo": "MDS9148T",
+      "quantidade": 2,
+      "unidade": "UNID",
+      "valor_unitario": 138928.95,
+      "valor_total": 277857.9,
+      "fornecedor": "WISEPATH TECNOLOGIA LTDA",
+      "cnpj_fornecedor": "50.420.622/0001-47",
+      "especificacoes": [
+        "48 portas SFP+",
+        "32 Gbps",
+        "para Site Secundário",
+        "com no mínimo 24 portas licenciadas"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch SAN de 48 portas SFP+ 32 Gbps para Site Secundá- rio, com no mínimo 24 por- tas licenciadas. MARCA CIS- CO,MODELO MDS9148T"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Transceivers Long Wave Length (LWL), de no mínimo, 16 Gbps.",
+      "tipo": "equipamento",
+      "marca": "CISCO",
+      "modelo": "DS-SFP-FC16G-LW",
+      "quantidade": 12,
+      "unidade": "UNID",
+      "valor_unitario": 17031.83,
+      "valor_total": 204381.96,
+      "fornecedor": "WISEPATH TECNOLOGIA LTDA",
+      "cnpj_fornecedor": "50.420.622/0001-47",
+      "especificacoes": [
+        "Long Wave Length (LWL)",
+        "no mínimo 16 Gbps",
+        "16 GBPS FIBRE CHANNEL LW SFP+",
+        "LC"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Transceivers Long Wave Length (LWL), de no mínimo, 16 Gbps. MARCA CISCO, MODELO DS-SFP-FC16G- LW.P16 GBPS FIBRE CHAN- NEL LW SFP+, LC"
+    }
+  ],
+  "tokens_usados": 6662,
+  "aviso": "texto dividido em 2 chunks"
+}

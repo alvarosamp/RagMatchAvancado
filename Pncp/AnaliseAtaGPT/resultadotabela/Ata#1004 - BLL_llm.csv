@@ -1,0 +1,69 @@
+numero_item,descricao,tipo,marca,modelo,quantidade,unidade,valor_unitario,valor_total,fornecedor,cnpj_fornecedor,especificacoes,observacoes,raw_descricao
+1,"Teclado usb, ABNT2, padrão",produto,Multilaser,Multilaser,33.0,UNID,13.28,438.24,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['ABNT2', 'padrão']",,"Descrição: Teclado usb, ABNT2, padrão"
+2,"Mouse usb, 3 botões, 1000, DPI, padrão",produto,Multilaser,Multilaser,33.0,UNID,5.39,177.87,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['3 botões', '1000 DPI', 'padrão']",,"Descrição: Mouse usb, 3 botões, 1000, DPI, padrão"
+3,Teclado e mouse sem fio,produto,Multilaser,Multilaser,33.0,UNID,74.3,2451.9,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Teclado e mouse sem fio'],,Descrição: Teclado e mouse sem fio
+4,Suporte de refrigeração para notebook,produto,B-Max,B-Max,17.0,UNID,41.51,705.67,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Suporte de refrigeração para notebook'],,Descrição: Suporte de refrigeração para notebook ¶
+5,"Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",produto,Knup,Knup,13.0,UNID,6.22,80.86,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,"['Cabo USB 2.0 1,80m', 'A Macho']",,"Descrição: Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros"
+6,Cabo HDMI de 2 metros,produto,Exbom,Exbom,17.0,UNID,10.37,176.29,J S LOCACAO E COMERCIO LTDA,53.064.613/0001-59,['Cabo HDMI 2m'],,Descrição: Cabo HDMI de 2 metros
+7,Cabo HDMI de 3 metros,produto,Exbom,Exbom,33.0,UNID,15.77,520.41,,,"['comprimento: 3 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 3 metros
+8,Cabo HDMI de 5 metros,produto,Exbom,Exbom,17.0,UNID,20.75,352.75,,,"['comprimento: 5 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 5 metros
+9,Cabo HDMI de 10 metros,produto,Exbom,Exbom,17.0,UNID,24.9,423.3,,,"['comprimento: 10 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 10 metros
+11,Cabo HDMI de 20 metros,produto,Exbom,Exbom,12.0,UNID,47.73,572.76,,,"['comprimento: 20 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 20 metros
+12,Cabo HDMI de 30 metros,produto,Exbom,Exbom,10.0,UNID,66.41,664.1,,,"['comprimento: 30 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 30 metros
+13,Cabo HDMI de 50 metros,produto,Exbom,Exbom,7.0,UNID,205.47,1438.29,,,"['comprimento: 50 metros', 'conector: HDMI', 'marca: Exbom', 'modelo: Exbom']",,Cabo HDMI de 50 metros
+14,Cabo VGA 3 metros,produto,Exbom,Exbom,17.0,UNID,16.6,282.2,,,[],,Descrição: Cabo VGA 3 metros
+15,Adaptador de HDMI para VGA,produto,Exbom,Exbom,3.0,UNID,12.45,37.35,,,[],,Descrição: Adaptador de HDMI para VGA
+16,Bateria para BIOS Voltagem 3v,produto,Easy Top,Easy Top,17.0,UNID,3.6,61.2,,,[],,Descrição: Bateria para BIOS Voltagem 3v
+17,Pilha AA,produto,Easy Top,Easy Top,33.0,UNID,3.44,113.52,,,[],,Descrição: Pilha AA
+18,Pilha AAA,produto,Easy Top,Easy Top,33.0,UNID,3.44,113.52,,,[],,Descrição: Pilha AAA
+19,Mouse PAD preto,produto,Isoprene,Isoprene,33.0,UNID,3.32,109.56,,,[],,Descrição: Mouse PAD preto
+20,Fone de Ouvido Headphone,produto,Multilaser,Multilaser,27.0,UNID,56.03,1512.81,,,[],,Descrição: Fone de Ouvido Headphone
+22,"Alicate de Crimpar com catraca 3 em 1, corta, decapa e crimpa",produto,Multilaser,Multilaser,7.0,UNID,39.43,276.01,,,[],,"Descrição: Alicate de Crimpar com catraca 3 em 1, corta, decapa e crimpa"
+23,Cabo para internet cat5cx c/ 305 mt,produto,Multilaser,Multilaser,10.0,UNID,367.36,3673.6,,,[],,Descrição: Cabo para internet cat5cx c/ 305 mt
+24,Conector rj45,produto,Forceline,Forceline,8.0,UNID,0.41,3.28,,,[],,Descrição: Conector rj45
+25,Estabilizador bivol 300va,produto,Forceline,Forceline,33.0,UNID,63.51,2095.83,,,[],,Descrição: Estabilizador bivol 300va
+26,Estabilizador bivolt 500va,produto,Forceline,Forceline,33.0,UNID,78.86,2602.38,,,[],,Descrição: Estabilizador bivolt 500va
+27,Nobreak bivolt 600va,produto,Forceline,Forceline,17.0,UNID,244.91,4163.47,,,[],,Descrição: Nobreak bivolt 600va
+28,Nobreak bivolt de 1200va,produto,Forceline,Forceline,3.0,UNID,410.95,1232.85,,,[],,Descrição: Nobreak bivolt de 1200va
+29,Transformador de 1500va,produto,Forceline,Forceline,3.0,UNID,658.92,1976.76,,,[],,Descrição: Transformador de 1500va
+1,Memoria DDR3 4gb para desktop,produto,Hynix,Hynix,8.0,UNID,16.6,132.8,,,[],,Memoria DDR3 4gb para desktop
+2,Memoria DDR3 8gb para desktop,produto,Hynix,Hynix,8.0,UNID,120.0,960.0,,,[],,Memoria DDR3 8gb para desktop
+3,Memoria DDR4 4GB para desktop,produto,Hynix,Hynix,8.0,UNID,110.0,880.0,,,[],,Memoria DDR4 4GB para desktop
+4,Memoria DDR4 8GB para desktop,produto,Hynix,Hynix,8.0,UNID,130.0,1040.0,,,[],,Memoria DDR4 8GB para desktop
+5,Memória DDR4 4GB para notebook,produto,Hynix,Hynix,8.0,UNID,60.0,480.0,,,[],,Memória DDR4 4GB para notebook
+6,Memória DDR4 8GB para notebook,produto,Hynix,Hynix,8.0,UNID,85.0,680.0,,,[],,Memória DDR4 8GB para notebook
+7,"Placa mãe, LGA 1151, DDR4 para desktop",produto,MSI,,7.0,UNID,450.0,3150.0,,,[],,"Placa mãe, LGA 1151, DDR4 para desktop"
+8,"Placa mãe, LGA 1155, DDR3 para desktop",produto,MSI,,7.0,UNID,178.57,1249.99,,,[],,"Placa mãe, LGA 1155, DDR3 para desktop"
+9,"Placa mãe, LGA 1150, DDR3 para desktop",produto,MSI,,7.0,UNID,200.0,1400.0,,,[],,"Placa mãe, LGA 1150, DDR3 para desktop"
+10,"Placa mãe, DDR4 para desktop",produto,MSI,,7.0,UNID,800.0,5600.0,,,[],,"Placa mãe, DDR4 para desktop"
+11,"Placa mãe, LGA 1200, DDR4 para desktop",produto,MSI,,,UNID,,,,,[],,"Placa mãe, LGA 1200, DDR4 para desktop"
+12,Hd externo 1tb 3.0,produto,WD,,7.0,UNID,800.0,5600.0,,,"['HD externo', '1TB', '3.0 USB']",,"Item: 12; Unidade: UNID; Marca: WD; Descrição: Hd externo 1tb 3.0; Quantidade: 7; Valor Unit.: 800,00; Total Item: 5.600,00"
+13,Hd interno 1TB,produto,WD,,7.0,UNID,200.0,1400.0,,,"['HD interno', '1TB']",,"Item: 13; Unidade: UNID; Marca: WD; Descrição: Hd interno 1TB; Quantidade: 7; Valor Unit.: 200,00; Total Item: 1.400,00"
+14,Hd ssd120gb,produto,WD,,7.0,UNID,600.0,4200.0,,,"['HD SSD', '120GB']",,"Item: 14; Unidade: UNID; Marca: WD; Descrição: Hd ssd120gb; Quantidade: 7; Valor Unit.: 600,00; Total Item: 4.200,00"
+15,HD SSD 240GB,produto,WD,,7.0,UNID,120.0,840.0,,,"['HD SSD', '240GB']",,"Item: 15; Unidade: UNID; Marca: WD; Descrição: HD SSD 240GB; Quantidade: 7; Valor Unit.: 120,00; Total Item: 840,00"
+16,HD SSD 480GB,produto,WD,,17.0,UNID,250.0,4250.0,,,"['HD SSD', '480GB']",,"Item: 16; Unidade: UNID; Marca: WD; Descrição: HD SSD 480GB; Quantidade: 17; Valor Unit.: 250,00; Total Item: 4.250,00"
+11,Processador core i5 3 geração ddr3,produto,Intel,,5.0,UNID,214.7,1073.5,,,"['Intel Core i5', '3ª geração', 'DDR3']",,"Item: 11; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 3 geração ddr3; Quantidade: 5; Valor Unit.: 214,70; Total Item: 1.073,50"
+12,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,214.7,1073.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 12; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 214,70; Total Item: 1.073,50"
+13,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,76.3,381.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 13; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 76,30; Total Item: 381,50"
+14,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,76.3,381.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 14; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 76,30; Total Item: 381,50"
+15,Processador core i5 4 geração ddr3,produto,Intel,,5.0,UNID,171.7,858.5,,,"['Intel Core i5', '4ª geração', 'DDR3']",,"Item: 15; Unidade: UNID; Marca: Intel; Descrição: Processador core i5 4 geração ddr3; Quantidade: 5; Valor Unit.: 171,70; Total Item: 858,50"
+21,Cartão de memória 16gb,produto,Multilaser,,5.0,UNID,29.0,145.0,Multilaser,,[],,"Item: 21 Unidade: UNID Marca: Multilaser | Descrição: Cartão de memória 16gb | Quantidade: 5 Val. Ref.: 0,00 | Total Item: 145,00 Valor Unit.: 29,00"
+22,Cartão de memória 16gb,produto,Multilaser,,5.0,UNID,46.7,233.5,Multilaser,,[],,"Item: 22 Unidade: UNID Marca: Multilaser | Descrição: Cartão de memória 16gb | Quantidade: 5 Val. Ref.: 0,00 | Total Item: 233,50 Valor Unit.: 46,70"
+23,Cartão de memória 64gb,produto,Multilaser,,6.0,UNID,61.0,366.0,Multilaser,,[],,"Item: 23 Unidade: UNID Marca: Multilaser Descrição: Cartão de memória 64gb Quantidade: 6 Valor Unit.: 61,00"
+24,Cartão de memória 128gb,produto,Multilaser,,6.0,UNID,61.0,366.0,Multilaser,,[],,"Item: 24 Unidade: UNID Marca: Multilaser Descrição: Cartão de memória 128gb Quantidade: 6 Valor Unit.: 61,00"
+25,Cartão de memória 256gb,produto,Multilaser,Multilaser,6.0,UNID,111.6,669.6,,,[],,Descrição: Cartão de memória 256gb
+26,Hub 4 portas,produto,Multilaser,Multilaser,4.0,UNID,28.6,114.4,,,[],,Descrição: Hub 4 portas
+27,Hub 7 portas,produto,Multilaser,Multilaser,4.0,UNID,47.7,190.8,,,[],,Descrição: Hub 7 portas
+28,Switch 8 portas,produto,Intelbras,Intelbras,5.0,UNID,166.9,834.5,,,[],,Descrição: Switch 8 portas
+29,Switch 16 portas,produto,Intelbras,Intelbras,5.0,UNID,677.5,3387.5,,,[],,Descrição: Switch 16 portas
+30,Switch 24 portas,produto,Intelbras,Intelbras,3.0,UNID,959.0,2877.0,,,[],,Descrição: Switch 24 portas
+31,Carregador para notebook,produto,Multilaser,Multilaser,20.0,UNID,114.5,2290.0,,,[],,Descrição: Carregador para notebook
+36,Leitor de Código de Barras 1D,produto,,,6.0,,190.8,1144.8,,,[],,Descrição: Leitor de Código de Barras 1D
+37,Impressora Térmica 80 Colunas,produto,Elgin,Elgin,2.0,UNID,667.0,1334.0,,,[],,Descrição: Impressora Térmica 80 Colunas
+38,"IMPRESSORA MULTIFUNCIONAL Tanque de Tinta, com book, Tecnologia de impressão: Jato de tinta Heat-FreeMicroPiezo, Resolução mínima de impressão: 5760 x 1440 dpi, Velocidade de impressão ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressão: Até 33 ppm em preto e 15 ppm em cores (rascunho, A4/carta). Velocidade de cópia ISO: 7,7 cpm em preto e 3,8 cpm em cores (A4/carta). Especificações do scanner: Resolução óptica: 1.200 dpi x 2.400 dpi, Velocidade de digitalização: 11 segundos por página em preto e 28 segundos por página em cores (200 dpi). Capacidade de entrada de papel: 100 folhas de papel A4 Capacidade de bandeja de saída: 30 folhas de papel A4. Garantia mínima de 12 meses.",produto,Epson,Epson,6.0,UNID,1525.8,9154.8,,,[],,"Descrição:  IMPRESSORA MULTIFUNCIONAL Tanque de Tinta, com book, Tecnologia de impressão: Jato de tinta Heat-FreeMicroPiezo, Resolução mínima de impressão: 5760 x 1440 dpi, Velocidade de impressão ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressão: Até 33 ppm em preto e 15 ppm em cores (rascunho, A4/carta). Velocidade de cópia ISO: 7,7 cpm em preto e 3,8 cpm em cores (A4/carta). Especificações do scanner: Resolução óptica: 1.200 dpi x 2.400 dpi, Velocidade de digitalização: 11 segundos por página em preto e 28 segundos por página em cores (200 dpi). Capacidade de entrada de papel: 100 folhas de papel A4 Capacidade de bandeja de saída: 30 folhas de papel A4. Garantia mínima de 12 meses."
+39,"IMPRESSORA multifuncional, com cartucho de toner; Laser monocromático; com visor; Voltagem: 127V; Velocidade mínima impressão 30 ppm; Resolução de copia 600 x 600 dpi; bandeja de entrada para 250 folhas; Digitaliação, Garantia mínima de 12 meses.",produto,Epson,Epson,6.0,UNID,1956.2,11737.2,,,[],,"Descrição:  IMPRESSORA multifuncional, com cartucho de toner; Laser monocromático; com visor; Voltagem: 127V; Velocidade mínima impressão 30 ppm; Resolução de copia 600 x 600 dpi; bandeja de entrada para 250 folhas; Digitalização, Garantia mínima de 12 meses."
+40,"Placa de vídeo 4GB DDR5, resolução 128bits.",produto,Vxpro,Vxpro,4.0,UNID,1903.7,7614.8,,,[],,"Descrição:  Placa de vídeo 4GB DDR5, resolução 128bits."
+41,"Computador com processador core i3 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memória ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",produto,Pixxo,Pixxo,7.0,UNID,1697.6,11883.2,,,[],,"Descrição:  Computador com processador core i3 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memória ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses."
+42,"Computador com processador core i5 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memoria ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses.",produto,Pixxo,Pixxo,7.0,UNID,1938.5,13569.5,,,[],,"Descrição:  Computador com processador core i5 no mínimo 6 geração ddr4, SSD 120GB, 8gb de memoria ddr4, teclado, mouse e monitor de ¶ Garantia mínima de 12 meses."
+43,"Notebook core i3 4gb de memória, SSD 120GB no mínimo 8 geração ddr4, Garantia mínima de 12 meses.",produto,Lenovo,Lenovo,5.0,UNID,2652.8,13264.0,,,[],,"Descrição:  Notebook core i3 4gb de memória, SSD 120GB no mínimo 8 geração ddr4, Garantia mínima de 12 meses."
+44,"Notebook core i5 8gb de memória, SSD 120GB no mínimo 8 geração ddr4 com hdssd 120gb, Garantia mínima de 12 meses.",produto,Lenovo,Lenovo,5.0,UNID,3338.9,16694.5,,,[],,"Descrição:  Notebook core i5 8gb de memória, SSD 120GB no mínimo 8 geração ddr4 com hdssd 120gb, Garantia mínima de 12 meses."
