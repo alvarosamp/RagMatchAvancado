@@ -14,10 +14,10 @@ Injeta na rota via dependency
 
 '''
 import os
+import bcrypt as _bcrypt_lib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import JWTError, jwt 
-from passlib.context import CryptContext
+from jose import JWTError, jwt
 from app.logs.config import logger
 from dotenv import load_dotenv
 
@@ -40,40 +40,17 @@ except ValueError:
     logger.warning("Invalid ACCESS_TOKEN_EXPIRE_MINUTES; falling back to 60")
     ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-#Contexto de hashing de senha (bcrypt)
-'''
-CryptContext gerencia o algoritmo de hash e verifica senhas antigas automaticamente
-bcrypt adiciona salt automático e tem custo configurável (rounds)
-auto = deprecate automaticamente hashes antigos se o algoritmo mudar, for recomendado para produção
-'''
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(plain_password: str) -> str:
+    pwd_bytes = plain_password.encode("utf-8")[:72]
+    return _bcrypt_lib.hashpw(pwd_bytes, _bcrypt_lib.gensalt()).decode("utf-8")
 
-def hash_passoword(plain_password : str) -> str:
-    ''' 
-    Gera o hash bcrypt de uma senha em texto puro
 
-    bcrypt é intencionalmente lento (custo configuravel) para dificultar
-    ataques de força bruta. O salt é embutido no hash resultante.
+# Backward-compat: versão antiga com typo
+hash_passoword = hash_password
 
-    Exemplo: 
-    hash_passoword("minhasenha123") -> "$2b$12$KIXQ1...resto do hash..."
-       -> $2b$12 indica bcrypt com custo 12
-
-    '''
-    return _pwd_context.hash(plain_password)
-
-def verify_password(plain_password: str, hashed_password : str) -> bool:
-    '''
-    Docstring para verify_password
-    
-    :param plain_password: Descrição
-    :type plain_password: str
-    :param hashed_password: Descrição
-    :type hashed_password: str
-    :return: Descrição
-    :rtype: bool
-    '''
-    return _pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pwd_bytes = plain_password.encode("utf-8")[:72]
+    return _bcrypt_lib.checkpw(pwd_bytes, hashed_password.encode("utf-8"))
 
 #JWT - Craicao e validacao
 
@@ -144,6 +121,7 @@ def decode_access_token(token: str) -> dict:
         JWTError: se o token for inválido, expirado ou adulterado.
     """
     #jwr.decode() valida assinatura + expiraçao automaticamente
+    assert SECRET_KEY is not None, "SECRET_KEY must be set"
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     logger.debug(f"Token decodificado com sucesso: {payload}")
     return payload 

@@ -264,11 +264,11 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
             from openai import OpenAI
             client = OpenAI()
             model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-            response = client.responses.create(
+            response = client.chat.completions.create(
                 model=model_name,
-                input=messages,
+                messages=messages,
             )
-            return response.output_text.strip(), model_name
+            return response.choices[0].message.content.strip(), model_name
         except Exception as e:
             logger.error("[Chat] Falha GPT: %s", e)
             raise HTTPException(status_code=502, detail=f"Erro ao chamar GPT: {e}")

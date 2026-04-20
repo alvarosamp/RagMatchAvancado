@@ -55,7 +55,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
         {/* Resposta */}
         <div className="card py-3 px-4 rounded-2xl rounded-tl-sm">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded bg-gradient-to-br from-azure to-[#7C3AED] flex items-center justify-center">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-azure to-amber flex items-center justify-center">
               <span className="text-white text-xs font-mono font-black">T</span>
             </div>
             <span className="text-xs font-mono text-gray-500">{model || 'IA'}</span>
@@ -187,7 +187,7 @@ export default function EditalChat() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full min-h-full">
 
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 border-b border-slate-border bg-ink-100 px-6 py-4">
@@ -202,7 +202,7 @@ export default function EditalChat() {
             <div className="w-px h-5 bg-slate-border" />
             <div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-gradient-to-br from-azure to-[#7C3AED] flex items-center justify-center">
+                <div className="w-6 h-6 rounded bg-gradient-to-br from-azure to-amber flex items-center justify-center">
                   <span className="text-white text-xs font-mono font-black">T</span>
                 </div>
                 <p className="font-display font-bold text-white text-sm">Chat do Edital #{id}</p>
@@ -248,7 +248,7 @@ export default function EditalChat() {
         {/* Estado vazio — sugestões */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-azure/20 to-[#7C3AED]/20 border border-azure/20 flex items-center justify-center text-2xl mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-azure/20 to-amber/20 border border-azure/20 flex items-center justify-center text-2xl mb-4">
               💬
             </div>
             <p className="font-display font-bold text-white text-lg mb-1">

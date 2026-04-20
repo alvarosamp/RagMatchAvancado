@@ -91,7 +91,7 @@ export default function EditalDetail() {
           {/* Chat RAG — destaque */}
           <button
             onClick={() => navigate(`/editais/${id}/chat`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-azure/20 to-[#7C3AED]/20 border border-azure/30 hover:border-azure/60 text-azure-glow font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-azure/10"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-azure/20 to-amber/20 border border-azure/30 hover:border-azure/60 text-azure-glow font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-azure/10"
           >
             <span>💬</span>
             Perguntar ao edital
@@ -181,7 +181,7 @@ export default function EditalDetail() {
               {/* Barra de progresso geral */}
               <div className="h-1.5 bg-slate-border rounded-full overflow-hidden mb-5">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-azure to-[#7C3AED] transition-all duration-1000"
+                  className="h-full rounded-full bg-gradient-to-r from-azure to-amber transition-all duration-1000"
                   style={{ width: `${Math.round(selectedData.avgScore * 100)}%` }}
                 />
               </div>

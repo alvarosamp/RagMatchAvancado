@@ -86,17 +86,17 @@ export default function Login() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-9 h-9 rounded-xl bg-azure flex items-center justify-center text-white font-mono font-bold">EM</div>
-            <span className="font-display font-bold text-xl text-white">Edital Matcher</span>
+            <div className="w-9 h-9 rounded-xl bg-azure flex items-center justify-center text-white font-mono font-bold">TT</div>
+            <span className="font-display font-bold text-xl text-white">Tor Tec</span>
           </div>
 
           <h1 className="font-display font-extrabold text-5xl text-white leading-tight mb-4">
-            Matching<br />
-            <span className="text-azure-glow">inteligente</span><br />
-            de licitações
+            Licitações<br />
+            <span className="text-azure-glow">inteligentes</span><br />
+            para sua empresa
           </h1>
           <p className="text-gray-400 font-body text-lg leading-relaxed max-w-xs">
-            OCR, embeddings e LLM trabalhando juntos para encontrar os produtos certos em cada edital.
+            Análise automatizada de editais com OCR, IA e matching de produtos — da Tor Tecnologias.
           </p>
         </div>
 

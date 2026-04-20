@@ -23,13 +23,11 @@ Vocabulário:
 - Rbac (Role-Based Access Control): Controle de acesso baseado em funções, onde cada usuário tem uma função (ex: admin, user) que define o que pode acessar
 '''
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-#Importante a mesma base do models.py princiapl para metadados
-# Outra coisa importante : Todos os modelos deve usar a mesma instancia de base
-# para o create_all() criar todas tabelas de uma vez
+# Importante: usar a mesma Base de app.db.models para compartilhar metadados
 from app.db.models import Base
 
 #Tenant - a empresa/organizacao
@@ -47,15 +45,17 @@ class Tenant(Base):
     - created_at: timestamp de criação
     - is_active: se o tenant está ativo (pode ser usado para soft delete)
     '''
-    table_name = 'tenants'
+    __tablename__ = "tenants"
+
     id = Column(Integer, primary_key=True, index=True)
-    slug = Column(String, unique=True, index=True)  # ex: "empresa-abc
+    slug = Column(String, unique=True, index=True)  # ex: "empresa-abc"
     name = Column(String, nullable=False)  # ex: "Empresa ABC LTDA"
     created_at = Column(DateTime, server_default=func.now())
     is_active = Column(Boolean, default=True)
 
-    #Um tenant tem multos usuarios
+    # Um tenant tem muitos usuários
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Tenant(id={self.id}, slug='{self.slug}', name='{self.name}')>"
 
@@ -72,18 +72,21 @@ class User(Base):
     - hashed_password: senha hasheada (nunca armazenar senha em texto puro)
     - is_active: se o usuario está ativo (pode ser usado para soft delete)
     '''
-    __tablename__ = 'users'
-id = Column(Integer, primary_key=True, index=True)
-email = Column(String, unique=True, index=True)  # ex: "
-hashed_password = Column(String, nullable=False)  # ex: "$2b$12$abc123..."
-is_active = Column(Boolean, default=True)
-role = Column(String, default="editor")  # ex: "admin" ou "user"
-tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-created_at = Column(DateTime, server_default=func.now())
+    __tablename__ = "users"
 
-#Cada usuario pertence a um tenant
-tenant = relationship("Tenant", back_populates="users")
-def __repr__(self):
-    return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    full_name = Column(String, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    role = Column(String, default="editor")  # admin | editor | viewer
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    # Cada usuário pertence a um tenant
+    tenant = relationship("Tenant", back_populates="users")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
 
 

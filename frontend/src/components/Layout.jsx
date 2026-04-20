@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 const NAV = [
   { path: '/dashboard',  icon: '▦',  label: 'Dashboard'   },
   { path: '/upload',     icon: '↑',  label: 'Novo Edital' },
+  { path: '/chat',       icon: '💬', label: 'ChatBot'     },
   { path: '/analytics',  icon: '◈',  label: 'Análise'     },
   { path: '/jobs',       icon: '◎',  label: 'Jobs'        },
 ]
@@ -29,19 +30,19 @@ export default function Layout({ children }) {
           <div className="flex items-center gap-3">
             <div className="relative w-9 h-9 flex-shrink-0">
               {/* Anel externo com gradiente */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-azure to-[#7C3AED] opacity-20 blur-sm" />
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-azure to-[#7C3AED] flex items-center justify-center">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-azure to-amber opacity-20 blur-sm" />
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-azure to-amber flex items-center justify-center">
                 <span className="text-white text-xs font-mono font-black tracking-tighter">TT</span>
               </div>
             </div>
             <div className="leading-tight">
-              <p className="font-display font-black text-sm text-white tracking-wide">TOR</p>
-              <p className="font-display text-xs text-azure-glow tracking-widest uppercase">Tecnologias</p>
+              <p className="font-display font-black text-sm text-white tracking-wide">Tor Tec</p>
+              <p className="font-display text-xs text-azure-glow tracking-widest uppercase">Licitações</p>
             </div>
           </div>
 
           {/* Linha decorativa */}
-          <div className="mt-4 h-px bg-gradient-to-r from-azure/30 via-[#7C3AED]/20 to-transparent" />
+          <div className="mt-4 h-px bg-gradient-to-r from-azure/30 via-amber/20 to-transparent" />
         </div>
 
         {/* Nav */}
