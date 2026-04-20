@@ -31,7 +31,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
-from sqlachemy.orm import Session
+from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger

@@ -14,7 +14,7 @@ function StatCard({ label, value, sub, color = 'azure' }) {
     azure:  'from-azure/10 to-azure/5 border-azure/20 text-azure-glow',
     green:  'from-green-match/10 to-green-match/5 border-green-match/20 text-green-match',
     amber:  'from-amber/10 to-amber/5 border-amber/20 text-amber',
-    purple: 'from-[#7C3AED]/10 to-[#7C3AED]/5 border-[#7C3AED]/20 text-[#A78BFA]',
+    yellow: 'from-yellow-warn/10 to-yellow-warn/5 border-yellow-warn/20 text-yellow-warn',
   }
   return (
     <div className={`rounded-xl border bg-gradient-to-br p-5 ${colors[color]}`}>
@@ -59,7 +59,7 @@ export default function Dashboard() {
       <div className="flex items-start justify-between mb-8">
         <div>
           <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-1">
-            {user?.tenant?.name || 'Tor Tecnologias'}
+            {user?.tenant?.name || 'Tor Tec'}
           </p>
           <h1 className="font-display font-black text-3xl text-white">Dashboard</h1>
           <p className="text-gray-400 font-body text-sm mt-1">
@@ -90,7 +90,7 @@ export default function Dashboard() {
             label="Chunks"
             value={totalChunks.toLocaleString('pt-BR')}
             sub="fragmentos indexados"
-            color="purple"
+            color="yellow"
           />
           <StatCard
             label="Requisitos"
@@ -101,7 +101,7 @@ export default function Dashboard() {
           <StatCard
             label="Foco"
             value="Switch"
-            sub="Tor Tecnologias"
+            sub="Tor Tec"
             color="amber"
           />
         </div>
@@ -143,7 +143,7 @@ export default function Dashboard() {
             >
               {/* Nome + ícone */}
               <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-azure/20 to-[#7C3AED]/10 border border-azure/20 flex items-center justify-center text-azure-glow font-mono text-xs flex-shrink-0 group-hover:from-azure/30 transition-all">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-azure/20 to-amber/10 border border-azure/20 flex items-center justify-center text-azure-glow font-mono text-xs flex-shrink-0 group-hover:from-azure/30 transition-all">
                   PDF
                 </div>
                 <div className="min-w-0 flex-1">
