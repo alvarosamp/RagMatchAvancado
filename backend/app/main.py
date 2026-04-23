@@ -38,3 +38,15 @@ def on_startup():
         raise
     finally:
         db.close()
+
+    # Pré-aquece os modelos de OCR e parsing em thread separada para que
+    # o primeiro job não paralise o servidor durante o carregamento.
+    import threading
+    def _warmup():
+        try:
+            logger.info("[Startup] Pré-aquecendo modelos OCR/Docling...")
+            from app.pipeline.docling_parser import parse_pdf  # noqa: F401
+            logger.info("[Startup] Modelos prontos.")
+        except Exception as exc:
+            logger.warning(f"[Startup] Falha no pré-aquecimento (não crítico): {exc}")
+    threading.Thread(target=_warmup, daemon=True).start()

@@ -16,6 +16,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Config do nginx: redireciona tudo para index.html (SPA routing)
 RUN printf 'server {\n\
   listen 80;\n\
+  client_max_body_size 50M;\n\
   root /usr/share/nginx/html;\n\
   index index.html;\n\
   resolver 127.0.0.11 valid=10s ipv6=off;\n\

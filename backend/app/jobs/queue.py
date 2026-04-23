@@ -26,15 +26,33 @@
 #
 
 import uuid
-import tempfile 
-import os 
+import tempfile
+import os
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger
+
+
+class JobCancelledError(Exception):
+    """Raised when a running job is cancelled externally."""
+    pass
+
+
+def _is_cancelled(db: Session, job_id: str) -> bool:
+    """Check if a job was cancelled externally (bypasses identity map cache)."""
+    row = db.execute(
+        select(Job.status, Job.error_message).where(Job.id == job_id)
+    ).first()
+    return (
+        row is not None
+        and row.status == JobStatus.FAILED
+        and row.error_message == "Cancelado pelo usuário"
+    )
 
 
 class JobQueue:
@@ -218,6 +236,9 @@ def _executar_job_upload(
         _update_job(db, job_id, progress=0.40)
         logger.info(f"[Worker] OCR concluído | job={job_id[:8]}... | chars={len(parsed_doc.full_text)}")
 
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
+
         # ── Etapa 2: Salva Edital + Chunking ──────────────────────────────────
         from app.db.models import Edital
         from app.pipeline.chunker import chunk_document
@@ -234,13 +255,18 @@ def _executar_job_upload(
         _update_job(db, job_id, progress=0.60)
         logger.info(f"[Worker] Chunking concluído | job={job_id[:8]}... | chunks={len(chunks)}")
 
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
+
         # ── Etapa 3: Embeddings + pgvector ────────────────────────────────────
-        # Segunda etapa mais pesada — chama o Ollama para cada chunk
         from app.vector.pgvector_store import save_chunks
         _update_job(db, job_id, progress=0.65)
 
         saved = save_chunks(db, edital, chunks)
         _update_job(db, job_id, progress=0.90)
+
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
         logger.info(f"[Worker] Embeddings salvos | job={job_id[:8]}... | n={saved}")
 
         # ── Etapa 4: Commit + cleanup ─────────────────────────────────────────
@@ -267,8 +293,14 @@ def _executar_job_upload(
         )
         logger.info(f"[Worker] Job concluído | job={job_id[:8]}... | edital={edital.id}")
 
+    except JobCancelledError:
+        logger.info(f"[Worker] Job cancelado pelo usuário | job={job_id[:8]}...")
+        try:
+            os.remove(pdf_path)
+        except OSError:
+            pass
+
     except Exception as e:
-        # Qualquer erro: marca como FAILED e salva a mensagem
         logger.error(f"[Worker] Job falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
         _update_job(
             db, job_id,
@@ -323,8 +355,10 @@ def _executar_job_matching(
             f"{len(products)} produtos × {len(requirements)} requisitos"
         )
 
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
+
         # ── Executa matching (parte mais pesada) ──────────────────────────────
-        # match_all_products já integra o MLOps internamente
         reports = match_all_products(
             db,
             products,
@@ -351,6 +385,9 @@ def _executar_job_matching(
             f"[Worker] Matching concluído | job={job_id[:8]}... | "
             f"melhor={reports[0].product_model if reports else 'N/A'}"
         )
+
+    except JobCancelledError:
+        logger.info(f"[Worker] Job matching cancelado pelo usuário | job={job_id[:8]}...")
 
     except Exception as e:
         logger.error(f"[Worker] Job matching falhou | job={job_id[:8]}... | erro={e}", exc_info=True)

@@ -1,0 +1,33 @@
+{
+  "N Interno": "2026_04_13_15",
+  "Status": "🟢",
+  "Data Disputa": "16/04/2026",
+  "Hora Disputa": "13:30:00",
+  "Órgão": "SECRETARIA DA SAUDE",
+  "Tipo Licitação": "Dispensa de Licitação",
+  "Resumo Switches": "N/C",
+  "Critério": "menor preço, expresso em Reais com quatro casas decimais",
+  "Local": "HOSPITAL ESPECIALIZADO MARIO LEAL",
+  "UASG": "FUNDO ESTADUAL DE SAUDE - HOSPITAL ESPECIALIZADO MARIO LEAL",
+  "Nº Pregão": "19.046.2026.0027",
+  "Cidade": "N/C",
+  "UF": "BA",
+  "Valor Total Switches": "N/C",
+  "Vlr Total Edital": "N/C",
+  "Intervalo": "16/04/2026 Início :13:30:00 horas Término :15:30:00 horas",
+  "Exclusividade ME/EPP": "N/C",
+  "Endereço": "190460001 - HOSPITAL ESPECIALIZADO MARIO LEAL",
+  "CEP": "N/C",
+  "Risco Identificado": "Nenhum",
+  "Habilitação jurídica": "Sim",
+  "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": "Sim",
+  "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": "Sim",
+  "QUALIFICAÇÃO TÉCNICA": "N/C",
+  "itens": [
+    {
+      "descricao": "RADIO, transceptor, portatil, tipo walk talk, 26 canais em UHF",
+      "preco": "N/C",
+      "quantidade": "100"
+    }
+  ]
+}

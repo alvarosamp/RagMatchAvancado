@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.db.session import get_db
 from app.jobs.models import Job, JobStatus, JobType
@@ -140,6 +140,39 @@ def list_jobs(
 
     jobs = query.offset(offset).limit(limit).all()
     return [_build_response(j) for j in jobs]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DELETE /jobs/{job_id} — cancela um job pendente
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.delete("/{job_id}", response_model=JobResponse)
+def cancel_job(
+    job_id:       str,
+    current_user: User    = Depends(get_current_user),
+    db:           Session = Depends(get_db),
+):
+    """
+    Cancela um job que ainda está PENDING.
+
+    Retorna 409 se o job já estiver em execução, concluído ou falho.
+    """
+    job = _get_job_do_tenant(job_id, current_user, db)
+
+    if job.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+        raise HTTPException(
+            status_code=409,
+            detail="Só é possível cancelar jobs pendentes ou em execução.",
+        )
+
+    job.status        = JobStatus.FAILED
+    job.error_message = "Cancelado pelo usuário"
+    job.finished_at   = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(job)
+
+    logger.info(f"[Jobs] Job cancelado | id={job_id[:8]}... | user={current_user.email}")
+    return _build_response(job)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

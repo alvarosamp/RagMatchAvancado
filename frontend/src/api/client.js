@@ -68,8 +68,9 @@ export const editaisApi = {
 }
 
 export const jobsApi = {
-  get:  (jobId)          => api.get(`/jobs/${jobId}`),
-  list: (params = {})    => api.get('/jobs/', { params }),
+  get:    (jobId)       => api.get(`/jobs/${jobId}`),
+  list:   (params = {}) => api.get('/jobs/', { params }),
+  cancel: (jobId)       => api.delete(`/jobs/${jobId}`),
 }
 
 export const exportApi = {

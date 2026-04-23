@@ -1,0 +1,38 @@
+{
+  "N Interno": "2026_04_10_26",
+  "Status": "🟢",
+  "Data Disputa": "N/C",
+  "Hora Disputa": "N/C",
+  "Órgão": "N/C",
+  "Tipo Licitação": "N/C",
+  "Resumo Switches": "02x 24p -- 01x 16p",
+  "Critério": "N/C",
+  "Local": "N/C",
+  "UASG": "N/C",
+  "Nº Pregão": "N/C",
+  "Cidade": "N/C",
+  "UF": "N/C",
+  "Valor Total Switches": "R$ 3.767,03",
+  "Vlr Total Edital": "N/C",
+  "Intervalo": "N/C",
+  "Exclusividade ME/EPP": "N/C",
+  "Endereço": "N/C",
+  "CEP": "N/C",
+  "Risco Identificado": "N/C",
+  "Habilitação jurídica": "N/C",
+  "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": "N/C",
+  "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": "N/C",
+  "QUALIFICAÇÃO TÉCNICA": "N/C",
+  "itens": [
+    {
+      "descricao": "Switch 24 Portas (10/100/1000 Mbps) - Capacidade: Backplane de 48 Gbps; Formato: Rack Mount 19\" (Gabinete Metálico); Alimentação: Bivolt Automática (Fonte interna); Padrão: IEEE 802.3ab/u/x; Acessórios: Kit de montagem em rack incluso; Garantia: 12 meses. 618778",
+      "preco": "R$ 1.366,33",
+      "quantidade": "02"
+    },
+    {
+      "descricao": "Switch 16 Portas (10/100/1000 Mbps) - Capacidade: Backplane de 32 Gbps; Portas: 16x RJ45 Gigabit.Alimentação: Bivolt Automática; Diferenciais: Operação silenciosa (Fanless) e controle de fluxo Garantia: 12 meses.IEEE 802.3x; 289590",
+      "preco": "R$ 1.034,37",
+      "quantidade": "01"
+    }
+  ]
+}

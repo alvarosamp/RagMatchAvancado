@@ -285,6 +285,18 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 # Labels que não carregam conteúdo útil — ignorados
 _SKIP_LABELS = {"page_footer", "page_header", "page_number", "picture"}
 
+
+def _guess_page(item) -> int | None:
+    """Obtém o número da página de forma best-effort a partir do item Docling."""
+    page = (
+        getattr(item, "page", None)
+        or getattr(item, "page_no", None)
+        or getattr(item, "page_number", None)
+    )
+    if isinstance(page, str) and page.isdigit():
+        page = int(page)
+    return page if isinstance(page, int) else None
+
 def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChunk]:
     """
     Itera pelos elementos do documento Docling e cria chunks por seção.
@@ -313,17 +325,6 @@ def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChu
 
         if normalize_text:
             text = _normalize_extracted_text(text)
-
-        # Tentativa best-effort de capturar número de página, se o item carregar.
-        page = (
-            getattr(item, "page", None)
-            or getattr(item, "page_no", None)
-            or getattr(item, "page_number", None)
-        )
-        if isinstance(page, str) and page.isdigit():
-            page = int(page)
-        if not isinstance(page, int):
-            page = None
 
         # Atualiza seção corrente mas não vira chunk
         if label in ("section_header", "title"):
