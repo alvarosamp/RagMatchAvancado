@@ -1,12 +1,16 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import ChatWidget from './ChatWidget'
+import torLogo from '../images/Tor.jpeg'
 
 const NAV = [
-  { path: '/dashboard',  icon: '▦',  label: 'Dashboard'   },
-  { path: '/upload',     icon: '↑',  label: 'Novo Edital' },
-  { path: '/chat',       icon: '💬', label: 'ChatBot'     },
-  { path: '/analytics',  icon: '◈',  label: 'Análise'     },
-  { path: '/jobs',       icon: '◎',  label: 'Jobs'        },
+  { path: '/dashboard',    icon: '▦',  label: 'Dashboard'   },
+  { path: '/upload',       icon: '↑',  label: 'Novo Edital' },
+  { path: '/pncp',         icon: '🏛', label: 'PNCP'        },
+  { path: '/controle',     icon: '◫',  label: 'Controle'    },
+  { path: '/analytics',    icon: '◈',  label: 'Análise'     },
+  { path: '/jobs',         icon: '◎',  label: 'Jobs'        },
+  { path: '/configuracoes', icon: '⚙', label: 'Configurações' },
 ]
 
 const NAV_ADMIN = [
@@ -23,26 +27,28 @@ export default function Layout({ children }) {
     <div className="flex h-screen overflow-hidden">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="w-60 flex-shrink-0 bg-ink-100 border-r border-slate-border flex flex-col">
+      <aside className="w-60 flex-shrink-0 bg-ink-100 border-r border-slate-border flex flex-col"
+             style={{ boxShadow: '4px 0 24px rgba(220,38,38,0.04)' }}>
 
         {/* Logo Tor Tecnologias */}
         <div className="px-5 py-5 border-b border-slate-border">
           <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 flex-shrink-0">
-              {/* Anel externo com gradiente */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-azure to-amber opacity-20 blur-sm" />
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-azure to-amber flex items-center justify-center">
-                <span className="text-white text-xs font-mono font-black tracking-tighter">TT</span>
-              </div>
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <div className="absolute inset-0 rounded-xl bg-azure opacity-20 blur-md" />
+              <img
+                src={torLogo}
+                alt="Tor Tecnologias"
+                className="relative w-10 h-10 rounded-xl object-cover ring-1 ring-azure/40"
+              />
             </div>
             <div className="leading-tight">
-              <p className="font-display font-black text-sm text-white tracking-wide">Tor Tec</p>
-              <p className="font-display text-xs text-azure-glow tracking-widest uppercase">Licitações</p>
+              <p className="font-display font-black text-sm text-white tracking-wide">Tor Tecnologias</p>
+              <p className="font-mono text-[10px] text-azure-glow tracking-widest uppercase">Licitações IA</p>
             </div>
           </div>
 
           {/* Linha decorativa */}
-          <div className="mt-4 h-px bg-gradient-to-r from-azure/30 via-amber/20 to-transparent" />
+          <div className="mt-4 h-px bg-gradient-to-r from-azure/50 via-azure/10 to-transparent" />
         </div>
 
         {/* Nav */}
@@ -92,6 +98,9 @@ export default function Layout({ children }) {
 
       {/* ── Conteúdo principal ───────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">{children}</main>
+
+      {/* ── ChatWidget flutuante (disponível em todas as páginas) ────────── */}
+      <ChatWidget />
     </div>
   )
 }

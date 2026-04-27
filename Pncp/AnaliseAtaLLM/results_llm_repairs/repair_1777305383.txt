@@ -1,0 +1,129 @@
+{
+  "numero_ata": "ATAS DE REGISTRO DE PREÇOS",
+  "orgao": "Prefeitura Municipal de Potirágua - BA Potirágua-BA",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "ATAS DE REGISTRO DE PREÇOS",
+  "items": [
+    {
+      "numero_item": "30",
+      "descricao": "Filtro de linha",
+      "raw_descricao": "Filtro de linha",
+      "tipo": "item",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 16.60,
+      "valor_total": 132.80
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Memoria DDR3 4gb para desktop",
+      "raw_descricao": "Memoria DDR3 4gb para desktop",
+      "tipo": "item",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 55.00,
+      "valor_total": 440.00
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Memoria DDR3 8gb para desktop",
+      "raw_descricao": "Memoria DDR3 8gb para desktop",
+      "tipo": "item",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 120.00,
+      "valor_total": 960.00
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Memoria DDR4 4GB para desktop",
+      "raw_descricao": "Memoria DDR4 4GB para desktop",
+      "tipo": "item",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 110.00,
+      "valor_total": 880.00
+    },
+    {
+      "numero_item": "4",
+      "descricao": "Memória DDR4 8GB para desktop",
+      "raw_descricao": "Memória DDR4 8GB para desktop",
+      "tipo": "item",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 130.00,
+      "valor_total": 1.040
+    },
+    {
+      "numero_item": "5",
+      "descricao": "Memória DDR4 4GB para notebook",
+      "raw_descricao": "Memória DDR4 4GB para notebook",
+      "tipo": "item",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 60.00,
+      "valor_total": 480
+    },
+    {
+      "numero_item": "6",
+      "descricao": "Memória DDR4 8GB para notebook",
+      "raw_descricao": "Memória DDR4 8GB para notebook",
+      "tipo": "item",
+      "marca": "MSI",
+      "modelo": "MSI",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 85.00,
+      "valor_total": 680
+    },
+    {
+      "numero_item": "7",
+      "descricao": "Placa mãe, LGA 1151, DDR4 para desktop",
+      "raw_descricao": "Placa mãe, LGA 1151, DDR4 para desktop",
+      "tipo": "item",
+      "marca": "MSI",
+      "modelo": "MSI",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 450.00,
+      "valor_total": 3150
+    },
+    {
+      "numero_item": "8",
+      "descricao": "Placa mãe, LGA 1155, DDR3 para desktop",
+      "raw_descricao": "Placa mãe, LGA 1155, DDR3 para desktop",
+      "tipo": "item",
+      "marca": "MSI",
+      "modelo": "MSI",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 178.57,
+      "valor_total": 1249.99
+    },
+    {
+      "numero_item": "9",
+      "descricao": "Placa mãe, LGA 1150, DDR3",
+      "raw_descricao": "Placa mãe, LGA 1150, DDR3",
+      "tipo": "item",
+      "marca": "MSI",
+      "modelo": "MSI",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 200.00,
+      "valor_total": 1400
+    }
+  ]
+}

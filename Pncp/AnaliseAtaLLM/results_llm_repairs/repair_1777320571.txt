@@ -1,0 +1,158 @@
+{
+  "numero_ata": "6.2.2.4",
+  "orgao": null,
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": null,
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Porta de acesso a área restrita"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "2",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 10,
+      "unidade": "m²",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Velocidade de 100 km/h"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "3",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Padrão IEEE 802.11ac"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "4",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Tensão de 230V"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "5",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Dimensão de 1m x 0,8m"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Cor preta"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "7",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 100,
+      "unidade": "m²",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Padrão IEEE 802.11ac"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "8",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["Tensão de 230V"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "9",
+      "descricao": null,
+      "raw_descricao": null,
+      "tipo": null,
+      "marca": null,
+      "

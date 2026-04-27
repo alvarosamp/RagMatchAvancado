@@ -1,0 +1,54 @@
+# Configuração do experimento de matching.
+#
+# CONCEITO MLOPS: "Configuration as Code"
+# Parâmetros de ML nunca devem estar hardcoded no Python.
+# Ficam aqui, versionados no Git. Para testar uma nova combinação:
+#   1. Edite este arquivo
+#   2. Faça commit (git commit -m "test: threshold 0.80 para edital de redes")
+#   3. Rode o pipeline → MLflow registra o run com esses parâmetros
+#   4. Compare os runs no dashboard do MLflow (localhost:5000)
+#
+# Os scripts em mlops/scripts/ leem este arquivo via PyYAML.
+
+experiment:
+  name: edital_matching
+  description: "Pipeline RAG + LLM para matching de produtos em editais de licitação"
+  tags:
+    projeto: RagMatchAvancado
+    dominio: licitacoes
+
+# ── Modelos ───────────────────────────────────────────────────────────────────
+models:
+  llm: phi3                  # Alternativas: llama3, mistral, gemma2
+  embedder: nomic-embed-text # Alternativas: mxbai-embed-large
+  embedder_dims: 768
+
+# ── Score de matching ─────────────────────────────────────────────────────────
+matching:
+  # score_final = (heuristica * weight_h) + (llm * weight_l)
+  # weight_h + weight_l DEVE ser 1.0
+  score_weight_heuristic: 0.30
+  score_weight_llm: 0.70
+
+# ── Thresholds de classificação ───────────────────────────────────────────────
+thresholds:
+  atende: 0.75      # score >= 0.75   → ATENDE
+  verificar: 0.45   # 0.45 <= score   → VERIFICAR
+                    # score < 0.45    → NÃO ATENDE
+
+# ── Chunker ───────────────────────────────────────────────────────────────────
+chunker:
+  max_chars: 1000
+  overlap: 150
+
+# ── Detecção de drift ─────────────────────────────────────────────────────────
+drift:
+  score_delta_threshold: 0.10   # variação > 0.10 na média = drift
+  janela_runs: 10               # comparar últimos N runs vs N anteriores
+  min_runs_para_detectar: 20    # mínimo de runs no histórico para ativar
+
+# ── Alertas de qualidade (evaluator) ─────────────────────────────────────────
+quality_alerts:
+  max_pct_zona_incerteza: 40    # % máx de scores na zona cinza (0.45-0.75)
+  min_desvio_padrao: 0.05       # desvio mínimo esperado
+  max_score_medio: 0.90         # acima disso = sistema superestimando

@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import PasswordRequirements from '../components/PasswordRequirements'
+import torLogo from '../images/Tor.jpeg'
 
 const passwordPolicy = {
   minLen: 8,
@@ -80,14 +81,23 @@ export default function Login() {
 
       {/* ── Painel esquerdo — branding ──────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-slate-border relative overflow-hidden">
-        {/* Grade de fundo */}
-        <div className="absolute inset-0 opacity-5"
-          style={{ backgroundImage: 'linear-gradient(rgba(59,130,246,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        {/* Grade de fundo — red-tinted */}
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(rgba(220,38,38,1) 1px, transparent 1px), linear-gradient(90deg, rgba(220,38,38,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        {/* Gradiente radial vermelho sutil */}
+        <div className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse 60% 50% at 30% 40%, rgba(220,38,38,0.06) 0%, transparent 70%)' }} />
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-9 h-9 rounded-xl bg-azure flex items-center justify-center text-white font-mono font-bold">TT</div>
-            <span className="font-display font-bold text-xl text-white">Tor Tec</span>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl bg-azure opacity-30 blur-md" />
+              <img src={torLogo} alt="Tor Tecnologias" className="relative w-11 h-11 rounded-xl object-cover ring-1 ring-azure/50" />
+            </div>
+            <div>
+              <span className="font-display font-bold text-xl text-white block leading-tight">Tor Tecnologias</span>
+              <span className="font-mono text-[10px] text-azure-glow tracking-widest uppercase">Plataforma de Licitações</span>
+            </div>
           </div>
 
           <h1 className="font-display font-extrabold text-5xl text-white leading-tight mb-4">
@@ -96,14 +106,14 @@ export default function Login() {
             para sua empresa
           </h1>
           <p className="text-gray-400 font-body text-lg leading-relaxed max-w-xs">
-            Análise automatizada de editais com OCR, IA e matching de produtos — da Tor Tecnologias.
+            Análise automatizada de editais com OCR, IA e matching de produtos.
           </p>
         </div>
 
         {/* Stats decorativas */}
         <div className="relative z-10 grid grid-cols-3 gap-4">
           {[['RAG', 'Retrieval'], ['LLM', 'Reasoning'], ['MLOps', 'Tracking']].map(([title, sub]) => (
-            <div key={title} className="card py-4">
+            <div key={title} className="rounded-xl border border-slate-border bg-slate-card p-4 hover:border-azure/30 transition-colors">
               <p className="font-display font-bold text-azure-glow text-lg">{title}</p>
               <p className="font-mono text-xs text-gray-500">{sub}</p>
             </div>
@@ -115,6 +125,12 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm animate-fade-up">
 
+          {/* Logo mobile */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <img src={torLogo} alt="Tor" className="w-8 h-8 rounded-lg object-cover" />
+            <span className="font-display font-bold text-white">Tor Tecnologias</span>
+          </div>
+
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-ink-50 rounded-xl mb-8 border border-slate-border">
             {[['login', 'Entrar'], ['register', 'Cadastrar']].map(([m, label]) => (
@@ -122,7 +138,7 @@ export default function Login() {
                 key={m}
                 onClick={() => { setMode(m); setError('') }}
                 className={`flex-1 py-2 rounded-lg text-sm font-display font-semibold transition-all duration-200
-                  ${mode === m ? 'bg-azure text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                  ${mode === m ? 'bg-azure text-white shadow-lg shadow-azure/20' : 'text-gray-400 hover:text-white'}`}
               >
                 {label}
               </button>

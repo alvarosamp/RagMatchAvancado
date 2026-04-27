@@ -7,6 +7,8 @@ import json
 import argparse
 import warnings
 import copy
+import multiprocessing as mp
+import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
@@ -39,7 +41,7 @@ def _ensure_backend_on_syspath() -> None:
 
 _ensure_backend_on_syspath()
 
-from app.pipeline.docling_parser import ParsedDocument, parse_pdf  # type: ignore
+from app.pipeline.docling_parser import ParsedDocument, parse_pdf, release_converter  # type: ignore
 
 
 # =========================================================
@@ -351,12 +353,12 @@ def _safe_stem(name: str) -> str:
     return stem or "document"
 
 
-def _save_docling_markdown(output_dir: Path, pdf_file: Path, parsed: ParsedDocument) -> Path | None:
-    """Salva o markdown extraído (ParsedDocument.full_text) em disco.
+def _save_docling_markdown(output_dir: Path, pdf_file: Path, text: str) -> Path | None:
+    """Salva o markdown extraído em disco.
 
     Retorna o caminho salvo ou None se não houver texto.
     """
-    text = (parsed.full_text or "").strip()
+    text = (text or "").strip()
     if not text:
         return None
 
@@ -404,6 +406,47 @@ def parse_edital_pdf(source: str | Path | bytes, filename: str | None = None) ->
     if filename is None:
         filename = Path(source).name if isinstance(source, (str, Path)) else "document.pdf"
     return parse_pdf(source, filename=filename)
+
+
+def _parse_pdf_worker(pdf_path: str, result_queue: Any) -> None:
+    try:
+        parsed = parse_edital_pdf(pdf_path)
+        result_queue.put({"ok": True, "text": (parsed.full_text or "")})
+    except Exception as exc:
+        result_queue.put({"ok": False, "error": str(exc)})
+
+
+def _parse_pdf_text_isolated(pdf_file: Path, timeout_sec: int = 600) -> str:
+    """Executa parse do PDF em subprocesso para isolar falhas nativas (ex.: std::bad_alloc)."""
+    ctx = mp.get_context("spawn")
+    queue = ctx.Queue(maxsize=1)
+    proc = ctx.Process(target=_parse_pdf_worker, args=(str(pdf_file), queue), daemon=True)
+
+    proc.start()
+    proc.join(timeout_sec)
+
+    if proc.is_alive():
+        proc.terminate()
+        proc.join()
+        raise TimeoutError(f"Timeout no parse de '{pdf_file.name}' após {timeout_sec}s")
+
+    if proc.exitcode != 0:
+        raise RuntimeError(
+            f"Falha nativa no parse de '{pdf_file.name}' (exitcode={proc.exitcode})"
+        )
+
+    if queue.empty():
+        raise RuntimeError(f"Parse de '{pdf_file.name}' finalizou sem retorno de texto")
+
+    payload = queue.get()
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Retorno inválido no parse de '{pdf_file.name}'")
+
+    if not payload.get("ok"):
+        msg = str(payload.get("error", "erro desconhecido"))
+        raise RuntimeError(msg)
+
+    return str(payload.get("text", ""))
 
 
 def collect_pdf_files(folder_path: str | Path) -> list[Path]:
@@ -471,16 +514,26 @@ def expand_input_folders(paths: list[str]) -> list[str]:
 def parse_folder_as_single_edital(folder_path: str | Path) -> str:
     pdf_files = collect_pdf_files(folder_path)
     docs_text: list[str] = []
+    failed_files: list[tuple[str, str]] = []
 
     output_dir = _docling_output_dir()
 
     for pdf_file in pdf_files:
-        parsed = parse_edital_pdf(pdf_file)
-        text = (parsed.full_text or "").strip()
+        try:
+            text = _parse_pdf_text_isolated(pdf_file).strip()
+        except Exception as exc:
+            import logging
+            failed_files.append((pdf_file.name, str(exc)))
+            logging.getLogger(__name__).warning(
+                "Falha ao extrair PDF '%s' (seguindo com os demais): %s",
+                pdf_file.name,
+                exc,
+            )
+            continue
 
         # Salva o documento extraído pelo Docling em AutomatizadorDePlanilha/docling
         try:
-            _save_docling_markdown(output_dir=output_dir, pdf_file=pdf_file, parsed=parsed)
+            _save_docling_markdown(output_dir=output_dir, pdf_file=pdf_file, text=text)
         except Exception as exc:
             import logging
             logging.getLogger(__name__).warning(
@@ -496,7 +549,12 @@ def parse_folder_as_single_edital(folder_path: str | Path) -> str:
     merged_text = "\n".join(docs_text).strip()
 
     if not merged_text:
-        raise ValueError("Nenhum texto foi extraído dos PDFs da pasta.")
+        details = ""
+        if failed_files:
+            first = "; ".join(f"{name}: {reason}" for name, reason in failed_files[:3])
+            suffix = " ..." if len(failed_files) > 3 else ""
+            details = f" Arquivos com falha: {first}{suffix}"
+        raise ValueError("Nenhum texto foi extraído dos PDFs da pasta." + details)
 
     return merged_text
 
@@ -850,6 +908,8 @@ def call_ollama(
     host: str = "http://localhost:11434",
     timeout: int = 600,
     num_ctx: int = 8192,
+    num_predict: int = 4096,
+    retries: int = 2,
 ) -> str:
     url = f"{host.rstrip('/')}/api/generate"
 
@@ -860,26 +920,41 @@ def call_ollama(
         "options": {
             "temperature": 0.0,
             "num_ctx": int(num_ctx),
-            "num_predict": 4096,
+            "num_predict": int(num_predict),
         },
         # JSON Schema força o modelo a responder no formato correto
         "format": OLLAMA_OUTPUT_SCHEMA,
     }
 
-    try:
-        response = requests.post(url, json=payload, timeout=timeout)
-    except requests.RequestException as exc:
-        raise RuntimeError(f"Falha ao conectar no Ollama em {url}: {exc}") from exc
+    transient_http = {429, 500, 502, 503, 504}
+    attempts = max(1, int(retries) + 1)
+    last_exc: Exception | None = None
 
-    if response.status_code >= 400:
-        body = (response.text or "").strip()
-        if len(body) > 2000:
-            body = body[:2000] + "..."
-        raise RuntimeError(
-            "Ollama retornou erro HTTP "
-            f"{response.status_code} ao gerar resposta. "
-            f"Corpo: {body or 'N/C'}"
-        )
+    for attempt in range(attempts):
+        try:
+            response = requests.post(url, json=payload, timeout=timeout)
+        except requests.RequestException as exc:
+            last_exc = exc
+            if attempt < attempts - 1:
+                # backoff curto para evitar martelar o servidor
+                time.sleep(min(2 ** attempt, 10))
+                continue
+            raise RuntimeError(f"Falha ao conectar no Ollama em {url}: {exc}") from exc
+
+        if response.status_code >= 400:
+            body = (response.text or "").strip()
+            if len(body) > 2000:
+                body = body[:2000] + "..."
+
+            if response.status_code in transient_http and attempt < attempts - 1:
+                time.sleep(min(2 ** attempt, 10))
+                continue
+
+            raise RuntimeError(
+                "Ollama retornou erro HTTP "
+                f"{response.status_code} ao gerar resposta. "
+                f"Corpo: {body or 'N/C'}"
+            )
 
     try:
         data = response.json()
@@ -1015,10 +1090,21 @@ def analyze_edital_with_ollama(
     model: str = "llama3.1:8b",
     host: str = "http://localhost:11434",
     num_ctx: int = 8192,
+    timeout: int = 600,
+    num_predict: int = 4096,
+    retries: int = 2,
 ) -> dict[str, Any]:
     safe_text = _truncate_for_context(merged_text, num_ctx)
     prompt = PROMPT_TEMPLATE.format(conteudo=safe_text)
-    raw_response = call_ollama(prompt=prompt, model=model, host=host, num_ctx=num_ctx)
+    raw_response = call_ollama(
+        prompt=prompt,
+        model=model,
+        host=host,
+        num_ctx=num_ctx,
+        timeout=timeout,
+        num_predict=num_predict,
+        retries=retries,
+    )
     parsed = extract_first_json(raw_response)
     normalized = ensure_result_shape(parsed)
     return _apply_rule_based_fallback(normalized, merged_text)
@@ -1252,9 +1338,27 @@ def append_row_to_xlsx(planilha_path: str | Path, row: dict[str, str]) -> Path:
 # PIPELINE
 # =========================================================
 
-def run(folder_path: str | Path, model: str, host: str, num_ctx: int) -> str:
+def run(
+    folder_path: str | Path,
+    model: str,
+    host: str,
+    num_ctx: int,
+    *,
+    timeout: int,
+    num_predict: int,
+    retries: int,
+) -> str:
     merged_text = parse_folder_as_single_edital(folder_path)
-    result = analyze_edital_with_ollama(merged_text=merged_text, model=model, host=host, num_ctx=num_ctx)
+    release_converter()
+    result = analyze_edital_with_ollama(
+        merged_text=merged_text,
+        model=model,
+        host=host,
+        num_ctx=num_ctx,
+        timeout=timeout,
+        num_predict=num_predict,
+        retries=retries,
+    )
     inferred_n = _extract_n_interno_from_folder(folder_path)
     if inferred_n:
         result["N Interno"] = inferred_n
@@ -1279,9 +1383,27 @@ def run(folder_path: str | Path, model: str, host: str, num_ctx: int) -> str:
     return build_csv_output(row)
 
 
-def run_row(folder_path: str | Path, model: str, host: str, num_ctx: int) -> dict[str, str]:
+def run_row(
+    folder_path: str | Path,
+    model: str,
+    host: str,
+    num_ctx: int,
+    *,
+    timeout: int,
+    num_predict: int,
+    retries: int,
+) -> dict[str, str]:
     merged_text = parse_folder_as_single_edital(folder_path)
-    result = analyze_edital_with_ollama(merged_text=merged_text, model=model, host=host, num_ctx=num_ctx)
+    release_converter()
+    result = analyze_edital_with_ollama(
+        merged_text=merged_text,
+        model=model,
+        host=host,
+        num_ctx=num_ctx,
+        timeout=timeout,
+        num_predict=num_predict,
+        retries=retries,
+    )
     inferred_n = _extract_n_interno_from_folder(folder_path)
     if inferred_n:
         result["N Interno"] = inferred_n
@@ -1310,6 +1432,9 @@ def run_row(folder_path: str | Path, model: str, host: str, num_ctx: int) -> dic
 # =========================================================
 
 def main() -> None:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(
         description="Analisa PDFs de uma pasta como um único edital usando Ollama."
     )
@@ -1336,6 +1461,24 @@ def main() -> None:
         type=int,
         default=8192,
         help="Contexto (num_ctx) para o Ollama. Valores muito altos podem causar erro 500 por falta de memória.",
+    )
+    parser.add_argument(
+        "--ollama-timeout",
+        type=int,
+        default=600,
+        help="Timeout (segundos) da chamada ao Ollama (requests).",
+    )
+    parser.add_argument(
+        "--ollama-retries",
+        type=int,
+        default=2,
+        help="Quantidade de tentativas extras (retry) para erros temporários/timeout.",
+    )
+    parser.add_argument(
+        "--ollama-num-predict",
+        type=int,
+        default=4096,
+        help="num_predict enviado ao Ollama (limita tamanho da resposta).",
     )
     parser.add_argument(
         "--no-planilha",
@@ -1368,6 +1511,21 @@ def main() -> None:
         help="Formato impresso no terminal: 'planilha' (padrão) ou 'pipeline'.",
     )
     parser.add_argument(
+        "--docling-low-memory",
+        action="store_true",
+        help="Ativa modo low-memory do Docling (desliga extração estrutural de tabelas).",
+    )
+    parser.add_argument(
+        "--docling-no-table",
+        action="store_true",
+        help="Desliga extração de estrutura de tabelas do Docling.",
+    )
+    parser.add_argument(
+        "--docling-no-ocr",
+        action="store_true",
+        help="Desliga OCR do Docling (usa apenas texto nativo do PDF quando existir).",
+    )
+    parser.add_argument(
         "--resultado-identico",
         action="store_true",
         help="Se informado, usa gabarito canônico por N interno para reproduzir resultado idêntico quando disponível.",
@@ -1381,23 +1539,50 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Configurações do Docling via env (o backend lê essas flags na hora de construir o converter).
+    if args.docling_low_memory:
+        os.environ["DOCLING_LOW_MEMORY"] = "1"
+        # Em low-memory, tenta pypdf primeiro e só cai no OCR quando não há texto nativo.
+        os.environ.setdefault("DOCLING_PYPDF_FIRST", "1")
+    if args.docling_no_table:
+        os.environ["DOCLING_DO_TABLE_STRUCTURE"] = "0"
+    if args.docling_no_ocr:
+        os.environ["DOCLING_DO_OCR"] = "0"
+
     try:
         pastas: list[str] = expand_input_folders(list(args.pastas))
         gabarito_rows = _load_gabarito_rows(args.gabarito_arquivo) if args.resultado_identico else {}
 
         if len(pastas) == 1:
-            n_int = _extract_n_interno_from_folder(pastas[0]) or ""
-            canonical = gabarito_rows.get(n_int)
-            if canonical is not None:
-                planilha_row = copy.deepcopy(canonical)
-                row = _planilha_to_pipeline_row(planilha_row)
-            else:
-                row = run_row(folder_path=pastas[0], model=args.model, host=args.host, num_ctx=args.ctx)
+            try:
+                n_int = _extract_n_interno_from_folder(pastas[0]) or ""
+                canonical = gabarito_rows.get(n_int)
+                if canonical is not None:
+                    planilha_row = copy.deepcopy(canonical)
+                    row = _planilha_to_pipeline_row(planilha_row)
+                else:
+                    row = run_row(
+                        folder_path=pastas[0],
+                        model=args.model,
+                        host=args.host,
+                        num_ctx=args.ctx,
+                        timeout=args.ollama_timeout,
+                        num_predict=args.ollama_num_predict,
+                        retries=args.ollama_retries,
+                    )
+                    planilha_row = normalize_result_to_planilha_row(
+                        row,
+                        selecionado=args.selecionado,
+                        url_drive=args.url_drive,
+                    )
+            except Exception as exc:
+                row = build_error_pipeline_row(pastas[0], str(exc))
                 planilha_row = normalize_result_to_planilha_row(
                     row,
                     selecionado=args.selecionado,
                     url_drive=args.url_drive,
                 )
+                print(f"Aviso: falha em '{pastas[0]}': {exc}", file=sys.stderr)
             csv_output = (
                 build_planilha_csv_output(planilha_row)
                 if args.stdout_format == "planilha"
@@ -1424,7 +1609,15 @@ def main() -> None:
                     planilha_row = copy.deepcopy(canonical)
                     row = _planilha_to_pipeline_row(planilha_row)
                 else:
-                    row = run_row(folder_path=pasta, model=args.model, host=args.host, num_ctx=args.ctx)
+                    row = run_row(
+                        folder_path=pasta,
+                        model=args.model,
+                        host=args.host,
+                        num_ctx=args.ctx,
+                        timeout=args.ollama_timeout,
+                        num_predict=args.ollama_num_predict,
+                        retries=args.ollama_retries,
+                    )
                     planilha_row = normalize_result_to_planilha_row(
                         row,
                         selecionado=args.selecionado,

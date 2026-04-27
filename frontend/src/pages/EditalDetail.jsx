@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { editaisApi, exportApi, downloadBlob } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
 
 const STATUS_CFG = {
   atende:     { label: 'Atende',      cls: 'badge-atende',    dot: 'bg-green-match' },
@@ -17,6 +18,7 @@ const STATUS_CFG = {
 export default function EditalDetail() {
   const { id }                    = useParams()
   const navigate                  = useNavigate()
+  const { toast }                 = useToast()
   const [results,   setResults]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [selected,  setSelected]  = useState(null)
@@ -45,11 +47,19 @@ export default function EditalDetail() {
   const handleExport = async (tipo) => {
     setExporting(tipo)
     try {
-      const fn = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
+      const fn  = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
       const res = await fn(id)
       downloadBlob(res.data, `edital_${id}_resultado.${tipo}`)
-    } catch { }
-    finally { setExporting(null) }
+      toast({ type: 'success', message: `Exportação ${tipo.toUpperCase()} concluída.` })
+    } catch (err) {
+      toast({
+        type:    'error',
+        title:   'Erro ao exportar',
+        message: err.response?.data?.detail || `Não foi possível exportar como ${tipo.toUpperCase()}.`,
+      })
+    } finally {
+      setExporting(null)
+    }
   }
 
   const selectedData = results.find(p => p.product === selected)
@@ -87,7 +97,16 @@ export default function EditalDetail() {
         </div>
 
         {/* Ações do header */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Análise LLM */}
+          <button
+            onClick={() => navigate(`/editais/${id}/analise-llm`)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber/30 bg-amber/10 hover:border-amber/60 text-amber font-body text-sm transition-all duration-200"
+          >
+            <span>🤖</span>
+            Análise LLM
+          </button>
+
           {/* Chat RAG — destaque */}
           <button
             onClick={() => navigate(`/editais/${id}/chat`)}

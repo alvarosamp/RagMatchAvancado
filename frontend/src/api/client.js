@@ -89,6 +89,35 @@ export const ragApi = {
   chat: (editalId, body) => api.post(`/editais/${editalId}/chat`, body, { timeout: 60_000 }),
 }
 
+// ── Análise LLM (pipeline pipelinellm.py) ────────────────────────────────────
+// Integração com Pncp/AnaliseAtaLLM/pipelinellm.py
+// ResultadoAnalise: { id_pncp, numero_ata, orgao, data_assinatura, vigencia,
+//                    objeto, itens: ItemAta[], tokens_usados, aviso }
+export const llmApi = {
+  results: (editalId) => api.get(`/editais/${editalId}/llm-results`),
+  analyze: (editalId) => api.post(`/editais/${editalId}/analyze`, {}, { timeout: 120_000 }),
+}
+
+// ── PNCP — Portal Nacional de Contratações Públicas ──────────────────────────
+export const pncpApi = {
+  /**
+   * Pesquisa editais no PNCP.
+   * @param {{ texto?, cnpj?, modalidade?, dataInicio?, dataFim?, pagina? }} params
+   */
+  search:       (params) => api.get('/pncp/search', { params, timeout: 30_000 }),
+
+  /**
+   * Importa um edital do PNCP para o sistema (enfileira job).
+   * @param {string} idPncp
+   */
+  importEdital: (idPncp) => api.post('/pncp/import', { id_pncp: idPncp }, { timeout: 30_000 }),
+
+  /**
+   * Retorna detalhes de um edital PNCP específico.
+   */
+  detail:       (idPncp) => api.get(`/pncp/${encodeURIComponent(idPncp)}`),
+}
+
 // ── Utilidade para download de blob ──────────────────────────────────────────
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)

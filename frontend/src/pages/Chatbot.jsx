@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { editaisApi, ragApi } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
 
 const SUGESTOES = [
   'Quais são os requisitos técnicos deste edital?',
@@ -102,8 +103,9 @@ export default function Chatbot() {
   const [llmModel,     setLlmModel]     = useState('gpt')
   const [error,        setError]        = useState(null)
 
-  const bottomRef = useRef(null)
-  const inputRef  = useRef(null)
+  const bottomRef          = useRef(null)
+  const inputRef           = useRef(null)
+  const { confirm }        = useToast()
 
   // Carrega lista de editais
   useEffect(() => {
@@ -123,9 +125,12 @@ export default function Chatbot() {
     if (selected) inputRef.current?.focus()
   }, [selected])
 
-  const handleSelectEdital = (edital) => {
+  const handleSelectEdital = async (edital) => {
     if (selected?.id === edital.id) return
-    if (messages.length > 0 && !confirm('Trocar de edital vai limpar o histórico. Continuar?')) return
+    if (messages.length > 0) {
+      const ok = await confirm('Trocar de edital vai limpar o histórico desta conversa.', { title: 'Trocar de edital?' })
+      if (!ok) return
+    }
     setSelected(edital)
     setMessages([])
     setError(null)
@@ -191,9 +196,10 @@ export default function Chatbot() {
     }
   }
 
-  const limpar = () => {
+  const limpar = async () => {
     if (messages.length === 0) return
-    if (confirm('Limpar histórico desta conversa?')) {
+    const ok = await confirm('Limpar o histórico desta conversa?', { title: 'Limpar histórico' })
+    if (ok) {
       setMessages([])
       setError(null)
     }

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jobsApi } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
 
 const isCancelled = (job) =>
   job.status === 'failed' && job.error_message === 'Cancelado pelo usuário'
@@ -29,7 +30,8 @@ export default function Jobs() {
   const [loading,     setLoading]     = useState(true)
   const [filter,      setFilter]      = useState('all')
   const [cancelling,  setCancelling]  = useState(null)
-  const navigate = useNavigate()
+  const navigate      = useNavigate()
+  const { toast, confirm } = useToast()
 
   const load = () => {
     const params = filter !== 'all' ? { status: filter } : {}
@@ -52,14 +54,16 @@ export default function Jobs() {
 
   const handleCancel = async (e, jobId) => {
     e.stopPropagation()
-    if (!window.confirm('Cancelar este job? A operação não poderá ser desfeita.')) return
+    const ok = await confirm('Cancelar este job? A operação não poderá ser desfeita.', { title: 'Cancelar Job' })
+    if (!ok) return
     setCancelling(jobId)
     try {
       await jobsApi.cancel(jobId)
+      toast({ type: 'success', message: 'Job cancelado com sucesso.' })
       load()
     } catch (err) {
       const msg = err.response?.data?.detail || 'Não foi possível cancelar o job.'
-      alert(msg)
+      toast({ type: 'error', title: 'Erro ao cancelar', message: msg })
     } finally {
       setCancelling(null)
     }

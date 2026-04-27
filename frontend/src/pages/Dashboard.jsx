@@ -7,7 +7,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { editaisApi, exportApi, downloadBlob } from '../api/client'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth }  from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 
 function StatCard({ label, value, sub, color = 'azure' }) {
   const colors = {
@@ -30,7 +31,8 @@ export default function Dashboard() {
   const [loading,   setLoading]   = useState(true)
   const [exporting, setExporting] = useState(null)
   const { user, isEditor } = useAuth()
-  const navigate = useNavigate()
+  const { toast }  = useToast()
+  const navigate   = useNavigate()
 
   useEffect(() => {
     editaisApi.list()
@@ -42,11 +44,19 @@ export default function Dashboard() {
     e.stopPropagation()
     setExporting(`${id}-${tipo}`)
     try {
-      const fn = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
+      const fn  = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
       const res = await fn(id)
       downloadBlob(res.data, `edital_${id}_resultado.${tipo}`)
-    } catch { }
-    finally { setExporting(null) }
+      toast({ type: 'success', message: `Exportação ${tipo.toUpperCase()} concluída.` })
+    } catch (err) {
+      toast({
+        type:    'error',
+        title:   'Erro ao exportar',
+        message: err.response?.data?.detail || `Não foi possível exportar como ${tipo.toUpperCase()}.`,
+      })
+    } finally {
+      setExporting(null)
+    }
   }
 
   const totalChunks = editais.reduce((s, e) => s + (e.chunks || 0), 0)
@@ -170,7 +180,7 @@ export default function Dashboard() {
 
               {/* Ações */}
               <div
-                className="flex gap-2 pt-3 border-t border-slate-border mt-auto"
+                className="flex gap-2 pt-3 border-t border-slate-border mt-auto flex-wrap"
                 onClick={ev => ev.stopPropagation()}
               >
                 {/* Chat RAG */}
@@ -180,6 +190,15 @@ export default function Dashboard() {
                   title="Perguntar sobre este edital"
                 >
                   <span>💬</span> Chat
+                </button>
+
+                {/* Análise LLM */}
+                <button
+                  onClick={() => navigate(`/editais/${e.id}/analise-llm`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-amber border border-amber/30 hover:border-amber/60 hover:bg-amber/10 rounded-lg transition-all duration-150"
+                  title="Análise LLM da ata"
+                >
+                  <span>🤖</span> LLM
                 </button>
 
                 {/* Exportar */}
