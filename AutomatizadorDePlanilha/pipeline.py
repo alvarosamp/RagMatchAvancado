@@ -241,8 +241,7 @@ Você é um analisador técnico de editais de TI para revenda ME/EPP.
 
 OBJETIVO
 Analisar todos os PDFs recebidos como um único edital e identificar potencial comercial para:
-- transceiver e módulos ópticos
-- transceptor
+- transceiver e módulos ópticos (GBIC, SFP, SFP+, transceptor)
 - switch 48 portas
 - switch 24 portas
 - switch 16 portas
@@ -252,36 +251,73 @@ REGRAS DE NEGÓCIO
 - Sempre considerar todos os arquivos como parte do mesmo edital.
 - Fazer varredura semântica completa em edital, termo de referência, relação de itens, anexos técnicos, tabelas e imagens extraídas.
 - Não concluir ausência de switch apenas porque a palavra switch não aparece.
-- Classificar como switch qualquer item com características compatíveis, como múltiplas portas ethernet, uplinks SFP, VLAN, PoE, gerenciamento, layer 2, layer 3 ou capacidade de comutação.
+- Classificar como switch qualquer item com características compatíveis: múltiplas portas ethernet, uplinks SFP, VLAN, PoE, gerenciamento, layer 2, layer 3 ou capacidade de comutação.
 - Classificar como transceiver apenas quando houver item próprio, linha própria, quantitativo próprio ou preço próprio.
-- Não classificar como item autônomo quando o transceiver estiver apenas incluído, embarcado, integrado, acompanhado, obrigatório para ativação de portas, bundle, kit, solução, lote ou composição de outro equipamento.
+- Não classificar como item autônomo quando o transceiver estiver incluído, embarcado, integrado, em bundle, kit, solução ou composição de outro equipamento.
 - Nunca inferir quantidade de transceivers a partir do número de portas do switch.
 - Nunca criar item de transceiver sem evidência documental de autonomia comercial.
 - Se houver switch e transceiver autônomo no mesmo edital, preservar ambos na saída.
 - Nunca omitir transceiver autônomo por existir switch.
 
 STATUS
-- 🟢 se houver transceiver autônomo ou switch 48 portas ou switch 24 portas
-- 🟡 se houver apenas switch 16 portas ou switch 8 portas
+- 🟢 se houver transceiver autônomo OU switch 48 portas OU switch 24 portas
+- 🟡 se houver apenas switch 16 portas ou switch 8 portas (sem 24p, 48p nem transceiver autônomo)
 - 🔴 se não houver switch elegível nem transceiver autônomo
 
 RISCO
-Preencher:
-- "🚨 SERVIÇO/RISCO DETECTADO - [motivo]"
-quando houver instalação física, montagem em rack, configuração obrigatória, treinamento presencial, manutenção on-site, garantia on-site, SLA com deslocamento, visita técnica, entrega pulverizada, integração com rede existente, suporte presencial, técnico certificado exigido para execução ou exigência incompatível com revenda.
-- Se não houver risco, preencher "Nenhum".
+Preencher "🚨 SERVIÇO/RISCO DETECTADO - [motivo curto]" quando houver:
+instalação física, montagem em rack, configuração obrigatória, treinamento presencial,
+manutenção on-site, garantia on-site, SLA com deslocamento, visita técnica,
+entrega pulverizada em múltiplos endereços, integração com rede existente,
+suporte presencial, técnico certificado exigido para execução, ativação de serviços,
+suporte técnico incluído no objeto ou qualquer exigência incompatível com simples revenda.
+Se não houver risco, preencher "Nenhum".
+
+CAMPOS ADMINISTRATIVOS — extraia do cabeçalho/corpo do edital:
+- "Data Disputa": data da sessão de abertura/disputa no formato DD/MM/AAAA
+- "Hora Disputa": hora da sessão (ex: "09:00", "14:30", "08h30min")
+- "Órgão": nome completo do órgão/entidade contratante
+- "Tipo Licitação": modalidade exata (ex: "Pregão Eletrônico", "Pregão Eletrônico SRP", "Dispensa Eletrônica")
+  - Incluir " SRP" quando o edital for para registro de preços
+- "Critério": critério de julgamento (ex: "Menor preço por item", "Menor preço por lote", "Menor preço global")
+- "Local": plataforma/portal onde a licitação está publicada (ex: "www.gov.br/compras", "www.bll.org.br", nome do portal)
+- "UASG": código UASG quando presente (ex: "928418"), senão "N/C"
+- "Nº Pregão": número do pregão/processo (ex: "90002/2026", "004/2026")
+- "Cidade": município sede do órgão
+- "UF": sigla do estado (2 letras)
+- "Endereço": endereço físico da sede do órgão
+- "CEP": CEP da sede
+- "Vlr Total Edital": valor total estimado do edital
+- "Intervalo": valor mínimo de lance/intervalo entre lances
+- "Exclusividade ME/EPP": se há cota ou exclusividade para ME/EPP
+  (ex: "Exclusivo", "Não exclusiva com preferência ME/EPP", "Parcial", "Não", "Sim")
+
+HABILITAÇÃO — extraia os requisitos exigidos no edital:
+- "Habilitação jurídica": resumo dos documentos societários exigidos (registro comercial, contrato social, etc.)
+- "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": resumo das certidões fiscais e trabalhistas exigidas (CNPJ, FGTS, CNDT, etc.)
+- "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": resumo dos documentos financeiros exigidos (certidão de falência, balanço, índices, etc.)
+- "QUALIFICAÇÃO TÉCNICA": resumo dos atestados e comprovações técnicas exigidas
 
 PREENCHIMENTO
 - Usar linguagem curta e objetiva.
 - Se faltar dado, usar "N/C".
 - Não usar ponto e vírgula dentro dos valores.
 - Preencher até 10 itens de interesse.
-- Prioridade: Transceiver autônomo, switch 48p, switch 24p, switch 16p, switch 8p.
-- Se não houver item elegível, preencher todos os itens com N/C.
-- "Resumo Switches" deve incluir switches e transceivers autônomos.
-- Não incluir transceivers embarcados ou apenas acessórios.
-- "Valor Total Switches" deve somar valor unitário x quantidade dos itens elegíveis.
-- Se não houver preço suficiente para calcular, usar N/C.
+- Prioridade dos itens: Transceiver autônomo > switch 48p > switch 24p > switch 16p > switch 8p.
+- Se não houver item elegível, preencher todos os campos de item com "N/C".
+- "Resumo Switches" deve listar switches e transceivers autônomos no formato:
+    "{qty}x {tipo_curto}" separados por " -- "
+    Para switches use: "{qty}x {N}p" onde N é o número de portas
+      Exemplos: "3x 24p", "10x 8p", "5x 48p PoE+", "1x 24p -- 10x 8p"
+    Para transceivers use: "{qty}x {tipo}"
+      Exemplos: "6x Transceiver GBIC", "8x SFP+ 10Gbps", "10x Transceiver fibra monomodo"
+    Combinado: "6x Transceiver GBIC -- 10x 8p", "1x 24p PoE+ -- 10x SFP LC LX"
+    Se não houver item elegível: "N/C"
+- Descrição do item (campo "descricao"): concisa, 5 a 15 palavras, sem código de item, sem especificações técnicas completas.
+  Exemplos corretos: "Switch 24 portas gigabit PoE+ gerenciável", "Transceiver SFP LC LX", "Switch 8 portas gigabit desktop"
+  Não copiar verbatim as especificações técnicas do TR.
+- "Valor Total Switches": soma de (valor_unitário × quantidade) dos itens elegíveis no formato "R$ X.XXX,XX".
+  Se não houver preço suficiente para calcular, usar "N/C".
 
 FORMATO DE SAÍDA
 Retorne apenas JSON válido.
@@ -850,12 +886,17 @@ def _apply_rule_based_fallback(result: dict[str, Any], merged_text: str) -> dict
         else:
             out["Status"] = "🔴"
 
-    # Hora no padrão HH:MM.
+    # Hora: normaliza "8h", "8H", "8h30", "8h30min", "8H01M" → "HH:MM".
+    # Formatos já no padrão HH:MM ou HH:MM:SS são mantidos.
     hora = sanitize_csv_value(out.get("Hora Disputa"))
     if hora != "N/C":
-        m_h = re.search(r"\b(\d{1,2})\s*h\b", hora, flags=re.IGNORECASE)
-        if m_h:
-            hh = int(m_h.group(1))
+        m_full = re.match(r"^\s*(\d{1,2})[Hh](\d{2})[Mm](?:in)?\s*$", hora)
+        m_hour = re.match(r"^\s*(\d{1,2})[Hh]\s*$", hora)
+        if m_full:
+            hh, mm = int(m_full.group(1)), int(m_full.group(2))
+            out["Hora Disputa"] = f"{hh:02d}:{mm:02d}"
+        elif m_hour:
+            hh = int(m_hour.group(1))
             out["Hora Disputa"] = f"{hh:02d}:00"
 
     # Tipo SRP quando houver registro de preços.
@@ -1013,6 +1054,7 @@ def _compact_text_by_keywords(text: str, max_chars: int) -> str:
         r"transceiver",
         r"transceptor",
         r"sfp",
+        r"gbic",
         r"gigabit",
         r"item",
         r"lote",
@@ -1020,16 +1062,28 @@ def _compact_text_by_keywords(text: str, max_chars: int) -> str:
         r"abertura",
         r"disputa",
         r"crit[eé]rio",
+        r"modalidade",
+        r"julgamento",
         r"habilita",
+        r"jur[ií]dic",
         r"fiscal",
+        r"trabalhist",
         r"t[eé]cnica",
         r"econ[oô]mico",
+        r"financeira",
         r"portal",
+        r"plataforma",
         r"endere[cç]o",
         r"cep",
         r"uasg",
         r"valor",
         r"quantidade",
+        r"exclusiv",
+        r"me/epp",
+        r"microempresa",
+        r"intervalo",
+        r"objeto",
+        r"tipo licitac",
     ]
     pattern = re.compile("|".join(keywords), flags=re.IGNORECASE)
     window = 900
