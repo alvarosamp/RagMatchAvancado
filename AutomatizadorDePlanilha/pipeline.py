@@ -248,20 +248,42 @@ def parse_edital_pdf(source: str | Path | bytes, filename: str | None = None) ->
     return parse_pdf(source, filename=filename)
 
 
-def _parse_pdf_worker(pdf_path: str, result_queue: Any) -> None:
+def _parse_pdf_worker(pdf_path: str, conn: Any) -> None:
     try:
         parsed = parse_edital_pdf(pdf_path)
-        result_queue.put({"ok": True, "text": parsed.full_text or ""})
+        conn.send({"ok": True, "text": parsed.full_text or ""})
     except Exception as exc:
-        result_queue.put({"ok": False, "error": str(exc)})
+        conn.send({"ok": False, "error": str(exc)})
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def _parse_pdf_text_isolated(pdf_file: Path, timeout_sec: int = 600) -> str:
     ctx = mp.get_context("spawn")
-    queue = ctx.Queue(maxsize=1)
-    proc = ctx.Process(target=_parse_pdf_worker, args=(str(pdf_file), queue), daemon=True)
+    parent_conn, child_conn = ctx.Pipe(duplex=False)
+    proc = ctx.Process(target=_parse_pdf_worker, args=(str(pdf_file), child_conn), daemon=True)
     proc.start()
-    proc.join(timeout_sec)
+
+    # Importante no Windows: não fazer join antes de consumir o retorno.
+    # Caso contrário, textos grandes podem travar o filho no send/put.
+    child_conn.close()
+
+    payload: dict[str, Any] | None = None
+    try:
+        if parent_conn.poll(timeout_sec):
+            obj = parent_conn.recv()
+            if isinstance(obj, dict):
+                payload = obj
+    finally:
+        try:
+            parent_conn.close()
+        except Exception:
+            pass
+
+    proc.join(5)
 
     if proc.is_alive():
         proc.terminate()
@@ -271,11 +293,10 @@ def _parse_pdf_text_isolated(pdf_file: Path, timeout_sec: int = 600) -> str:
     if proc.exitcode != 0:
         raise RuntimeError(f"Falha nativa no parse de '{pdf_file.name}' exitcode={proc.exitcode}")
 
-    if queue.empty():
+    if not payload:
         raise RuntimeError(f"Parse de '{pdf_file.name}' finalizou sem retorno")
 
-    payload = queue.get()
-    if not isinstance(payload, dict) or not payload.get("ok"):
+    if not payload.get("ok"):
         raise RuntimeError(str(payload.get("error", "erro desconhecido")))
 
     return str(payload.get("text", ""))
