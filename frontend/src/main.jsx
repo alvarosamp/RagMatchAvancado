@@ -19,6 +19,7 @@ import Controle       from './pages/Controle'
 import AnaliseAta     from './pages/AnaliseAta'
 import PncpSearch     from './pages/PncpSearch'
 import Configuracoes  from './pages/Configuracoes'
+import CrmHub         from './pages/CrmHub'
 import Layout         from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -52,6 +53,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/chat"                   element={<PrivateRoute><Chatbot       /></PrivateRoute>} />
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
+            <Route path="/crm"                    element={<PrivateRoute><CrmHub        /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
             <Route path="/editais/:id/chat"       element={<PrivateRoute><EditalChat    /></PrivateRoute>} />

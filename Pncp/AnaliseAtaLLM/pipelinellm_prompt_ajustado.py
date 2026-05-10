@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import hashlib
+import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field, asdict
@@ -20,6 +21,22 @@ try:
     from shared import db  # comente se não quiser persistência aqui
 except Exception: 
     db = None
+
+
+def _load_shared_db_fallback():
+    api_dir = Path(__file__).resolve().parents[1] / "apiPncp"
+    api_dir_str = str(api_dir)
+    if api_dir.exists() and api_dir_str not in sys.path:
+        sys.path.insert(0, api_dir_str)
+    try:
+        from shared import db as shared_db  # type: ignore
+        return shared_db
+    except Exception:
+        return None
+
+
+if db is None:
+    db = _load_shared_db_fallback()
 
 logger = logging.getLogger(__name__)
 
@@ -556,12 +573,16 @@ def _clean_item_dict(d: dict) -> dict:
     }
     new = {k: d.get(k) for k in allowed}
 
+    # Preserva o texto original do item (raw_descricao) e limpa apenas a descricao.
+    # O raw é usado como referência para inferências (ex.: numero_item, CNPJ) e auditoria.
     if not new.get("raw_descricao") and new.get("descricao"):
         new["raw_descricao"] = new["descricao"]
 
-    for key in ("raw_descricao", "descricao"):
-        if new.get(key):
-            new[key] = _is_lote_prefix(str(new[key]))
+    if new.get("raw_descricao") is not None:
+        new["raw_descricao"] = str(new["raw_descricao"]).strip()
+
+    if new.get("descricao") is not None:
+        new["descricao"] = _is_lote_prefix(str(new["descricao"]))
 
     # Corrige troca comum: CNPJ veio em numero_item.
     if _looks_like_cnpj(str(new.get("numero_item") or "")) and not new.get("cnpj_fornecedor"):
@@ -571,7 +592,7 @@ def _clean_item_dict(d: dict) -> dict:
     # Normaliza numero_item e tenta recuperar a partir do texto quando ausente/inválido.
     normalized_num = _normalize_numero_item(new.get("numero_item"))
     if normalized_num is None:
-        fallback_num = _extract_numero_item_from_text(str(new.get("raw_descricao") or new.get("descricao") or ""))
+        fallback_num = _extract_numero_item_from_text(str(new.get("raw_descricao") or ""))
         normalized_num = _normalize_numero_item(fallback_num)
     new["numero_item"] = normalized_num
 

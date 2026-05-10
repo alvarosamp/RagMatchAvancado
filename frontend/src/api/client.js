@@ -73,6 +73,10 @@ export const jobsApi = {
   cancel: (jobId)       => api.delete(`/jobs/${jobId}`),
 }
 
+export const healthApi = {
+  status: () => api.get('/health'),
+}
+
 export const exportApi = {
   xlsx: (id) => api.get(`/editais/${id}/export/xlsx`, { responseType: 'blob' }),
   pdf:  (id) => api.get(`/editais/${id}/export/pdf`,  { responseType: 'blob' }),

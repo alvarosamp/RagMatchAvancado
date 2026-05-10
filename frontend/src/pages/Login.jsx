@@ -209,6 +209,11 @@ export default function Login() {
               }
             </button>
           </form>
+
+          <div className="mt-6 rounded-xl border border-slate-border bg-ink-50/70 px-4 py-3 text-center">
+            <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-gray-600">Creditos</p>
+            <p className="mt-1 text-sm font-semibold text-white">Alvaro Sampaio</p>
+          </div>
         </div>
       </div>
     </div>

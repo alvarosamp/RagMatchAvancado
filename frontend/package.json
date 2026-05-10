@@ -5,6 +5,9 @@
   "scripts": {
     "dev":     "vite",
     "build":   "vite build",
+    "build:crm": "node ../scripts/sync-bid-buddy.mjs",
+    "build:crm:pull": "node ../scripts/sync-bid-buddy.mjs --pull",
+    "build:all": "npm run build:crm && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

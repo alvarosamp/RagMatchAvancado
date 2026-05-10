@@ -2,7 +2,7 @@ from sqlalchemy import (
     JSON, Column, Integer, String, ForeignKey,
     Text, Float, DateTime, Enum
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
 import enum
@@ -24,7 +24,11 @@ class Product(Base):
     category = Column(String)                             # ex: "switch"
     data     = Column(JSON)                               # specs completas
 
-    matching_results = relationship("MatchingResult", back_populates="product")
+    matching_results = relationship(
+        "MatchingResult",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
 
 
 # ──────────────────────────────────────────
@@ -39,8 +43,9 @@ class Edital(Base):
     filename     = Column(String, nullable=False)
     full_text    = Column(Text)                          # texto bruto extraído
     parsed_at    = Column(DateTime, server_default=func.now())
-    tenant_id    = Column(String, index=True)            # multi-tenant
+    tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
 
+    tenant       = relationship("Tenant", back_populates="editais")
     chunks       = relationship("DocumentChunk", back_populates="edital", cascade="all, delete-orphan")
     requirements = relationship("Requirement",   back_populates="edital", cascade="all, delete-orphan")
 
@@ -50,7 +55,7 @@ class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
     id        = Column(Integer, primary_key=True, index=True)
-    edital_id = Column(Integer, ForeignKey("editais.id"), nullable=False)
+    edital_id = Column(Integer, ForeignKey("editais.id"), nullable=False, index=True)
     chunk_idx = Column(Integer)                          # ordem no documento
     text      = Column(Text, nullable=False)
     embedding = Column(Vector(EMBEDDING_DIM))            # pgvector
@@ -67,14 +72,18 @@ class Requirement(Base):
     __tablename__ = "requirements"
 
     id           = Column(Integer, primary_key=True, index=True)
-    edital_id    = Column(Integer, ForeignKey("editais.id"), nullable=False)
+    edital_id    = Column(Integer, ForeignKey("editais.id"), nullable=False, index=True)
     attribute    = Column(String)   # ex: "portas_rj45"
     raw_value    = Column(String)   # ex: "mínimo 16 portas RJ-45"
     parsed_value = Column(String)   # ex: "16"
     unit         = Column(String)   # ex: "portas"
 
     edital           = relationship("Edital",         back_populates="requirements")
-    matching_results = relationship("MatchingResult", back_populates="requirement")
+    matching_results = relationship(
+        "MatchingResult",
+        back_populates="requirement",
+        cascade="all, delete-orphan",
+    )
 
 
 # ──────────────────────────────────────────
@@ -91,13 +100,14 @@ class MatchingResult(Base):
     __tablename__ = "matching_results"
 
     id             = Column(Integer, primary_key=True, index=True)
-    product_id     = Column(Integer, ForeignKey("products.id"),     nullable=False)
-    requirements_id = Column(Integer, ForeignKey("requirements.id"), nullable=False)
+    product_id     = Column(Integer, ForeignKey("products.id"), nullable=False, index=True)
+    requirement_id = Column("requirements_id", Integer, ForeignKey("requirements.id"), nullable=False, index=True)
     status         = Column(Enum(MatchStatus), nullable=False)
     score          = Column(Float, default=0.0)   # 0.0 – 1.0
     details        = Column(Text)
     llm_reasoning  = Column(Text)                 # justificativa do LLM
     created_at     = Column(DateTime, server_default=func.now())
 
+    requirements_id = synonym("requirement_id")
     product     = relationship("Product",     back_populates="matching_results")
     requirement = relationship("Requirement", back_populates="matching_results")

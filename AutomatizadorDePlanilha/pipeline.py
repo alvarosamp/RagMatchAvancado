@@ -205,9 +205,16 @@ def _safe_stem(name: str) -> str:
 
 
 def _extract_n_interno_from_folder(folder_path: str | Path) -> str | None:
-    name = Path(folder_path).name
-    m = re.search(r"(\d{4}_\d{2}_\d{2}_\d+)", name)
-    return m.group(1) if m else None
+    path = Path(folder_path)
+    candidates = [path.name]
+    if path.is_file():
+        candidates.insert(0, path.stem)
+        candidates.append(path.parent.name)
+    for name in candidates:
+        m = re.search(r"(\d{4}_\d{2}_\d{2}_\d+)", name)
+        if m:
+            return m.group(1)
+    return None
 
 
 def _norm_key(key: str) -> str:
@@ -704,20 +711,44 @@ def build_planilha_csv_output(row: dict[str, str]) -> str:
     return ";".join(PLANILHA_COLUMNS) + "\n" + planilha_row_to_csv_line(row)
 
 
+def _ensure_planilha_header(ws: Any) -> dict[str, int]:
+    for col_idx, column_name in enumerate(PLANILHA_COLUMNS, start=1):
+        if not str(ws.cell(row=1, column=col_idx).value or "").strip():
+            ws.cell(row=1, column=col_idx, value=column_name)
+    return {column_name: idx for idx, column_name in enumerate(PLANILHA_COLUMNS, start=1)}
+
+
+def _find_existing_planilha_row(ws: Any, header_map: dict[str, int], row: dict[str, str]) -> int | None:
+    n_interno = sanitize_csv_value(row.get("N interno", "N/C"))
+    if n_interno == "N/C":
+        return None
+    n_interno_col = header_map["N interno"]
+    for row_idx in range(2, ws.max_row + 1):
+        current = sanitize_csv_value(ws.cell(row=row_idx, column=n_interno_col).value)
+        if current == n_interno:
+            return row_idx
+    return None
+
+
 def append_row_to_xlsx(planilha_path: str | Path, row: dict[str, str]) -> Path:
     planilha_path = Path(planilha_path)
     planilha_path.parent.mkdir(parents=True, exist_ok=True)
     if planilha_path.exists():
         wb = load_workbook(planilha_path)
         ws = wb.active
-        if ws.max_row < 1:
-            ws.append(PLANILHA_COLUMNS)
     else:
         wb = Workbook()
         ws = wb.active
         ws.title = "Planilha"
-        ws.append(PLANILHA_COLUMNS)
-    ws.append([row.get(col, "") for col in PLANILHA_COLUMNS])
+    header_map = _ensure_planilha_header(ws)
+    target_row = _find_existing_planilha_row(ws, header_map, row)
+    values = [row.get(col, "") for col in PLANILHA_COLUMNS]
+    if target_row is None:
+        ws.append(values)
+    else:
+        # Evita duplicar a mesma licitacao quando o pipeline e reexecutado.
+        for col_idx, value in enumerate(values, start=1):
+            ws.cell(row=target_row, column=col_idx, value=value)
     wb.save(planilha_path)
     return planilha_path
 

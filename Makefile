@@ -11,7 +11,7 @@
 
 .PHONY: help up down logs build rebuild test test-cov test-all \
         lint lint-fix format mlflow-ui evaluate drift-check promote \
-        shell-api shell-db
+        shell-api shell-db crm-sync crm-sync-pull
 
 # ── Cores para output legível ─────────────────────────────────────────────────
 BOLD  := \033[1m
@@ -30,6 +30,8 @@ help:
 	@printf "  make rebuild      Down + Build + Up\n"
 	@printf "  make shell-api    Shell interativo dentro do container da API\n"
 	@printf "  make shell-db     psql dentro do PostgreSQL\n"
+	@printf "  make crm-sync     Gera e copia o build do bid-buddy para /crm/\n"
+	@printf "  make crm-sync-pull Atualiza o repo do CRM e sincroniza o build\n"
 	@printf "\n$(BLUE)Qualidade de Código$(RESET)\n"
 	@printf "  make lint         Verifica estilo com ruff (sem corrigir)\n"
 	@printf "  make lint-fix     Corrige automaticamente com ruff\n"
@@ -72,6 +74,12 @@ shell-api:
 
 shell-db:
 	docker compose exec db psql -U postgres -d edital_matcher
+
+crm-sync:
+	cd frontend && npm run build:crm
+
+crm-sync-pull:
+	cd frontend && npm run build:crm:pull
 
 mlflow-ui:
 	@printf "$(GREEN)MLflow disponível em: http://localhost:5000$(RESET)\n"

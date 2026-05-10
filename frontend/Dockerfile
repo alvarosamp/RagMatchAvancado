@@ -1,19 +1,23 @@
-# ── Build ─────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS build
 
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm install
+WORKDIR /workspace
 
-COPY . .
-RUN npm run build
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm install
 
-# ── Serve com nginx ───────────────────────────────────────────────────────────
+COPY bid-buddy/package.json bid-buddy/package-lock.json ./bid-buddy/
+RUN cd bid-buddy && npm install
+
+COPY frontend ./frontend
+COPY bid-buddy ./bid-buddy
+COPY scripts ./scripts
+
+RUN cd frontend && npm run build:all
+
 FROM nginx:alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
 
-# Config do nginx: redireciona tudo para index.html (SPA routing)
 RUN printf 'server {\n\
   listen 80;\n\
   client_max_body_size 50M;\n\
@@ -21,6 +25,9 @@ RUN printf 'server {\n\
   index index.html;\n\
   resolver 127.0.0.11 valid=10s ipv6=off;\n\
   set $api_upstream api:8000;\n\
+  location /crm/ {\n\
+    try_files $uri $uri/ /crm/index.html;\n\
+  }\n\
   location / {\n\
     try_files $uri $uri/ /index.html;\n\
   }\n\

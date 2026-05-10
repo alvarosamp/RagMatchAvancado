@@ -85,7 +85,7 @@ class MatchingEvaluator:
             alertas.append(
                 f'Alerta: {pct_incerteza:.1f}% dos produtos estão na zona de incerteza (entre {self.THRESHOLD_VERIFICAR} e {self.THRESHOLD_ATENDE})'
             )
-        if desvio_padrao < 0.5:
+        if desvio_padrao < 0.1:
             alertas.append(
                 f'Alerta: Desvio padrão baixo ({desvio_padrao:.3f}) - os scores estão muito parecidos, o sistema pode não estar discriminando bem os requisitos'
             )

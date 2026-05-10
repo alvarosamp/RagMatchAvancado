@@ -1,0 +1,155 @@
+{
+  "numero_ata": "6.2",
+  "orgao": "Gerenciador de Atas de Registro de Preços",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "Ata de Registro de Preços",
+  "items": [
+    {
+      "numero_item": "6.2.1",
+      "descricao": "Fornecedores do cadastro de reserva",
+      "raw_descricao": "Na hipótese prevista no item anterior, o órgão convocará os fornecedores do cadastro de reserva, na ordem de classificação, para verificar se aceitam reduzir seus preços aos valores de mercado e não convocará os licitantes ou fornecedores que tiveram seu registro cancelado.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": "Fornecedores do cadastro de reserva",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Redução dos preços aos valores de mercado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.1",
+      "descricao": "Documentação comprobatória ou planilha de custos para solicitar redução do preço registrado",
+      "raw_descricao": "O fornecedor encaminhará, juntamente com o pedido de redução, a documentação comprobatória ou a planilha de custos que demonstre a inviabilidade do preço registrado em relação às condições inicialmente pactuadas.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Documentação comprobatória ou planilha de custos para solicitar redução do preço registrado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.2",
+      "descricao": "Indeferimento do pedido de redução do preço registrado em caso de não comprovação da existência de fato superveniente que inviabilize o preço registrado",
+      "raw_descricao": "Na hipótese de não comprovação da existência de fato superveniente que inviabilize o preço registrado, o pedido será indeferido pelo órgão o fornecedor deverá cumprir as obrigações estabelecidas na ata, sob pena de cancelamento do seu registro, nos termos do item 8.1, sem prejuízo das sanções previstas na Lei nº 14.133/21, e na legislação aplicável.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Indeferimento do pedido de redução do preço registrado em caso de não comprovação da existência de fato superveniente que inviabilize o preço registrado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.3",
+      "descricao": "Alteração do preço registrado em caso de reduzir o preço de mercado",
+      "raw_descricao": "Na hipótese de reduzir o preço registrado, o órgão comunicará aos órgãos e às entidades que tiveram firmado contratos decorrentes da ata de registro  de preços para que avaliem a conveniência e a oportunidade de diligenciarem negociação com vistas à alteração contratual, observado o disposto no art. 124 da Lei nº 14.133/21/.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Alteração do preço registrado em caso de reduzir o preço de mercado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.4",
+      "descricao": "Convocação dos fornecedores do cadastro de reserva para verificar se aceitam manter seus preços registrados em caso de cancelamento da ata de registro de preços",
+      "raw_descricao": "Na hipótese de cancelamento do registro do fornecedor, nos termos do item anterior, o gerenciador convocará os fornecedores do cadastro de reserva, na ordem de classificação, para verificar se aceitam manter seus preços registrados.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Convocação dos fornecedores do cadastro de reserva para verificar se aceitam manter seus preços registrados em caso de cancelamento da ata de registro de preços"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.5",
+      "descricao": "Cancelamento da ata de registro de preços em caso de não aceitação das negociações e adopção das medidas cabíveis para a obtenção da contratação mais vantajosa",
+      "raw_descricao": "Se não obtiver êxito nas negociações, o órgão procederá ao cancelamento da ata de registro de preços, nos termos do item 8.2, e adotará as medidas cabíveis para a obtenção da contratação mais vantajosa.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Cancelamento da ata de registro de preços em caso de não aceitação das negociações e adopção das medidas cabíveis para a obtenção da contratação mais vantajosa"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.6",
+      "descricao": "Atualização do preço registrado em caso de comprovação da majoração do preço de mercado que inviabilize o preço registrado",
+      "raw_descricao": "O órgão atualizará o preço registrado, de acordo com a realidade dos valores praticados pelo mercado.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Atualização do preço registrado em caso de comprovação da majoração do preço de mercado que inviabilize o preço registrado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.7",
+      "descricao": "Comunicação aos órgãos e entidades que tiveram firmado contratos decorrentes da ata de registro de preços sobre a efetiva alteração do preço registrado",
+      "raw_descricao": "O órgão comunicará aos órgãos e às entidades que tiveram firmado contratos decorrentes da ata de registro  de preços sobre a efetiva alteração do preço registrado, para que avaliem a conveniência e a oportunidade de diligenciarem negociação com vistas à alteração contratual, observado o disposto no art. 124 da Lei nº 14.133/21/.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Comunicação aos órgãos e entidades que tiveram firmado contratos decorrentes da ata de registro de preços sobre a efetiva alteração do preço registrado"
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": "6.2.1.8",
+      "descricao": "Observação: não há item 7 no texto original, portanto, não há alterações necessárias."
+    }

@@ -55,6 +55,8 @@ class Tenant(Base):
 
     # Um tenant tem muitos usuários
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
+    editais = relationship("Edital", back_populates="tenant")
+    jobs = relationship("Job", back_populates="tenant")
 
     def __repr__(self):
         return f"<Tenant(id={self.id}, slug='{self.slug}', name='{self.name}')>"
@@ -85,6 +87,7 @@ class User(Base):
 
     # Cada usuário pertence a um tenant
     tenant = relationship("Tenant", back_populates="users")
+    jobs = relationship("Job", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"

@@ -29,6 +29,7 @@ import json
 import logging
 import re
 import hashlib
+import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field, asdict
@@ -46,6 +47,22 @@ try:
 except Exception:
     db = None
 
+
+def _load_shared_db_fallback():
+    api_dir = Path(__file__).resolve().parents[1] / "apiPncp"
+    api_dir_str = str(api_dir)
+    if api_dir.exists() and api_dir_str not in sys.path:
+        sys.path.insert(0, api_dir_str)
+    try:
+        from shared import db as shared_db  # type: ignore
+        return shared_db
+    except Exception:
+        return None
+
+
+if db is None:
+    db = _load_shared_db_fallback()
+
 logger = logging.getLogger(__name__)
 
 # ──────────────────────────────────────────
@@ -59,7 +76,10 @@ import os
 # latência. Se preferir outro, exporte OLLAMA_MODEL antes de rodar.
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")  # padrão do Ollama
-MAX_CHARS_POR_CHUNK = 10_000                   
+MAX_CHARS_POR_CHUNK = 10_000
+BASE_DIR = Path(__file__).resolve().parent
+TEXTOS_MD_DIR = BASE_DIR / "textos_md"
+RESULTS_REPAIRS_DIR = BASE_DIR / "results_llm_repairs"
 
 # ──────────────────────────────────────────
 # Tipos de saída
@@ -221,7 +241,7 @@ def _repair_json_with_ollama(resposta_raw: str) -> str:
     Também salva uma cópia da tentativa em Pncp/results_llm/repairs para auditoria.
     """
     client = _get_client()
-    repairs_dir = Path(__file__).resolve().parents[2] / "Pncp" / "results_llm" / "repairs"
+    repairs_dir = RESULTS_REPAIRS_DIR
     repairs_dir.mkdir(parents=True, exist_ok=True)
 
     system = (
@@ -572,7 +592,7 @@ def analisar_ata(
 
     # Save the raw text as markdown for traceability
     try:
-        md_dir = Path(os.path.expanduser("/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/Pncp/AnaliseAtaLLM/textos_md"))
+        md_dir = TEXTOS_MD_DIR
         md_dir.mkdir(parents=True, exist_ok=True)
         stem = re.sub(r"[^a-zA-Z0-9_\-]", "_", label or f"ata_{int(time.time())}")
         out_path = md_dir / f"{stem}.md"
@@ -616,6 +636,7 @@ def analisar_ata(
                 itens_raw.append({
                     "numero_item": numero_guess,
                     "descricao": block,
+                    "raw_descricao": block,
                     "tipo": None,
                     "marca": None,
                     "modelo": None,

@@ -22,7 +22,8 @@
 # =============================================================================
 
 import enum
-from sqlalchemy import Column, DateTime, Enum, Float, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.models import Base
 
@@ -72,8 +73,8 @@ class Job(Base):
     status = Column(Enum(JobStatus), nullable = False, default=JobStatus.PENDING, index = True)
     progress = Column(Float, default = 0.0) # 0.0 a 1.0
     #Multi tenant: Cada job pertence a um tenant 
-    tenant_id = Column(String, index = True, nullable = False)
-    user_id = Column(Integer, nullable = False)
+    tenant_id = Column(String, ForeignKey("tenants.slug"), index = True, nullable = False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable = False)
     #Dados do job
     payload = Column(JSON)
     result = Column(JSON)
@@ -82,6 +83,9 @@ class Job(Base):
     created_at = Column(DateTime, server_default = func.now())
     started_at = Column(DateTime, nullable = True)
     finished_at = Column(DateTime, nullable = True)
+
+    tenant = relationship("Tenant", back_populates="jobs")
+    user = relationship("User", back_populates="jobs")
 
     def __repr__(self):
         return f"<Job id={self.id[:8]}... type={self.job_type} status={self.status}>"

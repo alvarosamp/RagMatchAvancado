@@ -61,7 +61,7 @@ def overview(
     # Todos os resultados de matching do tenant
     results = (
         db.query(MatchingResult)
-        .join(Requirement, MatchingResult.requirements_id == Requirement.id)
+        .join(Requirement, MatchingResult.requirement_id == Requirement.id)
         .filter(Requirement.edital_id.in_(edital_ids))
         .all()
     )
@@ -113,7 +113,7 @@ def produtos(
 
     results = (
         db.query(MatchingResult)
-        .join(Requirement, MatchingResult.requirements_id == Requirement.id)
+        .join(Requirement, MatchingResult.requirement_id == Requirement.id)
         .filter(Requirement.edital_id.in_(edital_ids))
         .all()
     )
@@ -271,7 +271,7 @@ def distribuicao(
 
     results = (
         db.query(MatchingResult)
-        .join(Requirement, MatchingResult.requirements_id == Requirement.id)
+        .join(Requirement, MatchingResult.requirement_id == Requirement.id)
         .filter(Requirement.edital_id.in_(edital_ids))
         .all()
     )
