@@ -40,7 +40,7 @@ for mod_name in [
     "evidently.metrics",
     "reportlab", "reportlab.lib", "reportlab.platypus",
     "sqlalchemy", "sqlalchemy.orm", "sqlalchemy.ext",
-    "sqlalchemy.ext.declarative",
+    "sqlalchemy.ext.declarative", "sqlalchemy.sql",
 ]:
     sys.modules.setdefault(mod_name, MagicMock())
 

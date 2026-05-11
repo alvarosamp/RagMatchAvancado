@@ -1,22 +1,17 @@
 FROM node:20-alpine AS build
 
-WORKDIR /workspace
+WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json ./frontend/
-RUN cd frontend && npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
-COPY bid-buddy/package.json bid-buddy/package-lock.json ./bid-buddy/
-RUN cd bid-buddy && npm install
+COPY . .
 
-COPY frontend ./frontend
-COPY bid-buddy ./bid-buddy
-COPY scripts ./scripts
-
-RUN cd frontend && npm run build:all
+RUN npm run build
 
 FROM nginx:alpine
 
-COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 RUN printf 'server {\n\
   listen 80;\n\

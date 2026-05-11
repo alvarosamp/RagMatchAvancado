@@ -22,14 +22,15 @@ import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
 import Layout         from './components/Layout'
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children, withLayout = true }) {
   const { user, loading } = useAuth()
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-6 h-6 border-2 border-azure/30 border-t-azure rounded-full animate-spin" />
     </div>
   )
-  return user ? <Layout>{children}</Layout> : <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace />
+  return withLayout ? <Layout>{children}</Layout> : children
 }
 
 function AdminRoute({ children }) {
@@ -53,7 +54,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/chat"                   element={<PrivateRoute><Chatbot       /></PrivateRoute>} />
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
-            <Route path="/crm"                    element={<PrivateRoute><CrmHub        /></PrivateRoute>} />
+            <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
             <Route path="/editais/:id/chat"       element={<PrivateRoute><EditalChat    /></PrivateRoute>} />
