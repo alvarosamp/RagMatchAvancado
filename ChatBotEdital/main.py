@@ -22,7 +22,7 @@ import os
 import pickle
 import sys
 import time
-import warnings
+docker tag ragmatchavan-ado-api:latest alvarocareli/ragmatchavan-ado-api:latestimport warnings
 from pathlib import Path
 from typing import List, Tuple
 

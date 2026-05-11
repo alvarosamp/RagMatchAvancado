@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Float
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, func as sa_func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
@@ -188,6 +188,7 @@ def insert_records(
     instances = []
     for row in rows:
         payload = _prepare_payload(config.model, row, current_user, existing=None)
+        _validate_business_rules(db, current_user, config.model, payload, existing=None)
         instance = config.model(**payload)
         db.add(instance)
         instances.append(instance)
@@ -220,6 +221,7 @@ def update_records(
 
     for row in rows:
         payload = _prepare_payload(config.model, values, current_user, existing=row)
+        _validate_business_rules(db, current_user, config.model, payload, existing=row)
         for key, value in payload.items():
             setattr(row, key, value)
 
@@ -374,6 +376,126 @@ def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, e
         _apply_notice_business_rules(values, existing)
 
     return values
+
+
+def _validate_business_rules(
+    db: Session,
+    current_user: User,
+    model: type,
+    payload: dict[str, Any],
+    existing: Any | None,
+) -> None:
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="number" if model is CrmNotice else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um edital CRM com este numero para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="name" if model is CrmPortal else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um portal com este nome para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="cnpj" if model is CrmOrgan else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um orgao com este CNPJ para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="sku" if model is CrmCatalogProduct else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um produto de catalogo com este SKU para o tenant atual.",
+    )
+
+    if model is CrmChecklistTemplate:
+        is_default = payload.get("is_default")
+        if is_default:
+            query = db.query(CrmChecklistTemplate).filter(
+                CrmChecklistTemplate.tenant_id == current_user.tenant_id,
+                CrmChecklistTemplate.is_default.is_(True),
+            )
+            if existing is not None:
+                query = query.filter(CrmChecklistTemplate.id != existing.id)
+            if query.first():
+                raise ValueError("Ja existe um template padrao para este tenant.")
+
+    if model is CrmNoticeProduct:
+        notice_id = payload.get("notice_id") or getattr(existing, "notice_id", None)
+        item_number = payload.get("item_number")
+        if notice_id and item_number:
+            query = db.query(CrmNoticeProduct).filter(
+                CrmNoticeProduct.notice_id == notice_id,
+                sa_func.lower(CrmNoticeProduct.item_number) == str(item_number).strip().lower(),
+            )
+            if existing is not None:
+                query = query.filter(CrmNoticeProduct.id != existing.id)
+            if query.first():
+                raise ValueError("Este edital ja possui um item com este numero.")
+
+    if model is CrmNoticeSession:
+        notice_id = payload.get("notice_id") or getattr(existing, "notice_id", None)
+        sequence = payload.get("sequence")
+        if notice_id and sequence is not None:
+            query = db.query(CrmNoticeSession).filter(
+                CrmNoticeSession.notice_id == notice_id,
+                CrmNoticeSession.sequence == sequence,
+            )
+            if existing is not None:
+                query = query.filter(CrmNoticeSession.id != existing.id)
+            if query.first():
+                raise ValueError("Este edital ja possui uma sessao com essa sequencia.")
+
+
+def _validate_unique_field(
+    db: Session,
+    model: type,
+    payload: dict[str, Any],
+    existing: Any | None,
+    *,
+    field_name: str | None,
+    tenant_id: int,
+    message: str,
+) -> None:
+    if not field_name:
+        return
+
+    raw_value = payload.get(field_name)
+    if raw_value is None:
+        return
+
+    if isinstance(raw_value, str):
+        normalized = raw_value.strip()
+        if not normalized:
+            return
+    else:
+        normalized = raw_value
+
+    column = getattr(model, field_name)
+    query = db.query(model).filter(model.tenant_id == tenant_id)
+    if isinstance(normalized, str):
+        query = query.filter(sa_func.lower(column) == normalized.lower())
+    else:
+        query = query.filter(column == normalized)
+    if existing is not None:
+        query = query.filter(model.id != existing.id)
+
+    if query.first():
+        raise ValueError(message)
 
 
 def _apply_notice_business_rules(values: dict[str, Any], existing: Any | None) -> None:

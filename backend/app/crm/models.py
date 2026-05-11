@@ -12,9 +12,11 @@ from sqlalchemy import (
     Enum as SqlEnum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -76,6 +78,10 @@ class CrmPostAuctionPhase(str, enum.Enum):
 
 class CrmOrgan(Base):
     __tablename__ = "crm_organs"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "cnpj", name="uq_crm_organs_tenant_cnpj"),
+        Index("ix_crm_organs_tenant_name", "tenant_id", "name"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -96,6 +102,10 @@ class CrmOrgan(Base):
 
 class CrmPortal(Base):
     __tablename__ = "crm_portals"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "name", name="uq_crm_portals_tenant_name"),
+        Index("ix_crm_portals_tenant_name", "tenant_id", "name"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -111,6 +121,7 @@ class CrmPortal(Base):
 
 class CrmChecklistTemplate(Base):
     __tablename__ = "crm_checklist_templates"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_crm_checklist_templates_tenant_name"),)
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -145,6 +156,10 @@ class CrmChecklistTemplateItem(Base):
 
 class CrmCatalogProduct(Base):
     __tablename__ = "crm_catalog_products"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "sku", name="uq_crm_catalog_products_tenant_sku"),
+        Index("ix_crm_catalog_products_tenant_name", "tenant_id", "name"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -173,6 +188,12 @@ class CrmCatalogProduct(Base):
 
 class CrmNotice(Base):
     __tablename__ = "crm_notices"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "number", name="uq_crm_notices_tenant_number"),
+        Index("ix_crm_notices_tenant_stage", "tenant_id", "stage"),
+        Index("ix_crm_notices_tenant_outcome", "tenant_id", "outcome"),
+        Index("ix_crm_notices_tenant_auction_date", "tenant_id", "auction_date"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -228,6 +249,9 @@ class CrmNotice(Base):
 
 class CrmNoticeProduct(Base):
     __tablename__ = "crm_notice_products"
+    __table_args__ = (
+        UniqueConstraint("notice_id", "item_number", name="uq_crm_notice_products_notice_item_number"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -284,6 +308,9 @@ class CrmNoticeHistory(Base):
 
 class CrmNoticeSession(Base):
     __tablename__ = "crm_notice_sessions"
+    __table_args__ = (
+        UniqueConstraint("notice_id", "sequence", name="uq_crm_notice_sessions_notice_sequence"),
+    )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)

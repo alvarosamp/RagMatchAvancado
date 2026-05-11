@@ -4,12 +4,14 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
+from app.crm.models import CrmNotice
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
+from app.services.ops_summary import summarize_crm
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 
@@ -31,6 +33,20 @@ def _ensure_table(table_name: str) -> None:
 @router.get("/auth/user")
 def crm_auth_user(current_user: User = Depends(get_current_user)):
     return {"user": crm_user_payload(current_user)}
+
+
+@router.get("/summary")
+def crm_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notices = (
+        db.query(CrmNotice)
+        .options(selectinload(CrmNotice.organ))
+        .filter(CrmNotice.tenant_id == current_user.tenant_id)
+        .all()
+    )
+    return summarize_crm(notices)
 
 
 @router.get("/query/{table_name}")
@@ -80,6 +96,8 @@ def crm_query_insert(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.patch("/query/{table_name}")
@@ -104,6 +122,8 @@ def crm_query_update(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.delete("/query/{table_name}")

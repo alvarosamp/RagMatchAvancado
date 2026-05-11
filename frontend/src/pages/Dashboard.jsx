@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { downloadBlob, editaisApi, exportApi, healthApi } from '../api/client'
+import { downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
@@ -37,6 +37,23 @@ function StatCard({ label, value, sub, tone = 'azure' }) {
   return (
     <div className={`rounded-[24px] border bg-gradient-to-br p-5 ${tones[tone]}`}>
       <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">{label}</p>
+      <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
+      <p className="mt-2 text-sm text-gray-400">{sub}</p>
+    </div>
+  )
+}
+
+function SignalCard({ label, value, sub, tone = 'neutral' }) {
+  const tones = {
+    success: 'border-green-match/20 bg-green-match/10 text-green-match',
+    warning: 'border-yellow-warn/20 bg-yellow-warn/10 text-yellow-warn',
+    danger: 'border-red-fail/20 bg-red-fail/10 text-red-fail',
+    neutral: 'border-slate-border bg-ink-50 text-gray-300',
+  }
+
+  return (
+    <div className={`rounded-[22px] border p-4 ${tones[tone]}`}>
+      <p className="text-[11px] font-mono uppercase tracking-[0.24em]">{label}</p>
       <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
@@ -80,6 +97,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(null)
   const [apiOnline, setApiOnline] = useState(null)
+  const [opsSummary, setOpsSummary] = useState(null)
   const [crmSync, setCrmSync] = useState(null)
   const { user, isEditor } = useAuth()
   const { toast } = useToast()
@@ -90,9 +108,9 @@ export default function Dashboard() {
 
     async function loadDashboard() {
       setLoading(true)
-      const [editaisResult, healthResult, crmResult] = await Promise.allSettled([
+      const [editaisResult, opsResult, crmResult] = await Promise.allSettled([
         editaisApi.list(),
-        healthApi.status(),
+        opsApi.summary(),
         readCrmSync(),
       ])
 
@@ -104,7 +122,13 @@ export default function Dashboard() {
         setEditais([])
       }
 
-      setApiOnline(healthResult.status === 'fulfilled' && Boolean(healthResult.value?.data))
+      if (opsResult.status === 'fulfilled') {
+        setOpsSummary(opsResult.value.data || null)
+        setApiOnline(true)
+      } else {
+        setOpsSummary(null)
+        setApiOnline(false)
+      }
       setCrmSync(crmResult.status === 'fulfilled' ? crmResult.value : null)
       setLoading(false)
     }
@@ -136,13 +160,15 @@ export default function Dashboard() {
   }
 
   const totalChunks = useMemo(
-    () => editais.reduce((sum, edital) => sum + (edital.chunks || 0), 0),
-    [editais]
+    () => opsSummary?.editais?.total_chunks ?? editais.reduce((sum, edital) => sum + (edital.chunks || 0), 0),
+    [editais, opsSummary]
   )
   const totalRequirements = useMemo(
-    () => editais.reduce((sum, edital) => sum + (edital.requirements || 0), 0),
-    [editais]
+    () => opsSummary?.editais?.total_requirements ?? editais.reduce((sum, edital) => sum + (edital.requirements || 0), 0),
+    [editais, opsSummary]
   )
+  const jobsSummary = opsSummary?.jobs
+  const crmSummary = opsSummary?.crm
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -224,15 +250,127 @@ export default function Dashboard() {
 
       {!loading && (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Editais" value={editais.length} sub="documentos registrados no ambiente" tone="azure" />
+          <StatCard label="Editais" value={opsSummary?.editais?.total_editais ?? editais.length} sub="documentos registrados no ambiente" tone="azure" />
           <StatCard label="Chunks" value={totalChunks.toLocaleString('pt-BR')} sub="fragmentos indexados para busca" tone="yellow" />
           <StatCard label="Requisitos" value={totalRequirements.toLocaleString('pt-BR')} sub="criterios estruturados no sistema" tone="green" />
           <StatCard
             label="CRM"
-            value={crmSync ? 'Pronto' : 'Pendente'}
-            sub={crmSync ? `sincronizado em ${formatSyncDate(crmSync.builtAt)}` : 'aguardando a primeira publicacao em /crm/'}
+            value={crmSummary ? `${crmSummary.active_pipeline || 0} ativos` : crmSync ? 'Pronto' : 'Pendente'}
+            sub={crmSummary ? `${crmSummary.attention_required || 0} pontos de atencao no funil comercial` : crmSync ? `sincronizado em ${formatSyncDate(crmSync.builtAt)}` : 'aguardando a primeira publicacao em /crm/'}
             tone="slate"
           />
+        </section>
+      )}
+
+      {!loading && (
+        <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Radar operacional</p>
+                <h2 className="mt-2 font-display text-2xl font-bold text-white">Saude do fluxo em tempo real</h2>
+                <p className="mt-2 text-sm text-gray-400">
+                  Acompanhe gargalos de processamento e pontos de atencao no CRM sem sair do portal.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => navigate('/jobs')} className="btn-ghost">
+                  Ver jobs
+                </button>
+                <button onClick={() => navigate('/crm')} className="btn-ghost">
+                  Abrir CRM
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <SignalCard
+                label="Jobs ativos"
+                value={jobsSummary?.active_count ?? 0}
+                sub={`${jobsSummary?.status_counts?.running ?? 0} rodando agora e ${jobsSummary?.status_counts?.pending ?? 0} aguardando fila`}
+                tone={(jobsSummary?.active_count ?? 0) > 0 ? 'warning' : 'success'}
+              />
+              <SignalCard
+                label="Fila travada"
+                value={jobsSummary?.stale_count ?? 0}
+                sub="jobs executando ha mais de 20 minutos"
+                tone={(jobsSummary?.stale_count ?? 0) > 0 ? 'danger' : 'success'}
+              />
+              <SignalCard
+                label="CRM em atencao"
+                value={crmSummary?.attention_required ?? 0}
+                sub="pregoes vencidos ou prazos de pos-disputa estourados"
+                tone={(crmSummary?.attention_required ?? 0) > 0 ? 'danger' : 'success'}
+              />
+              <SignalCard
+                label="Pregoes proximos"
+                value={crmSummary?.upcoming_auctions_count ?? 0}
+                sub="disputas previstas para os proximos 7 dias"
+                tone={(crmSummary?.upcoming_auctions_count ?? 0) > 0 ? 'warning' : 'neutral'}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Prioridades</p>
+              <h2 className="mt-2 font-display text-2xl font-bold text-white">O que merece olhar agora</h2>
+            </div>
+
+            <div className="mt-6 space-y-6">
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">Jobs em andamento</p>
+                  <button onClick={() => navigate('/jobs')} className="text-xs font-mono uppercase tracking-[0.2em] text-azure-glow">
+                    abrir fila
+                  </button>
+                </div>
+                {jobsSummary?.active_jobs?.length ? (
+                  <div className="mt-3 space-y-3">
+                    {jobsSummary.active_jobs.map((job) => (
+                      <div key={job.id} className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">{job.label}</p>
+                            <p className="mt-1 text-xs font-mono uppercase tracking-[0.18em] text-gray-500">
+                              {job.job_type} | {job.status}
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-azure-glow">{job.progress_pct}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-500">Nenhum job ativo no momento.</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">Pregoes proximos</p>
+                  <button onClick={() => navigate('/crm')} className="text-xs font-mono uppercase tracking-[0.2em] text-azure-glow">
+                    abrir crm
+                  </button>
+                </div>
+                {crmSummary?.upcoming_auctions?.length ? (
+                  <div className="mt-3 space-y-3">
+                    {crmSummary.upcoming_auctions.map((notice) => (
+                      <div key={notice.id} className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3">
+                        <p className="text-sm font-semibold text-white">{notice.number || notice.title || 'Licitacao sem numero'}</p>
+                        <p className="mt-1 text-xs text-gray-400">{notice.organ_name || 'Orgao nao informado'}</p>
+                        <p className="mt-2 text-xs font-mono uppercase tracking-[0.18em] text-yellow-warn">
+                          {notice.auction_date ? new Date(notice.auction_date).toLocaleString('pt-BR') : 'sem data'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-500">Nenhum pregao previsto para os proximos dias.</p>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
       )}
 

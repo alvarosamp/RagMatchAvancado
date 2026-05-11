@@ -9,6 +9,7 @@ from app.routers.editais    import router as editais_router
 from app.routers.crm        import router as crm_router
 from app.routers.export     import router as export_router
 from app.routers.analytics  import router as analytics_router  # ← NOVO
+from app.routers.ops        import router as ops_router
 from app.auth.router        import router as auth_router
 from app.jobs.router        import router as jobs_router
 from app.logs.config import logger
@@ -23,6 +24,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(crm_router)
 app.include_router(jobs_router)
+app.include_router(ops_router)
 app.include_router(switches_router)
 app.include_router(editais_router)
 app.include_router(export_router)
