@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(npm run *)",
+      "Bash(python -c ' *)",
+      "Bash(.venv/Scripts/python.exe -c \"from docling.document_converter import DocumentConverter; print\\('Docling import OK'\\)\")"
+    ]
+  }
+}

@@ -39,6 +39,16 @@ def _env_flag(name: str, default: bool = True) -> bool:
     return str(v).strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _env_int(name: str, default: int) -> int:
+    v = os.environ.get(name)
+    if v is None:
+        return default
+    try:
+        return int(str(v).strip())
+    except Exception:
+        return default
+
+
 def _try_pdf_page_count(source: Union[str, Path, bytes], filename: str) -> int | None:
     """Tenta obter número de páginas do PDF para diagnóstico de páginas perdidas."""
     try:
@@ -134,7 +144,21 @@ def _build_converter() -> DocumentConverter:
     if not DOCLING_DISPONIVEL:
         raise RuntimeError("Docling não está disponível neste ambiente")
 
-    pipeline_opts = PdfPipelineOptions(do_ocr=True, do_table_structure=True)
+    do_ocr = _env_flag("DOCLING_DO_OCR", default=True)
+    do_table_structure = _env_flag("DOCLING_DO_TABLE_STRUCTURE", default=True)
+
+    # Modo de economia de memória: desliga a extração estrutural de tabelas.
+    # Isso costuma reduzir muito o consumo no preprocess.
+    if _env_flag("DOCLING_LOW_MEMORY", default=False):
+        do_table_structure = False
+
+    logger.info(
+        "[Docling] build_converter: do_ocr=%s do_table_structure=%s",
+        do_ocr,
+        do_table_structure,
+    )
+
+    pipeline_opts = PdfPipelineOptions(do_ocr=do_ocr, do_table_structure=do_table_structure)
     return DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
     )
@@ -150,6 +174,22 @@ def _get_converter() -> DocumentConverter:
         logger.info("Inicializando Docling DocumentConverter...")
         _converter = _build_converter()
     return _converter
+
+
+def release_converter() -> None:
+    """Libera os modelos PyTorch do Docling da memória RAM.
+
+    Chamar após concluir a extração de texto, antes de rodar um LLM pesado
+    no mesmo processo, para evitar conflito de memória.
+    """
+    global _converter
+    if _converter is not None:
+        _converter = None
+        try:
+            import gc
+            gc.collect()
+        except Exception:
+            pass
 
 
 def _extrair_texto_pypdf(source: Union[str, Path, bytes], filename: str) -> str:
@@ -183,6 +223,28 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
         ParsedDocument com texto completo e chunks
     """
     normalize_text = _env_flag("DOCLING_NORMALIZE_TEXT", default=True)
+    low_memory = _env_flag("DOCLING_LOW_MEMORY", default=False)
+    pypdf_first = _env_flag("DOCLING_PYPDF_FIRST", default=low_memory)
+    pypdf_min_chars = _env_int("DOCLING_PYPDF_MIN_CHARS", default=200)
+
+    if pypdf_first:
+        # Se o PDF já tem texto nativo, evita rodar Docling/OCR.
+        full_text = _extrair_texto_pypdf(source, filename)
+        if normalize_text:
+            full_text = _normalize_extracted_text(full_text)
+        if len(full_text.strip()) >= pypdf_min_chars:
+            raw_chunks: list[ParsedChunk] = []
+            if full_text.strip():
+                raw_chunks = _full_text_fallback(full_text, filename)
+            logger.info(
+                "[Docling] '%s' pypdf_first -> %s chars, %s chunks (min_chars=%s)",
+                filename,
+                len(full_text),
+                len(raw_chunks),
+                pypdf_min_chars,
+            )
+            return ParsedDocument(filename=filename, full_text=full_text, chunks=raw_chunks)
+
     page_count = _try_pdf_page_count(source, filename)
     size_bytes = _try_pdf_size_bytes(source)
     size_kb = f"{(size_bytes / 1024):.1f}KB" if size_bytes is not None else "n/a"
@@ -285,6 +347,18 @@ def parse_pdf(source: Union[str, Path, bytes], filename: str = "document.pdf") -
 # Labels que não carregam conteúdo útil — ignorados
 _SKIP_LABELS = {"page_footer", "page_header", "page_number", "picture"}
 
+
+def _guess_page(item) -> int | None:
+    """Obtém o número da página de forma best-effort a partir do item Docling."""
+    page = (
+        getattr(item, "page", None)
+        or getattr(item, "page_no", None)
+        or getattr(item, "page_number", None)
+    )
+    if isinstance(page, str) and page.isdigit():
+        page = int(page)
+    return page if isinstance(page, int) else None
+
 def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChunk]:
     """
     Itera pelos elementos do documento Docling e cria chunks por seção.
@@ -313,17 +387,6 @@ def _extract_chunks_from_doc(doc, normalize_text: bool = True) -> list[ParsedChu
 
         if normalize_text:
             text = _normalize_extracted_text(text)
-
-        # Tentativa best-effort de capturar número de página, se o item carregar.
-        page = (
-            getattr(item, "page", None)
-            or getattr(item, "page_no", None)
-            or getattr(item, "page_number", None)
-        )
-        if isinstance(page, str) and page.isdigit():
-            page = int(page)
-        if not isinstance(page, int):
-            page = None
 
         # Atualiza seção corrente mas não vira chunk
         if label in ("section_header", "title"):

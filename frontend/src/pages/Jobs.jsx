@@ -7,12 +7,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jobsApi } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
+
+const isCancelled = (job) =>
+  job.status === 'failed' && job.error_message === 'Cancelado pelo usuário'
 
 const STATUS_CFG = {
-  pending: { label: '⏳ Aguardando', cls: 'badge-pending', barCls: 'bg-gray-500' },
-  running: { label: '🔄 Processando', cls: 'badge-atende',  barCls: 'bg-azure'    },
-  done:    { label: '✅ Concluído',   cls: 'badge-atende',  barCls: 'bg-green-match' },
-  failed:  { label: '❌ Falhou',      cls: 'badge-falhou',  barCls: 'bg-red-fail'  },
+  pending:   { label: '⏳ Aguardando',   cls: 'badge-pending', barCls: 'bg-gray-500' },
+  running:   { label: '🔄 Processando',  cls: 'badge-atende',  barCls: 'bg-azure'    },
+  done:      { label: '✅ Concluído',    cls: 'badge-atende',  barCls: 'bg-green-match' },
+  failed:    { label: '❌ Falhou',       cls: 'badge-falhou',  barCls: 'bg-red-fail'  },
+  cancelled: { label: '🚫 Cancelado',   cls: 'badge-pending', barCls: 'bg-gray-500'  },
 }
 
 const TYPE_LABELS = {
@@ -21,10 +26,12 @@ const TYPE_LABELS = {
 }
 
 export default function Jobs() {
-  const [jobs,    setJobs]    = useState([])
-  const [loading, setLoading] = useState(true)
-  const [filter,  setFilter]  = useState('all')
-  const navigate              = useNavigate()
+  const [jobs,        setJobs]        = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [filter,      setFilter]      = useState('all')
+  const [cancelling,  setCancelling]  = useState(null)
+  const navigate      = useNavigate()
+  const { toast, confirm } = useToast()
 
   const load = () => {
     const params = filter !== 'all' ? { status: filter } : {}
@@ -44,6 +51,23 @@ export default function Jobs() {
     const t = setInterval(load, 3000)
     return () => clearInterval(t)
   }, [jobs, filter])
+
+  const handleCancel = async (e, jobId) => {
+    e.stopPropagation()
+    const ok = await confirm('Cancelar este job? A operação não poderá ser desfeita.', { title: 'Cancelar Job' })
+    if (!ok) return
+    setCancelling(jobId)
+    try {
+      await jobsApi.cancel(jobId)
+      toast({ type: 'success', message: 'Job cancelado com sucesso.' })
+      load()
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Não foi possível cancelar o job.'
+      toast({ type: 'error', title: 'Erro ao cancelar', message: msg })
+    } finally {
+      setCancelling(null)
+    }
+  }
 
   const filters = [
     { key: 'all',     label: 'Todos' },
@@ -86,14 +110,19 @@ export default function Jobs() {
       ) : (
         <div className="space-y-2">
           {jobs.map((job, i) => {
-            const cfg = STATUS_CFG[job.status] || STATUS_CFG.pending
-            const pct = Math.round((job.progress || 0) * 100)
+            const cancelled = isCancelled(job)
+            const cfgKey    = cancelled ? 'cancelled' : job.status
+            const cfg       = STATUS_CFG[cfgKey] || STATUS_CFG.pending
+            const pct       = Math.round((job.progress || 0) * 100)
+            const canCancel = job.status === 'pending' || job.status === 'running'
+
             return (
               <div
                 key={job.id}
                 onClick={() => job.result?.edital_id && navigate(`/editais/${job.result.edital_id}`)}
                 className={`card py-4 flex items-center gap-4 animate-fade-up transition-all duration-200
-                  ${job.result?.edital_id ? 'cursor-pointer hover:border-azure/40 hover:bg-slate-hover' : ''}`}
+                  ${job.result?.edital_id ? 'cursor-pointer hover:border-azure/40 hover:bg-slate-hover' : ''}
+                  ${cancelled ? 'opacity-60' : ''}`}
                 style={{ animationDelay: `${i * 40}ms` }}
               >
                 {/* Tipo */}
@@ -126,13 +155,25 @@ export default function Jobs() {
                            style={{ width: `${pct}%` }} />
                     </div>
                   )}
-                  {job.error_message && (
+                  {job.error_message && !cancelled && (
                     <p className="text-xs text-red-fail font-mono mt-1 truncate">{job.error_message}</p>
                   )}
                   {job.result?.edital_id && (
                     <p className="text-xs text-gray-500 font-mono mt-1">→ edital #{job.result.edital_id}</p>
                   )}
                 </div>
+
+                {/* Botão cancelar */}
+                {canCancel && (
+                  <button
+                    onClick={(e) => handleCancel(e, job.id)}
+                    disabled={cancelling === job.id}
+                    className="flex-shrink-0 px-3 py-1 rounded-lg text-xs font-mono border border-red-fail/40
+                               text-red-fail hover:bg-red-fail/10 transition-all duration-150 disabled:opacity-40"
+                  >
+                    {cancelling === job.id ? '…' : '✕ Cancelar'}
+                  </button>
+                )}
               </div>
             )
           })}

@@ -177,7 +177,7 @@ def run_matching(
         # ── Persiste no banco ─────────────────────────────────────────────────
         db.add(MatchingResult(
             product_id      = product.id,
-            requirements_id = req.id,
+            requirement_id  = req.id,
             status          = status,
             score           = final_score,
             details         = detail.found,

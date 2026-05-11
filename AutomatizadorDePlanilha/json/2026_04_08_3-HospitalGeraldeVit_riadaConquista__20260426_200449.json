@@ -1,0 +1,33 @@
+{
+  "N Interno": "2026_04_08_3",
+  "Status": "🟢",
+  "Data Disputa": "14/04/2026",
+  "Hora Disputa": "15:30:00",
+  "Órgão": "SECRETARIA DA SAUDE",
+  "Tipo Licitação": "Dispensa de Licitação",
+  "Resumo Switches": "N/C",
+  "Critério": "menor preço",
+  "Local": "191380068 - MANUTENÇÃO DE ENGENHARIA CLINICA",
+  "UASG": "COMPLEXO HOSPITALAR DE VITORIA DA CONQUISTA",
+  "Nº Pregão": "N/C",
+  "Cidade": "N/C",
+  "UF": "BA",
+  "Valor Total Switches": "N/C",
+  "Vlr Total Edital": "N/C",
+  "Intervalo": "N/C",
+  "Exclusividade ME/EPP": "N/C",
+  "Endereço": "N/C",
+  "CEP": "N/C",
+  "Risco Identificado": "🚨 SERVIÇO/RISCO DETECTADO - Instalação física",
+  "Habilitação jurídica": "Sim",
+  "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": "Sim",
+  "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": "N/C",
+  "QUALIFICAÇÃO TÉCNICA": "N/C",
+  "itens": [
+    {
+      "descricao": "RADIO TRANSCEPTOR",
+      "preco": "N/C",
+      "quantidade": "10,00 UNIDADE"
+    }
+  ]
+}

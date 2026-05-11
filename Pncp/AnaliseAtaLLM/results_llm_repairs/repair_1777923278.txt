@@ -1,0 +1,189 @@
+{ "numero_ata": "5.6", "orgao": "Administracao", "data_assinatura": null, "vigencia": null, "objeto": "contratacao", "itens": [
+  {
+    "numero_item": "1",
+    "descricao": "habilitação do(s) fornecedor(es) que compõe(m) o cadastro de reserva na hipótese a que se refere o item 5.5, será(ão) efetuada(s) quando houver necessidade de contratação do(s) fornecedor(es) remanescente(s), por impossibilidade de atendimento da demanda pelo signatário da ata, observada a disciplina estabelecida nesta ata e no instrumento convocatório mencionado no item 1.1.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "2",
+    "descricao": "o preço registrado, com indicação dos fornecedores, será divulgado no PNCP e ficará disponibilizado durante a vigência desta ata de registro de preços.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "3",
+    "descricao": "caso se caracterize hipótese de impossibilidade de atendimento da demanda pelo signatário da ata de que trata o item 5.6, observado o disposto no referido item, ficará facultado à Administração convocar os fornecedores remanescentes do cadastro de reserva, na ordem de classificação, para contratação nas condições propostas pelo primeiro classificado.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "4",
+    "descricao": "na hipótese de nenhum dos fornecedores que tenham aceitado cotar o objeto com preço igual ao do adjudicatário concordar com a contratação nas condições propostas pelo primeiro classificado nos termos da subdivisão acima, a Administração, observados o valor estimado e sua eventual atualização na forma prevista na documentação que integra o instrumento convocatório mencionado no item 1.1, poderá:\n",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "5",
+    "descricao": "o preço registrado, com indicação dos fornecedores, será divulgado no PNCP e ficará disponibilizado durante a vigência desta ata de registro de preços.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "6",
+    "descricao": "caso se caracterize hipótese de impossibilidade de atendimento da demanda pelo signatário da ata de que trata o item 5.6, observado o disposto no referido item, ficará facultado à Administração convocar os fornecedores remanescentes do cadastro de reserva, na ordem de classificação, para contratação nas condições propostas pelo primeiro classificado.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "7",
+    "descricao": "na hipótese de nenhum dos fornecedores que tenham aceitado cotar o objeto com preço igual ao do adjudicatário concordar com a contratação nas condições propostas pelo primeiro classificado nos termos da subdivisão acima, a Administração, observados o valor estimado e sua eventual atualização na forma prevista na documentação que integra o instrumento convocatório mencionado no item 1.1, poderá:\n",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "8",
+    "descricao": "o preço registrado, com indicação dos fornecedores, será divulgado no PNCP e ficará disponibilizado durante a vigência desta ata de registro de preços.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "9",
+    "descricao": "caso se caracterize hipótese de impossibilidade de atendimento da demanda pelo signatário da ata de que trata o item 5.6, observado o disposto no referido item, ficará facultado à Administração convocar os fornecedores remanescentes do cadastro de reserva, na ordem de classificação, para contratação nas condições propostas pelo primeiro classificado.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "10",
+    "descricao": "na hipótese de nenhum dos fornecedores que tenham aceitado cotar o objeto com preço igual ao do adjudicatário concordar com a contratação nas condições propostas pelo primeiro classificado nos termos da subdivisão acima, a Administração, observados o valor estimado e sua eventual atualização na forma prevista na documentação que integra o instrumento convocatório mencionado no item 1.1, poderá:\n",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,
+    "unidade": null,
+    "valor_unitario": null,
+    "valor_total": null,
+    "fornecedor": null,
+    "cnpj_fornecedor": null,
+    "especificacoes": [
+      "completa"
+    ],
+    "observacoes": null
+  },
+  {
+    "numero_item": "11",
+    "descricao": "o preço registrado, com indicação dos fornecedores, será divulgado no PNCP e ficará disponibilizado durante a vigência desta ata de registro de preços.",
+    "raw_descricao": null,
+    "tipo": null,
+    "marca": null,
+    "modelo": null,
+    "quantidade": null,

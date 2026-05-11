@@ -1,0 +1,20 @@
+{
+  "numero_ata": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "orgao": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "MUNICIPIO DE BOM SUCESSO DE ITARARE BOM SUCESSO DE ITARARÉ-SP",
+  "itens": [
+    {
+      "numero_item": "50",
+      "descricao": "Quantidade: 50",
+      "raw_descricao": "Quantidade: 50",
+      "tipo": null,
+      "marca": "N/A",
+      "modelo": "N/A",
+      "quantidade": 50,
+      "unidade": "N/A",
+      "valor_unitario": 0
+    }
+  ]
+}

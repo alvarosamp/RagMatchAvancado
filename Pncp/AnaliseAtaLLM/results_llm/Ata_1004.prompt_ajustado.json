@@ -1,0 +1,1332 @@
+﻿{
+  "id_pncp": "Ata_1004",
+  "numero_ata": "056/2025",
+  "orgao": "PREFEITURA MUNICIPAL DE POTIRAGU┴ - BA POTIRAGU┴-BA",
+  "data_assinatura": "30/09/2025 16:47:41",
+  "vigencia": "null",
+  "objeto": "PREG├O ELETRÈNICO N║ 056/2025",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Teclado usb, ABNT2, padrÒo",
+      "tipo": "item",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 33,
+      "unidade": "UNID",
+      "valor_unitario": 13.28,
+      "valor_total": 438.24,
+      "fornecedor": "J S LOCACAO E COMERCIO LTDA",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Teclado usb, ABNT2, padrÒo"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Teclado usb, ABNT2, padrÒo\nQuantidade: 33\nUnidade: UNID\nValor Unitario: 13,28\nValor Total: 438,24\nFornecedor: J S LOCACAO E COMERCIO LTDA"
+    },
+    {
+      "numero_item": "134",
+      "descricao": "Lote 1",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": "UNID",
+      "valor_unitario": 0.0,
+      "valor_total": 26.99995,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Lote 1"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Lote 1\nQuantidade: 1\nUnidade: UNID\nValor Unitario: 0,00\nValor Total: 26.999,95"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Mouse usb, 3 bot§es, 1000, DPI, padrÒo",
+      "tipo": null,
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 33,
+      "unidade": "UNID",
+      "valor_unitario": 5.39,
+      "valor_total": 177.87,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "DPI",
+        "padrÒo"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Mouse usb, 3 bot§es, 1000, DPI, padrÒo"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Teclado e mouse sem fio",
+      "tipo": null,
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 33,
+      "unidade": "UNID",
+      "valor_unitario": 74.3,
+      "valor_total": 2451.9,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "padrÒo"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Teclado e mouse sem fio"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "Suporte de refrigeraþÒo para notebook",
+      "tipo": null,
+      "marca": "B-Max",
+      "modelo": "B-Max",
+      "quantidade": 33,
+      "unidade": "UNID",
+      "valor_unitario": 74.3,
+      "valor_total": 2451.9,
+      "fornecedor": "B-Max",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "padrÒo"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Suporte de refrigeraþÒo para notebook"
+    },
+    {
+      "numero_item": "17",
+      "descricao": "Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",
+      "tipo": "string ou null",
+      "marca": "Knup",
+      "modelo": "Knup",
+      "quantidade": 17,
+      "unidade": "UNID",
+      "valor_unitario": 41.51,
+      "valor_total": 705.67,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Caboe usb, A Macho Para Usb A Macho 2.0 1,80 Metros"
+    },
+    {
+      "numero_item": "13",
+      "descricao": "Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",
+      "tipo": "string ou null",
+      "marca": "Knup",
+      "modelo": "Knup",
+      "quantidade": 13,
+      "unidade": "UNID",
+      "valor_unitario": 6.22,
+      "valor_total": 80.86,
+      "fornecedor": "Exbom",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Caboe usb, A Macho Para Usb A Macho 2.0 1,80 Metros"
+    },
+    {
+      "numero_item": "17",
+      "descricao": "Cabo usb, A Macho Para Usb A Macho 2.0 1,80 Metros",
+      "tipo": "string ou null",
+      "marca": "Knup",
+      "modelo": "Knup",
+      "quantidade": 34,
+      "unidade": "UNID",
+      "valor_unitario": 10.37,
+      "valor_total": 352.58,
+      "fornecedor": "Exbom",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Caboe usb, A Macho Para Usb A Macho 2.0 1,80 Metros"
+    },
+    {
+      "numero_item": "8",
+      "descricao": "Cabo HDMI de 5 metros",
+      "tipo": "Cabo",
+      "marca": "Exbom",
+      "modelo": "Exbom",
+      "quantidade": 17,
+      "unidade": "UNID",
+      "valor_unitario": 20.75,
+      "valor_total": 352.75,
+      "fornecedor": "Fornecedor 1",
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Cabo HDMI de 5 metros"
+    },
+    {
+      "numero_item": "9",
+      "descricao": "Cabo HDMI de 10 metros",
+      "tipo": "Cabo",
+      "marca": "Exbom",
+      "modelo": "Exbom",
+      "quantidade": 17,
+      "unidade": "UNID",
+      "valor_unitario": 24.9,
+      "valor_total": 423.3,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Cabo HDMI de 10 metros"
+    },
+    {
+      "numero_item": null,
+      "descricao": "Cabo HDMI de 15 metros",
+      "tipo": null,
+      "marca": "Exbom",
+      "modelo": null,
+      "quantidade": 13,
+      "unidade": "metros",
+      "valor_unitario": 43.58,
+      "valor_total": 566.54,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Cabo de TV"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Cabo HDMI de 15 metros"
+    },
+    {
+      "numero_item": null,
+      "descricao": "Cabo HDMI de 20 metros",
+      "tipo": null,
+      "marca": "Exbom",
+      "modelo": null,
+      "quantidade": 12,
+      "unidade": "metros",
+      "valor_unitario": 47.73,
+      "valor_total": 572.76,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Cabo de TV"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Cabo HDMI de 20 metros"
+    },
+    {
+      "numero_item": "12",
+      "descricao": "Cabo HDMI de 30 metros",
+      "tipo": "Cabo",
+      "marca": "Exbom",
+      "modelo": "HDMI",
+      "quantidade": 11,
+      "unidade": "m",
+      "valor_unitario": 66.41,
+      "valor_total": 1328.2,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Cabo de TV",
+        "HDMI"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Cabo HDMI de 30 metros"
+    },
+    {
+      "numero_item": "13",
+      "descricao": "Cabo HDMI de 50 metros",
+      "tipo": "Cabo",
+      "marca": "Exbom",
+      "modelo": "HDMI",
+      "quantidade": 7,
+      "unidade": "m",
+      "valor_unitario": 205.47,
+      "valor_total": 1.43829,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Cabo de TV",
+        "HDMI"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Cabo HDMI de 50 metros"
+    },
+    {
+      "numero_item": "15",
+      "descricao": "DescriþÒo: Cabo VGA 3 metros                                             | DescriþÒo: Cabo VGA 3 metros                                             | DescriþÒo: Cabo VGA 3 metros                                             | DescriþÒo: Cabo VGA 3 metros                                             | DescriþÒo: Cabo VGA 3 metros                                             |",
+      "tipo": "string ou null",
+      "marca": "Exbom                                                             | Exbom                                                             | Exbom                                                             | Exbom                                                             | Exbom                                                             |                                                                         ",
+      "modelo": "Exbom                                                            | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         |                                                                         ",
+      "quantidade": 17,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Cabo VGA 3 metros                                             | Cabo VGA 3 metros                                             | Cabo VGA 3 metros                                             | Cabo VGA 3 metros                                             | Cabo VGA 3 metros                                             |"
+    },
+    {
+      "numero_item": "16",
+      "descricao": "DescriþÒo: Adaptador de HDMI para VGA                                    | DescriþÒo: Adaptador de HDMI para VGA                                    | DescriþÒo: Adaptador de HDMI para VGA                                    | DescriþÒo: Adaptador de HDMI para VGA                                    | DescriþÒo: Adaptador de HDMI para VGA                                    |",
+      "tipo": "string ou null",
+      "marca": "Easy Top                                                          | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         |                                                                         ",
+      "modelo": "Easy Top                                                         | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         | Easy Top                                                         |                                                                         ",
+      "quantidade": 3,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Adaptador de HDMI para VGA                                    | Adaptador de HDMI para VGA                                    | Adaptador de HDMI para VGA                                    | Adaptador de HDMI para VGA                                    | Adaptador de HDMI para VGA                                    |"
+    },
+    {
+      "numero_item": "17",
+      "descricao": "Pilha AA",
+      "tipo": "3,60",
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": 61.2,
+      "fornecedor": "Easy Top",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "UNID",
+        "UNID",
+        "UNID",
+        "UNID"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Pilha AA"
+    },
+    {
+      "numero_item": "18",
+      "descricao": "Pilha AAA",
+      "tipo": "3,44",
+      "marca": null,
+      "modelo": null,
+      "quantidade": null,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": 113.52,
+      "fornecedor": "Easy Top",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "UNID",
+        "UNID",
+        "UNID",
+        "UNID"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Pilha AAA"
+    },
+    {
+      "numero_item": "19",
+      "descricao": "Mouse PAD preto",
+      "tipo": "Mouse",
+      "marca": "Isoprene",
+      "modelo": "Isoprene",
+      "quantidade": 66,
+      "unidade": "UNID",
+      "valor_unitario": 3.32,
+      "valor_total": 219.12,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Mouse",
+        "Pad"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Mouse PAD preto"
+    },
+    {
+      "numero_item": "20",
+      "descricao": "Fone de Ouvido Headphone",
+      "tipo": "Fone de Ouvido",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 27,
+      "unidade": "UNID",
+      "valor_unitario": 56.03,
+      "valor_total": 1.51281,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Fone de Ouvido",
+        "Headphone"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Fone de Ouvido Headphone"
+    },
+    {
+      "numero_item": "22",
+      "descricao": "Testador de cabo de rede",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 2,
+      "unidade": "UNID",
+      "valor_unitario": 21.915,
+      "valor_total": 43.83,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Testador de cabo de rede"
+    },
+    {
+      "numero_item": "23",
+      "descricao": "Cabo para internet cat5cx c/ 305 mt",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 10,
+      "unidade": "UNID",
+      "valor_unitario": 367.36,
+      "valor_total": 3.6736,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Cabo para internet cat5cx c/ 305 mt"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Conector rj45",
+      "tipo": "Conector",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 8,
+      "unidade": "Unidade",
+      "valor_unitario": 0.41,
+      "valor_total": 3.28,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Conector rj45"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Conector rj45"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Estabilizador bivol 300va",
+      "tipo": "Estabilizador",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 33,
+      "unidade": "Unidade",
+      "valor_unitario": 63.51,
+      "valor_total": 2.09583,
+      "fornecedor": "Forceline",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Estabilizador bivol 300va"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Estabilizador bivol 300va"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Estabilizador bivolt 500va",
+      "tipo": "Estabilizador",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 33,
+      "unidade": "Unidade",
+      "valor_unitario": 78.86,
+      "valor_total": 2.60238,
+      "fornecedor": "Forceline",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Estabilizador bivolt 500va"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Estabilizador bivolt 500va"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "Modelo Multilaser",
+      "tipo": "Modelo",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": null,
+      "unidade": "Unidade",
+      "valor_unitario": 0.0,
+      "valor_total": null,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Modelo Multilaser"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Modelo Multilaser"
+    },
+    {
+      "numero_item": "28",
+      "descricao": "Nobreak bivolt de 1200va",
+      "tipo": "Equipamento elÚtrico",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 3,
+      "unidade": "UNID",
+      "valor_unitario": 410.95,
+      "valor_total": 1232.85,
+      "fornecedor": "MinistÚrio da Ind·stria, ComÚrcio e Serviþos",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "1200va",
+        "bivolt"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Nobreak bivolt de 1200va"
+    },
+    {
+      "numero_item": "29",
+      "descricao": "Transformador de 1500va",
+      "tipo": "Equipamento elÚtrico",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 3,
+      "unidade": "UNID",
+      "valor_unitario": 658.92,
+      "valor_total": 1976.76,
+      "fornecedor": "MinistÚrio da Ind·stria, ComÚrcio e Serviþos",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "1500va",
+        "bivolt"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Transformador de 1500va"
+    },
+    {
+      "numero_item": "30",
+      "descricao": "Filtro de linha",
+      "tipo": "Equipamento eletr¶nico",
+      "marca": "Forceline",
+      "modelo": "Forceline",
+      "quantidade": 1,
+      "unidade": "UNID",
+      "valor_unitario": 244.91,
+      "valor_total": 486.9,
+      "fornecedor": "MinistÚrio da Ind·stria, ComÚrcio e Serviþos",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "linha"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Filtro de linha"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Memoria DDR3 4gb para desktop",
+      "tipo": null,
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "GB",
+      "valor_unitario": 55.0,
+      "valor_total": 440.0,
+      "fornecedor": "Mem¾ria",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Memoria DDR3"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Memoria DDR3 4gb para desktop"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Memoria DDR3 8gb para desktop",
+      "tipo": null,
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "GB",
+      "valor_unitario": 120.0,
+      "valor_total": 960.0,
+      "fornecedor": "Mem¾ria",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Memoria DDR3",
+        "Memoria DDR4"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Memoria DDR3 8gb para desktop"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Memoria DDR4 4GB para desktop",
+      "tipo": null,
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "GB",
+      "valor_unitario": 120.0,
+      "valor_total": 960.0,
+      "fornecedor": "Mem¾ria",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Memoria DDR4"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Memoria DDR4 4GB para desktop"
+    },
+    {
+      "numero_item": "8",
+      "descricao": "Memoria DDR4 8GB para desktop",
+      "tipo": "string ou null",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 130.0,
+      "valor_total": 1040.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Memoria DDR4 8GB para desktop"
+    },
+    {
+      "numero_item": "5",
+      "descricao": "Mem¾ria DDR4 4GB para notebook",
+      "tipo": "string ou null",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 60.0,
+      "valor_total": 480.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Mem¾ria DDR4 4GB para notebook"
+    },
+    {
+      "numero_item": "6",
+      "descricao": "Mem¾ria DDR4 8GB para notebook",
+      "tipo": "string ou null",
+      "marca": "Hynix",
+      "modelo": "Hynix",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 85.0,
+      "valor_total": 680.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Mem¾ria DDR4 8GB para notebook"
+    },
+    {
+      "numero_item": "7",
+      "descricao": "Placa mÒe, LGA 1151, DDR4 para desktop",
+      "tipo": "string ou null",
+      "marca": "MSI",
+      "modelo": "MSI",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 450.0,
+      "valor_total": 3150.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "Placa mÒe, LGA 1151, DDR4 para desktop"
+    },
+    {
+      "numero_item": "8",
+      "descricao": "DescriþÒo: Placa mÒe, LGA 1155, DDR3 para desktop",
+      "tipo": null,
+      "marca": "MSI",
+      "modelo": null,
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 178.57,
+      "valor_total": 1.2499,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "LGA 1155",
+        "DDR3"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Placa mÒe, LGA 1155, DDR3 para desktop"
+    },
+    {
+      "numero_item": "9",
+      "descricao": "DescriþÒo: Placa mÒe, LGA 1150, DDR3",
+      "tipo": null,
+      "marca": "MSI",
+      "modelo": null,
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 200.0,
+      "valor_total": 1.4,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "LGA 1150",
+        "DDR3"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Placa mÒe, LGA 1150, DDR3"
+    },
+    {
+      "numero_item": "10",
+      "descricao": "DescriþÒo: Placa mÒe, Quantidade: 7",
+      "tipo": null,
+      "marca": "MSI",
+      "modelo": null,
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 800.0,
+      "valor_total": 5.6,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Quantidade: 7"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Placa mÒe, Quantidade: 7"
+    },
+    {
+      "numero_item": "11",
+      "descricao": "DescriþÒo: Placa mÒe, LGA 1200, DDR4 para desktop",
+      "tipo": null,
+      "marca": "WD",
+      "modelo": null,
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 800.0,
+      "valor_total": 5.6,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "LGA 1200",
+        "DDR4"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Placa mÒe, LGA 1200, DDR4 para desktop"
+    },
+    {
+      "numero_item": "12",
+      "descricao": "DescriþÒo: Hd externo 1tb 3.0",
+      "tipo": null,
+      "marca": "WD",
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": "UNID",
+      "valor_unitario": 1000.0,
+      "valor_total": 1000.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "1tb",
+        "3.0"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Hd externo 1tb 3.0"
+    },
+    {
+      "numero_item": "17",
+      "descricao": "HD SSD 480GB",
+      "tipo": null,
+      "marca": "WD",
+      "modelo": null,
+      "quantidade": 17,
+      "unidade": "UNID",
+      "valor_unitario": 250.0,
+      "valor_total": 4.25,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "HD SSD 480GB"
+      ],
+      "observacoes": null,
+      "raw_descricao": "HD SSD 480GB"
+    },
+    {
+      "numero_item": "11",
+      "descricao": "Processador core i5 3 geraþÒo ddr3",
+      "tipo": null,
+      "marca": "Intel",
+      "modelo": "i5 3 geraþÒo",
+      "quantidade": 5,
+      "unidade": "Unidades",
+      "valor_unitario": 0.0,
+      "valor_total": 2147.0,
+      "fornecedor": "Fornecedores do Governo Federal",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Processador core i5 3 geraþÒo ddr3"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Processador core i5 3 geraþÒo ddr3"
+    },
+    {
+      "numero_item": "12",
+      "descricao": "Processador core i5 4 geraþÒo ddr3",
+      "tipo": null,
+      "marca": "Intel",
+      "modelo": "i5 4 geraþÒo",
+      "quantidade": 5,
+      "unidade": "Unidades",
+      "valor_unitario": 0.0,
+      "valor_total": 2147.0,
+      "fornecedor": "Fornecedores do Governo Federal",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Processador core i5 4 geraþÒo ddr3"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Processador core i5 4 geraþÒo ddr3"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Unidade: UNID Marca: Intel           | Quantidade: 5 Val. Ref.: 0,00                 | Valor Unit.: 76,30         | Total Item: 381,50",
+      "tipo": "item",
+      "marca": "Intel",
+      "modelo": "",
+      "quantidade": 5,
+      "unidade": "Unidade",
+      "valor_unitario": 76.3,
+      "valor_total": 381.5,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Unidade"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Unidade: UNID Marca: Intel           | Quantidade: 5 Val. Ref.: 0,00                 | Valor Unit.: 76,30         | Total Item: 381,50"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Unidade: UNID Marca: Intel           | Quantidade: 5 Val. Ref.: 0,00                 | Valor Unit.: 76,30         | Total Item: 381,50 Valor Unit.: 76,30",
+      "tipo": "item",
+      "marca": "Intel",
+      "modelo": "",
+      "quantidade": 15,
+      "unidade": "Unidade",
+      "valor_unitario": 76.3,
+      "valor_total": 1144.5,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Unidade"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Unidade: UNID Marca: Intel           | Quantidade: 5 Val. Ref.: 0,00                 | Valor Unit.: 76,30         | Total Item: 381,50 Valor Unit.: 76,30"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "Unidade: UNID Marca: Intel           | Quantidade: 6 Val. Ref.: 0,00                 | Valor Unit.: 1.192,80         | Total Item: 7.156,80 Valor Unit.: 1.192,80",
+      "tipo": "item",
+      "marca": "Intel",
+      "modelo": "",
+      "quantidade": 6,
+      "unidade": "Unidade",
+      "valor_unitario": 1.1928,
+      "valor_total": 7126.0,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Unidade"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Unidade: UNID Marca: Intel           | Quantidade: 6 Val. Ref.: 0,00                 | Valor Unit.: 1.192,80         | Total Item: 7.156,80 Valor Unit.: 1.192,80"
+    },
+    {
+      "numero_item": "6",
+      "descricao": "Unidade: UNID Marca: Intel           | Quantidade: 1 Val. Ref.: 0,00                 | Valor Unit.: 372,10         | Total Item: 1.860,50 Valor Unit.: 372,10",
+      "tipo": "item",
+      "marca": "Intel",
+      "modelo": "",
+      "quantidade": 1,
+      "unidade": "Unidade",
+      "valor_unitario": 372.1,
+      "valor_total": 1860.5,
+      "fornecedor": "",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Unidade"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Unidade: UNID Marca: Intel           | Quantidade: 1 Val. Ref.: 0,00                 | Valor Unit.: 372,10         | Total Item: 1.860,50 Valor Unit.: 372,10"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "CartÒo de mem¾ria 16gb",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 10,
+      "unidade": "gb",
+      "valor_unitario": 0.0,
+      "valor_total": 58.0,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "CartÒo de mem¾ria 16gb"
+    },
+    {
+      "numero_item": "0",
+      "descricao": "Item: 21 Unidade: UNID Marca: Multilaser",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 4,
+      "unidade": "Unid",
+      "valor_unitario": 0.0,
+      "valor_total": 29.0,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Item: 21 Unidade: UNID Marca: Multilaser"
+    },
+    {
+      "numero_item": "0",
+      "descricao": "Item: 22 Unidade: UNID Marca: Multilaser",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 4,
+      "unidade": "Unid",
+      "valor_unitario": 0.0,
+      "valor_total": 29.0,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Item: 22 Unidade: UNID Marca: Multilaser"
+    },
+    {
+      "numero_item": "233",
+      "descricao": "Item: 23 Unidade: UNID Marca: Multilaser",
+      "tipo": "string ou null",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 4,
+      "unidade": "Unid",
+      "valor_unitario": 0.0,
+      "valor_total": 29.0,
+      "fornecedor": "string ou null",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "string[]"
+      ],
+      "observacoes": "string ou null",
+      "raw_descricao": "Item: 23 Unidade: UNID Marca: Multilaser"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "CartÒo de mem¾ria 64gb",
+      "tipo": "produtos/serviþos",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 6,
+      "unidade": "UNID",
+      "valor_unitario": 61.0,
+      "valor_total": 369.6,
+      "fornecedor": "Fornecedor 1",
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "CartÒo de mem¾ria 64gb"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "CartÒo de mem¾ria 128gb",
+      "tipo": "produtos/serviþos",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 6,
+      "unidade": "UNID",
+      "valor_unitario": 111.6,
+      "valor_total": 669.6,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "CartÒo de mem¾ria 128gb"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "CartÒo de mem¾ria 256gb",
+      "tipo": "produtos/serviþos",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 1,
+      "unidade": "UNID",
+      "valor_unitario": 61.0,
+      "valor_total": 61.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "CartÒo de mem¾ria 256gb"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Hub 4 portas",
+      "tipo": "produtos/serviþos",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 6,
+      "unidade": "UNID",
+      "valor_unitario": 194.9,
+      "valor_total": 1144.8,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "hub"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Hub 4 portas"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "Hub 7 portas",
+      "tipo": "produtos/serviþos",
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 8,
+      "unidade": "UNID",
+      "valor_unitario": 47.7,
+      "valor_total": 381.6,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "hub"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Hub 7 portas"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "Hub 4 portas",
+      "tipo": "produtos/serviþos",
+      "marca": "Intelbras",
+      "modelo": "Intelbras",
+      "quantidade": 4,
+      "unidade": "UNID",
+      "valor_unitario": 47.7,
+      "valor_total": 190.8,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "hub"
+      ],
+      "observacoes": "",
+      "raw_descricao": "Hub 4 portas"
+    },
+    {
+      "numero_item": "29",
+      "descricao": "Switch 16 portas",
+      "tipo": "Switch 16 portas",
+      "marca": "Intelbras",
+      "modelo": "Intelbras",
+      "quantidade": 5,
+      "unidade": "UNID",
+      "valor_unitario": 0.0,
+      "valor_total": 3.3875,
+      "fornecedor": "Intelbras",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "16"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch 16 portas"
+    },
+    {
+      "numero_item": "30",
+      "descricao": "Switch 24 portas",
+      "tipo": "Switch 24 portas",
+      "marca": "Intelbras",
+      "modelo": "Intelbras",
+      "quantidade": 3,
+      "unidade": "UNID",
+      "valor_unitario": 0.0,
+      "valor_total": 2.877,
+      "fornecedor": "Intelbras",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "24"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch 24 portas"
+    },
+    {
+      "numero_item": "1",
+      "descricao": "Switch 8 portas",
+      "tipo": "Switch 8 portas",
+      "marca": "Intelbras",
+      "modelo": "Intelbras",
+      "quantidade": 5,
+      "unidade": "UNID",
+      "valor_unitario": 0.0,
+      "valor_total": 834500000.0,
+      "fornecedor": "Intelbras",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "portas",
+        "8"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch 8 portas"
+    },
+    {
+      "numero_item": "31",
+      "descricao": "Carregador para notebook",
+      "tipo": null,
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 20,
+      "unidade": "Unidade:                                               | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                         ",
+      "valor_unitario": 114.5,
+      "valor_total": 2290.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "['Portas', 'Velocidade', 'PoE', 'PadrÒo IEEE', 'TensÒo', 'Capacidade', 'DimensÒo', 'Cor', 'Tamanho', 'Voltagem', 'Categoria do cabo']"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    | DescriþÒo: Carregador para notebook                    |"
+    },
+    {
+      "numero_item": "32",
+      "descricao": "CAIXA DE SOM, para computador, ConexÒo USB.",
+      "tipo": null,
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 10,
+      "unidade": "Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                         ",
+      "valor_unitario": 38.1,
+      "valor_total": 381.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "['Portas', 'Velocidade', 'PoE', 'PadrÒo IEEE', 'TensÒo', 'Capacidade', 'DimensÒo', 'Cor', 'Tamanho', 'Voltagem', 'Categoria do cabo']"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB."
+    },
+    {
+      "numero_item": "33",
+      "descricao": "CAIXA DE SOM, para computador, ConexÒo USB.",
+      "tipo": null,
+      "marca": "Multilaser",
+      "modelo": "Multilaser",
+      "quantidade": 1,
+      "unidade": "Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                          | Unidade: UNID                                         ",
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "['Portas', 'Velocidade', 'PoE', 'PadrÒo IEEE', 'TensÒo', 'Capacidade', 'DimensÒo', 'Cor', 'Tamanho', 'Voltagem', 'Categoria do cabo']"
+      ],
+      "observacoes": null,
+      "raw_descricao": "DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB. | DescriþÒo: CAIXA DE SOM, para computador, ConexÒo USB."
+    },
+    {
+      "numero_item": "35",
+      "descricao": "Leitor de C¾digo de Barras 1D",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 6,
+      "unidade": null,
+      "valor_unitario": 190.0,
+      "valor_total": 1144.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Leitor de C¾digo de Barras 1D"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Leitor de C¾digo de Barras 1D"
+    },
+    {
+      "numero_item": "36",
+      "descricao": "Impressora TÚrmica 80 Colunas",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 2,
+      "unidade": null,
+      "valor_unitario": 667.0,
+      "valor_total": 1334.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Impressora TÚrmica 80 Colunas"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Impressora TÚrmica 80 Colunas"
+    },
+    {
+      "numero_item": "37",
+      "descricao": "Projetor de multimidia, (Data show) svga 800x600 4000 lumines3lcd, hdmi, usb. Garantia mÝnima de 12 meses.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 1,
+      "unidade": null,
+      "valor_unitario": 5333.0,
+      "valor_total": 63336.0,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "Projetor de multimidia",
+        "(Data show) svga 800x600 4000 lumines3lcd, hdmi, usb. Garantia mÝnima de 12 meses."
+      ],
+      "observacoes": null,
+      "raw_descricao": "Projetor de multimidia, (Data show) svga 800x600 4000 lumines3lcd, hdmi, usb. Garantia mÝnima de 12 meses."
+    },
+    {
+      "numero_item": "45",
+      "descricao": "TABLET DE 10 POLEGADAS, com 128GB de armazenamento, 4GB de mem¾ria, Wifi 5.0 Ghz, Wifi 2.4Ghz, suporte para CHIP 4G",
+      "tipo": "tablet",
+      "marca": "Multilaser",
+      "modelo": "Tablet de 10 polegadas",
+      "quantidade": 20,
+      "unidade": "UNID",
+      "valor_unitario": 1145.0,
+      "valor_total": 22900.0,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "resoluþÒo de tela",
+        "suporte para CHIP 4G"
+      ],
+      "observacoes": null,
+      "raw_descricao": "PREGOEIRO: JAMES BARBOSA GALV├O\nTABLET DE 10 POLEGADAS, com 128GB de armazenamento, 4GB de mem¾ria, Wifi 5.0 Ghz, Wifi 2.4Ghz, suporte para CHIP 4G"
+    },
+    {
+      "numero_item": "44",
+      "descricao": "NOVELBOO 8GB, com SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb",
+      "tipo": "computador",
+      "marca": "Pixxo",
+      "modelo": "NOVELBOO 8GB",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 1697.6,
+      "valor_total": 13695.2,
+      "fornecedor": "Pixxo",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "processador core i5",
+        "SSD 120GB"
+      ],
+      "observacoes": null,
+      "raw_descricao": "NOVELBOO 8GB, com SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb\nNOVELBOO 8GB, com SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb"
+    },
+    {
+      "numero_item": "43",
+      "descricao": "NOVELBOO 8GB, com processador core i3 no mÝnimo 6 geraþÒo ddr4, SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb",
+      "tipo": "computador",
+      "marca": "Pixxo",
+      "modelo": "NOVELBOO 8GB",
+      "quantidade": 5,
+      "unidade": "UNID",
+      "valor_unitario": 1938.5,
+      "valor_total": 13694.0,
+      "fornecedor": "Pixxo",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "processador core i3",
+        "SSD 120GB"
+      ],
+      "observacoes": null,
+      "raw_descricao": "NOVELBOO 8GB, com processador core i3 no mÝnimo 6 geraþÒo ddr4, SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb\nNOVELBOO 8GB, com processador core i3 no mÝnimo 6 geraþÒo ddr4, SSD 120GB no mÝnimo 8 geraþÒo ddr4 com hdssd 120gb"
+    },
+    {
+      "numero_item": "42",
+      "descricao": "PLACA DE V═DEO 4GB DDR5, resoluþÒo 128bits",
+      "tipo": "placa de vÝdeo",
+      "marca": "Vxpro",
+      "modelo": "Placa de vÝdeo 4GB DDR5",
+      "quantidade": 14,
+      "unidade": "UNID",
+      "valor_unitario": 1690.3,
+      "valor_total": 23738.0,
+      "fornecedor": "Vxpro",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "resoluþÒo de tela",
+        "suporte para DDR5"
+      ],
+      "observacoes": null,
+      "raw_descricao": "PLACA DE V═DEO 4GB DDR5, resoluþÒo 128bits\nPLACA DE V═DEO 4GB DDR5, resoluþÒo 128bits"
+    },
+    {
+      "numero_item": "41",
+      "descricao": "COMPUTADOR COM PROCESSADOR CORE I3 NO MINIMO 6 GERACAO DDDR4, SSD 120GB, 8GB DE MEMORIA DDR4, TECLADO, MOUSE E MONITOR DE P┴RTE",
+      "tipo": "computador",
+      "marca": "Pixxo",
+      "modelo": "Computador com processador core i3 no mÝnimo 6 geraþÒo ddr4",
+      "quantidade": 7,
+      "unidade": "UNID",
+      "valor_unitario": 1697.6,
+      "valor_total": 11894.0,
+      "fornecedor": "Pixxo",
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        "processador core i3",
+        "SSD 120GB"
+      ],
+      "observacoes": null,
+      "raw_descricao": "COMPUTADOR COM PROCESSADOR CORE I3 NO MINIMO 6 GERACAO DDDR4, SSD 120GB, 8GB DE MEMORIA DDR4, TECLADO, MOUSE E MONITOR DE P┴RTE\nCOMPUTADOR COM PROCESSADOR CORE I3 NO MINIMO 6 GERACAO DDDR4, SSD 120GB, 8GB DE MEMORIA DDR4, TECLADO, MOUSE E MONITOR DE P┴RTE"
+    },
+    {
+      "numero_item": "39",
+      "descricao": "IMPRESSORA MULTIFUNCIONAL TANQUE DE TINTA, com book, Tecnologia de impressÒo: Jato de tinta Heat-FreeMicroPiezo, ResoluþÒo mÝnima de impressÒo: 5760 x 1440 dpi, Velocidade de impressÒo ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressÒo: AtÚ 33 ppm em preto e 8 ppm em cores",
+      "tipo": "impresaora",
+      "marca": "Multilaser",
+      "modelo": "Impressora multifuncional tanque de tinta",
+      "quantidade": 20,
+      "unidade": "UNID",
+      "valor_unitario": 22900.0,
+      "valor_total": 458000.0,
+      "fornecedor": "Multilaser",
+      "cnpj_fornecedor": null,
+      "especificacoes": [],
+      "observacoes": null,
+      "raw_descricao": "IMPRESSORA MULTIFUNCIONAL TANQUE DE TINTA, com book, Tecnologia de impressÒo: Jato de tinta Heat-FreeMicroPiezo, ResoluþÒo mÝnima de impressÒo: 5760 x 1440 dpi, Velocidade de impressÒo ISO: 10 ppm em preto e 5 ppm em cores (A4/carta), Velocidade de impressÒo: AtÚ 33 ppm em preto e 8 ppm em cores"
+    }
+  ],
+  "tokens_usados": 54198,
+  "aviso": "texto dividido em 26 chunks | erro chunk 19: LLM retornou JSON invßlido: Unterminated string starting at: line 90 column 20 (char 5931)"
+}

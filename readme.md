@@ -85,6 +85,31 @@ Score Final
 
 ---
 
+## Integracao CRM (Bid Buddy)
+
+O projeto agora pode publicar o CRM do diretÃ³rio `bid-buddy/` dentro do site principal da Tor na rota `/crm/`.
+
+### Como funciona
+
+1. O repositÃ³rio `bid-buddy/` continua separado.
+2. O script `scripts/sync-bid-buddy.mjs` gera um build do CRM com base `/crm/`.
+3. Os arquivos compilados sÃ£o copiados para `frontend/public/crm/`.
+4. O frontend principal incorpora esse build na rota `/crm` e o Nginx faz fallback para `/crm/index.html`.
+
+### Fluxo recomendado de atualizacao
+
+```bash
+node ./scripts/sync-bid-buddy.mjs --pull
+cd frontend
+npm run build:all
+```
+
+### Build em container
+
+O `docker-compose.yaml` e o `frontend/Dockerfile` agora constroem o site principal junto com o CRM embarcado, para que a publicaÃ§Ã£o saia pronta no mesmo deploy.
+
+---
+
 ## Estrutura de Pastas
 
 ```

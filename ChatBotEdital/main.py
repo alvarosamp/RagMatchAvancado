@@ -22,10 +22,20 @@ import os
 import pickle
 import sys
 import time
+import warnings
 from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
+
+
+# Silencia warnings conhecidos de libs de terceiros (docling/pydantic v2).
+warnings.filterwarnings(
+    "ignore",
+    message=r'.*protected namespace "model_".*',
+    category=UserWarning,
+    module=r"pydantic\._internal\._fields",
+)
 
 
 # ── Logger simples com timestamp ────────────────────────────────────────────
@@ -51,7 +61,8 @@ except ImportError as _e:
 
 # ── Config via env ──────────────────────────────────────────────────────────
 def _env(name: str, default: str) -> str:
-    return os.environ.get(name, default)
+    # Remove espaços/quebras de linha acidentais vindos do .env
+    return os.environ.get(name, default).strip()
 
 PROVIDER          = _env("LLM_PROVIDER",       "ollama")
 OLLAMA_MODEL      = _env("OLLAMA_MODEL",        "llama3.1:8b")
@@ -251,12 +262,84 @@ def load_or_build_store(pdf_path: str) -> VectorStore:
 # ── LLM (com streaming) ─────────────────────────────────────────────────────
 def _stream_ollama(messages: list) -> str:
     import ollama
+    from ollama import ResponseError
+
+    def _to_prompt(msgs: list[dict]) -> str:
+        parts = []
+        for m in msgs:
+            role = (m.get("role") or "user").upper()
+            content = (m.get("content") or "").strip()
+            if content:
+                parts.append(f"[{role}]\n{content}")
+        parts.append("[ASSISTANT]\n")
+        return "\n\n".join(parts)
+
+    requested_model = OLLAMA_MODEL.strip()
+    tried = [requested_model]
+
+    # Alguns ambientes registram o modelo com sufixo :latest.
+    if ":" not in requested_model:
+        tried.append(f"{requested_model}:latest")
+
+    if requested_model.endswith(":latest"):
+        tried.append(requested_model.removesuffix(":latest"))
+
+    # Resolve para o nome exatamente como o servidor anuncia via ollama list.
+    try:
+        listed_models = [m.model for m in ollama.list().models]
+    except Exception:
+        listed_models = []
+
+    if requested_model in listed_models:
+        tried.insert(0, requested_model)
+    else:
+        req_base = requested_model.split(":", 1)[0]
+        for listed in listed_models:
+            listed_base = listed.split(":", 1)[0]
+            if listed_base == req_base:
+                tried.insert(0, listed)
+                break
+
+    # Remove duplicados preservando ordem.
+    models_to_try = list(dict.fromkeys(tried))
+
     full = ""
-    for chunk in ollama.chat(model=OLLAMA_MODEL, messages=messages, stream=True):
-        piece = chunk["message"]["content"]
-        print(piece, end="", flush=True)
-        full += piece
-    print()
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            for chunk in ollama.chat(model=model_name, messages=messages, stream=True):
+                piece = chunk["message"]["content"]
+                print(piece, end="", flush=True)
+                full += piece
+            print()
+            return full
+        except ResponseError as exc:
+            if exc.status_code != 404:
+                raise
+            last_error = exc
+            _log("LLM", f"Modelo '{model_name}' não encontrado no Ollama (404). Tentando próximo alias...")
+            # Fallback: alguns ambientes aceitam generate mesmo quando chat falha.
+            try:
+                prompt = _to_prompt(messages)
+                full = ""
+                for chunk in ollama.generate(model=model_name, prompt=prompt, stream=True):
+                    piece = chunk.get("response", "")
+                    print(piece, end="", flush=True)
+                    full += piece
+                print()
+                _log("LLM", f"Usando fallback generate() com modelo '{model_name}'.")
+                return full
+            except ResponseError as gen_exc:
+                if gen_exc.status_code != 404:
+                    raise
+                _log("LLM", f"Fallback generate também não encontrou '{model_name}' (404).")
+
+    if last_error is not None:
+        raise RuntimeError(
+            "Nenhum alias do modelo Ollama foi encontrado. "
+            f"Tentados: {', '.join(models_to_try)}"
+        ) from last_error
+
     return full
 
 

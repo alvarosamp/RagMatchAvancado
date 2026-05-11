@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import hashlib
+import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field, asdict
@@ -18,8 +19,24 @@ import ollama
 # quem usar persistência deve ajustar o PYTHONPATH ou fornecer um stub.
 try:
     from shared import db  # comente se não quiser persistência aqui
-except Exception:
+except Exception: 
     db = None
+
+
+def _load_shared_db_fallback():
+    api_dir = Path(__file__).resolve().parents[1] / "apiPncp"
+    api_dir_str = str(api_dir)
+    if api_dir.exists() and api_dir_str not in sys.path:
+        sys.path.insert(0, api_dir_str)
+    try:
+        from shared import db as shared_db  # type: ignore
+        return shared_db
+    except Exception:
+        return None
+
+
+if db is None:
+    db = _load_shared_db_fallback()
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +46,11 @@ logger = logging.getLogger(__name__)
 
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-MAX_CHARS_POR_CHUNK = int(os.environ.get("MAX_CHARS_POR_CHUNK", "10000"))
+MAX_CHARS_POR_CHUNK = int(os.environ.get("MAX_CHARS_POR_CHUNK", "3500"))
 TEMPERATURE = float(os.environ.get("OLLAMA_TEMPERATURE", "0.0"))
-NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "4096"))
+NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "2048"))
+NUM_CTX = int(os.environ.get("OLLAMA_NUM_CTX", "4096"))
+LLM_EXTRACTION_MODE = os.environ.get("LLM_EXTRACTION_MODE", "balanced").strip().lower()
 
 # ──────────────────────────────────────────
 # Tipos de saída
@@ -111,6 +130,8 @@ REGRAS DE EXTRAÇÃO:
 - Preserve o texto original do item em raw_descricao.
 - Limpe a descrição removendo prefixos como "LOTE 1:", "ITEM 3:", quando eles não fizerem parte do nome do produto.
 - Se houver vários fornecedores, associe o fornecedor correto a cada item quando isso estiver explícito.
+- O campo numero_item deve conter apenas o identificador do item (ex.: 1, 2, 10). Nunca use CNPJ nesse campo.
+- Se houver CNPJ, ele deve ir somente em cnpj_fornecedor.
 
 REGRAS DE VALORES:
 - Use número float com ponto decimal.
@@ -163,7 +184,7 @@ USER_TEMPLATE_ITEM = (
     "Se o bloco não for um item real contratável, retorne um objeto com todos os campos null e raw_descricao com o texto original.\n"
     "Nunca invente dados. Inclua sempre raw_descricao.\n"
     "Use exatamente este formato de objeto:\n"
-    "{\"numero_item\": null, \"descricao\": null, \"raw_descricao\": null, \"tipo\": null, \"marca\": null, \"modelo\": null, \"quantidade\": null, \"unidade\": null, \"valor_unitario\": null, \"valor_total\": null, \"fornecedor\": null, \"cnpj_fornecedor\": null, \"especificacoes\": [], \"observacoes\": null}\n\n"
+    '{{"numero_item": null, "descricao": null, "raw_descricao": null, "tipo": null, "marca": null, "modelo": null, "quantidade": null, "unidade": null, "valor_unitario": null, "valor_total": null, "fornecedor": null, "cnpj_fornecedor": null, "especificacoes": [], "observacoes": null}}\n\n'
     "Bloco:\n{texto_item}"
 )
 
@@ -201,7 +222,7 @@ def _repair_json_with_ollama(resposta_raw: str) -> str:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        options={"temperature": 0.0, "num_predict": NUM_PREDICT},
+        options={"temperature": 0.0, "num_predict": NUM_PREDICT, "num_ctx": NUM_CTX},
     )
 
     repaired = None
@@ -244,8 +265,14 @@ def _dividir_em_chunks(texto: str, max_chars: int = MAX_CHARS_POR_CHUNK) -> list
 
 
 def _split_into_item_blocks(texto: str) -> list[str]:
-    """Tenta dividir o texto em blocos por item usando heurísticas."""
-    pattern = re.compile(r"(?im)^(?:item\s+\d+|\d{1,4}\s*[\.\-\)]\s+)")
+    """Tenta dividir o texto em blocos por item usando heurísticas.
+
+    Só ativa se o documento tiver marcadores explícitos de item (ex.: "Item 1",
+    "ITEM: 3"), evitando confundir numerações de cláusulas ("7. Das sanções")
+    com itens reais. Documentos com itens em tabela Markdown são tratados
+    pelo chunk-mode, que extrai tabelas corretamente.
+    """
+    pattern = re.compile(r"(?im)^(?:item\s+\d+|item\s*[:\-]\s*\d+)")
     matches = list(pattern.finditer(texto))
     if len(matches) < 3:
         return []
@@ -259,6 +286,24 @@ def _split_into_item_blocks(texto: str) -> list[str]:
             blocks.append(block)
 
     return blocks
+
+
+def _get_extraction_mode() -> str:
+    if LLM_EXTRACTION_MODE in {"fast", "balanced", "accurate"}:
+        return LLM_EXTRACTION_MODE
+    logger.warning("[LLM] LLM_EXTRACTION_MODE inválido '%s'; usando 'balanced'", LLM_EXTRACTION_MODE)
+    return "balanced"
+
+
+def _should_use_item_mode(item_blocks: list[str], mode: str) -> bool:
+    if not item_blocks:
+        return False
+    total = len(item_blocks)
+    if mode == "fast":
+        return 3 <= total <= 20
+    if mode == "balanced":
+        return 3 <= total <= 45
+    return total >= 3
 
 
 # ──────────────────────────────────────────
@@ -284,6 +329,139 @@ def _normalize_text_for_dedupe(s: str) -> str:
     return s
 
 
+_RE_LOTE_LINE = re.compile(r"(?im)^\s*lote\s*(\d+)\s*$")
+_RE_ITEM_LINE = re.compile(r"(?im)^\s*(?:item\s*:|item\b)\s*(\d+)\s*$")
+
+# Helpers para reparo de quebra de página (markdown exportado pelo Docling)
+_RE_ITEM_REF = re.compile(r"(?i)\bitem\s*:\s*(\d+)")
+_RE_DESCRICAO = re.compile(r"(?i)descri[çc][aã]o\s*:")
+_MAX_LOOKAHEAD = 35
+
+
+def _reparar_quebra_pagina(texto: str) -> str:
+    """Reconecta itens partidos por quebra de página entre Item e Descrição."""
+    if not texto:
+        return texto
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    n = len(lines)
+    injections: dict[int, str] = {}
+
+    for i, line in enumerate(lines):
+        m_item = _RE_ITEM_REF.search(line)
+        if not m_item:
+            continue
+        if _RE_DESCRICAO.search(line):
+            continue
+
+        item_num = m_item.group(1)
+        for j in range(i + 1, min(i + _MAX_LOOKAHEAD + 1, n)):
+            next_line = lines[j]
+            if _RE_ITEM_REF.search(next_line):
+                break
+            if _RE_DESCRICAO.search(next_line) and not _RE_ITEM_REF.search(next_line):
+                if j not in injections:
+                    injections[j] = item_num
+                break
+
+    if not injections:
+        return texto
+
+    result: list[str] = []
+    for i, line in enumerate(lines):
+        if i in injections:
+            result.append(f"Item: {injections[i]}")
+        result.append(line)
+
+    logger.info("[LLM] _reparar_quebra_pagina: %s injeção(ões)", len(injections))
+    return "\n".join(result)
+
+
+def _inferir_lote_por_item(texto: str, max_line_distance: int = 60) -> dict[str, str]:
+    """Infere um mapa item->lote pela proximidade entre linhas no texto."""
+    if not texto:
+        return {}
+
+    lines = texto.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    lote_positions: list[tuple[int, str]] = []
+    item_positions: list[tuple[int, str]] = []
+
+    for idx, line in enumerate(lines):
+        m_lote = _RE_LOTE_LINE.match(line)
+        if m_lote:
+            lote_positions.append((idx, m_lote.group(1)))
+            continue
+        m_item = _RE_ITEM_LINE.match(line)
+        if m_item:
+            item_positions.append((idx, m_item.group(1)))
+
+    if not lote_positions or not item_positions:
+        return {}
+
+    mapping: dict[str, str] = {}
+    for item_idx, item_num in item_positions:
+        best: tuple[int, str] | None = None
+        for lote_idx, lote_num in lote_positions:
+            dist = abs(item_idx - lote_idx)
+            if dist > max_line_distance:
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, lote_num)
+        if best is not None:
+            mapping[str(item_num).strip()] = str(best[1]).strip()
+
+    return mapping
+
+
+def _anexar_lote_em_observacoes(itens: list[ItemAta], lote_por_item: dict[str, str]) -> None:
+    if not itens or not lote_por_item:
+        return
+
+    for item in itens:
+        numero_item = (item.numero_item or "").strip()
+        if not numero_item:
+            continue
+
+        lote = lote_por_item.get(numero_item)
+        if not lote:
+            continue
+
+        tag = f"LOTE {lote}"
+        if not item.observacoes:
+            item.observacoes = tag
+        elif tag.lower() not in item.observacoes.lower():
+            item.observacoes = f"{tag} | {item.observacoes}"
+
+
+def _remover_itens_cabecalho_lote(items: list[dict]) -> list[dict]:
+    """Remove registros que são apenas cabeçalho 'LOTE X' sem payload útil."""
+    cleaned: list[dict] = []
+    for d in items:
+        texto = str(d.get("raw_descricao") or d.get("descricao") or "").strip()
+        texto_norm = re.sub(r"\s+", " ", texto).strip()
+
+        is_only_lote = bool(re.fullmatch(r"(?i)lote\s*\d+\s*[:\-\)]?", texto_norm))
+        has_any_payload = any(
+            d.get(k) not in (None, "", [])
+            for k in (
+                "quantidade",
+                "unidade",
+                "valor_unitario",
+                "valor_total",
+                "marca",
+                "modelo",
+                "fornecedor",
+                "cnpj_fornecedor",
+                "especificacoes",
+            )
+        )
+
+        if is_only_lote and not has_any_payload:
+            continue
+        cleaned.append(d)
+    return cleaned
+
+
 def _is_lote_prefix(s: str) -> str | None:
     if not s:
         return None
@@ -291,16 +469,100 @@ def _is_lote_prefix(s: str) -> str | None:
     return cleaned
 
 
+def _only_digits(s: str) -> str:
+    return re.sub(r"\D", "", s or "")
+
+
+def _looks_like_cnpj(value: str | None) -> bool:
+    if not value:
+        return False
+    digits = _only_digits(str(value))
+    return len(digits) == 14
+
+
+def _format_cnpj(value: str | None) -> str | None:
+    if not value:
+        return None
+    digits = _only_digits(str(value))
+    if len(digits) != 14:
+        return None
+    return f"{digits[0:2]}.{digits[2:5]}.{digits[5:8]}/{digits[8:12]}-{digits[12:14]}"
+
+
+def _extract_numero_item_from_text(texto: str | None) -> str | None:
+    if not texto:
+        return None
+    m = re.search(r"(?i)\bitem\s*[:\-]?\s*(\d{1,4})\b", texto)
+    if m:
+        return m.group(1)
+    return None
+
+
+def _normalize_numero_item(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    raw = str(value).strip()
+    if not raw:
+        return None
+    if _looks_like_cnpj(raw):
+        return None
+
+    cleaned = re.sub(r"(?i)^\s*(?:item|it\.?)\s*[:\-]?\s*", "", raw).strip()
+
+    if re.fullmatch(r"\d{1,4}", cleaned):
+        return cleaned
+
+    if re.fullmatch(r"\d{1,4}[a-zA-Z]", cleaned):
+        return cleaned.upper()
+
+    if re.fullmatch(r"\d{1,4}[\.-]\d{1,2}", cleaned):
+        return cleaned
+
+    return None
+
+
+def _extract_cnpj_from_text(texto: str | None) -> str | None:
+    if not texto:
+        return None
+    m = re.search(r"\b\d{2}[\./]?\d{3}[\./]?\d{3}[\/-]?\d{4}[\.-]?\d{2}\b", texto)
+    if not m:
+        return None
+    return _format_cnpj(m.group(0))
+
+
 def _looks_like_juridical_text(texto: str) -> bool:
     if not texto:
         return True
     t = _normalize_text_for_dedupe(texto)
     juridicos = [
-        "negociacao precos", "sancoes", "vigencia", "cancelamento",
-        "reajuste", "penalidade", "recurso", "adesao", "lei 14133",
-        "orgao gerenciador", "cadastro reserva", "administracao publica"
+        "negociacao precos", "sancoes", "sancao", "vigencia", "cancelamento",
+        "reajuste", "penalidade", "recurso", "adesao", "lei 14133", "lei 14 133",
+        "orgao gerenciador", "cadastro reserva", "administracao publica",
+        "descumprir", "sofrer sancao", "nota empenho", "diario oficial",
+        "ampla defesa", "contraditorio", "incisos", "paragrafo", "artigo",
+        "impedimento licitar", "inidoneidade", "multa", "processo administrativo",
+        "registro fornecedor", "decreto", "portaria",
     ]
     return any(j in t for j in juridicos)
+
+
+def _looks_like_institutional_text(texto: str) -> bool:
+    if not texto:
+        return False
+    t = _normalize_text_for_dedupe(texto)
+    institucionais = [
+        "municipio", "prefeitura", "secretaria", "camara", "governo",
+        "ubatuba", "cnpj", "orgao", "administracao",
+    ]
+    return any(k in t for k in institucionais)
+
+
+def _looks_like_total_line(texto: str) -> bool:
+    if not texto:
+        return False
+    t = _normalize_text_for_dedupe(texto)
+    return t.startswith("total") or " total item " in f" {t} "
 
 
 def _clean_item_dict(d: dict) -> dict:
@@ -311,12 +573,36 @@ def _clean_item_dict(d: dict) -> dict:
     }
     new = {k: d.get(k) for k in allowed}
 
+    # Preserva o texto original do item (raw_descricao) e limpa apenas a descricao.
+    # O raw é usado como referência para inferências (ex.: numero_item, CNPJ) e auditoria.
     if not new.get("raw_descricao") and new.get("descricao"):
         new["raw_descricao"] = new["descricao"]
 
-    for key in ("raw_descricao", "descricao"):
-        if new.get(key):
-            new[key] = _is_lote_prefix(str(new[key]))
+    if new.get("raw_descricao") is not None:
+        new["raw_descricao"] = str(new["raw_descricao"]).strip()
+
+    if new.get("descricao") is not None:
+        new["descricao"] = _is_lote_prefix(str(new["descricao"]))
+
+    # Corrige troca comum: CNPJ veio em numero_item.
+    if _looks_like_cnpj(str(new.get("numero_item") or "")) and not new.get("cnpj_fornecedor"):
+        new["cnpj_fornecedor"] = _format_cnpj(str(new.get("numero_item")))
+        new["numero_item"] = None
+
+    # Normaliza numero_item e tenta recuperar a partir do texto quando ausente/inválido.
+    normalized_num = _normalize_numero_item(new.get("numero_item"))
+    if normalized_num is None:
+        fallback_num = _extract_numero_item_from_text(str(new.get("raw_descricao") or ""))
+        normalized_num = _normalize_numero_item(fallback_num)
+    new["numero_item"] = normalized_num
+
+    # Normaliza CNPJ e tenta inferir pelo texto do fornecedor/descrição.
+    cnpj = _format_cnpj(str(new.get("cnpj_fornecedor") or ""))
+    if not cnpj:
+        cnpj = _extract_cnpj_from_text(str(new.get("fornecedor") or ""))
+    if not cnpj:
+        cnpj = _extract_cnpj_from_text(str(new.get("raw_descricao") or ""))
+    new["cnpj_fornecedor"] = cnpj
 
     if isinstance(new.get("especificacoes"), list):
         new["especificacoes"] = [str(x).strip() for x in new["especificacoes"] if str(x).strip()]
@@ -386,6 +672,38 @@ def _filter_invalid_items(items: list[dict]) -> list[dict]:
         if not tem_conteudo:
             continue
 
+        # Rejeita itens sem nenhum dado técnico ou financeiro real.
+        # quantidade sozinha não é suficiente — o modelo frequentemente preenche
+        # quantidade=1 para texto de cláusulas. Exige ao menos valor, marca, unidade ou fornecedor.
+        tem_payload_real = any([
+            d.get("valor_unitario") is not None,
+            d.get("valor_total") is not None,
+            d.get("marca"),
+            d.get("modelo"),
+            d.get("unidade"),
+            d.get("fornecedor"),
+        ])
+        if not tem_payload_real:
+            continue
+
+        # Evita manter item cujo numero_item claramente não é um identificador de item.
+        numero = d.get("numero_item")
+        if numero and _normalize_numero_item(str(numero)) is None:
+            d["numero_item"] = None
+
+        # Bloqueia falso positivo institucional (ex.: nome do órgão como "item").
+        if not d.get("numero_item"):
+            desc_txt = str(d.get("descricao") or d.get("raw_descricao") or "")
+            has_technical_payload = any([
+                d.get("marca"),
+                d.get("modelo"),
+                d.get("unidade"),
+            ])
+            if _looks_like_total_line(desc_txt):
+                continue
+            if _looks_like_institutional_text(desc_txt) and not has_technical_payload:
+                continue
+
         out.append(d)
     return out
 
@@ -422,6 +740,7 @@ def _chamar_llm(texto_chunk: str) -> tuple[dict, int]:
         options={
             "temperature": TEMPERATURE,
             "num_predict": NUM_PREDICT,
+            "num_ctx": NUM_CTX,
         },
     )
 
@@ -458,6 +777,7 @@ def _chamar_llm_item(texto_item: str) -> tuple[dict, int]:
         options={
             "temperature": TEMPERATURE,
             "num_predict": NUM_PREDICT,
+            "num_ctx": NUM_CTX,
         },
     )
 
@@ -557,6 +877,8 @@ def analisar_ata(
         logger.warning("[LLM] Texto vazio para %s", id_pncp)
         return ResultadoAnalise(id_pncp=id_pncp, aviso="texto vazio")
 
+    mode = _get_extraction_mode()
+
     guessed_id = _extract_id_pncp(texto)
     if not id_pncp and guessed_id:
         id_pncp = guessed_id
@@ -573,13 +895,19 @@ def analisar_ata(
     except Exception as e:
         logger.warning("Falha ao salvar md: %s", e)
 
-    logger.info("[LLM] Iniciando: %s (%s chars)", label, len(texto))
+    logger.info("[LLM] Iniciando: %s (%s chars) | mode=%s", label, len(texto), mode)
+
+    # Corrige quebras de página entre cabeçalho do item e sua descrição.
+    texto = _reparar_quebra_pagina(texto)
+
+    # Inferência de lote por item para manter paridade com o pipeline GPT.
+    lote_por_item = _inferir_lote_por_item(texto)
 
     item_blocks = _split_into_item_blocks(texto)
     total_tokens = 0
     aviso = None
 
-    if item_blocks:
+    if _should_use_item_mode(item_blocks, mode):
         logger.info("[LLM] Detectados %s blocos de item — usando item-mode", len(item_blocks))
         chunks = _dividir_em_chunks(texto)
         try:
@@ -621,6 +949,7 @@ def analisar_ata(
 
         dados = meta_dados or {}
         itens_clean = [_clean_item_dict(d) for d in itens_raw]
+        itens_clean = _remover_itens_cabecalho_lote(itens_clean)
         itens_clean = _filter_invalid_items(itens_clean)
         itens_clean = _dedupe_items(itens_clean)
         dados["itens"] = itens_clean
@@ -644,10 +973,13 @@ def analisar_ata(
 
         dados = _mesclar_chunks(resultados_raw)
         itens_clean = [_clean_item_dict(d) for d in (dados.get("itens") or [])]
+        itens_clean = _remover_itens_cabecalho_lote(itens_clean)
         itens_clean = _filter_invalid_items(itens_clean)
         itens_clean = _dedupe_items(itens_clean)
         dados["itens"] = itens_clean
         itens = [_para_item(d) for d in (dados.get("itens") or [])]
+
+    _anexar_lote_em_observacoes(itens, lote_por_item)
 
     resultado = ResultadoAnalise(
         id_pncp=id_pncp,

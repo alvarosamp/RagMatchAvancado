@@ -3,15 +3,14 @@ Recebo os chunks do Docling e aplica uma estrategia de sliding window
 para garantir contexto suficiente em cada chunk antes de embeder
 '''
 from __future__ import annotations
-from dataclasses import dataclass
+from typing import NamedTuple
 from app.pipeline.docling_parser import ParsedChunk, ParsedDocument
 from app.logs.config import logger
 
-@dataclass
-class TextChunker:
-    chunk_idx : int
-    text : str
-    char_count : int
+class TextChunker(NamedTuple):
+    chunk_idx: int
+    text: str
+    char_count: int
     
     
 #Configuração
@@ -68,8 +67,10 @@ def _apply_sliding_window(
 
     for block in blocks:
         if len(block) <= max_chars:
-            result.append(TextChunker(chunk_idx=idx, text=block, char_count=len(block)))
-            idx += 1
+            text = block.strip()
+            if text:
+                result.append(TextChunker(chunk_idx=idx, text=text, char_count=len(text)))
+                idx += 1
         else:
             start = 0
             while start < len(block):

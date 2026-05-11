@@ -1,0 +1,21 @@
+{
+  "numero_ata": "16,02",
+  "orgao": "Ministério da Saúde",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "ELETROFORESE DE HEMOGLOBINA",
+  "itens": [
+    {
+      "numero_item": "63",
+      "descricao": "ELETROFORESE DE PROTEINAS",
+      "raw_descricao": "ELETROFORESE DE PROTEINAS DE HEMOGLOBINA",
+      "tipo": null,
+      "marca": "exames",
+      "modelo": "laboratorio",
+      "quantidade": 32.52,
+      "unidade": "UN",
+      "valor_unitario": 4.63,
+      "valor_total": 16
+    }
+  ]
+}

@@ -275,12 +275,27 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
     else:
         try:
             import ollama
+            ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
             ollama_model = os.getenv("OLLAMA_MODEL", "llama3")
-            resp = ollama.chat(model=ollama_model, messages=messages)
+
+            # Usa client explícito para respeitar host do Docker e reduzir falhas intermitentes.
+            client = ollama.Client(host=ollama_host)
+            try:
+                resp = client.chat(model=ollama_model, messages=messages)
+            except Exception:
+                # Primeiro request pode falhar enquanto o modelo ainda está subindo.
+                resp = client.chat(model=ollama_model, messages=messages)
+
             return resp["message"]["content"].strip(), ollama_model
         except Exception as e:
             logger.error("[Chat] Falha Ollama: %s", e)
-            raise HTTPException(status_code=502, detail=f"Erro ao chamar Ollama: {e}")
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Erro ao chamar Ollama ({os.getenv('OLLAMA_MODEL', 'llama3')}): {e}. "
+                    "Verifique se o container 'ollama' está saudável e se o modelo foi baixado por completo."
+                ),
+            )
 
 
 @router.post("/{edital_id}/chat", response_model=ChatResponse)

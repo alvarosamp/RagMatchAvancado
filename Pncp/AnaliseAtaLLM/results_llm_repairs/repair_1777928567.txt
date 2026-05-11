@@ -1,0 +1,137 @@
+{
+  "numero_ata": "6.1.2",
+  "orgao": null,
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "6.1.3. Na hipótese de previsão no edital de cláusula de reajustamento sobre os preços registrados, nos termos da Lei nº 14.133, de 2021.",
+  "itens": [
+    {
+      "numero_item": null,
+      "descricao": "6.1.3.1. No caso do reajustamento, deverá ser respeitada a contagem da anualidade e o índice previsto em edital.",
+      "raw_descricao": "6.1.3.1. No caso do reajustamento, deverá ser respeitada a contagem da anualidade e o índice previsto em edital.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["índice previsto em edital"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 1,
+      "descricao": "6.1.3.2. Caso não aceite reduzir seu preço aos valores praticados pelo mercado, o fornecedor será liberado do compromisso assumido quanto ao item registrado, sem aplicação de penalidades administrativas.",
+      "raw_descricao": "6.1.3.2. Caso não aceite reduzir seu preço aos valores praticados pelo mercado, o fornecedor será liberado do compromisso assumido quanto ao item registrado, sem aplicação de penalidades administrativas.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["reduzir preço aos valores praticados pelo mercado"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 2,
+      "descricao": "6.1.3.3. Se não obtiver êxito nas negociações, o órgão ou entidade gerenciadora procederá ao cancelamento da ata de registro de preços, nos termos do item 8.4, e adotará as medidas cabíveis para a obtenção da contratação mais vantajosa.",
+      "raw_descricao": "6.1.3.3. Se não obtiver êxito nas negociações, o órgão ou entidade gerenciadora procederá ao cancelamento da ata de registro de preços, nos termos do item 8.4, e adotará as medidas cabíveis para a obtenção da contratação mais vantajosa.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["cancelamento da ata de registro de preços"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 3,
+      "descricao": "6.1.3.4. Na hipótese de o preço registrado tornar-se superior ao preço praticado no mercado por motivo superveniente, o órgão ou entidade gerenciadora convocará o fornecedor para negociar a redução do preço registrado.",
+      "raw_descricao": "6.1.3.4. Na hipótese de o preço registrado tornar-se superior ao preço praticado no mercado por motivo superveniente, o órgão ou entidade gerenciadora convocará o fornecedor para negociar a redução do preço registrado.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["negociar a redução do preço registrado"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 4,
+      "descricao": "6.1.3.5. Na hipótese prevista no item anterior, o gerenciador convocará os fornecedores do cadastro de reserva, na ordem de classificação, para verificar se aceitam reduzir seus preços aos valores de mercado e não convocará os licitantes ou fornecedores que tiveram seu registro cancelado.",
+      "raw_descricao": "6.1.3.5. Na hipótese prevista no item anterior, o gerenciador convocará os fornecedores do cadastro de reserva, na ordem de classificação, para verificar se aceitam reduzir seus preços aos valores de mercado e não convocará os licitantes ou fornecedores que tiveram seu registro cancelado.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["verificar se aceitam reduzir seus preços aos valores de mercado"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 5,
+      "descricao": "6.1.3.6. Neste caso, o fornecedor encaminhará, juntamente com o pedido de alteração, a documentação comprobatória ou a planilha de custos que demonstre a inviabilidade do preço registrado em relação às condições inicialmente pactuadas.",
+      "raw_descricao": "6.1.3.6. Neste caso, o fornecedor encaminhará, juntamente com o pedido de alteração, a documentação comprobatória ou a planilha de custos que demonstre a inviabilidade do preço registrado em relação às condições inicialmente pactuadas.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["documentação comprobatória ou planilha de custos"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 6,
+      "descricao": "6.1.3.7. Na hipótese de não comprovação da existência de fato superveniente que inviabilize o preço registrado, o pedido será indeferido pelo órgão ou entidade gerenciadora e o fornecedor deverá cumprir as obrigações estabelecidas na ata, sob pena de cancelamento do seu registro, nos termos do item 8.1, sem prejuízo das sanções previstas na Lei nº 14.133, de 2021, e na legislação aplicável.",
+      "raw_descricao": "6.1.3.7. Na hipótese de não comprovação da existência de fato superveniente que inviabilize o preço registrado, o pedido será indeferido pelo órgão ou entidade gerenciadora e o fornecedor deverá cumprir as obrigações estabelecidas na ata, sob pena de cancelamento do seu registro, nos termos do item 8.1, sem prejuízo das sanções previstas na Lei nº 14.133, de 2021, e na legislação aplicável.",
+      "tipo": null,
+      "marca": null,
+      "modelo": null,
+      "quantidade": 0,
+      "unidade": null,
+      "valor_unitario": null,
+      "valor_total": null,
+      "fornecedor": null,
+      "cnpj_fornecedor": null,
+      "especificacoes": [
+        ["indeferir o pedido"]
+      ],
+      "observações": null
+    },
+    {
+      "numero_item": 7,
+      "descricao": "6.1.3.8. Na hipótese de cancelamento do registro do fornecedor, nos termos do item anterior, o gerenciador convocará os fornecedores do cadastro de reserva, na ordem de classificação, para verificar se aceitam reduzir seus preços registrados, observado o disposto no item 5.6.",
+      "raw_descricao": "6.1.3.8. Na hipótese de cancelamento do registro do fornecedor, nos termos do item anterior, o gerenciador conv

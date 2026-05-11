@@ -1,0 +1,34 @@
+{
+  "numero_ata": "8.1.4",
+  "orgao": "TRE-PR",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "Cancelamento do Registro de Preços",
+  "itens": [
+    {
+      "numero_item": "1",
+      "descricao": "Sofrer sanção prevista nos incisos III ou IV do caput do art. 156 da Lei nº 14.133, de 2021",
+      "raw_descricao": "Sofrer sanção prevista nos incisos III ou IV do caput do art. 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "2",
+      "descricao": "O cancelamento será precedido de processo administrativo a ser examinado pelo órgão gerenciador, sendo que a decisão final deverá ser fundamentada.",
+      "raw_descricao": "O cancelamento será precedido de processo administrativo a ser examinado pelo órgão gerenciador, sendo que a decisão final deverá ser fundamentada"
+    },
+    {
+      "numero_item": "3",
+      "descricao": "A comunicação do cancelamento do registro do fornecedor será feita por escrito, juntando-se o comprovante de recebimento.",
+      "raw_descricao": "A comunicação do cancelamento do registro do fornecedor será feito por escrito, juntando-se o comprovante de recebimento"
+    },
+    {
+      "numero_item": "4",
+      "descricao": "No caso de o fornecedor encontrar-se em lugar ignorado, incerto ou inacessível, a comunicação será feita por publicação, no Diário Oficial da União, considerando-se cancelado o registro do fornecedor, a partir do 5º dia útil, a contar da publicação.",
+      "raw_descricao": "No caso de o fornecedor encontrar-se em lugar ignorado, incerto ou inacessível, a comunicação será feita por publicação, no Diário Oficial da União, considerando-se cancelado o registro do fornecedor, a partir do 5º dia útil, a contar da publicação"
+    },
+    {
+      "numero_item": "5",
+      "descricao": "As quantidades previstas para os itens com preços registrados nesta Ata de registro de preços serão reduzidas em 50%.",
+      "raw_descricao": "As quantidades previstas para os itens com preços registrados nesta Ata de registro de preços serão reduzidas em 50%"
+    }
+  ]
+}

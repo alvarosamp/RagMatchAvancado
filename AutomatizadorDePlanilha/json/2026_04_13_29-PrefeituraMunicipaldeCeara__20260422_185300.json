@@ -1,0 +1,38 @@
+{
+  "N Interno": "2026_04_13_29",
+  "Status": "🟢",
+  "Data Disputa": "24/04/2026",
+  "Hora Disputa": "09:00",
+  "Órgão": "Município de Caraá",
+  "Tipo Licitação": "Pregão Eletrônico SRP",
+  "Resumo Switches": "50x 48p -- 50x 24p",
+  "Critério": "Menor preço por item",
+  "Local": "Portal de Compras Públicas",
+  "UASG": "N/C",
+  "Nº Pregão": "009/2026",
+  "Cidade": "Caraá",
+  "UF": "RS",
+  "Valor Total Switches": "R$ 274.850,00",
+  "Vlr Total Edital": "N/C",
+  "Intervalo": "10 minutos + prorrogação automática de 2 minutos",
+  "Exclusividade ME/EPP": "Não",
+  "Endereço": "Av. Arno Von Saltiel, no 478, Centro, Município de Caraá, em dias úteis, no horário das 08h",
+  "CEP": "N/C",
+  "Risco Identificado": "🚨 SERVIÇO/RISCO DETECTADO - entrega parcelada conforme demanda das secretarias",
+  "Habilitação jurídica": "N/C",
+  "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": "N/C",
+  "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": "N/C",
+  "QUALIFICAÇÃO TÉCNICA": "N/C",
+  "itens": [
+    {
+      "descricao": "Switch 48 Portas Gigabit: 48 portas RJ45 + 4 slots SFP 1G. Gerenciável (VLAN, QoS, SNMP). Rack 19\".",
+      "preco": "R$ 3.312,00",
+      "quantidade": "50"
+    },
+    {
+      "descricao": "Switch 24 Portas Gigabit: 24 portas RJ45 + 4 portas SFP. Gerenciável L2+, montagem em Rack 19\".",
+      "preco": "R$ 2.185,00",
+      "quantidade": "50"
+    }
+  ]
+}

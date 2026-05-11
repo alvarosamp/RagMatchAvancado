@@ -1,0 +1,8 @@
+ESTADO DE MINAS GERAIS
+PREFEITURA DE SANTANA DA VARGEM
+DEPARTAMENTO DE LICITAÇÕES
+AVISO DE LICITAÇÃO PROCESSO LICITATÓRIO N° 24/2026 – TIPO
+PREGÃO ELETRÔNICO – Nº 04/2026
+A Prefeitura Municipal de Santana da Vargem torna públicopara conhecimento dos interessados edital de Pregão Eletrôniconº 04/2026 – Processo Licitatório nº 24/2026. Objeto: PregãoEletrônico para Registro de Preços, destinado à futura eeventual aquisição de material permanente de informática,a fim de atender às demandas das Secretarias Municipaisde Santana da Vargem/MG. Tipo: Menor preço por item. ORecebimento das propostas será a partir do dia: 26/02/2026 apartir das 08h00min com término no dia 10/03/2026 às07h59min, na Plataforma PORTAL DE COMPRASPÚBLICAS, https://www.portaldecompraspublicas.com.br/. Aabertura das propostas será a partir das 8h00min do dia10/03/2026, quando se dará início a sessão. O edital estádisponível nos sites www.portaldecompraspublicas.com.br,www.santanadavargem.mg.gov.br ou no Setor de Compras eLicitações na Praça Padre João Maciel Neiva, 15 – Centro –Santana da Vargem – CEP 37.195-000. Informações pelotelefone (35) 3858-1200, ou pelo e-maillicitacao@santanadavargem.mg.gov.br. 
+Publicado por:Bruna Tiso PereiraCódigo Identificador:A71A1F83
+Matéria publicada no Diário Oficial dos Municípios Mineirosno dia 25/02/2026. Edição 4220A verificação de autenticidade da matéria pode ser feitainformando o código identificador no site:https://www.diariomunicipal.com.br/amm-mg/

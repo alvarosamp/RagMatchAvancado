@@ -1,0 +1,50 @@
+{
+  "id_pncp": "Ata - 1432",
+  "numero_ata": "00029/2025",
+  "orgao": "ESCOLA SUPERIOR DE BOMBEIROS 'CEL PM PAULO MARQUES PEREIRA'",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "materiais elétricos, hidráulicos e de construção civil diversos",
+  "itens": [
+    {
+      "numero_item": "36",
+      "descricao": "Patch Cord Rj45",
+      "tipo": null,
+      "marca": "Vo6",
+      "modelo": "cat6",
+      "quantidade": 45,
+      "unidade": "unidade",
+      "valor_unitario": 8.0,
+      "valor_total": null,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [
+        "Rj45",
+        "cat6"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Patch Cord Rj45"
+    },
+    {
+      "numero_item": "37",
+      "descricao": "Switch 16 portas",
+      "tipo": null,
+      "marca": "Tp link",
+      "modelo": "sg1016",
+      "quantidade": 2,
+      "unidade": "unidade",
+      "valor_unitario": 465.4,
+      "valor_total": null,
+      "fornecedor": "Moura Eletronicos e Importação Ltda Me",
+      "cnpj_fornecedor": "10.636.064/0001-37",
+      "especificacoes": [
+        "16 portas",
+        "sg1016"
+      ],
+      "observacoes": null,
+      "raw_descricao": "Switch 16 portas"
+    }
+  ],
+  "tokens_usados": 4479,
+  "aviso": "texto dividido em 9 chunks | erro chunk 3: error reading llm response: read tcp 127.0.0.1:51777->127.0.0.1:51762: wsarecv: Foi forçado o cancelamento de uma conexão existente pelo host remoto. (status code: 500) | erro chunk 4: llama runner process has terminated: %!w(<nil>) (status code: 500) | erro chunk 5: llama runner process has terminated: %!w(<nil>) (status code: 500) | erro chunk 6: llama runner process has terminated: %!w(<nil>) (status code: 500) | erro chunk 7: llama runner process has terminated: %!w(<nil>) (status code: 500) | erro chunk 8: llama runner process has terminated: %!w(<nil>) (status code: 500) | erro chunk 9: llama runner process has terminated: %!w(<nil>) (status code: 500)"
+}

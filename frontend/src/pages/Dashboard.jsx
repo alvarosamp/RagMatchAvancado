@@ -1,205 +1,344 @@
-/**
- * pages/Dashboard.jsx
- * ────────────────────
- * Painel principal da Tor Tecnologias — lista editais com stats e acesso rápido ao chat.
- */
-
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { editaisApi, exportApi, downloadBlob } from '../api/client'
+import { downloadBlob, editaisApi, exportApi, healthApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../contexts/ToastContext'
 
-function StatCard({ label, value, sub, color = 'azure' }) {
-  const colors = {
-    azure:  'from-azure/10 to-azure/5 border-azure/20 text-azure-glow',
-    green:  'from-green-match/10 to-green-match/5 border-green-match/20 text-green-match',
-    amber:  'from-amber/10 to-amber/5 border-amber/20 text-amber',
-    yellow: 'from-yellow-warn/10 to-yellow-warn/5 border-yellow-warn/20 text-yellow-warn',
+function formatSyncDate(value) {
+  if (!value) return 'aguardando primeira sincronizacao'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'aguardando primeira sincronizacao'
+  return date.toLocaleString('pt-BR')
+}
+
+function StatusChip({ label, tone = 'neutral' }) {
+  const tones = {
+    success: 'border-green-match/30 bg-green-match/10 text-green-match',
+    warning: 'border-yellow-warn/30 bg-yellow-warn/10 text-yellow-warn',
+    neutral: 'border-slate-border bg-ink-50 text-gray-400',
   }
+
   return (
-    <div className={`rounded-xl border bg-gradient-to-br p-5 ${colors[color]}`}>
-      <p className="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-      <p className="font-display font-black text-3xl text-white">{value}</p>
-      {sub && <p className="text-xs text-gray-500 font-body mt-1">{sub}</p>}
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-mono uppercase tracking-[0.2em] ${tones[tone]}`}>
+      <span className={`h-2 w-2 rounded-full ${tone === 'success' ? 'bg-green-match' : tone === 'warning' ? 'bg-yellow-warn' : 'bg-gray-500'}`} />
+      {label}
+    </span>
+  )
+}
+
+function StatCard({ label, value, sub, tone = 'azure' }) {
+  const tones = {
+    azure: 'from-azure/14 to-azure/5 border-azure/20',
+    green: 'from-green-match/14 to-green-match/5 border-green-match/20',
+    yellow: 'from-yellow-warn/14 to-yellow-warn/5 border-yellow-warn/20',
+    slate: 'from-white/8 to-white/[0.02] border-slate-border',
+  }
+
+  return (
+    <div className={`rounded-[24px] border bg-gradient-to-br p-5 ${tones[tone]}`}>
+      <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">{label}</p>
+      <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
+      <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
   )
 }
 
+function ModuleCard({ badge, title, description, meta, onClick, actionLabel }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group rounded-[24px] border border-slate-border bg-slate-card/95 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-azure/30 hover:bg-slate-hover"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-[12px] font-mono font-bold uppercase text-azure-glow">
+          {badge}
+        </div>
+        <span className="text-xs font-mono uppercase tracking-[0.22em] text-gray-500 group-hover:text-azure-glow">
+          {actionLabel}
+        </span>
+      </div>
+      <h3 className="mt-4 font-display text-xl font-bold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-gray-400">{description}</p>
+      <p className="mt-4 text-xs font-mono uppercase tracking-[0.18em] text-gray-500">{meta}</p>
+    </button>
+  )
+}
+
+async function readCrmSync() {
+  try {
+    const response = await fetch(`/crm/tor-sync.json?ts=${Date.now()}`, { cache: 'no-store' })
+    if (!response.ok) return null
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
 export default function Dashboard() {
-  const [editais,   setEditais]   = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [editais, setEditais] = useState([])
+  const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(null)
+  const [apiOnline, setApiOnline] = useState(null)
+  const [crmSync, setCrmSync] = useState(null)
   const { user, isEditor } = useAuth()
+  const { toast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
-    editaisApi.list()
-      .then(r => setEditais(r.data))
-      .finally(() => setLoading(false))
+    let active = true
+
+    async function loadDashboard() {
+      setLoading(true)
+      const [editaisResult, healthResult, crmResult] = await Promise.allSettled([
+        editaisApi.list(),
+        healthApi.status(),
+        readCrmSync(),
+      ])
+
+      if (!active) return
+
+      if (editaisResult.status === 'fulfilled') {
+        setEditais(editaisResult.value.data || [])
+      } else {
+        setEditais([])
+      }
+
+      setApiOnline(healthResult.status === 'fulfilled' && Boolean(healthResult.value?.data))
+      setCrmSync(crmResult.status === 'fulfilled' ? crmResult.value : null)
+      setLoading(false)
+    }
+
+    loadDashboard()
+    return () => {
+      active = false
+    }
   }, [])
 
-  const handleExport = async (e, id, tipo) => {
-    e.stopPropagation()
+  const handleExport = async (event, id, tipo) => {
+    event.stopPropagation()
     setExporting(`${id}-${tipo}`)
+
     try {
-      const fn = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
-      const res = await fn(id)
-      downloadBlob(res.data, `edital_${id}_resultado.${tipo}`)
-    } catch { }
-    finally { setExporting(null) }
+      const exporter = { xlsx: exportApi.xlsx, csv: exportApi.csv }[tipo]
+      const response = await exporter(id)
+      downloadBlob(response.data, `edital_${id}_resultado.${tipo}`)
+      toast({ type: 'success', message: `${tipo.toUpperCase()} gerado com sucesso.` })
+    } catch (error) {
+      toast({
+        type: 'error',
+        title: 'Falha ao exportar',
+        message: error.response?.data?.detail || `Nao foi possivel exportar o edital em ${tipo.toUpperCase()}.`,
+      })
+    } finally {
+      setExporting(null)
+    }
   }
 
-  const totalChunks = editais.reduce((s, e) => s + (e.chunks || 0), 0)
-  const totalReqs   = editais.reduce((s, e) => s + (e.requirements || 0), 0)
+  const totalChunks = useMemo(
+    () => editais.reduce((sum, edital) => sum + (edital.chunks || 0), 0),
+    [editais]
+  )
+  const totalRequirements = useMemo(
+    () => editais.reduce((sum, edital) => sum + (edital.requirements || 0), 0),
+    [editais]
+  )
 
   return (
-    <div className="p-8">
+    <div className="p-6 lg:p-8 space-y-8">
+      <section className="relative overflow-hidden rounded-[30px] border border-slate-border bg-gradient-to-br from-ink-100 via-[#150b0b] to-[#2a1010] p-6 lg:p-8">
+        <div className="absolute inset-0 opacity-80" style={{ backgroundImage: 'radial-gradient(circle at top right, rgba(248,113,113,0.18), transparent 34%), radial-gradient(circle at bottom left, rgba(220,38,38,0.12), transparent 36%)' }} />
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-[11px] font-mono uppercase tracking-[0.34em] text-gray-500">
+              {user?.tenant?.name || 'Tor Tecnologias'}
+            </p>
+            <h1 className="mt-3 font-display text-3xl font-black text-white lg:text-5xl">
+              Operacao de licitacoes, analise inteligente e CRM comercial em um unico portal
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-300 lg:text-base">
+              O site principal agora pode centralizar upload, analise, importacao PNCP, fila de jobs e o CRM do Bid Buddy em uma rota integrada pronta para publicacao.
+            </p>
 
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-1">
-            {user?.tenant?.name || 'Tor Tec'}
-          </p>
-          <h1 className="font-display font-black text-3xl text-white">Dashboard</h1>
-          <p className="text-gray-400 font-body text-sm mt-1">
-            Análise de editais e atas de licitação
-          </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <StatusChip label={apiOnline ? 'api online' : 'api indisponivel'} tone={apiOnline ? 'success' : 'warning'} />
+              <StatusChip label={crmSync ? 'crm sincronizado' : 'crm aguardando sync'} tone={crmSync ? 'success' : 'warning'} />
+              <StatusChip label={`ultima sync ${formatSyncDate(crmSync?.builtAt)}`} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:w-[340px]">
+            {isEditor && (
+              <button onClick={() => navigate('/upload')} className="btn-primary h-14">
+                Novo edital
+              </button>
+            )}
+            <button onClick={() => navigate('/crm')} className="btn-ghost h-14">
+              Abrir CRM integrado
+            </button>
+            <div className="rounded-2xl border border-slate-border bg-black/20 px-4 py-4 sm:col-span-2">
+              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Creditos</p>
+              <p className="mt-2 text-sm font-semibold text-white">Alvaro Sampaio</p>
+              <p className="mt-1 text-xs leading-6 text-gray-500">
+                Visual do portal, integracao do CRM e consolidacao do ecossistema no mesmo site.
+              </p>
+            </div>
+          </div>
         </div>
-        {isEditor && (
-          <button
-            onClick={() => navigate('/upload')}
-            className="btn-primary flex items-center gap-2"
-          >
-            <span className="font-mono text-base leading-none">↑</span>
-            Novo Edital
-          </button>
-        )}
-      </div>
+      </section>
 
-      {/* ── Stats ─────────────────────────────────────────────────────── */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <ModuleCard
+          badge="RAG"
+          title="Pipeline de editais"
+          description="Upload, OCR, indexacao e matching dos documentos principais."
+          meta="entrada operacional"
+          actionLabel="abrir"
+          onClick={() => navigate('/upload')}
+        />
+        <ModuleCard
+          badge="PN"
+          title="Busca no PNCP"
+          description="Importe novas oportunidades sem sair do portal principal."
+          meta="captacao publica"
+          actionLabel="buscar"
+          onClick={() => navigate('/pncp')}
+        />
+        <ModuleCard
+          badge="CRM"
+          title="Licita CRM"
+          description="Painel comercial do Bid Buddy embarcado no site da Tor."
+          meta={crmSync ? `sync ${formatSyncDate(crmSync.builtAt)}` : 'sync pendente'}
+          actionLabel="integrado"
+          onClick={() => navigate('/crm')}
+        />
+        <ModuleCard
+          badge="OPS"
+          title="Jobs e analise"
+          description="Monitore filas, processamento e indicadores de performance."
+          meta="camada de operacao"
+          actionLabel="acompanhar"
+          onClick={() => navigate('/jobs')}
+        />
+      </section>
+
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Editais" value={editais.length} sub="documentos registrados no ambiente" tone="azure" />
+          <StatCard label="Chunks" value={totalChunks.toLocaleString('pt-BR')} sub="fragmentos indexados para busca" tone="yellow" />
+          <StatCard label="Requisitos" value={totalRequirements.toLocaleString('pt-BR')} sub="criterios estruturados no sistema" tone="green" />
           <StatCard
-            label="Editais"
-            value={editais.length}
-            sub="documentos processados"
-            color="azure"
+            label="CRM"
+            value={crmSync ? 'Pronto' : 'Pendente'}
+            sub={crmSync ? `sincronizado em ${formatSyncDate(crmSync.builtAt)}` : 'aguardando a primeira publicacao em /crm/'}
+            tone="slate"
           />
-          <StatCard
-            label="Chunks"
-            value={totalChunks.toLocaleString('pt-BR')}
-            sub="fragmentos indexados"
-            color="yellow"
-          />
-          <StatCard
-            label="Requisitos"
-            value={totalReqs}
-            sub="critérios extraídos"
-            color="green"
-          />
-          <StatCard
-            label="Foco"
-            value="Switch"
-            sub="Tor Tec"
-            color="amber"
-          />
-        </div>
+        </section>
       )}
 
-      {/* ── Lista de editais ──────────────────────────────────────────── */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="card animate-pulse h-52">
-              <div className="h-4 bg-slate-border rounded w-3/4 mb-3" />
-              <div className="h-3 bg-slate-border rounded w-1/2 mb-6" />
-              <div className="h-3 bg-slate-border rounded w-full mb-2" />
-              <div className="h-3 bg-slate-border rounded w-2/3" />
-            </div>
-          ))}
-        </div>
-      ) : editais.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-28 text-center">
-          <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-border flex items-center justify-center text-3xl mb-4">
-            📄
+      <section className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Base ativa</p>
+            <h2 className="mt-2 font-display text-2xl font-bold text-white">Editais processados</h2>
+            <p className="mt-2 text-sm text-gray-400">
+              Consulte os ultimos documentos, abra o chat RAG e exporte os resultados.
+            </p>
           </div>
-          <p className="font-display font-semibold text-white text-lg">Nenhum edital ainda</p>
-          <p className="text-gray-500 text-sm mt-1 mb-6">Faça upload de um PDF para começar</p>
-          {isEditor && (
-            <button onClick={() => navigate('/upload')} className="btn-primary">
-              Fazer upload
-            </button>
+          {crmSync && (
+            <div className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3 text-sm text-gray-300">
+              CRM publicado a partir do commit <span className="font-mono text-white">{crmSync.sourceCommit?.slice(0, 7) || 'local'}</span>
+            </div>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {editais.map((e, i) => (
-            <div
-              key={e.id}
-              className="card hover:border-azure/40 hover:bg-slate-hover cursor-pointer transition-all duration-200 group animate-fade-up flex flex-col"
-              style={{ animationDelay: `${i * 60}ms` }}
-              onClick={() => navigate(`/editais/${e.id}`)}
-            >
-              {/* Nome + ícone */}
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-azure/20 to-amber/10 border border-azure/20 flex items-center justify-center text-azure-glow font-mono text-xs flex-shrink-0 group-hover:from-azure/30 transition-all">
-                  PDF
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display font-semibold text-white text-sm leading-snug truncate group-hover:text-azure-glow transition-colors">
-                    {e.filename}
-                  </p>
-                  <p className="text-xs text-gray-500 font-mono mt-0.5">
-                    {e.parsed_at ? new Date(e.parsed_at).toLocaleDateString('pt-BR') : '—'}
-                  </p>
-                </div>
-              </div>
 
-              {/* Stats do edital */}
-              <div className="flex gap-4 mb-4">
-                <div className="flex-1 bg-ink-50 rounded-lg p-3 border border-slate-border">
-                  <p className="text-xs text-gray-500 font-mono">chunks</p>
-                  <p className="font-display font-bold text-white text-lg">{e.chunks}</p>
-                </div>
-                <div className="flex-1 bg-ink-50 rounded-lg p-3 border border-slate-border">
-                  <p className="text-xs text-gray-500 font-mono">requisitos</p>
-                  <p className="font-display font-bold text-white text-lg">{e.requirements}</p>
-                </div>
+        {loading ? (
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-56 animate-pulse rounded-[24px] border border-slate-border bg-ink-50" />
+            ))}
+          </div>
+        ) : editais.length === 0 ? (
+          <div className="mt-8 grid place-items-center rounded-[24px] border border-dashed border-slate-border bg-ink-50 px-6 py-16 text-center">
+            <div>
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-dashed border-slate-border text-sm font-mono text-gray-500">
+                PDF
               </div>
-
-              {/* Ações */}
-              <div
-                className="flex gap-2 pt-3 border-t border-slate-border mt-auto"
-                onClick={ev => ev.stopPropagation()}
-              >
-                {/* Chat RAG */}
-                <button
-                  onClick={() => navigate(`/editais/${e.id}/chat`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-azure-glow border border-azure/30 hover:border-azure/60 hover:bg-azure/10 rounded-lg transition-all duration-150"
-                  title="Perguntar sobre este edital"
-                >
-                  <span>💬</span> Chat
+              <p className="mt-5 font-display text-xl font-bold text-white">Nenhum edital enviado ainda</p>
+              <p className="mt-2 text-sm text-gray-500">Envie um PDF para iniciar a indexacao e destravar o restante do fluxo.</p>
+              {isEditor && (
+                <button onClick={() => navigate('/upload')} className="btn-primary mt-6">
+                  Enviar primeiro edital
                 </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {editais.map((edital, index) => (
+              <div
+                key={edital.id}
+                onClick={() => navigate(`/editais/${edital.id}`)}
+                className="group flex cursor-pointer flex-col rounded-[24px] border border-slate-border bg-ink-50/70 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-azure/30 hover:bg-slate-hover"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-xs font-mono font-bold text-azure-glow">
+                    PDF
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white group-hover:text-azure-glow">{edital.filename}</p>
+                    <p className="mt-1 text-xs font-mono text-gray-500">
+                      {edital.parsed_at ? new Date(edital.parsed_at).toLocaleDateString('pt-BR') : 'sem data de processamento'}
+                    </p>
+                  </div>
+                </div>
 
-                {/* Exportar */}
-                <div className="flex gap-1 ml-auto">
-                  {[['xlsx', 'XLS'], ['csv', 'CSV']].map(([tipo, label]) => (
-                    <button
-                      key={tipo}
-                      disabled={!!exporting}
-                      onClick={(ev) => handleExport(ev, e.id, tipo)}
-                      className="px-2.5 py-1.5 text-xs font-mono text-gray-400 hover:text-white border border-slate-border hover:border-azure/40 rounded-lg transition-all duration-150 disabled:opacity-40"
-                    >
-                      {exporting === `${e.id}-${tipo}` ? '…' : label}
-                    </button>
-                  ))}
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
+                    <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-gray-500">chunks</p>
+                    <p className="mt-2 text-xl font-bold text-white">{edital.chunks || 0}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
+                    <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-gray-500">requisitos</p>
+                    <p className="mt-2 text-xl font-bold text-white">{edital.requirements || 0}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-border pt-4" onClick={(event) => event.stopPropagation()}>
+                  <button
+                    onClick={() => navigate(`/editais/${edital.id}/chat`)}
+                    className="rounded-xl border border-azure/30 px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-azure-glow transition-colors hover:border-azure/60 hover:bg-azure/10"
+                  >
+                    Chat
+                  </button>
+                  <button
+                    onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
+                    className="rounded-xl border border-yellow-warn/30 px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-yellow-warn transition-colors hover:border-yellow-warn/60 hover:bg-yellow-warn/10"
+                  >
+                    LLM
+                  </button>
+                  <div className="ml-auto flex gap-2">
+                    {[
+                      ['xlsx', 'XLS'],
+                      ['csv', 'CSV'],
+                    ].map(([tipo, label]) => (
+                      <button
+                        key={tipo}
+                        onClick={(event) => handleExport(event, edital.id, tipo)}
+                        disabled={Boolean(exporting)}
+                        className="rounded-xl border border-slate-border px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-gray-400 transition-colors hover:border-azure/30 hover:text-white disabled:opacity-40"
+                      >
+                        {exporting === `${edital.id}-${tipo}` ? '...' : label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

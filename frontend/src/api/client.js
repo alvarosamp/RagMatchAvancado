@@ -13,6 +13,7 @@
  */
 
 import axios from 'axios'
+import { clearPortalSessionStorage } from '../utils/authStorage'
 
 const api = axios.create({
   baseURL: '/api',            // proxy Vite → http://localhost:8000 em dev
@@ -35,9 +36,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expirado ou inválido → limpa storage e redireciona para login
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('tenant_slug')
-      localStorage.removeItem('user_role')
+      clearPortalSessionStorage()
       window.location.href = '/login'
     }
     return Promise.reject(error)
@@ -68,8 +67,13 @@ export const editaisApi = {
 }
 
 export const jobsApi = {
-  get:  (jobId)          => api.get(`/jobs/${jobId}`),
-  list: (params = {})    => api.get('/jobs/', { params }),
+  get:    (jobId)       => api.get(`/jobs/${jobId}`),
+  list:   (params = {}) => api.get('/jobs/', { params }),
+  cancel: (jobId)       => api.delete(`/jobs/${jobId}`),
+}
+
+export const healthApi = {
+  status: () => api.get('/health'),
 }
 
 export const exportApi = {
@@ -86,6 +90,35 @@ export const ragApi = {
    * @param {{ question: string, model: 'gpt'|'ollama', history: Array }} body
    */
   chat: (editalId, body) => api.post(`/editais/${editalId}/chat`, body, { timeout: 60_000 }),
+}
+
+// ── Análise LLM (pipeline pipelinellm.py) ────────────────────────────────────
+// Integração com Pncp/AnaliseAtaLLM/pipelinellm.py
+// ResultadoAnalise: { id_pncp, numero_ata, orgao, data_assinatura, vigencia,
+//                    objeto, itens: ItemAta[], tokens_usados, aviso }
+export const llmApi = {
+  results: (editalId) => api.get(`/editais/${editalId}/llm-results`),
+  analyze: (editalId) => api.post(`/editais/${editalId}/analyze`, {}, { timeout: 120_000 }),
+}
+
+// ── PNCP — Portal Nacional de Contratações Públicas ──────────────────────────
+export const pncpApi = {
+  /**
+   * Pesquisa editais no PNCP.
+   * @param {{ texto?, cnpj?, modalidade?, dataInicio?, dataFim?, pagina? }} params
+   */
+  search:       (params) => api.get('/pncp/search', { params, timeout: 30_000 }),
+
+  /**
+   * Importa um edital do PNCP para o sistema (enfileira job).
+   * @param {string} idPncp
+   */
+  importEdital: (idPncp) => api.post('/pncp/import', { id_pncp: idPncp }, { timeout: 30_000 }),
+
+  /**
+   * Retorna detalhes de um edital PNCP específico.
+   */
+  detail:       (idPncp) => api.get(`/pncp/${encodeURIComponent(idPncp)}`),
 }
 
 // ── Utilidade para download de blob ──────────────────────────────────────────

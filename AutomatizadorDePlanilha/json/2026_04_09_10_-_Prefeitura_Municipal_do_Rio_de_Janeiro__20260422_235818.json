@@ -1,0 +1,33 @@
+{
+  "N Interno": "2026_04_09_10",
+  "Status": "🔴",
+  "Data Disputa": "09/04/2026",
+  "Hora Disputa": "00:00:00",
+  "Órgão": "PREFEITURA DA CIDADE DO RIO DE JANEIRO",
+  "Tipo Licitação": "Dispensa de Licitação",
+  "Resumo Switches": "Roteador CCR2004-16GB-2S+",
+  "Critério": "N/C",
+  "Local": "Hospital Municipal Francisco da Silva Telles, Av. Ubirajara, nº 25 – Irajá - RJ",
+  "UASG": "Secretaria Municipal de Saúde",
+  "Nº Pregão": "000001",
+  "Cidade": "Rio de Janeiro",
+  "UF": "RJ",
+  "Valor Total Switches": "N/C",
+  "Vlr Total Edital": "N/C",
+  "Intervalo": "N/C",
+  "Exclusividade ME/EPP": "Sim",
+  "Endereço": "Hospital Municipal Francisco da Silva Telles, Av. Ubirajara, nº 25 – Irajá - RJ",
+  "CEP": "N/C",
+  "Risco Identificado": "🚨 SERVIÇO/RISCO DETECTADO - Instalação física e configuração obrigatória",
+  "Habilitação jurídica": "Sim",
+  "HABILITAÇÃO FISCAL, SOCIAL E TRABALHISTA": "Sim",
+  "QUALIFICAÇÃO ECONÔMICO-FINANCEIRA": "N/C",
+  "QUALIFICAÇÃO TÉCNICA": "N/C",
+  "itens": [
+    {
+      "descricao": "Roteador CCR2004-16GB-2S+",
+      "preco": "N/C",
+      "quantidade": "01"
+    }
+  ]
+}

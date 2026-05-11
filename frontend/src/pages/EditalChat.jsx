@@ -8,7 +8,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ragApi } from '../api/client'
+import { ragApi }    from '../api/client'
+import { useToast }  from '../contexts/ToastContext'
 
 const SUGESTOES = [
   'Quais são os requisitos técnicos de switch neste edital?',
@@ -102,6 +103,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
 export default function EditalChat() {
   const { id }     = useParams()
   const navigate   = useNavigate()
+  const { confirm } = useToast()
 
   const [messages,  setMessages]  = useState([])   // { role, content, sources?, model? }
   const [input,     setInput]     = useState('')
@@ -181,9 +183,10 @@ export default function EditalChat() {
     }
   }
 
-  const limpar = () => {
+  const limpar = async () => {
     if (messages.length === 0) return
-    if (confirm('Limpar histórico desta conversa?')) setMessages([])
+    const ok = await confirm('Limpar o histórico desta conversa?', { title: 'Limpar histórico' })
+    if (ok) setMessages([])
   }
 
   return (

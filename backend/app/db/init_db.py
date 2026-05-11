@@ -2,31 +2,28 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Base
 from app.db.session import engine
-from app.services.catalog_loader import load_switch_catalog
 from app.logs.config import logger
+from app.services.catalog_loader import load_switch_catalog
 from app.vector.pgvector_store import ensure_pgvector_extension
+
 
 def init_db(db: Session) -> dict:
     """
-    Cria tabelas e carrega catálogo.
-    Roda no startup do FastAPI.
-
-    Imports necessários para registrar todos os modelos no Base.metadata
-    antes do create_all() — sem eles, as tabelas não são criadas.
+    Cria tabelas do portal principal e do CRM no mesmo banco.
     """
-    import app.auth.models  # noqa: F401 — registra Tenant e User
-    import app.jobs.models  # noqa: F401 — registra Job
+    import app.auth.models
+    import app.crm.models
+    import app.jobs.models
 
     try:
         ensure_pgvector_extension(db)
         Base.metadata.create_all(bind=engine)
-        logger.info("Tabelas criadas (products, editais, tenants, users, jobs, ...)")
+        logger.info("Tabelas do portal e do CRM criadas com sucesso.")
 
         inserted = load_switch_catalog(db)
-        logger.info(f"Switches inseridos: {inserted}")
+        logger.info("Switches inseridos: %s", inserted)
 
         return {"tables_created": True, "switches_inserted": inserted}
-
-    except Exception as e:
-        logger.error(f"Erro ao inicializar banco: {e}")
+    except Exception as exc:
+        logger.error(f"Erro ao inicializar banco: {exc}")
         raise

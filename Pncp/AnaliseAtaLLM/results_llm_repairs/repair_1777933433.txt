@@ -1,0 +1,49 @@
+{
+  "numero_ata": "8.1.4.1",
+  "orgao": "TRE-PR",
+  "data_assinatura": null,
+  "vigencia": null,
+  "objeto": "Cancelamento do Registro de Preços",
+  "itens": [
+    {
+      "numero_item": "8.1.4.1.1",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.2",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.3",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.4",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.5",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.6",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.7",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.8",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.9",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    },
+    {
+      "numero_item": "8.1.4.1.10",
+      "descricao": "Cancelamento previsto no artigo 156 da Lei nº 14.133, de 2021"
+    }
+  ]
+}

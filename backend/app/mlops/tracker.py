@@ -212,3 +212,130 @@ class MatchingTracker:
                 )
             else:
                 logger.warning("[MLflow] Nenhum resultado para logar")
+
+    # =========================================================================
+    # MODEL REGISTRY
+    # =========================================================================
+
+    def register_model(
+        self,
+        run_id: str,
+        model_name: str = "edital_matching",
+        artifact_path: str = "model",
+    ) -> Optional[str]:
+        """
+        Registra um run no MLflow Model Registry como uma versão versionada.
+
+        O Model Registry é a diferença entre "eu treinei algo" e
+        "eu tenho uma versão oficial do modelo". Permite:
+          - Ver o histórico de versões (v1, v2, v3...)
+          - Promover versões: None → Staging → Production
+          - Rollback para versão anterior com um clique
+
+        Args:
+            run_id:        ID do run MLflow a registrar (vem de mlflow.active_run().info.run_id)
+            model_name:    Nome do modelo no registry (agrupa todas as versões)
+            artifact_path: Caminho do artefato dentro do run (padrão "model")
+
+        Returns:
+            Versão registrada (ex: "1", "2") ou None em caso de erro.
+        """
+        try:
+            model_uri = f"runs:/{run_id}/{artifact_path}"
+            result = mlflow.register_model(model_uri=model_uri, name=model_name)
+            version = result.version
+            logger.info(
+                f"[MLflow Registry] Modelo registrado: {model_name} v{version} "
+                f"| run_id={run_id}"
+            )
+            return version
+        except Exception as e:
+            logger.error(f"[MLflow Registry] Erro ao registrar modelo: {e}")
+            return None
+
+    def get_best_run(
+        self,
+        metric_name: str = "score_medio",
+        ascending: bool = False,
+    ) -> Optional[dict]:
+        """
+        Busca o run com o melhor valor de uma métrica no experimento atual.
+
+        Útil para decidir qual versão do modelo promover para produção.
+        Exemplo: qual run teve o maior score_medio?
+
+        Args:
+            metric_name: nome da métrica para comparar (deve estar logada no run)
+            ascending:   True → quer o menor valor (ex: tempo); False → quer o maior
+
+        Returns:
+            Dict com run_id, metrics e params do melhor run, ou None se não houver runs.
+        """
+        try:
+            runs = mlflow.search_runs(
+                experiment_names=[self.expertiment_name],
+                filter_string=f"metrics.{metric_name} > 0",
+                order_by=[f"metrics.{metric_name} {'ASC' if ascending else 'DESC'}"],
+                max_results=1,
+            )
+            if runs.empty:
+                logger.warning(f"[MLflow Registry] Nenhum run encontrado com métrica '{metric_name}'")
+                return None
+
+            best = runs.iloc[0]
+            logger.info(
+                f"[MLflow Registry] Melhor run: {best['run_id']} "
+                f"| {metric_name}={best.get(f'metrics.{metric_name}', 'N/A')}"
+            )
+            return best.to_dict()
+        except Exception as e:
+            logger.error(f"[MLflow Registry] Erro ao buscar melhor run: {e}")
+            return None
+
+    def promote_model(
+        self,
+        model_name: str,
+        version: str,
+        stage: str = "Production",
+    ) -> bool:
+        """
+        Promove uma versão de modelo para um stage do registry.
+
+        FLUXO RECOMENDADO:
+          Staging → (testa em ambiente de homologação) → Production
+
+        Stages disponíveis no MLflow:
+          - "None"       → recém registrado, não testado
+          - "Staging"    → em testes/validação
+          - "Production" → em uso na aplicação
+          - "Archived"   → aposentado (mas mantido no histórico)
+
+        Args:
+            model_name: nome do modelo no registry
+            version:    número da versão a promover (ex: "3")
+            stage:      destino ("Staging", "Production" ou "Archived")
+
+        Returns:
+            True se promoveu com sucesso, False caso contrário.
+        """
+        valid_stages = {"Staging", "Production", "Archived", "None"}
+        if stage not in valid_stages:
+            logger.error(f"[MLflow Registry] Stage inválido: '{stage}'. Use: {valid_stages}")
+            return False
+
+        try:
+            client = mlflow.tracking.MlflowClient()
+            client.transition_model_version_stage(
+                name=model_name,
+                version=version,
+                stage=stage,
+                archive_existing_versions=(stage == "Production"),
+            )
+            logger.info(
+                f"[MLflow Registry] {model_name} v{version} → {stage} "
+                f"| versões anteriores arquivadas automaticamente"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"[MLflow Registry] Erro ao promover modelo: {e}")
+            return False

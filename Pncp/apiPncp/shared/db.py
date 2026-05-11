@@ -9,12 +9,50 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "pncp_pipeline.db"
 
+STATUS_COLUMNS = {
+	"api": "status_api",
+	"ata": "status_ata",
+	"llm": "status_llm",
+}
+
+LLM_ITEM_COLUMNS: dict[str, str] = {
+	"numero_item": "TEXT",
+	"descricao_llm": "TEXT",
+	"tipo": "TEXT",
+	"quantidade": "INTEGER",
+	"unidade": "TEXT",
+	"valor_unitario": "REAL",
+	"valor_total": "REAL",
+	"fornecedor": "TEXT",
+	"cnpj_fornecedor": "TEXT",
+	"especificacoes": "TEXT",
+	"observacoes": "TEXT",
+	"status_llm": "TEXT",
+}
+
 
 def _connect() -> sqlite3.Connection:
 	DATA_DIR.mkdir(parents=True, exist_ok=True)
 	conn = sqlite3.connect(DB_PATH, timeout=30)
 	conn.row_factory = sqlite3.Row
 	return conn
+
+
+def _table_columns(conn: sqlite3.Connection, table_name: str) -> set[str]:
+	rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+	return {str(row["name"]) for row in rows}
+
+
+def _ensure_column(conn: sqlite3.Connection, table_name: str, column_name: str, column_sql: str) -> None:
+	if column_name in _table_columns(conn, table_name):
+		return
+	conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_sql}")
+
+
+def _ensure_optional_columns(conn: sqlite3.Connection) -> None:
+	_ensure_column(conn, "licitacoes", "status_llm", "TEXT")
+	for column_name, column_sql in LLM_ITEM_COLUMNS.items():
+		_ensure_column(conn, "itens_ata", column_name, column_sql)
 
 
 def init_db() -> None:
@@ -31,6 +69,7 @@ def init_db() -> None:
 				sequencial INTEGER,
 				status_api TEXT,
 				status_ata TEXT,
+				status_llm TEXT,
 				criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
 				atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 			)
@@ -81,6 +120,18 @@ def init_db() -> None:
 				marca_extraida TEXT,
 				modelo_extraido TEXT,
 				status_ocr TEXT,
+				numero_item TEXT,
+				descricao_llm TEXT,
+				tipo TEXT,
+				quantidade INTEGER,
+				unidade TEXT,
+				valor_unitario REAL,
+				valor_total REAL,
+				fornecedor TEXT,
+				cnpj_fornecedor TEXT,
+				especificacoes TEXT,
+				observacoes TEXT,
+				status_llm TEXT,
 				mensagem_erro TEXT,
 				criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
 				FOREIGN KEY (id_pncp) REFERENCES licitacoes(id_pncp)
@@ -88,25 +139,35 @@ def init_db() -> None:
 			"""
 		)
 
+		# Mantem compatibilidade com bancos SQLite antigos ja criados.
+		_ensure_optional_columns(conn)
+
 
 def upsert_licitacao(id_pncp: str, cnpj: str | None, ano: int | None, sequencial: int | None) -> None:
 	with _connect() as conn:
 		conn.execute(
 			"""
-			INSERT INTO licitacoes (id_pncp, cnpj, ano, sequencial, status_api, status_ata)
-			VALUES (?, ?, ?, ?, COALESCE((SELECT status_api FROM licitacoes WHERE id_pncp = ?), 'pendente'), COALESCE((SELECT status_ata FROM licitacoes WHERE id_pncp = ?), 'pendente'))
+			INSERT INTO licitacoes (id_pncp, cnpj, ano, sequencial, status_api, status_ata, status_llm)
+			VALUES (
+				?, ?, ?, ?,
+				COALESCE((SELECT status_api FROM licitacoes WHERE id_pncp = ?), 'pendente'),
+				COALESCE((SELECT status_ata FROM licitacoes WHERE id_pncp = ?), 'pendente'),
+				COALESCE((SELECT status_llm FROM licitacoes WHERE id_pncp = ?), 'pendente')
+			)
 			ON CONFLICT(id_pncp) DO UPDATE SET
 				cnpj = excluded.cnpj,
 				ano = excluded.ano,
 				sequencial = excluded.sequencial,
 				atualizado_em = CURRENT_TIMESTAMP
 			""",
-			(id_pncp, cnpj, ano, sequencial, id_pncp, id_pncp),
+			(id_pncp, cnpj, ano, sequencial, id_pncp, id_pncp, id_pncp),
 		)
 
 
 def atualizar_status(id_pncp: str, pipeline: str, status: str) -> None:
-	coluna = "status_api" if pipeline == "api" else "status_ata"
+	coluna = STATUS_COLUMNS.get((pipeline or "").strip().lower())
+	if coluna is None:
+		raise ValueError(f"Pipeline desconhecido para status: {pipeline}")
 	with _connect() as conn:
 		conn.execute(
 			f"""
@@ -178,9 +239,11 @@ def inserir_item_ata(id_pncp: str, registro: dict[str, Any]) -> None:
 			INSERT INTO itens_ata (
 				id_pncp, sequencial_ata, sequencial_doc, nome_arquivo, caminho_pdf,
 				status_download, descricao_ocr, marca_extraida, modelo_extraido,
-				status_ocr, mensagem_erro
+				status_ocr, numero_item, descricao_llm, tipo, quantidade, unidade,
+				valor_unitario, valor_total, fornecedor, cnpj_fornecedor,
+				especificacoes, observacoes, status_llm, mensagem_erro
 			)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			""",
 			(
 				id_pncp,
@@ -193,6 +256,18 @@ def inserir_item_ata(id_pncp: str, registro: dict[str, Any]) -> None:
 				registro.get("marca_extraida"),
 				registro.get("modelo_extraido"),
 				registro.get("status_ocr"),
+				registro.get("numero_item"),
+				registro.get("descricao_llm"),
+				registro.get("tipo"),
+				registro.get("quantidade"),
+				registro.get("unidade"),
+				registro.get("valor_unitario"),
+				registro.get("valor_total"),
+				registro.get("fornecedor"),
+				registro.get("cnpj_fornecedor"),
+				registro.get("especificacoes"),
+				registro.get("observacoes"),
+				registro.get("status_llm"),
 				registro.get("mensagem_erro"),
 			),
 		)
@@ -209,6 +284,7 @@ def relatorio_final() -> list[dict[str, Any]]:
 				l.sequencial,
 				l.status_api,
 				l.status_ata,
+				l.status_llm,
 				a.numero_item,
 				a.descricao_api,
 				a.quantidade,
@@ -236,6 +312,18 @@ def relatorio_final() -> list[dict[str, Any]]:
 				t.marca_extraida,
 				t.modelo_extraido,
 				t.status_ocr,
+				t.numero_item AS numero_item_ata,
+				t.descricao_llm,
+				t.tipo,
+				t.quantidade AS quantidade_ata,
+				t.unidade AS unidade_ata,
+				t.valor_unitario,
+				t.valor_total,
+				t.fornecedor,
+				t.cnpj_fornecedor,
+				t.especificacoes,
+				t.observacoes,
+				t.status_llm AS status_llm_item,
 				t.mensagem_erro
 			FROM licitacoes l
 			LEFT JOIN itens_api a ON a.id_pncp = l.id_pncp

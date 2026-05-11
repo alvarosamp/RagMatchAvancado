@@ -1,97 +1,165 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import ChatWidget from './ChatWidget'
+import torLogo from '../images/Tor.jpeg'
 
 const NAV = [
-  { path: '/dashboard',  icon: '▦',  label: 'Dashboard'   },
-  { path: '/upload',     icon: '↑',  label: 'Novo Edital' },
-  { path: '/chat',       icon: '💬', label: 'ChatBot'     },
-  { path: '/analytics',  icon: '◈',  label: 'Análise'     },
-  { path: '/jobs',       icon: '◎',  label: 'Jobs'        },
+  { path: '/dashboard', badge: 'DB', label: 'Dashboard', hint: 'Visao geral do sistema' },
+  { path: '/upload', badge: 'UP', label: 'Novo edital', hint: 'Entrada e processamento' },
+  { path: '/pncp', badge: 'PN', label: 'PNCP', hint: 'Busca e importacao publica' },
+  { path: '/controle', badge: 'CT', label: 'Controle', hint: 'Operacao e acompanhamento' },
+  { path: '/analytics', badge: 'AN', label: 'Analise', hint: 'Performance e inteligencia' },
+  { path: '/jobs', badge: 'JB', label: 'Jobs', hint: 'Fila e processamento' },
+  { path: '/crm', badge: 'CRM', label: 'CRM', hint: 'Bid Buddy integrado' },
+  { path: '/configuracoes', badge: 'CFG', label: 'Configuracoes', hint: 'Ajustes do ambiente' },
 ]
 
 const NAV_ADMIN = [
-  { path: '/usuarios', icon: '⊕', label: 'Usuários' },
+  { path: '/usuarios', badge: 'USR', label: 'Usuarios', hint: 'Gestao de acessos' },
 ]
+
+function isActive(pathname, path) {
+  return pathname === path || pathname.startsWith(`${path}/`)
+}
+
+function NavItem({ item, pathname }) {
+  const active = isActive(pathname, item.path)
+
+  return (
+    <Link
+      to={item.path}
+      className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-200 ${
+        active
+          ? 'border-azure/30 bg-azure/10 text-white shadow-lg shadow-azure/10'
+          : 'border-transparent text-gray-400 hover:border-slate-border hover:bg-slate-hover hover:text-white'
+      }`}
+    >
+      <div
+        className={`grid h-10 w-10 place-items-center rounded-xl border text-[11px] font-mono font-bold uppercase transition-all ${
+          active
+            ? 'border-azure/30 bg-azure/20 text-azure-glow'
+            : 'border-slate-border bg-ink-50 text-gray-500 group-hover:text-white'
+        }`}
+      >
+        {item.badge}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{item.label}</p>
+        <p className="truncate text-xs text-gray-500">{item.hint}</p>
+      </div>
+      {active && <div className="h-2 w-2 rounded-full bg-azure-glow" />}
+    </Link>
+  )
+}
 
 export default function Layout({ children }) {
   const { user, logout, isAdmin } = useAuth()
   const location = useLocation()
 
   const items = isAdmin ? [...NAV, ...NAV_ADMIN] : NAV
+  const showChatWidget = !location.pathname.startsWith('/crm')
 
   return (
-    <div className="flex h-screen overflow-hidden">
-
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="w-60 flex-shrink-0 bg-ink-100 border-r border-slate-border flex flex-col">
-
-        {/* Logo Tor Tecnologias */}
-        <div className="px-5 py-5 border-b border-slate-border">
+    <div className="min-h-screen bg-ink text-white md:flex">
+      <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-slate-border bg-ink-100/95 md:flex">
+        <div className="border-b border-slate-border px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 flex-shrink-0">
-              {/* Anel externo com gradiente */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-azure to-amber opacity-20 blur-sm" />
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-azure to-amber flex items-center justify-center">
-                <span className="text-white text-xs font-mono font-black tracking-tighter">TT</span>
-              </div>
+            <div className="relative h-12 w-12 flex-shrink-0">
+              <div className="absolute inset-0 rounded-2xl bg-azure/25 blur-md" />
+              <img
+                src={torLogo}
+                alt="Tor Tecnologias"
+                className="relative h-12 w-12 rounded-2xl object-cover ring-1 ring-azure/40"
+              />
             </div>
             <div className="leading-tight">
-              <p className="font-display font-black text-sm text-white tracking-wide">Tor Tec</p>
-              <p className="font-display text-xs text-azure-glow tracking-widest uppercase">Licitações</p>
+              <p className="font-display text-base font-black tracking-wide text-white">Tor Tecnologias</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-azure-glow">Portal de Licitacoes</p>
             </div>
           </div>
 
-          {/* Linha decorativa */}
-          <div className="mt-4 h-px bg-gradient-to-r from-azure/30 via-amber/20 to-transparent" />
+          <div className="mt-5 rounded-2xl border border-slate-border bg-ink-50/80 px-4 py-4">
+            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Empresa</p>
+            <p className="mt-2 truncate text-sm font-semibold text-white">{user?.tenant?.name || 'Ambiente Tor'}</p>
+            <p className="mt-1 truncate text-xs text-gray-500">{user?.email || 'sem email informado'}</p>
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {items.map(item => {
-            const active = location.pathname.startsWith(item.path)
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-body transition-all duration-150
-                  ${active
-                    ? 'bg-azure/10 text-azure-glow border border-azure/20 shadow-sm'
-                    : 'text-gray-400 hover:text-white hover:bg-slate-hover'
-                  }`}
-              >
-                <span className={`font-mono text-base w-4 text-center transition-colors ${active ? 'text-azure-glow' : ''}`}>
-                  {item.icon}
-                </span>
-                <span className="truncate">{item.label}</span>
-                {active && (
-                  <div className="ml-auto w-1 h-1 rounded-full bg-azure-glow" />
-                )}
-              </Link>
-            )
-          })}
+        <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-5">
+          {items.map((item) => (
+            <NavItem key={item.path} item={item} pathname={location.pathname} />
+          ))}
         </nav>
 
-        {/* Tenant + usuário + logout */}
-        <div className="px-3 pb-4 border-t border-slate-border pt-3 space-y-1">
-          {/* Info do tenant */}
-          <div className="px-3 py-2.5 rounded-lg bg-slate-card border border-slate-border mb-2">
-            <p className="text-xs text-gray-500 font-mono uppercase tracking-widest leading-none mb-1">Empresa</p>
-            <p className="text-sm text-white font-display font-semibold truncate">{user?.tenant?.name || '—'}</p>
-            <p className="text-xs text-gray-500 font-mono truncate mt-0.5">{user?.email}</p>
-          </div>
-
+        <div className="border-t border-slate-border px-4 py-4">
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-red-fail hover:bg-red-dim/20 transition-all duration-150"
+            className="flex w-full items-center justify-center rounded-2xl border border-slate-border bg-ink-50 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-red-fail/40 hover:text-red-fail"
           >
-            <span className="font-mono text-base">⊗</span>
-            <span>Sair</span>
+            Encerrar sessao
           </button>
+
+          <div className="mt-4 rounded-2xl border border-slate-border bg-[#090909] px-4 py-4">
+            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Creditos</p>
+            <p className="mt-2 text-sm font-semibold text-white">Alvaro Sampaio</p>
+            <p className="mt-1 text-xs leading-6 text-gray-500">
+              Integracao visual, operacao do portal e publicacao do CRM dentro do ambiente Tor.
+            </p>
+          </div>
         </div>
       </aside>
 
-      {/* ── Conteúdo principal ───────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 border-b border-slate-border bg-ink-100/95 backdrop-blur md:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-2xl object-cover ring-1 ring-azure/40" />
+              <div>
+                <p className="font-display text-sm font-black text-white">Tor Tecnologias</p>
+                <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-azure-glow">Portal de Licitacoes</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="rounded-xl border border-slate-border px-3 py-2 text-xs font-semibold text-gray-300"
+            >
+              Sair
+            </button>
+          </div>
+
+          <div className="overflow-x-auto px-4 pb-3">
+            <div className="flex gap-2">
+              {items.map((item) => {
+                const active = isActive(location.pathname, item.path)
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-mono uppercase tracking-[0.2em] ${
+                      active
+                        ? 'border-azure/30 bg-azure/10 text-azure-glow'
+                        : 'border-slate-border text-gray-400'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">{children}</main>
+
+        <footer className="border-t border-slate-border bg-ink-100/95 px-4 py-3 text-xs text-gray-500 md:px-6">
+          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+            <p>Tor Tecnologias | Plataforma de analise, RAG e operacao comercial de licitacoes.</p>
+            <p>Creditos: Alvaro Sampaio</p>
+          </div>
+        </footer>
+      </div>
+
+      {showChatWidget && <ChatWidget />}
     </div>
   )
 }
