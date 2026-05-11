@@ -13,6 +13,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authApi } from '../api/client'
+import { clearPortalSessionStorage } from '../utils/authStorage'
 
 const AuthContext = createContext(null)
 
@@ -27,11 +28,7 @@ export function AuthProvider({ children }) {
 
     authApi.me()
       .then(res => setUser(res.data))
-      .catch(() => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('tenant_slug')
-        localStorage.removeItem('user_role')
-      })
+      .catch(() => clearPortalSessionStorage())
       .finally(() => setLoading(false))
   }, [])
 
@@ -63,9 +60,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('tenant_slug')
-    localStorage.removeItem('user_role')
+    clearPortalSessionStorage()
     setUser(null)
     window.location.href = '/login'
   }, [])

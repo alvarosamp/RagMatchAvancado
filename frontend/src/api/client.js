@@ -13,6 +13,7 @@
  */
 
 import axios from 'axios'
+import { clearPortalSessionStorage } from '../utils/authStorage'
 
 const api = axios.create({
   baseURL: '/api',            // proxy Vite → http://localhost:8000 em dev
@@ -35,9 +36,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expirado ou inválido → limpa storage e redireciona para login
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('tenant_slug')
-      localStorage.removeItem('user_role')
+      clearPortalSessionStorage()
       window.location.href = '/login'
     }
     return Promise.reject(error)

@@ -6,6 +6,7 @@ from app.db.init_db import init_db
 from app.routers.health     import router as health_router
 from app.routers.switches   import router as switches_router
 from app.routers.editais    import router as editais_router
+from app.routers.crm        import router as crm_router
 from app.routers.export     import router as export_router
 from app.routers.analytics  import router as analytics_router  # ← NOVO
 from app.auth.router        import router as auth_router
@@ -20,6 +21,7 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(crm_router)
 app.include_router(jobs_router)
 app.include_router(switches_router)
 app.include_router(editais_router)

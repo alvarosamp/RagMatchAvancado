@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 const CRM_BASE = '/crm/'
+const CRM_PORTAL_SRC = '/crm/?portal=1'
 
 function formatDate(value) {
   if (!value) return 'sincronizacao pendente'
@@ -93,41 +94,32 @@ export default function CrmHub() {
             </div>
             <div>
               <p className="text-sm font-mono uppercase tracking-[0.3em] text-gray-500">Bid Buddy dentro da Tor</p>
-              <h1 className="mt-3 font-display text-3xl font-black text-white lg:text-4xl">Painel comercial e operacional em uma rota dedicada</h1>
+              <h1 className="mt-3 font-display text-3xl font-black text-white lg:text-4xl">CRM unificado com o portal e pronto para abrir sem segundo login</h1>
               <p className="mt-3 max-w-xl text-sm leading-7 text-gray-300">
-                O CRM continua separado do frontend principal, mas agora pode ser publicado dentro do site da Tor em <span className="text-white">/crm/</span>, com sincronizacao e build controlados.
+                O Bid Buddy agora abre dentro da Tor usando a mesma sessao do portal. Ao entrar no CRM por aqui, o usuario nao precisa repetir login nem cadastro.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <StatusPill ok={crmReady} label={crmReady ? 'build disponivel' : 'build pendente'} />
               <StatusPill ok={Boolean(buildInfo?.sourceCommit)} label={buildInfo?.sourceCommit ? 'repo identificado' : 'repo local'} />
+              <StatusPill ok label="sessao unificada" />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <MetaCard label="Ultima sync" value={buildInfo ? formatDate(buildInfo.builtAt) : 'aguardando primeira sincronizacao'} />
               <MetaCard label="Commit CRM" value={commitLabel} hint={buildInfo?.sourceBranch ? `branch ${buildInfo.sourceBranch}` : 'sem branch registrada'} />
-              <MetaCard label="Origem" value={buildInfo?.sourceRepo || 'repositorio local bid-buddy'} hint="mantido separado do frontend principal" />
+              <MetaCard label="Origem" value={buildInfo?.sourceRepo || 'repositorio local bid-buddy'} hint="publicado como modulo interno da Tor" />
               <MetaCard label="Creditos" value="Alvaro Sampaio" hint="creditos exibidos em todo o portal" />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={CRM_BASE}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-primary inline-flex items-center justify-center"
-              >
-                Abrir CRM em tela cheia
-              </a>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => window.location.reload()}
-              >
-                Atualizar status
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => window.location.reload()}
+            >
+              Atualizar status
+            </button>
           </div>
 
           <div className="rounded-[24px] border border-slate-border bg-[#060606] p-3 shadow-2xl shadow-black/30">
@@ -146,13 +138,13 @@ export default function CrmHub() {
                     <div className="text-center">
                       <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-azure/25 border-t-azure" />
                       <p className="mt-4 text-sm font-semibold text-white">Carregando o CRM embarcado</p>
-                      <p className="mt-1 text-xs text-gray-500">A aplicacao do Bid Buddy esta sendo aberta dentro do portal.</p>
+                      <p className="mt-1 text-xs text-gray-500">A aplicacao do Bid Buddy esta sendo aberta com a sessao atual do portal.</p>
                     </div>
                   </div>
                 )}
                 <iframe
                   title="Licita CRM"
-                  src={CRM_BASE}
+                  src={CRM_PORTAL_SRC}
                   className="min-h-[720px] w-full rounded-[20px] bg-white"
                   onLoad={() => setFrameLoaded(true)}
                 />
