@@ -7,6 +7,7 @@ import { ToastProvider }         from './contexts/ToastContext'
 import './index.css'
 
 import Login          from './pages/Login'
+import InternalRegister from './pages/InternalRegister'
 import Dashboard      from './pages/Dashboard'
 import Upload         from './pages/Upload'
 import EditalDetail   from './pages/EditalDetail'
@@ -21,6 +22,8 @@ import PncpSearch     from './pages/PncpSearch'
 import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
 import Layout         from './components/Layout'
+
+const INTERNAL_REGISTER_PATH = import.meta.env.VITE_INTERNAL_REGISTER_PATH || '/cadastro-tor-gestao-interna'
 
 function PrivateRoute({ children, withLayout = true }) {
   const { user, loading } = useAuth()
@@ -46,6 +49,7 @@ createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
             <Route path="/dashboard"              element={<PrivateRoute><Dashboard     /></PrivateRoute>} />
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />

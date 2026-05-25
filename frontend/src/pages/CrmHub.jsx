@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { crmApi } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 
 const CRM_BASE = '/crm/'
 const CRM_PORTAL_SRC = '/crm/?portal=1'
@@ -37,10 +39,17 @@ function StatusPill({ ok, label }) {
 }
 
 export default function CrmHub() {
+  const { isAdmin } = useAuth()
   const [checking, setChecking] = useState(true)
   const [crmReady, setCrmReady] = useState(false)
   const [buildInfo, setBuildInfo] = useState(null)
   const [frameLoaded, setFrameLoaded] = useState(false)
+  const [uploadingSheet, setUploadingSheet] = useState(false)
+  const [sheetSummary, setSheetSummary] = useState(null)
+  const [sheetError, setSheetError] = useState(null)
+  const [showImportPanel, setShowImportPanel] = useState(false)
+  const [crmRefreshToken, setCrmRefreshToken] = useState(0)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -84,6 +93,37 @@ export default function CrmHub() {
     return buildInfo.sourceCommit.slice(0, 7)
   }, [buildInfo])
 
+  async function handleSheetUpload(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadingSheet(true)
+    setSheetError(null)
+    setSheetSummary(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await crmApi.importSalesProcesses(formData)
+      setSheetSummary(response.data?.summary || null)
+      setShowImportPanel(false)
+      setFrameLoaded(false)
+      setCrmRefreshToken(Date.now())
+    } catch (error) {
+      setSheetError(error.response?.data?.detail || 'Nao foi possivel importar a planilha agora.')
+    } finally {
+      setUploadingSheet(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  function resetImportState() {
+    setSheetError(null)
+    setSheetSummary(null)
+    setShowImportPanel(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   return (
     <div className="min-h-screen bg-ink text-white">
       <section className="relative min-h-screen overflow-hidden px-4 py-4 lg:px-6 lg:py-6">
@@ -116,7 +156,7 @@ export default function CrmHub() {
                 <MetaCard label="Ultima sync" value={buildInfo ? formatDate(buildInfo.builtAt) : 'aguardando sincronizacao'} />
                 <MetaCard label="Commit CRM" value={commitLabel} hint={buildInfo?.sourceBranch ? `branch ${buildInfo.sourceBranch}` : 'sem branch registrada'} />
                 <MetaCard label="Origem" value={buildInfo?.sourceRepo || 'repositorio local bid-buddy'} hint="modulo publicado em /crm/" />
-                <MetaCard label="Creditos" value="Alvaro Sampaio" hint="integracao do portal e identidade do CRM" />
+                <MetaCard label="Publicacao" value="Integrada ao portal" hint="mesma sessao, mesma rota e mesmo ambiente operacional" />
               </div>
             </div>
 
@@ -128,6 +168,67 @@ export default function CrmHub() {
                 Atualizar modulo
               </button>
             </div>
+
+            {isAdmin && (
+              <div className="mt-5 rounded-[24px] border border-slate-border bg-black/20 p-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div>
+                    <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Carga comercial</p>
+                    <h2 className="mt-2 font-display text-xl font-bold text-white">Importar planilha de processos de vendas para o CRM</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-7 text-gray-400">
+                      A planilha XLSX cria ou atualiza editais no tenant da conta logada e fica disponivel tambem em producao.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 xl:justify-end">
+                    <button type="button" className="btn-ghost" onClick={() => setShowImportPanel((value) => !value)}>
+                      {showImportPanel ? 'Ocultar upload' : 'Importar planilha'}
+                    </button>
+                    {sheetSummary && (
+                      <button type="button" className="btn-ghost" onClick={resetImportState}>
+                        Enviar outra planilha
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {showImportPanel && (
+                  <div className="mt-4 rounded-2xl border border-slate-border bg-ink-50 px-4 py-4">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Selecione a planilha XLSX da automacao comercial</p>
+                        <p className="mt-1 text-xs text-gray-500">O upload atualiza os editais sem recarregar a pagina toda.</p>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".xlsx"
+                        className="block text-sm text-gray-300 file:mr-4 file:rounded-xl file:border file:border-azure/20 file:bg-azure/10 file:px-4 file:py-2 file:text-xs file:font-mono file:uppercase file:tracking-[0.18em] file:text-azure-glow"
+                        onChange={handleSheetUpload}
+                        disabled={uploadingSheet}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(uploadingSheet || sheetSummary || sheetError) && (
+                  <div className="mt-4 rounded-2xl border border-slate-border bg-ink-50 px-4 py-3 text-sm">
+                    {uploadingSheet && <p className="text-azure-glow">Importando planilha para o CRM e sincronizando os editais...</p>}
+                    {sheetError && <p className="text-red-300">{sheetError}</p>}
+                    {sheetSummary && (
+                      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                        <p className="text-green-match">
+                          Importacao concluida: {sheetSummary.grupos_processados} editais e {sheetSummary.itens_processados} itens para o tenant {sheetSummary.tenant}.
+                        </p>
+                        <button type="button" className="btn-ghost" onClick={() => setCrmRefreshToken(Date.now())}>
+                          Atualizar CRM
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="rounded-[30px] border border-slate-border bg-[#060606] p-3 shadow-2xl shadow-black/40">
@@ -152,7 +253,7 @@ export default function CrmHub() {
                 )}
                 <iframe
                   title="Licita CRM"
-                  src={CRM_PORTAL_SRC}
+                  src={`${CRM_PORTAL_SRC}&refresh=${crmRefreshToken}`}
                   className="h-[calc(100vh-270px)] min-h-[720px] w-full rounded-[24px] bg-transparent"
                   onLoad={() => setFrameLoaded(true)}
                 />

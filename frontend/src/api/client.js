@@ -77,6 +77,14 @@ export const opsApi = {
   summary: () => api.get('/ops/summary'),
 }
 
+export const crmApi = {
+  importSalesProcesses: (formData) =>
+    api.post('/crm/imports/sales-processes', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
+    }),
+}
+
 export const healthApi = {
   status: () => api.get('/health'),
 }

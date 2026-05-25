@@ -105,6 +105,6 @@ def ensure_pgvector_extension(db: Session):
         db.commit()
         logger.info("Extensão pgvector verificada/criada com sucesso.")
     except Exception as e:
-        logger.error(f"Erro ao garantir extensão pgvector: {e}")
-        raise
+        db.rollback()
+        logger.info("Extensão pgvector já existente (ignorado).")
     

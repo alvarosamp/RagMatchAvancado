@@ -302,6 +302,36 @@ Na primeira vez, o serviço `ollama-setup` baixa os modelos automaticamente (~5 
 
 ---
 
+## CI/CD com GitHub Actions
+
+O repositorio agora possui um pipeline de CI/CD em `.github/workflows/ci.yml` com este fluxo:
+
+1. roda lint, testes e build do frontend;
+2. valida as imagens Docker de `backend`, `frontend` e `mlflow`;
+3. no push da branch `main`, publica as imagens no Docker Hub;
+4. depois conecta no VPS por SSH e executa o deploy automatico com `scripts/deploy-production.sh`.
+
+### Secrets necessarios no GitHub
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `VPS_HOST`
+- `VPS_PORT` (opcional, padrao `22`)
+- `VPS_USER`
+- `VPS_SSH_KEY`
+- `VPS_APP_DIR`
+
+### Preparacao do servidor
+
+1. clone este repositorio no VPS;
+2. crie um `.env.prod` com os valores reais de producao;
+3. deixe o Docker e o Docker Compose instalados;
+4. garanta que o usuario do deploy tenha permissao para rodar Docker.
+
+Com isso, cada push na `main` passa a publicar e atualizar o ambiente automaticamente.
+
+---
+
 ## Fluxo de Uso
 
 ```

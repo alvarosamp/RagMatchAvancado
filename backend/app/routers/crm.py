@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
+from app.crm.sales_process_importer import build_import_context_for_user, run_import
 from app.crm.models import CrmNotice
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
@@ -33,6 +37,43 @@ def _ensure_table(table_name: str) -> None:
 @router.get("/auth/user")
 def crm_auth_user(current_user: User = Depends(get_current_user)):
     return {"user": crm_user_payload(current_user)}
+
+
+@router.post("/imports/sales-processes")
+async def crm_import_sales_processes(
+    file: UploadFile = File(..., description="Planilha XLSX de processos de vendas"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Somente administradores podem importar a planilha de processos.")
+
+    filename = (file.filename or "").lower()
+    if not filename.endswith(".xlsx"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Envie uma planilha .xlsx.")
+
+    suffix = ".xlsx"
+    temp_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            temp_path = tmp.name
+            content = await file.read()
+            tmp.write(content)
+
+        summary = run_import(
+            Path(temp_path),
+            context_override=build_import_context_for_user(current_user),
+        )
+        db.expire_all()
+        return {"ok": True, "summary": summary}
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    finally:
+        await file.close()
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 @router.get("/summary")

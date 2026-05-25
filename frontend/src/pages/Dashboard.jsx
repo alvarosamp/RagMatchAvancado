@@ -203,10 +203,10 @@ export default function Dashboard() {
               Abrir CRM integrado
             </button>
             <div className="rounded-2xl border border-slate-border bg-black/20 px-4 py-4 sm:col-span-2">
-              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Creditos</p>
-              <p className="mt-2 text-sm font-semibold text-white">Alvaro Sampaio</p>
+              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Ambiente</p>
+              <p className="mt-2 text-sm font-semibold text-white">Portal operacional da Tor</p>
               <p className="mt-1 text-xs leading-6 text-gray-500">
-                Visual do portal, integracao do CRM e consolidacao do ecossistema no mesmo site.
+                Upload, fila, analise de editais e CRM comercial dentro da mesma experiencia.
               </p>
             </div>
           </div>

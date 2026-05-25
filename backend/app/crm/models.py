@@ -190,14 +190,20 @@ class CrmNotice(Base):
     __tablename__ = "crm_notices"
     __table_args__ = (
         UniqueConstraint("tenant_id", "number", name="uq_crm_notices_tenant_number"),
+        UniqueConstraint("tenant_id", "tor_id", name="uq_crm_notices_tenant_tor_id"),
+        UniqueConstraint("tenant_id", "import_key", name="uq_crm_notices_tenant_import_key"),
         Index("ix_crm_notices_tenant_stage", "tenant_id", "stage"),
         Index("ix_crm_notices_tenant_outcome", "tenant_id", "outcome"),
         Index("ix_crm_notices_tenant_auction_date", "tenant_id", "auction_date"),
+        Index("ix_crm_notices_tenant_tor_id", "tenant_id", "tor_id"),
+        Index("ix_crm_notices_tenant_municipality", "tenant_id", "municipality_name"),
     )
 
     id = Column(String(36), primary_key=True, default=_uuid)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     number = Column(String, nullable=False)
+    tor_id = Column(String)
+    municipality_name = Column(String)
     title = Column(Text)
     organ_id = Column(String(36), ForeignKey("crm_organs.id", ondelete="SET NULL"), index=True)
     portal_id = Column(String(36), ForeignKey("crm_portals.id", ondelete="SET NULL"), index=True)
@@ -206,7 +212,13 @@ class CrmNotice(Base):
     estimated_value = Column(Float)
     final_value = Column(Float)
     drive_link = Column(Text)
+    proposal_link = Column(Text)
+    supplier_proposal_link = Column(Text)
+    address = Column(String)
+    state = Column(String)
     particularities = Column(Text)
+    sales_status = Column(String)
+    import_key = Column(String)
     stage = Column(SqlEnum(CrmNoticeStage, native_enum=False), nullable=False, default=CrmNoticeStage.TRIAGE)
     outcome = Column(SqlEnum(CrmNoticeOutcome, native_enum=False), nullable=False, default=CrmNoticeOutcome.PENDING)
     outcome_reason = Column(Text)
@@ -257,11 +269,16 @@ class CrmNoticeProduct(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
     item_number = Column(String)
+    lot = Column(String)
+    product_code = Column(String)
+    is_exclusive_epp = Column(Boolean)
     description = Column(Text, nullable=False)
     quantity = Column(Float, nullable=False, default=1.0)
     unit = Column(String)
+    cost = Column(Float)
     unit_price = Column(Float)
     reference_price = Column(Float)
+    reference_total_price = Column(Float)
     notes = Column(Text)
     sort_order = Column(Integer, nullable=False, default=0)
     catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="SET NULL"), index=True)

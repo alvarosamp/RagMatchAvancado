@@ -98,14 +98,6 @@ export default function Layout({ children }) {
           >
             Encerrar sessao
           </button>
-
-          <div className="mt-4 rounded-2xl border border-slate-border bg-[#090909] px-4 py-4">
-            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Creditos</p>
-            <p className="mt-2 text-sm font-semibold text-white">Alvaro Sampaio</p>
-            <p className="mt-1 text-xs leading-6 text-gray-500">
-              Integracao visual, operacao do portal e publicacao do CRM dentro do ambiente Tor.
-            </p>
-          </div>
         </div>
       </aside>
 
@@ -154,7 +146,7 @@ export default function Layout({ children }) {
         <footer className="border-t border-slate-border bg-ink-100/95 px-4 py-3 text-xs text-gray-500 md:px-6">
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <p>Tor Tecnologias | Plataforma de analise, RAG e operacao comercial de licitacoes.</p>
-            <p>Creditos: Alvaro Sampaio</p>
+            <p>Portal interno unificado para automacao, busca e CRM.</p>
           </div>
         </footer>
       </div>
