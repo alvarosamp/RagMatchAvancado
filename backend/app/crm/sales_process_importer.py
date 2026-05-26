@@ -347,8 +347,8 @@ def upsert_group_products(db, context: ImportContext, notice: CrmNotice, rows: l
     for index, row in enumerate(rows, start=1):
         if sheet_name == "Processos ganhos":
             item_number = parse_item_number(row.get("item"), index)
-            description = optional_text(row.get("descricao")) or f"Item {item_number}"
             product_code = optional_text(row.get("codigo_do_produto"))
+            description = optional_text(row.get("descricao")) or product_code or f"Produto do item {item_number}"
             lot = optional_text(row.get("lote"))
             quantity = parse_float(row.get("quantidade")) or 1.0
             cost = parse_float(row.get("custo_unitario_c_ipi")) or parse_float(row.get("custo_unitario_s_ipi"))
@@ -359,8 +359,8 @@ def upsert_group_products(db, context: ImportContext, notice: CrmNotice, rows: l
             exclusive_epp = parse_bool(row.get("exclusivo_epp"))
         else:
             item_number = str(index)
-            description = optional_text(row.get("descricao_do_produto")) or f"Item {index}"
             product_code = optional_text(row.get("part_number_do_produto"))
+            description = optional_text(row.get("descricao_do_produto")) or product_code or f"Produto monitorado {index}"
             lot = None
             quantity = parse_float(row.get("quantidade")) or 1.0
             cost = parse_float(row.get("custo"))

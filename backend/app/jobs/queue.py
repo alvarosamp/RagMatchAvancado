@@ -34,6 +34,7 @@ from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
+from app.auth.models import User
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger
 
@@ -184,6 +185,45 @@ class JobQueue:
             job_id    = job_id,
             edital_id = edital_id,
             tenant_id = tenant_id,
+        )
+
+        return job_id
+
+    def criar_job_crm_notice_match(
+        self,
+        background_tasks: BackgroundTasks,
+        notice_id:         str,
+        tenant_id:         str,
+        user_id:           int,
+        db:                Session,
+    ) -> str:
+        """
+        Cria um job assíncrono de match do CRM (catalogo x itens do edital).
+        """
+        job_id = str(uuid.uuid4())
+
+        job = Job(
+            id=job_id,
+            job_type=JobType.CRM_NOTICE_MATCH,
+            status=JobStatus.PENDING,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            payload={
+                "notice_id": notice_id,
+                "tenant_id": tenant_id,
+            },
+        )
+        db.add(job)
+        db.commit()
+
+        logger.info(f"[JobQueue] Job CRM match criado | id={job_id[:8]}... | notice={notice_id}")
+
+        background_tasks.add_task(
+            _executar_job_crm_notice_match,
+            job_id=job_id,
+            notice_id=notice_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
         )
 
         return job_id
@@ -396,6 +436,93 @@ def _executar_job_matching(
             status        = JobStatus.FAILED,
             finished_at   = datetime.now(timezone.utc),
             error_message = str(e),
+        )
+
+    finally:
+        db.close()
+
+
+def _executar_job_crm_notice_match(
+    job_id: str,
+    notice_id: str,
+    tenant_id: str,
+    user_id: int,
+) -> None:
+    """
+    Handler do job de match do CRM — roda em background thread.
+
+    Etapas:
+        1. Carrega o edital CRM e o catálogo          (progress: 0.1)
+        2. Executa o match catalogo x itens           (progress: 0.1 → 0.95)
+        3. Salva o resumo do match                    (progress: 1.0)
+    """
+    db = SessionLocal()
+
+    try:
+        _update_job(
+            db,
+            job_id,
+            status=JobStatus.RUNNING,
+            progress=0.05,
+            started_at=datetime.now(timezone.utc),
+        )
+        logger.info(f"[Worker] Iniciando CRM match | job={job_id[:8]}... | notice={notice_id}")
+
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
+
+        from app.crm.models import CrmNotice
+        from app.services.crm_item_matcher import run_notice_item_match
+
+        notice = db.get(CrmNotice, notice_id)
+        user = db.get(User, user_id)
+        if not notice:
+            raise ValueError(f"Edital CRM {notice_id} nao encontrado")
+        if not user:
+            raise ValueError(f"Usuario {user_id} nao encontrado para executar o match CRM")
+
+        _update_job(db, job_id, progress=0.10)
+
+        if _is_cancelled(db, job_id):
+            raise JobCancelledError()
+
+        payload = run_notice_item_match(db, user, notice_id, use_llm=True)
+        summary = payload.get("summary") or {}
+
+        _update_job(
+            db,
+            job_id,
+            status=JobStatus.DONE,
+            progress=1.0,
+            finished_at=datetime.now(timezone.utc),
+            result={
+                "notice_id": notice_id,
+                "notice_number": notice.tor_id or notice.number,
+                "overall_score": summary.get("overall_score"),
+                "coverage_ratio": summary.get("coverage_ratio"),
+                "strong_items": summary.get("strong_items"),
+                "possible_items": summary.get("possible_items"),
+                "weak_items": summary.get("weak_items"),
+                "unmatched_items": summary.get("unmatched_items"),
+                "label": summary.get("label"),
+            },
+        )
+        logger.info(
+            f"[Worker] CRM match concluido | job={job_id[:8]}... | notice={notice_id} | "
+            f"score={summary.get('overall_score')}"
+        )
+
+    except JobCancelledError:
+        logger.info(f"[Worker] Job CRM match cancelado | job={job_id[:8]}...")
+
+    except Exception as e:
+        logger.error(f"[Worker] Job CRM match falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
+        _update_job(
+            db,
+            job_id,
+            status=JobStatus.FAILED,
+            finished_at=datetime.now(timezone.utc),
+            error_message=str(e),
         )
 
     finally:

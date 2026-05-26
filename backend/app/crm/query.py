@@ -19,6 +19,7 @@ from app.crm.models import (
     CrmNoticeDocument,
     CrmNoticeHistory,
     CrmNoticeItemResult,
+    CrmNoticeProductMatch,
     CrmNoticeOutcome,
     CrmNoticeProduct,
     CrmNoticeSession,
@@ -108,6 +109,11 @@ TABLES: dict[str, TableConfig] = {
     "notice_history": TableConfig(model=CrmNoticeHistory, update_roles=set(), delete_roles=set()),
     "notice_sessions": TableConfig(model=CrmNoticeSession, delete_roles={"admin"}),
     "notice_item_results": TableConfig(model=CrmNoticeItemResult, delete_roles={"admin", "editor"}),
+    "notice_product_matches": TableConfig(
+        model=CrmNoticeProductMatch,
+        delete_roles={"admin", "editor"},
+        eager_loads=(joinedload(CrmNoticeProductMatch.catalog_product), joinedload(CrmNoticeProductMatch.notice_product)),
+    ),
     "notice_competitors": TableConfig(model=CrmNoticeCompetitor, delete_roles={"admin"}),
     "profiles": TableConfig(virtual=True, insert_roles=set(), update_roles=set(), delete_roles=set()),
     "user_roles": TableConfig(virtual=True, insert_roles={"admin"}, update_roles={"admin"}, delete_roles={"admin"}),
@@ -331,10 +337,9 @@ def serialize_record(row: Any) -> dict[str, Any]:
             primary_session = next((item for item in row.notice_sessions if item.sequence == 1 and item.scheduled_at), None)
             if primary_session:
                 data["auction_date"] = _json_value(primary_session.scheduled_at)
-        if data.get("estimated_value") is None:
-            derived_total = derive_notice_estimated_value(row)
-            if derived_total is not None:
-                data["estimated_value"] = derived_total
+        derived_total = derive_notice_estimated_value(row)
+        if derived_total is not None or row.notice_products:
+            data["estimated_value"] = derived_total
         derived_final_value = derive_notice_final_value(row)
         if derived_final_value is not None:
             data["final_value"] = derived_final_value
@@ -349,6 +354,9 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data["reference_total_price"] = round(float(data["reference_price"]) * float(data["quantity"]), 4)
         if data.get("reference_price") is None and data.get("reference_total_price") is not None and data.get("quantity") not in (None, 0):
             data["reference_price"] = round(float(data["reference_total_price"]) / float(data["quantity"]), 4)
+    elif isinstance(row, CrmNoticeProductMatch):
+        data["catalog_product"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        data["notice_product"] = serialize_related(row.notice_product, ("id", "description", "item_number", "lot")) if row.notice_product else None
     return data
 
 

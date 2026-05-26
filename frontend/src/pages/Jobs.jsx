@@ -17,6 +17,7 @@ const STATUS_CFG = {
 const TYPE_LABELS = {
   upload_edital: 'Upload / OCR',
   run_matching: 'Matching',
+  crm_notice_match: 'CRM Match',
 }
 
 const FILTERS = [

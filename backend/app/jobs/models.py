@@ -47,6 +47,7 @@ class JobType(str, enum.Enum):
     '''
     UPLOAD_EDITAL = "upload_edital"   # OCR + chunk + embed
     RUN_MATCHING  = "run_matching"    # matching de produtos
+    CRM_NOTICE_MATCH = "crm_notice_match"  # match catalogo x itens do edital no CRM
 
 class Job(Base):
     """

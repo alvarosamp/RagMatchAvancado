@@ -29,11 +29,14 @@ def apply_notice_defaults(values: dict[str, Any], existing: CrmNotice | None = N
 
 
 def apply_notice_product_defaults(values: dict[str, Any], existing: CrmNoticeProduct | None = None) -> None:
+    explicit_reference_price = "reference_price" in values
     quantity = _coerce_float(values.get("quantity"), getattr(existing, "quantity", None), default=1.0)
     reference_price = _coerce_float(values.get("reference_price"), getattr(existing, "reference_price", None))
     reference_total = _coerce_float(values.get("reference_total_price"), getattr(existing, "reference_total_price", None))
 
-    if reference_total is None and reference_price is not None and quantity not in (None, 0):
+    if explicit_reference_price and reference_price is None:
+        values["reference_total_price"] = None
+    elif reference_price is not None and quantity not in (None, 0):
         values["reference_total_price"] = round(reference_price * quantity, 4)
     elif reference_price is None and reference_total is not None and quantity not in (None, 0):
         values["reference_price"] = round(reference_total / quantity, 4)
@@ -69,10 +72,7 @@ def sync_notice_relationships(db: Session, notice: CrmNotice, *, created_by: int
         if first_description:
             notice.title = first_description
 
-    if notice.estimated_value is None:
-        derived_total = derive_notice_estimated_value(notice)
-        if derived_total is not None:
-            notice.estimated_value = derived_total
+    notice.estimated_value = derive_notice_estimated_value(notice)
 
     sync_notice_result_from_items(notice)
 

@@ -76,6 +76,19 @@ class CrmPostAuctionPhase(str, enum.Enum):
     CLOSED = "closed"
 
 
+class CrmNoticeProductMatchStatus(str, enum.Enum):
+    SUGGESTED = "suggested"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+
+
+class CrmNoticeProductMatchLevel(str, enum.Enum):
+    STRONG = "strong"
+    POSSIBLE = "possible"
+    WEAK = "weak"
+    NONE = "none"
+
+
 class CrmOrgan(Base):
     __tablename__ = "crm_organs"
     __table_args__ = (
@@ -169,6 +182,7 @@ class CrmCatalogProduct(Base):
     model = Column(String)
     specification = Column(Text)
     sku = Column(String)
+    keywords = Column(Text)
     unit = Column(String)
     cost = Column(Float, nullable=False, default=0.0)
     tax_percent = Column(Float, nullable=False, default=0.0)
@@ -180,6 +194,7 @@ class CrmCatalogProduct(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     notice_products = relationship("CrmNoticeProduct", back_populates="catalog_product")
+    notice_product_matches = relationship("CrmNoticeProductMatch", back_populates="catalog_product", cascade="all, delete-orphan")
 
     @property
     def min_price(self) -> float:
@@ -257,6 +272,7 @@ class CrmNotice(Base):
     )
     notice_item_results = relationship("CrmNoticeItemResult", back_populates="notice", cascade="all, delete-orphan")
     notice_competitors = relationship("CrmNoticeCompetitor", back_populates="notice", cascade="all, delete-orphan")
+    notice_product_matches = relationship("CrmNoticeProductMatch", back_populates="notice", cascade="all, delete-orphan")
 
 
 class CrmNoticeProduct(Base):
@@ -287,6 +303,12 @@ class CrmNoticeProduct(Base):
     notice = relationship("CrmNotice", back_populates="notice_products")
     catalog_product = relationship("CrmCatalogProduct", back_populates="notice_products")
     item_result = relationship("CrmNoticeItemResult", back_populates="notice_product", uselist=False, cascade="all, delete-orphan")
+    product_matches = relationship(
+        "CrmNoticeProductMatch",
+        back_populates="notice_product",
+        cascade="all, delete-orphan",
+        order_by="CrmNoticeProductMatch.match_rank",
+    )
 
 
 class CrmNoticeDocument(Base):
@@ -307,6 +329,39 @@ class CrmNoticeDocument(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     notice = relationship("CrmNotice", back_populates="notice_documents")
+
+
+class CrmNoticeProductMatch(Base):
+    __tablename__ = "crm_notice_product_matches"
+    __table_args__ = (
+        UniqueConstraint("notice_product_id", "catalog_product_id", name="uq_crm_notice_product_matches_product_catalog"),
+        Index("ix_crm_notice_product_matches_notice_rank", "notice_id", "notice_product_id", "match_rank"),
+        Index("ix_crm_notice_product_matches_tenant_status", "tenant_id", "status"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
+    notice_product_id = Column(String(36), ForeignKey("crm_notice_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    match_rank = Column(Integer, nullable=False, default=1)
+    source_method = Column(String, nullable=False, default="hybrid")
+    status = Column(SqlEnum(CrmNoticeProductMatchStatus, native_enum=False), nullable=False, default=CrmNoticeProductMatchStatus.SUGGESTED)
+    match_level = Column(SqlEnum(CrmNoticeProductMatchLevel, native_enum=False), nullable=False, default=CrmNoticeProductMatchLevel.WEAK)
+    lexical_score = Column(Float)
+    semantic_score = Column(Float)
+    llm_score = Column(Float)
+    overall_score = Column(Float, nullable=False, default=0.0)
+    rationale = Column(Text)
+    matched_features = Column(JSON)
+    conflicts = Column(JSON)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    notice = relationship("CrmNotice", back_populates="notice_product_matches")
+    notice_product = relationship("CrmNoticeProduct", back_populates="product_matches")
+    catalog_product = relationship("CrmCatalogProduct", back_populates="notice_product_matches")
 
 
 class CrmNoticeHistory(Base):

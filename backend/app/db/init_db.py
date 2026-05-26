@@ -58,6 +58,13 @@ def _ensure_crm_schema_updates() -> None:
             "reference_total_price": "DOUBLE PRECISION",
         },
     )
+    _ensure_columns(
+        inspector,
+        "crm_catalog_products",
+        {
+            "keywords": "TEXT",
+        },
+    )
     _ensure_indexes(
         [
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_tor_id ON crm_notices (tenant_id, tor_id)",

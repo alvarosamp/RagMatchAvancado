@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const repoRoot = path.resolve(__dirname, '..')
 const crmRoot = path.join(repoRoot, 'bid-buddy')
-const crmDist = path.join(crmRoot, 'dist')
+const crmDist = path.join(crmRoot, 'dist-embed')
 const crmNodeModules = path.join(crmRoot, 'node_modules')
 const targetRoot = path.join(repoRoot, 'frontend', 'public', 'crm')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
