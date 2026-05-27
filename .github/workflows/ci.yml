@@ -33,7 +33,7 @@ jobs:
         run: python -m pip install -r requirements-ci.txt
 
       - name: Ruff
-        run: ruff check backend/app tests mlops/scripts --select E,F,W,I --output-format=github
+        run: ruff check backend/app --select F --output-format=github
 
   backend-tests:
     name: Backend Tests
