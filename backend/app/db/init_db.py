@@ -64,6 +64,7 @@ def _ensure_crm_schema_updates() -> None:
         "crm_catalog_products",
         {
             "keywords": "TEXT",
+            "category": "VARCHAR",
         },
     )
     _ensure_indexes(

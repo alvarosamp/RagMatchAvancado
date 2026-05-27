@@ -178,6 +178,7 @@ class CrmCatalogProduct(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
+    category = Column(String)
     brand = Column(String)
     model = Column(String)
     specification = Column(Text)
