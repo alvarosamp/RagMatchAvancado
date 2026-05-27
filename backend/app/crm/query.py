@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Float
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, func as sa_func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
@@ -19,6 +19,7 @@ from app.crm.models import (
     CrmNoticeDocument,
     CrmNoticeHistory,
     CrmNoticeItemResult,
+    CrmNoticeProductMatch,
     CrmNoticeOutcome,
     CrmNoticeProduct,
     CrmNoticeSession,
@@ -26,6 +27,17 @@ from app.crm.models import (
     CrmOrgan,
     CrmPortal,
     CrmPostAuctionPhase,
+)
+from app.services.crm_notice_sync import (
+    apply_notice_defaults,
+    apply_notice_product_defaults,
+    derive_notice_estimated_value,
+    derive_notice_final_value,
+    derive_notice_outcome_from_items,
+    sync_notice_from_item_result,
+    sync_notice_from_product,
+    sync_notice_from_session,
+    sync_notice_relationships,
 )
 
 
@@ -84,6 +96,8 @@ TABLES: dict[str, TableConfig] = {
             joinedload(CrmNotice.organ),
             joinedload(CrmNotice.portal),
             joinedload(CrmNotice.notice_documents),
+            joinedload(CrmNotice.notice_products),
+            joinedload(CrmNotice.notice_sessions),
         ),
         delete_roles={"admin"},
     ),
@@ -95,6 +109,11 @@ TABLES: dict[str, TableConfig] = {
     "notice_history": TableConfig(model=CrmNoticeHistory, update_roles=set(), delete_roles=set()),
     "notice_sessions": TableConfig(model=CrmNoticeSession, delete_roles={"admin"}),
     "notice_item_results": TableConfig(model=CrmNoticeItemResult, delete_roles={"admin", "editor"}),
+    "notice_product_matches": TableConfig(
+        model=CrmNoticeProductMatch,
+        delete_roles={"admin", "editor"},
+        eager_loads=(joinedload(CrmNoticeProductMatch.catalog_product), joinedload(CrmNoticeProductMatch.notice_product)),
+    ),
     "notice_competitors": TableConfig(model=CrmNoticeCompetitor, delete_roles={"admin"}),
     "profiles": TableConfig(virtual=True, insert_roles=set(), update_roles=set(), delete_roles=set()),
     "user_roles": TableConfig(virtual=True, insert_roles={"admin"}, update_roles={"admin"}, delete_roles={"admin"}),
@@ -188,8 +207,18 @@ def insert_records(
     instances = []
     for row in rows:
         payload = _prepare_payload(config.model, row, current_user, existing=None)
+        _validate_business_rules(db, current_user, config.model, payload, existing=None)
         instance = config.model(**payload)
         db.add(instance)
+        db.flush()
+        if config.model is CrmNotice:
+            sync_notice_relationships(db, instance, created_by=current_user.id)
+        elif config.model is CrmNoticeProduct:
+            sync_notice_from_product(db, instance, created_by=current_user.id)
+        elif config.model is CrmNoticeSession:
+            sync_notice_from_session(db, instance, created_by=current_user.id)
+        elif config.model is CrmNoticeItemResult:
+            sync_notice_from_item_result(db, instance, created_by=current_user.id)
         instances.append(instance)
 
     db.commit()
@@ -220,8 +249,17 @@ def update_records(
 
     for row in rows:
         payload = _prepare_payload(config.model, values, current_user, existing=row)
+        _validate_business_rules(db, current_user, config.model, payload, existing=row)
         for key, value in payload.items():
             setattr(row, key, value)
+        if config.model is CrmNotice:
+            sync_notice_relationships(db, row, created_by=current_user.id)
+        elif config.model is CrmNoticeProduct:
+            sync_notice_from_product(db, row, created_by=current_user.id)
+        elif config.model is CrmNoticeSession:
+            sync_notice_from_session(db, row, created_by=current_user.id)
+        elif config.model is CrmNoticeItemResult:
+            sync_notice_from_item_result(db, row, created_by=current_user.id)
 
     db.commit()
     for row in rows:
@@ -249,8 +287,16 @@ def delete_records(
     query = _apply_filters(query, config.model, filters or [])
     rows = query.all()
     count = len(rows)
+    affected_notice_ids: set[str] = set()
+    if config.model in {CrmNoticeProduct, CrmNoticeSession, CrmNoticeItemResult}:
+        affected_notice_ids = {row.notice_id for row in rows if getattr(row, "notice_id", None)}
     for row in rows:
         db.delete(row)
+    db.flush()
+    for notice_id in affected_notice_ids:
+        notice = db.get(CrmNotice, notice_id)
+        if notice is not None:
+            sync_notice_relationships(db, notice, created_by=current_user.id)
     db.commit()
     return count
 
@@ -278,11 +324,39 @@ def serialize_record(row: Any) -> dict[str, Any]:
     if isinstance(row, CrmCatalogProduct):
         data["min_price"] = row.min_price
     elif isinstance(row, CrmNotice):
-        data["organs"] = serialize_related(row.organ, ("id", "name")) if row.organ else None
+        data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None
         data["portals"] = serialize_related(row.portal, ("id", "name", "url")) if row.portal else None
         data["notice_documents"] = [serialize_record(doc) for doc in sorted(row.notice_documents, key=lambda item: item.sort_order or 0)]
+        if not data.get("municipality_name") and row.organ and row.organ.city:
+            data["municipality_name"] = row.organ.city
+        if not data.get("title"):
+            first_description = next((item.description for item in row.notice_products if item.description), None)
+            if first_description:
+                data["title"] = first_description
+        if not data.get("auction_date"):
+            primary_session = next((item for item in row.notice_sessions if item.sequence == 1 and item.scheduled_at), None)
+            if primary_session:
+                data["auction_date"] = _json_value(primary_session.scheduled_at)
+        derived_total = derive_notice_estimated_value(row)
+        if derived_total is not None or row.notice_products:
+            data["estimated_value"] = derived_total
+        derived_final_value = derive_notice_final_value(row)
+        if derived_final_value is not None:
+            data["final_value"] = derived_final_value
+        derived_outcome = derive_notice_outcome_from_items(row)
+        if derived_outcome is not None:
+            data["outcome"] = derived_outcome.value
+        if not data.get("tor_id") and data.get("number"):
+            data["tor_id"] = data["number"]
     elif isinstance(row, CrmNoticeProduct):
         data["catalog_products"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        if data.get("reference_total_price") is None and data.get("reference_price") is not None and data.get("quantity") not in (None, 0):
+            data["reference_total_price"] = round(float(data["reference_price"]) * float(data["quantity"]), 4)
+        if data.get("reference_price") is None and data.get("reference_total_price") is not None and data.get("quantity") not in (None, 0):
+            data["reference_price"] = round(float(data["reference_total_price"]) / float(data["quantity"]), 4)
+    elif isinstance(row, CrmNoticeProductMatch):
+        data["catalog_product"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        data["notice_product"] = serialize_related(row.notice_product, ("id", "description", "item_number", "lot")) if row.notice_product else None
     return data
 
 
@@ -371,9 +445,150 @@ def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, e
             values["description"] = specification
 
     if model is CrmNotice:
+        apply_notice_defaults(values, existing)
         _apply_notice_business_rules(values, existing)
+    elif model is CrmNoticeProduct:
+        apply_notice_product_defaults(values, existing)
 
     return values
+
+
+def _validate_business_rules(
+    db: Session,
+    current_user: User,
+    model: type,
+    payload: dict[str, Any],
+    existing: Any | None,
+) -> None:
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="number" if model is CrmNotice else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um edital CRM com este numero para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="tor_id" if model is CrmNotice else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um edital CRM com este ID Tor para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="import_key" if model is CrmNotice else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um edital CRM importado com esta chave no tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="name" if model is CrmPortal else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um portal com este nome para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="cnpj" if model is CrmOrgan else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um orgao com este CNPJ para o tenant atual.",
+    )
+    _validate_unique_field(
+        db,
+        model,
+        payload,
+        existing,
+        field_name="sku" if model is CrmCatalogProduct else None,
+        tenant_id=current_user.tenant_id,
+        message="Ja existe um produto de catalogo com este SKU para o tenant atual.",
+    )
+
+    if model is CrmChecklistTemplate:
+        is_default = payload.get("is_default")
+        if is_default:
+            query = db.query(CrmChecklistTemplate).filter(
+                CrmChecklistTemplate.tenant_id == current_user.tenant_id,
+                CrmChecklistTemplate.is_default.is_(True),
+            )
+            if existing is not None:
+                query = query.filter(CrmChecklistTemplate.id != existing.id)
+            if query.first():
+                raise ValueError("Ja existe um template padrao para este tenant.")
+
+    if model is CrmNoticeProduct:
+        notice_id = payload.get("notice_id") or getattr(existing, "notice_id", None)
+        item_number = payload.get("item_number")
+        if notice_id and item_number:
+            query = db.query(CrmNoticeProduct).filter(
+                CrmNoticeProduct.notice_id == notice_id,
+                sa_func.lower(CrmNoticeProduct.item_number) == str(item_number).strip().lower(),
+            )
+            if existing is not None:
+                query = query.filter(CrmNoticeProduct.id != existing.id)
+            if query.first():
+                raise ValueError("Este edital ja possui um item com este numero.")
+
+    if model is CrmNoticeSession:
+        notice_id = payload.get("notice_id") or getattr(existing, "notice_id", None)
+        sequence = payload.get("sequence")
+        if notice_id and sequence is not None:
+            query = db.query(CrmNoticeSession).filter(
+                CrmNoticeSession.notice_id == notice_id,
+                CrmNoticeSession.sequence == sequence,
+            )
+            if existing is not None:
+                query = query.filter(CrmNoticeSession.id != existing.id)
+            if query.first():
+                raise ValueError("Este edital ja possui uma sessao com essa sequencia.")
+
+
+def _validate_unique_field(
+    db: Session,
+    model: type,
+    payload: dict[str, Any],
+    existing: Any | None,
+    *,
+    field_name: str | None,
+    tenant_id: int,
+    message: str,
+) -> None:
+    if not field_name:
+        return
+
+    raw_value = payload.get(field_name)
+    if raw_value is None:
+        return
+
+    if isinstance(raw_value, str):
+        normalized = raw_value.strip()
+        if not normalized:
+            return
+    else:
+        normalized = raw_value
+
+    column = getattr(model, field_name)
+    query = db.query(model).filter(model.tenant_id == tenant_id)
+    if isinstance(normalized, str):
+        query = query.filter(sa_func.lower(column) == normalized.lower())
+    else:
+        query = query.filter(column == normalized)
+    if existing is not None:
+        query = query.filter(model.id != existing.id)
+
+    if query.first():
+        raise ValueError(message)
 
 
 def _apply_notice_business_rules(values: dict[str, Any], existing: Any | None) -> None:

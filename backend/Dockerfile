@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir --upgrade pip
 
 COPY requirements.txt .
 
+# Instala PyTorch CPU-only antes do docling para evitar download das libs CUDA (~2GB)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 # Instala dependências listadas em requirements.txt (inclui uvicorn)
 RUN pip install --no-cache-dir -r requirements.txt
 

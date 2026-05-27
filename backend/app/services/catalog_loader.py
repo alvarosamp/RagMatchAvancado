@@ -33,7 +33,11 @@ def load_switch_catalog(db: Session) -> int:
     """
     Carrega o catálogo de switches no banco de dados a partir de um arquivo JSON.
     """
-    catalog_path = _find_switch_catalog_path()
+    try:
+        catalog_path = _find_switch_catalog_path()
+    except FileNotFoundError as e:
+        logger.warning(f"Catálogo de switches não encontrado, ignorando: {e}")
+        return 0
     with catalog_path.open("r", encoding="utf-8") as file:
         catalog = json.load(file)
 

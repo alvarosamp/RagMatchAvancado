@@ -24,6 +24,7 @@ from app.jobs.models import Job, JobStatus, JobType
 from app.auth.models import User
 from app.auth.dependencies import get_current_user
 from app.logs.config import logger
+from app.services.ops_summary import summarize_jobs
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -60,6 +61,20 @@ class JobResponse(BaseModel):
     status_label:     str              # "⏳ Aguardando" / "🔄 Processando" / etc.
 
     model_config = {"from_attributes": True}
+
+
+@router.get("/summary")
+def get_jobs_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    jobs = (
+        db.query(Job)
+        .filter(Job.tenant_id == current_user.tenant.slug)
+        .order_by(Job.created_at.desc())
+        .all()
+    )
+    return summarize_jobs(jobs)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
