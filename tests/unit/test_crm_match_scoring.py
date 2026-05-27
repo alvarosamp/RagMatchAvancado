@@ -1,4 +1,5 @@
 from app.services.crm_match_scoring import build_match_summary, combine_scores, lexical_similarity, normalize_text, score_to_level
+from app.services.crm_item_matcher import build_product_reuse_signature
 
 
 def test_normalize_text_removes_accents_and_symbols():
@@ -34,3 +35,12 @@ def test_build_match_summary_reports_general_match():
     assert summary["unmatched_items"] == 1
     assert summary["label"] in {"Alta aderencia", "Aderencia parcial"}
     assert 0.0 <= summary["overall_score"] <= 1.0
+
+
+def test_build_product_reuse_signature_ignores_case_and_accents():
+    original = build_product_reuse_signature("Notebook Corporativo 14 Polegadas", "ABC-10")
+    equivalent = build_product_reuse_signature("notebook corporativo 14 polegadas", "abc 10")
+    different = build_product_reuse_signature("Mouse sem fio", "ABC-10")
+
+    assert original == equivalent
+    assert original != different

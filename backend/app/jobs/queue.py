@@ -486,7 +486,12 @@ def _executar_job_crm_notice_match(
         if _is_cancelled(db, job_id):
             raise JobCancelledError()
 
-        payload = run_notice_item_match(db, user, notice_id, use_llm=True)
+        job = db.get(Job, job_id)
+        use_llm = True
+        if job is not None:
+            use_llm = bool((job.payload or {}).get("use_llm", True))
+
+        payload = run_notice_item_match(db, user, notice_id, use_llm=use_llm)
         summary = payload.get("summary") or {}
 
         _update_job(

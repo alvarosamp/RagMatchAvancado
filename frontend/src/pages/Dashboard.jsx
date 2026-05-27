@@ -26,6 +26,46 @@ function StatusChip({ label, tone = 'neutral' }) {
   )
 }
 
+function renderModuleIcon(badge) {
+  const props = { className: "h-5 w-5 stroke-current", fill: "none", stroke: "currentColor", strokeWidth: "2" };
+  switch (badge) {
+    case 'RAG':
+      return (
+        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <line x1="10" y1="9" x2="8" y2="9" />
+        </svg>
+      );
+    case 'PN':
+      return (
+        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      );
+    case 'CRM':
+      return (
+        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <path d="M12 11v6" />
+          <path d="M9 14h6" />
+        </svg>
+      );
+    case 'OPS':
+      return (
+        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      );
+    default:
+      return badge;
+  }
+}
+
 function StatCard({ label, value, sub, tone = 'azure' }) {
   const tones = {
     azure: 'from-azure/14 to-azure/5 border-azure/20',
@@ -36,7 +76,7 @@ function StatCard({ label, value, sub, tone = 'azure' }) {
 
   return (
     <div className={`rounded-[24px] border bg-gradient-to-br p-5 ${tones[tone]}`}>
-      <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">{label}</p>
+      <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
       <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
@@ -53,7 +93,7 @@ function SignalCard({ label, value, sub, tone = 'neutral' }) {
 
   return (
     <div className={`rounded-[22px] border p-4 ${tones[tone]}`}>
-      <p className="text-[11px] font-mono uppercase tracking-[0.24em]">{label}</p>
+      <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
       <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
@@ -68,16 +108,16 @@ function ModuleCard({ badge, title, description, meta, onClick, actionLabel }) {
       className="group rounded-[24px] border border-slate-border bg-slate-card/95 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-azure/30 hover:bg-slate-hover"
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-[12px] font-mono font-bold uppercase text-azure-glow">
-          {badge}
+        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-azure-glow">
+          {renderModuleIcon(badge)}
         </div>
-        <span className="text-xs font-mono uppercase tracking-[0.22em] text-gray-500 group-hover:text-azure-glow">
+        <span className="text-xs font-semibold tracking-wide text-gray-500 group-hover:text-azure-glow">
           {actionLabel}
         </span>
       </div>
       <h3 className="mt-4 font-display text-xl font-bold text-white">{title}</h3>
       <p className="mt-2 text-sm leading-7 text-gray-400">{description}</p>
-      <p className="mt-4 text-xs font-mono uppercase tracking-[0.18em] text-gray-500">{meta}</p>
+      <p className="mt-4 text-xs font-semibold tracking-wide text-gray-500">{meta}</p>
     </button>
   )
 }

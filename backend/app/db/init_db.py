@@ -19,6 +19,7 @@ def init_db(db: Session) -> dict:
     try:
         ensure_pgvector_extension(db)
         Base.metadata.create_all(bind=engine)
+        _ensure_job_enum_updates()
         _ensure_crm_schema_updates()
         logger.info("Tabelas do portal e do CRM criadas com sucesso.")
 
@@ -71,6 +72,24 @@ def _ensure_crm_schema_updates() -> None:
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_municipality ON crm_notices (tenant_id, municipality_name)",
         ]
     )
+
+def _ensure_job_enum_updates() -> None:
+    """
+    O SQLAlchemy Enum(JobType) gera um enum nativo no Postgres (tipo `jobtype`).
+    Em bancos já criados, precisamos adicionar novos valores ao tipo para suportar
+    novos jobs sem recriar a base.
+    """
+    statements = [
+        "ALTER TYPE jobtype ADD VALUE IF NOT EXISTS 'CRM_NOTICE_MATCH'",
+    ]
+    with engine.begin() as connection:
+        for statement in statements:
+            try:
+                connection.execute(text(statement))
+            except Exception as exc:
+                # Se o tipo ainda não existir (primeira execução) ou se o banco não for Postgres,
+                # o create_all já cuidará; aqui é só um best-effort para bases existentes.
+                logger.info("Skip enum update (%s): %s", statement, exc)
 
 
 def _ensure_columns(inspector, table_name: str, columns: dict[str, str]) -> None:

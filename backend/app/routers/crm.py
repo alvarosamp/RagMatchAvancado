@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
-from app.crm.models import CrmNotice
+from app.crm.models import CrmNotice, CrmNoticeStage
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
 from app.jobs.models import Job, JobStatus, JobType
@@ -227,6 +227,88 @@ def crm_match_jobs(
             }
             for job in jobs
         ]
+    }
+
+@router.post("/matches/run-batch")
+def crm_run_match_batch(
+    background_tasks: BackgroundTasks,
+    stage: str = Body(..., embed=True, description="Etapa do edital: triage|analysis|documentation|auction|result"),
+    limit: int = Body(default=50, embed=True, ge=1, le=500),
+    use_llm: bool = Body(default=True, embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in {"admin", "editor"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match em lote.")
+
+    try:
+        stage_enum = CrmNoticeStage(stage)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Etapa invalida.") from exc
+
+    notices = (
+        db.query(CrmNotice)
+        .options(selectinload(CrmNotice.notice_products))
+        .filter(
+            CrmNotice.tenant_id == current_user.tenant_id,
+            CrmNotice.stage == stage_enum,
+        )
+        .order_by(CrmNotice.updated_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    queue = JobQueue()
+    job_ids: list[str] = []
+    skipped_existing: list[str] = []
+    skipped_empty: list[str] = []
+
+    # Pre-carrega jobs ativos para evitar N queries.
+    active_jobs = (
+        db.query(Job)
+        .filter(
+            Job.tenant_id == current_user.tenant.slug,
+            Job.job_type == JobType.CRM_NOTICE_MATCH,
+            Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING]),
+        )
+        .order_by(Job.created_at.desc())
+        .limit(500)
+        .all()
+    )
+    active_notice_ids = {((job.payload or {}).get("notice_id") or "") for job in active_jobs}
+
+    for notice in notices:
+        if not (notice.notice_products or []):
+            skipped_empty.append(notice.id)
+            continue
+        if notice.id in active_notice_ids:
+            skipped_existing.append(notice.id)
+            continue
+        job_id = queue.criar_job_crm_notice_match(
+            background_tasks=background_tasks,
+            notice_id=notice.id,
+            tenant_id=current_user.tenant.slug,
+            user_id=current_user.id,
+            db=db,
+        )
+        # Permite mudar o comportamento do job sem criar outro endpoint.
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if job is not None:
+            job.payload = {**(job.payload or {}), "use_llm": bool(use_llm)}
+            db.add(job)
+        job_ids.append(job_id)
+
+    db.commit()
+    return {
+        "ok": True,
+        "stage": stage_enum.value,
+        "requested": len(notices),
+        "enqueued": len(job_ids),
+        "skipped_existing": len(skipped_existing),
+        "skipped_empty": len(skipped_empty),
+        "job_ids": job_ids,
+        "skipped_existing_notice_ids": skipped_existing,
+        "skipped_empty_notice_ids": skipped_empty,
     }
 
 

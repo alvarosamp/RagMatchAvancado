@@ -56,8 +56,42 @@ def run_notice_item_match(
 
     embedding_cache: dict[str, list[float]] = {}
     best_scores: list[dict[str, Any]] = []
+    reusable_matches = _build_reusable_match_index(db, current_user)
 
     for product in notice.notice_products:
+        reused_catalog = _find_reusable_catalog_product(product, reusable_matches)
+        if reused_catalog is not None:
+            reused_match = CrmNoticeProductMatch(
+                tenant_id=current_user.tenant_id,
+                notice_id=notice.id,
+                notice_product_id=product.id,
+                catalog_product_id=reused_catalog.id,
+                match_rank=1,
+                source_method="reuse_confirmed",
+                status=CrmNoticeProductMatchStatus.CONFIRMED,
+                match_level=CrmNoticeProductMatchLevel.STRONG,
+                lexical_score=1.0,
+                semantic_score=1.0,
+                llm_score=None,
+                overall_score=1.0,
+                rationale="Reaproveitado de item identico com match previamente confirmado.",
+                matched_features=["descricao normalizada identica", "historico confirmado"],
+                conflicts=None,
+                created_by=current_user.id,
+            )
+            product.catalog_product_id = reused_catalog.id
+            if product.unit_price is None and reused_catalog.min_price is not None:
+                product.unit_price = float(reused_catalog.min_price)
+            if product.cost is None and reused_catalog.cost is not None:
+                product.cost = float(reused_catalog.cost)
+            db.add(reused_match)
+            best_scores.append({
+                "notice_product_id": product.id,
+                "best_score": 1.0,
+                "reference_value": _reference_value(product),
+            })
+            continue
+
         ranked = _rank_candidates(product, catalog_products, embedding_cache=embedding_cache, use_llm=use_llm)
         matches: list[CrmNoticeProductMatch] = []
         for rank, candidate in enumerate(ranked[:SUGGESTIONS_PER_ITEM], start=1):
@@ -416,3 +450,47 @@ def _match_level_enum(raw_level: str | None) -> CrmNoticeProductMatchLevel:
         return CrmNoticeProductMatchLevel(raw_level or "weak")
     except ValueError:
         return CrmNoticeProductMatchLevel.WEAK
+
+
+def build_product_reuse_signature(description: str | None, product_code: str | None = None) -> str:
+    parts = [normalize_text(description), normalize_text(product_code)]
+    return "||".join(part for part in parts if part)
+
+
+def _build_reusable_match_index(db: Session, current_user: User) -> dict[str, CrmCatalogProduct]:
+    confirmed_matches = (
+        db.query(CrmNoticeProductMatch)
+        .options(
+            joinedload(CrmNoticeProductMatch.notice_product),
+            joinedload(CrmNoticeProductMatch.catalog_product),
+        )
+        .filter(
+            CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
+            CrmNoticeProductMatch.status == CrmNoticeProductMatchStatus.CONFIRMED,
+        )
+        .all()
+    )
+
+    reusable: dict[str, CrmCatalogProduct] = {}
+    for match in confirmed_matches:
+        if not match.notice_product or not match.catalog_product:
+            continue
+        if not match.catalog_product.is_active:
+            continue
+        signature = build_product_reuse_signature(
+            match.notice_product.description,
+            match.notice_product.product_code,
+        )
+        if signature and signature not in reusable:
+            reusable[signature] = match.catalog_product
+    return reusable
+
+
+def _find_reusable_catalog_product(
+    product: CrmNoticeProduct,
+    reusable_matches: dict[str, CrmCatalogProduct],
+) -> CrmCatalogProduct | None:
+    signature = build_product_reuse_signature(product.description, product.product_code)
+    if not signature:
+        return None
+    return reusable_matches.get(signature)
