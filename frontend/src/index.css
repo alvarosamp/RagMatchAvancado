@@ -9,10 +9,11 @@
 
   body {
     @apply bg-ink text-white font-body antialiased;
+    /* Visual mais "produto": menos neon/IA, mais discreto e consistente */
     background-image:
-      radial-gradient(1200px 500px at 20% -10%, rgba(220, 38, 38, 0.10) 0%, rgba(220, 38, 38, 0.00) 55%),
-      radial-gradient(900px 400px at 85% 0%, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.00) 60%),
-      radial-gradient(800px 500px at 10% 85%, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.00) 55%);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.00) 40%),
+      radial-gradient(900px 420px at 18% 0%, rgba(220, 38, 38, 0.06) 0%, rgba(220, 38, 38, 0.00) 62%),
+      radial-gradient(800px 420px at 88% 10%, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.00) 68%);
   }
 
   ::-webkit-scrollbar {
@@ -62,4 +63,3 @@
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium bg-slate-border/40 text-gray-400 border border-slate-border;
   }
 }
-

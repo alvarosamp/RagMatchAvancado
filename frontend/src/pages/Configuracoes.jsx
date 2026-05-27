@@ -1,7 +1,7 @@
 /**
  * pages/Configuracoes.jsx
  * ────────────────────────
- * Preferências de conta, modelo de IA padrão e informações do tenant.
+ * Preferencias de conta, modelo padrao e informacoes do tenant.
  */
 
 import { useState } from 'react'
@@ -85,8 +85,8 @@ export default function Configuracoes() {
         </div>
       </Section>
 
-      {/* ── Modelo de IA ───────────────────────────────────────────────────── */}
-      <Section title="Modelo de IA" description="Modelo padrão usado no ChatBot">
+      {/* ── Modelo ─────────────────────────────────────────────────────────── */}
+      <Section title="Modelo" description="Modelo padrao usado no ChatBot">
         <div className="space-y-3">
           {[
             {
