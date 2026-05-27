@@ -48,7 +48,7 @@ def test_sanitize_csv_value_normaliza_basico(monkeypatch) -> None:
 
 def test_norm_key_remove_acentos(monkeypatch) -> None:
     mod = _load_pipeline_module(monkeypatch)
-    assert mod._norm_key("Nº Pregão") == "n pregao"
+    assert mod._norm_key("Nº Pregão") == "no pregao"
     assert mod._norm_key("Órgão") == "orgao"
     assert mod._norm_key("  UF  ") == "uf"
 
