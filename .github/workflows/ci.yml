@@ -5,6 +5,15 @@ on:
     branches: ["**"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_images:
+        description: "Buildar e publicar imagens no Docker Hub (latest + sha)"
+        required: true
+        default: "false"
+      deploy_vps:
+        description: "Fazer deploy na VPS (requer VPS_* secrets)"
+        required: true
+        default: "false"
 
 permissions:
   contents: read
@@ -142,7 +151,12 @@ jobs:
       - backend-tests
       - frontend-build
       - docker-build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name != 'pull_request' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_images == 'true')
+      )
     strategy:
       fail-fast: false
       matrix:
@@ -197,7 +211,12 @@ jobs:
     name: Deploy Production
     runs-on: ubuntu-latest
     needs: publish-images
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name != 'pull_request' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_vps == 'true')
+      )
     environment:
       name: production
     concurrency:
