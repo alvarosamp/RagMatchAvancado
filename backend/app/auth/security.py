@@ -17,7 +17,7 @@ import os
 import bcrypt as _bcrypt_lib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import JWTError, jwt
+from jose import jwt
 from app.logs.config import logger
 from dotenv import load_dotenv
 

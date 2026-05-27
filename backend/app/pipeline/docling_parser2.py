@@ -11,7 +11,6 @@ Versão otimizada com processamento em lotes (batch) e OCR via Tesseract.
 from __future__ import annotations
 
 import gc
-import json
 import tempfile
 import time
 from dataclasses import dataclass, field
