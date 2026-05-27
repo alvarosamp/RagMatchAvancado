@@ -2,6 +2,7 @@ name: CI-CD
 
 on:
   push:
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -12,6 +13,7 @@ env:
   PYTHONPATH: backend
   SECRET_KEY: test-secret-ci
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  DOCKERHUB_NAMESPACE: alvarocareli
 
 jobs:
   lint:
@@ -175,7 +177,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_name }}
+          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ matrix.image_name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
@@ -195,7 +197,7 @@ jobs:
     name: Deploy Production
     runs-on: ubuntu-latest
     needs: publish-images
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && secrets.VPS_HOST != ''
     environment:
       name: production
     concurrency:
