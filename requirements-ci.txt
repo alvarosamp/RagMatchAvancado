@@ -7,3 +7,4 @@ pydantic-settings
 pydantic[email]
 python-dotenv
 pyyaml>=6.0
+openpyxl>=3.1
