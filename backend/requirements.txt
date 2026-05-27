@@ -11,7 +11,9 @@ pgvector
 
 # ── OCR / Parser ──────────────────────────────────────────────────────────────
 docling
-tesseract
+pypdf>=4.0.0
+# Docling usa o tesseract via CLI (binario do sistema). Esse pacote e so um wrapper.
+pytesseract>=0.3.10
 
 # ── LLM / Embeddings ──────────────────────────────────────────────────────────
 ollama

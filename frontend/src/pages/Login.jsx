@@ -103,12 +103,12 @@ export default function Login() {
           <h1 className={`font-display font-extrabold text-5xl leading-tight mb-4 ${isLight ? 'text-stone-900' : 'text-white'}`}>
             Licitacoes
             <br />
-            <span className={isLight ? 'text-red-700' : 'text-azure-glow'}>inteligentes</span>
+            <span className={isLight ? 'text-red-700' : 'text-azure-glow'}>operacionais</span>
             <br />
             para sua empresa
           </h1>
           <p className={`font-body text-lg leading-relaxed max-w-xs ${isLight ? 'text-stone-600' : 'text-gray-400'}`}>
-            Analise automatizada de editais com OCR, IA e matching de produtos.
+            Analise automatizada de editais com OCR e matching de produtos.
           </p>
         </div>
 

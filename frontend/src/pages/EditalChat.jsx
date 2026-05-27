@@ -59,7 +59,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
             <div className="w-5 h-5 rounded bg-gradient-to-br from-azure to-amber flex items-center justify-center">
               <span className="text-white text-xs font-mono font-black">T</span>
             </div>
-            <span className="text-xs font-mono text-gray-500">{model || 'IA'}</span>
+            <span className="text-xs font-mono text-gray-500">{model || 'modelo'}</span>
           </div>
           <p className="text-sm text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
             {text}
@@ -258,7 +258,7 @@ export default function EditalChat() {
               Pergunte sobre o edital
             </p>
             <p className="text-gray-500 text-sm mb-8 max-w-sm">
-              A IA analisa os trechos relevantes do documento e responde com base no conteúdo real.
+              O assistente consulta os trechos relevantes do documento e responde com base no conteúdo real.
             </p>
 
             {/* Sugestões de perguntas */}
