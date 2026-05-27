@@ -13,13 +13,13 @@ function formatSyncDate(value) {
 
 function StatusChip({ label, tone = 'neutral' }) {
   const tones = {
-    success: 'border-green-match/30 bg-green-match/10 text-green-match',
-    warning: 'border-yellow-warn/30 bg-yellow-warn/10 text-yellow-warn',
+    success: 'border-green-match/25 bg-green-match/10 text-green-match',
+    warning: 'border-yellow-warn/25 bg-yellow-warn/10 text-yellow-warn',
     neutral: 'border-slate-border bg-ink-50 text-gray-400',
   }
 
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-mono uppercase tracking-[0.2em] ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-body font-semibold ${tones[tone]}`}>
       <span className={`h-2 w-2 rounded-full ${tone === 'success' ? 'bg-green-match' : tone === 'warning' ? 'bg-yellow-warn' : 'bg-gray-500'}`} />
       {label}
     </span>
@@ -77,7 +77,7 @@ function StatCard({ label, value, sub, tone = 'azure' }) {
   return (
     <div className={`rounded-[24px] border bg-gradient-to-br p-5 ${tones[tone]}`}>
       <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
-      <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
+      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
   )
@@ -94,7 +94,7 @@ function SignalCard({ label, value, sub, tone = 'neutral' }) {
   return (
     <div className={`rounded-[22px] border p-4 ${tones[tone]}`}>
       <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
-      <p className="mt-3 font-display text-3xl font-black text-white">{value}</p>
+      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm text-gray-400">{sub}</p>
     </div>
   )
@@ -105,19 +105,19 @@ function ModuleCard({ badge, title, description, meta, onClick, actionLabel }) {
     <button
       type="button"
       onClick={onClick}
-      className="group rounded-[24px] border border-slate-border bg-slate-card/95 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-azure/30 hover:bg-slate-hover"
+      className="group rounded-2xl border border-slate-border bg-slate-card/95 p-5 text-left transition-colors hover:bg-slate-hover"
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-azure-glow">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-ink-50 text-azure-glow">
           {renderModuleIcon(badge)}
         </div>
-        <span className="text-xs font-semibold tracking-wide text-gray-500 group-hover:text-azure-glow">
+        <span className="text-xs font-medium text-gray-500 group-hover:text-gray-300">
           {actionLabel}
         </span>
       </div>
-      <h3 className="mt-4 font-display text-xl font-bold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-gray-400">{description}</p>
-      <p className="mt-4 text-xs font-semibold tracking-wide text-gray-500">{meta}</p>
+      <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-gray-400">{description}</p>
+      <p className="mt-4 text-xs font-medium text-gray-500">{meta}</p>
     </button>
   )
 }
@@ -212,42 +212,36 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      <section className="relative overflow-hidden rounded-[30px] border border-slate-border bg-gradient-to-br from-ink-100 via-[#150b0b] to-[#2a1010] p-6 lg:p-8">
-        <div className="absolute inset-0 opacity-80" style={{ backgroundImage: 'radial-gradient(circle at top right, rgba(248,113,113,0.18), transparent 34%), radial-gradient(circle at bottom left, rgba(220,38,38,0.12), transparent 36%)' }} />
+      <section className="relative overflow-hidden rounded-3xl border border-slate-border bg-ink-100/60 p-6 lg:p-8">
+        <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 30% -10%, rgba(220,38,38,0.16), transparent 55%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.06), transparent 60%)' }} />
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-mono uppercase tracking-[0.34em] text-gray-500">
-              {user?.tenant?.name || 'Tor Tecnologias'}
-            </p>
-            <h1 className="mt-3 font-display text-3xl font-black text-white lg:text-5xl">
-              Operacao de licitacoes, analise inteligente e CRM comercial em um unico portal
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-300 lg:text-base">
-              O site principal agora pode centralizar upload, analise, importacao PNCP, fila de jobs e o CRM do Bid Buddy em uma rota integrada pronta para publicacao.
+            <p className="text-sm font-medium text-gray-400">{user?.tenant?.name || 'Tor Tecnologias'}</p>
+            <h1 className="mt-2 text-2xl font-semibold text-white lg:text-3xl">Visao geral</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+              Acompanhe status do ambiente, fila e CRM. Atalhos rapidos para as areas mais usadas.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <StatusChip label={apiOnline ? 'api online' : 'api indisponivel'} tone={apiOnline ? 'success' : 'warning'} />
-              <StatusChip label={crmSync ? 'crm sincronizado' : 'crm aguardando sync'} tone={crmSync ? 'success' : 'warning'} />
-              <StatusChip label={`ultima sync ${formatSyncDate(crmSync?.builtAt)}`} />
+              <StatusChip label={apiOnline ? 'API online' : 'API indisponivel'} tone={apiOnline ? 'success' : 'warning'} />
+              <StatusChip label={crmSync ? 'CRM pronto' : 'CRM pendente'} tone={crmSync ? 'success' : 'warning'} />
+              <StatusChip label={`Atualizado: ${formatSyncDate(crmSync?.builtAt)}`} />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:w-[340px]">
             {isEditor && (
-              <button onClick={() => navigate('/upload')} className="btn-primary h-14">
+              <button onClick={() => navigate('/upload')} className="btn-primary h-12">
                 Novo edital
               </button>
             )}
-            <button onClick={() => navigate('/crm')} className="btn-ghost h-14">
-              Abrir CRM integrado
+            <button onClick={() => navigate('/crm')} className="btn-ghost h-12">
+              Abrir CRM
             </button>
-            <div className="rounded-2xl border border-slate-border bg-black/20 px-4 py-4 sm:col-span-2">
-              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Ambiente</p>
-              <p className="mt-2 text-sm font-semibold text-white">Portal operacional da Tor</p>
-              <p className="mt-1 text-xs leading-6 text-gray-500">
-                Upload, fila, analise de editais e CRM comercial dentro da mesma experiencia.
-              </p>
+            <div className="rounded-2xl border border-slate-border bg-ink-50/60 px-4 py-4 sm:col-span-2">
+              <p className="text-xs font-medium text-gray-500">Ambiente</p>
+              <p className="mt-1 text-sm font-semibold text-white">Operacao Tor</p>
+              <p className="mt-1 text-xs leading-6 text-gray-500">Triagem, operacao e CRM no mesmo portal.</p>
             </div>
           </div>
         </div>
@@ -256,33 +250,33 @@ export default function Dashboard() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <ModuleCard
           badge="RAG"
-          title="Pipeline de editais"
-          description="Upload, OCR, indexacao e matching dos documentos principais."
-          meta="entrada operacional"
+          title="Editais"
+          description="Upload e processamento (OCR, indexacao e requisitos)."
+          meta="entrada e processamento"
           actionLabel="abrir"
           onClick={() => navigate('/upload')}
         />
         <ModuleCard
           badge="PN"
-          title="Busca no PNCP"
-          description="Importe novas oportunidades sem sair do portal principal."
-          meta="captacao publica"
+          title="PNCP"
+          description="Buscar e importar oportunidades publicas."
+          meta="captacao"
           actionLabel="buscar"
           onClick={() => navigate('/pncp')}
         />
         <ModuleCard
           badge="CRM"
-          title="Licita CRM"
-          description="Painel comercial do Bid Buddy embarcado no site da Tor."
-          meta={crmSync ? `sync ${formatSyncDate(crmSync.builtAt)}` : 'sync pendente'}
-          actionLabel="integrado"
+          title="CRM"
+          description="Funil comercial por item, documentos e disputa."
+          meta={crmSync ? `Atualizado: ${formatSyncDate(crmSync.builtAt)}` : 'Atualizacao pendente'}
+          actionLabel="abrir"
           onClick={() => navigate('/crm')}
         />
         <ModuleCard
           badge="OPS"
-          title="Jobs e analise"
-          description="Monitore filas, processamento e indicadores de performance."
-          meta="camada de operacao"
+          title="Jobs"
+          description="Fila, execucoes e monitoramento."
+          meta="operacao"
           actionLabel="acompanhar"
           onClick={() => navigate('/jobs')}
         />
@@ -307,8 +301,8 @@ export default function Dashboard() {
           <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Radar operacional</p>
-                <h2 className="mt-2 font-display text-2xl font-bold text-white">Saude do fluxo em tempo real</h2>
+              <p className="text-xs font-medium text-gray-500">Radar operacional</p>
+              <h2 className="mt-2 text-xl font-semibold text-white">Saude do fluxo</h2>
                 <p className="mt-2 text-sm text-gray-400">
                   Acompanhe gargalos de processamento e pontos de atencao no CRM sem sair do portal.
                 </p>
@@ -353,16 +347,16 @@ export default function Dashboard() {
 
           <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
             <div>
-              <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Prioridades</p>
-              <h2 className="mt-2 font-display text-2xl font-bold text-white">O que merece olhar agora</h2>
+              <p className="text-xs font-medium text-gray-500">Prioridades</p>
+              <h2 className="mt-2 text-xl font-semibold text-white">O que merece olhar agora</h2>
             </div>
 
             <div className="mt-6 space-y-6">
               <div>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-white">Jobs em andamento</p>
-                  <button onClick={() => navigate('/jobs')} className="text-xs font-mono uppercase tracking-[0.2em] text-azure-glow">
-                    abrir fila
+                  <button onClick={() => navigate('/jobs')} className="text-xs font-medium text-gray-300 hover:text-white">
+                    Ver fila
                   </button>
                 </div>
                 {jobsSummary?.active_jobs?.length ? (
@@ -372,7 +366,7 @@ export default function Dashboard() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-white">{job.label}</p>
-                            <p className="mt-1 text-xs font-mono uppercase tracking-[0.18em] text-gray-500">
+                            <p className="mt-1 text-xs text-gray-500">
                               {job.job_type} | {job.status}
                             </p>
                           </div>
@@ -389,8 +383,8 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-white">Pregoes proximos</p>
-                  <button onClick={() => navigate('/crm')} className="text-xs font-mono uppercase tracking-[0.2em] text-azure-glow">
-                    abrir crm
+                  <button onClick={() => navigate('/crm')} className="text-xs font-medium text-gray-300 hover:text-white">
+                    Ver CRM
                   </button>
                 </div>
                 {crmSummary?.upcoming_auctions?.length ? (
@@ -399,7 +393,7 @@ export default function Dashboard() {
                       <div key={notice.id} className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3">
                         <p className="text-sm font-semibold text-white">{notice.number || notice.title || 'Licitacao sem numero'}</p>
                         <p className="mt-1 text-xs text-gray-400">{notice.organ_name || 'Orgao nao informado'}</p>
-                        <p className="mt-2 text-xs font-mono uppercase tracking-[0.18em] text-yellow-warn">
+                        <p className="mt-2 text-xs font-medium text-yellow-warn">
                           {notice.auction_date ? new Date(notice.auction_date).toLocaleString('pt-BR') : 'sem data'}
                         </p>
                       </div>
@@ -417,15 +411,15 @@ export default function Dashboard() {
       <section className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Base ativa</p>
-            <h2 className="mt-2 font-display text-2xl font-bold text-white">Editais processados</h2>
+            <p className="text-xs font-medium text-gray-500">Base ativa</p>
+            <h2 className="mt-2 text-xl font-semibold text-white">Editais processados</h2>
             <p className="mt-2 text-sm text-gray-400">
               Consulte os ultimos documentos, abra o chat RAG e exporte os resultados.
             </p>
           </div>
           {crmSync && (
             <div className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3 text-sm text-gray-300">
-              CRM publicado a partir do commit <span className="font-mono text-white">{crmSync.sourceCommit?.slice(0, 7) || 'local'}</span>
+              CRM atualizado em <span className="font-semibold text-white">{formatSyncDate(crmSync.builtAt)}</span>
             </div>
           )}
         </div>
@@ -439,10 +433,10 @@ export default function Dashboard() {
         ) : editais.length === 0 ? (
           <div className="mt-8 grid place-items-center rounded-[24px] border border-dashed border-slate-border bg-ink-50 px-6 py-16 text-center">
             <div>
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-dashed border-slate-border text-sm font-mono text-gray-500">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-dashed border-slate-border text-sm font-semibold text-gray-500">
                 PDF
               </div>
-              <p className="mt-5 font-display text-xl font-bold text-white">Nenhum edital enviado ainda</p>
+              <p className="mt-5 text-lg font-semibold text-white">Nenhum edital enviado ainda</p>
               <p className="mt-2 text-sm text-gray-500">Envie um PDF para iniciar a indexacao e destravar o restante do fluxo.</p>
               {isEditor && (
                 <button onClick={() => navigate('/upload')} className="btn-primary mt-6">
@@ -457,16 +451,16 @@ export default function Dashboard() {
               <div
                 key={edital.id}
                 onClick={() => navigate(`/editais/${edital.id}`)}
-                className="group flex cursor-pointer flex-col rounded-[24px] border border-slate-border bg-ink-50/70 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-azure/30 hover:bg-slate-hover"
+                className="group flex cursor-pointer flex-col rounded-2xl border border-slate-border bg-ink-50/60 p-5 transition-colors hover:bg-slate-hover"
                 style={{ animationDelay: `${index * 60}ms` }}
               >
                 <div className="flex items-start gap-3">
-                  <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl border border-azure/20 bg-azure/10 text-xs font-mono font-bold text-azure-glow">
+                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl border border-white/10 bg-black/20 text-xs font-semibold text-gray-200">
                     PDF
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white group-hover:text-azure-glow">{edital.filename}</p>
-                    <p className="mt-1 text-xs font-mono text-gray-500">
+                    <p className="truncate text-sm font-semibold text-white">{edital.filename}</p>
+                    <p className="mt-1 text-xs text-gray-500">
                       {edital.parsed_at ? new Date(edital.parsed_at).toLocaleDateString('pt-BR') : 'sem data de processamento'}
                     </p>
                   </div>
@@ -474,11 +468,11 @@ export default function Dashboard() {
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
-                    <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-gray-500">chunks</p>
+                    <p className="text-xs font-medium text-gray-500">Chunks</p>
                     <p className="mt-2 text-xl font-bold text-white">{edital.chunks || 0}</p>
                   </div>
                   <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
-                    <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-gray-500">requisitos</p>
+                    <p className="text-xs font-medium text-gray-500">Requisitos</p>
                     <p className="mt-2 text-xl font-bold text-white">{edital.requirements || 0}</p>
                   </div>
                 </div>
@@ -486,15 +480,15 @@ export default function Dashboard() {
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-border pt-4" onClick={(event) => event.stopPropagation()}>
                   <button
                     onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                    className="rounded-xl border border-azure/30 px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-azure-glow transition-colors hover:border-azure/60 hover:bg-azure/10"
+                    className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-black/20 hover:text-white"
                   >
-                    Chat
+                    Consulta
                   </button>
                   <button
                     onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                    className="rounded-xl border border-yellow-warn/30 px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-yellow-warn transition-colors hover:border-yellow-warn/60 hover:bg-yellow-warn/10"
+                    className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-black/20 hover:text-white"
                   >
-                    LLM
+                    Analise
                   </button>
                   <div className="ml-auto flex gap-2">
                     {[
@@ -505,7 +499,7 @@ export default function Dashboard() {
                         key={tipo}
                         onClick={(event) => handleExport(event, edital.id, tipo)}
                         disabled={Boolean(exporting)}
-                        className="rounded-xl border border-slate-border px-3 py-2 text-xs font-mono uppercase tracking-[0.18em] text-gray-400 transition-colors hover:border-azure/30 hover:text-white disabled:opacity-40"
+                        className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-400 transition-colors hover:bg-black/20 hover:text-white disabled:opacity-40"
                       >
                         {exporting === `${edital.id}-${tipo}` ? '...' : label}
                       </button>

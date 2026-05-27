@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import ChatWidget from './ChatWidget'
 import torLogo from '../images/Tor.jpeg'
 
 const NAV = [
@@ -134,29 +133,25 @@ export default function Layout({ children }) {
   const location = useLocation()
 
   const items = isAdmin ? [...NAV, ...NAV_ADMIN] : NAV
-  const showChatWidget = !location.pathname.startsWith('/crm')
 
   return (
     <div className="min-h-screen bg-ink text-white md:flex">
       <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-slate-border bg-ink-100/95 md:flex">
         <div className="border-b border-slate-border px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 flex-shrink-0">
-              <div className="absolute inset-0 rounded-2xl bg-azure/25 blur-md" />
-              <img
-                src={torLogo}
-                alt="Tor Tecnologias"
-                className="relative h-12 w-12 rounded-2xl object-cover ring-1 ring-azure/40"
-              />
-            </div>
+            <img
+              src={torLogo}
+              alt="Tor Tecnologias"
+              className="h-11 w-11 flex-shrink-0 rounded-2xl object-cover ring-1 ring-white/10"
+            />
             <div className="leading-tight">
-              <p className="font-display text-base font-black tracking-wide text-white">Tor Tecnologias</p>
-              <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-azure-glow">Portal de Licitacoes</p>
+              <p className="text-base font-semibold text-white">Tor Tecnologias</p>
+              <p className="text-xs text-gray-500">Portal de Licitacoes</p>
             </div>
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-border bg-ink-50/80 px-4 py-4">
-            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">Empresa</p>
+            <p className="text-xs font-medium text-gray-500">Empresa</p>
             <p className="mt-2 truncate text-sm font-semibold text-white">{user?.tenant?.name || 'Ambiente Tor'}</p>
             <p className="mt-1 truncate text-xs text-gray-500">{user?.email || 'sem email informado'}</p>
           </div>
@@ -182,10 +177,10 @@ export default function Layout({ children }) {
         <header className="sticky top-0 z-30 border-b border-slate-border bg-ink-100/95 backdrop-blur md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-2xl object-cover ring-1 ring-azure/40" />
+              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-2xl object-cover ring-1 ring-white/10" />
               <div>
-                <p className="font-display text-sm font-black text-white">Tor Tecnologias</p>
-                <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-azure-glow">Portal de Licitacoes</p>
+                <p className="text-sm font-semibold text-white">Tor Tecnologias</p>
+                <p className="text-[11px] text-gray-500">Portal de Licitacoes</p>
               </div>
             </div>
             <button
@@ -204,7 +199,7 @@ export default function Layout({ children }) {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-mono uppercase tracking-[0.2em] ${
+                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium ${
                       active
                         ? 'border-azure/30 bg-azure/10 text-azure-glow'
                         : 'border-slate-border text-gray-400'
@@ -222,13 +217,11 @@ export default function Layout({ children }) {
 
         <footer className="border-t border-slate-border bg-ink-100/95 px-4 py-3 text-xs text-gray-500 md:px-6">
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-            <p>Tor Tecnologias | Plataforma de analise, RAG e operacao comercial de licitacoes.</p>
-            <p>Portal interno unificado para automacao, busca e CRM.</p>
+            <p>Tor Tecnologias | Operacao de licitacoes e CRM.</p>
+            <p>Ambiente interno unificado.</p>
           </div>
         </footer>
       </div>
-
-      {showChatWidget && <ChatWidget />}
     </div>
   )
 }

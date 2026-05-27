@@ -112,8 +112,8 @@ export default function Jobs() {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-1">Orquestrador</p>
-          <h1 className="font-display font-bold text-3xl text-white">Jobs</h1>
+          <p className="text-sm text-gray-400 mb-1">Fila de processamento</p>
+          <h1 className="text-2xl font-semibold text-white">Jobs</h1>
         </div>
         <button onClick={load} className="btn-ghost text-xs px-3 py-2">
           Atualizar
@@ -126,7 +126,7 @@ export default function Jobs() {
             <button
               key={item.key}
               onClick={() => setFilter(item.key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-mono transition-all duration-150 ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-body font-semibold transition-all duration-150 ${
                 filter === item.key
                   ? 'bg-azure text-white'
                   : 'text-gray-400 border border-slate-border hover:text-white'
@@ -172,7 +172,7 @@ export default function Jobs() {
       {!loading && summary?.recent_failures?.length > 0 && (
         <div className="card">
           <div>
-            <p className="text-xs font-mono uppercase tracking-[0.2em] text-gray-500">Falhas recentes</p>
+            <p className="text-xs font-body font-semibold tracking-wide text-gray-500">Falhas recentes</p>
             <p className="mt-1 text-sm text-gray-400">Ultimos erros detectados pela fila de processamento.</p>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -181,11 +181,11 @@ export default function Jobs() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{item.label}</p>
-                    <p className="mt-1 text-xs font-mono uppercase tracking-[0.18em] text-red-fail">
+                    <p className="mt-1 text-xs font-body font-semibold tracking-wide text-red-fail">
                       {TYPE_LABELS[item.job_type] || item.job_type}
                     </p>
                   </div>
-                  <span className="text-xs font-mono text-gray-500">
+                  <span className="text-xs font-body text-gray-500">
                     {item.finished_at ? new Date(item.finished_at).toLocaleString('pt-BR') : '-'}
                   </span>
                 </div>
@@ -204,7 +204,7 @@ export default function Jobs() {
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="card text-center py-16 text-gray-500">
-          <p className="font-mono text-sm">Nenhum job encontrado para o filtro atual.</p>
+          <p className="font-body text-sm">Nenhum job encontrado para o filtro atual.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -225,13 +225,13 @@ export default function Jobs() {
                 style={{ animationDelay: `${index * 40}ms` }}
               >
                 <div className="w-44 flex-shrink-0">
-                  <p className="text-xs font-mono text-gray-500">{TYPE_LABELS[job.job_type] || job.job_type}</p>
+                  <p className="text-xs font-body font-semibold text-gray-500">{TYPE_LABELS[job.job_type] || job.job_type}</p>
                   <p className="mt-1 truncate text-xs text-gray-600">{jobLabel(job)}</p>
                 </div>
 
                 <div className="w-36 flex-shrink-0">
-                  <p className="font-mono text-xs text-gray-400">{job.id.slice(0, 8)}...</p>
-                  <p className="font-mono text-xs text-gray-600">
+                  <p className="text-xs text-gray-400">{job.id.slice(0, 8)}...</p>
+                  <p className="text-xs text-gray-600">
                     {job.created_at ? new Date(job.created_at).toLocaleString('pt-BR') : '-'}
                   </p>
                 </div>
@@ -240,10 +240,10 @@ export default function Jobs() {
                   <div className="flex items-center justify-between mb-1 gap-3">
                     <span className={cfg.cls}>{cfg.label}</span>
                     {job.status === 'running' && (
-                      <span className="text-xs font-mono text-azure-glow">{pct}%</span>
+                      <span className="text-xs font-body font-semibold text-azure-glow">{pct}%</span>
                     )}
                     {job.duration_seconds && (
-                      <span className="text-xs font-mono text-gray-600">{job.duration_seconds}s</span>
+                      <span className="text-xs font-body text-gray-600">{job.duration_seconds}s</span>
                     )}
                   </div>
                   {(job.status === 'running' || job.status === 'done') && (
@@ -255,10 +255,10 @@ export default function Jobs() {
                     </div>
                   )}
                   {job.error_message && !cancelled && (
-                    <p className="text-xs text-red-fail font-mono mt-1 truncate">{job.error_message}</p>
+                    <p className="text-xs text-red-fail font-body mt-1 truncate">{job.error_message}</p>
                   )}
                   {job.result?.edital_id && (
-                    <p className="text-xs text-gray-500 font-mono mt-1">edital #{job.result.edital_id}</p>
+                    <p className="text-xs text-gray-500 font-body mt-1">edital #{job.result.edital_id}</p>
                   )}
                 </div>
 
@@ -266,7 +266,7 @@ export default function Jobs() {
                   <button
                     onClick={(event) => handleCancel(event, job.id)}
                     disabled={cancelling === job.id}
-                    className="flex-shrink-0 px-3 py-1 rounded-lg text-xs font-mono border border-red-fail/40 text-red-fail hover:bg-red-fail/10 transition-all duration-150 disabled:opacity-40"
+                    className="flex-shrink-0 px-3 py-1 rounded-lg text-xs font-body font-semibold border border-red-fail/40 text-red-fail hover:bg-red-fail/10 transition-all duration-150 disabled:opacity-40"
                   >
                     {cancelling === job.id ? '...' : 'Cancelar'}
                   </button>
@@ -283,7 +283,7 @@ export default function Jobs() {
 function SummaryCard({ label, value, sub }) {
   return (
     <div className="card">
-      <p className="text-xs font-mono uppercase tracking-[0.2em] text-gray-500">{label}</p>
+      <p className="text-xs font-body font-semibold tracking-wide text-gray-500">{label}</p>
       <p className="mt-2 font-display text-3xl font-black text-white">{value}</p>
       <p className="mt-1 text-xs text-gray-500">{sub}</p>
     </div>

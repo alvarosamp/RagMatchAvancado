@@ -32,7 +32,7 @@ function BubbleAssistant({ text, loading }) {
             />
           ))}
         </div>
-        <span className="text-[10px] text-gray-500 font-mono">Analisando…</span>
+        <span className="text-[10px] text-gray-500 font-body">Analisando...</span>
       </div>
     </div>
   )
@@ -117,7 +117,7 @@ export default function ChatWidget() {
       const msg = err.response?.data?.detail || 'Erro ao conectar com o servidor.'
       setMessages(prev => {
         const copy = [...prev]
-        copy[copy.length - 1] = { role: 'assistant', content: `⚠️ ${msg}` }
+        copy[copy.length - 1] = { role: 'assistant', content: `Erro: ${msg}` }
         return copy
       })
     } finally {
@@ -314,7 +314,7 @@ export default function ChatWidget() {
               >
                 {sending
                   ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <span className="font-mono">→</span>
+                  : <span>Enviar</span>
                 }
               </button>
             </div>
