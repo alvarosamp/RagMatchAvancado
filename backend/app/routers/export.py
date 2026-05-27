@@ -15,7 +15,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.models import Edital, MatchingResult
+from app.db.models import Edital
 from app.services.export_service import export_xlsx, export_pdf, export_csv
 from app.logs.config import logger
 

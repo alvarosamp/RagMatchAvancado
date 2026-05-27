@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.db.models import Edital, Requirement, Product, DocumentChunk
+from app.db.models import Edital, Requirement, Product
 from app.auth.models import User
 from app.auth.dependencies import get_current_user, require_role
 from app.jobs.queue import JobQueue
@@ -103,7 +103,7 @@ def add_requirements(
     Adiciona requisitos a um edital já processado.
     Síncrono — cadastrar requisitos é apenas INSERT no banco.
     """
-    edital = _get_edital_do_tenant(edital_id, current_user, db)
+    _get_edital_do_tenant(edital_id, current_user, db)
 
     added = []
     for r in requirements:

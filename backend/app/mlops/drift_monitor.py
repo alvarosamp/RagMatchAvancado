@@ -29,7 +29,6 @@ VOCABULARIO MLOPS:
     - Wasserstein distance: mede a diferença entre 2 distribuições (embedding drift)
 '''
 
-import os
 import json
 import logging
 import statistics

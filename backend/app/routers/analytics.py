@@ -11,14 +11,12 @@ GET /analytics/distribuicao      → histograma de scores
 """
 
 from collections import defaultdict
-from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.db.models import Edital, MatchingResult, MatchStatus, Product, Requirement
+from app.db.models import Edital, MatchingResult, MatchStatus, Requirement
 from app.auth.models import User
 from app.auth.dependencies import get_current_user
 

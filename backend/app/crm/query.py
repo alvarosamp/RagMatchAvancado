@@ -13,7 +13,6 @@ from app.crm.models import (
     CrmCatalogProduct,
     CrmChecklistTemplate,
     CrmChecklistTemplateItem,
-    CrmItemWinnerType,
     CrmNotice,
     CrmNoticeCompetitor,
     CrmNoticeDocument,
@@ -362,8 +361,8 @@ def serialize_record(row: Any) -> dict[str, Any]:
 
 def serialize_related(row: Any, fields: tuple[str, ...]) -> dict[str, Any]:
     payload: dict[str, Any] = {}
-    for field in fields:
-        payload[field] = _json_value(getattr(row, field))
+    for field_name in fields:
+        payload[field_name] = _json_value(getattr(row, field_name))
     return payload
 
 

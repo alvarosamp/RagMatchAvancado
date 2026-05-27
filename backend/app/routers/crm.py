@@ -126,6 +126,8 @@ def crm_run_notice_matches(
             current_user,
             notice_id,
             use_llm=payload.get("use_llm", True),
+            notice_product_id=payload.get("notice_product_id"),
+            category=payload.get("category"),
         )
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -137,6 +139,7 @@ def crm_run_notice_matches(
 def crm_run_notice_matches_job(
     notice_id: str,
     background_tasks: BackgroundTasks,
+    payload: dict[str, Any] | None = Body(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -176,6 +179,7 @@ def crm_run_notice_matches_job(
             "status_url": f"/jobs/{existing_job.id}",
         }
 
+    payload = payload or {}
     queue = JobQueue()
     job_id = queue.criar_job_crm_notice_match(
         background_tasks=background_tasks,
@@ -183,6 +187,9 @@ def crm_run_notice_matches_job(
         tenant_id=current_user.tenant.slug,
         user_id=current_user.id,
         db=db,
+        notice_product_id=payload.get("notice_product_id"),
+        category=payload.get("category"),
+        use_llm=bool(payload.get("use_llm", True)),
     )
     return {
         "job_id": job_id,

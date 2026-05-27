@@ -12,9 +12,9 @@ def init_db(db: Session) -> dict:
     """
     Cria tabelas do portal principal e do CRM no mesmo banco.
     """
-    import app.auth.models
-    import app.crm.models
-    import app.jobs.models
+    import app.auth.models  # noqa: F401
+    import app.crm.models  # noqa: F401
+    import app.jobs.models  # noqa: F401
 
     try:
         ensure_pgvector_extension(db)
@@ -64,6 +64,7 @@ def _ensure_crm_schema_updates() -> None:
         "crm_catalog_products",
         {
             "keywords": "TEXT",
+            "category": "VARCHAR",
         },
     )
     _ensure_indexes(

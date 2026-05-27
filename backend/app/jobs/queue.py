@@ -26,7 +26,6 @@
 #
 
 import uuid
-import tempfile
 import os
 from datetime import datetime, timezone
 from typing import Optional
@@ -196,6 +195,9 @@ class JobQueue:
         tenant_id:         str,
         user_id:           int,
         db:                Session,
+        notice_product_id: str | None = None,
+        category: str | None = None,
+        use_llm: bool = True,
     ) -> str:
         """
         Cria um job assíncrono de match do CRM (catalogo x itens do edital).
@@ -211,6 +213,9 @@ class JobQueue:
             payload={
                 "notice_id": notice_id,
                 "tenant_id": tenant_id,
+                "notice_product_id": notice_product_id,
+                "category": category,
+                "use_llm": use_llm,
             },
         )
         db.add(job)
@@ -488,10 +493,21 @@ def _executar_job_crm_notice_match(
 
         job = db.get(Job, job_id)
         use_llm = True
+        notice_product_id = None
+        category = None
         if job is not None:
             use_llm = bool((job.payload or {}).get("use_llm", True))
+            notice_product_id = (job.payload or {}).get("notice_product_id")
+            category = (job.payload or {}).get("category")
 
-        payload = run_notice_item_match(db, user, notice_id, use_llm=use_llm)
+        payload = run_notice_item_match(
+            db,
+            user,
+            notice_id,
+            use_llm=use_llm,
+            notice_product_id=notice_product_id,
+            category=category,
+        )
         summary = payload.get("summary") or {}
 
         _update_job(

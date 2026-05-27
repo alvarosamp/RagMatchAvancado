@@ -20,7 +20,7 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from app.db.session import get_db
-from app.jobs.models import Job, JobStatus, JobType
+from app.jobs.models import Job, JobStatus
 from app.auth.models import User
 from app.auth.dependencies import get_current_user
 from app.logs.config import logger

@@ -27,7 +27,7 @@ from app.services.crm_match_scoring import (
 )
 
 PRESELECT_LIMIT = 12
-SUGGESTIONS_PER_ITEM = 3
+SUGGESTIONS_PER_ITEM = 10
 MIN_SUGGESTION_SCORE = 0.32
 
 
@@ -37,6 +37,8 @@ def run_notice_item_match(
     notice_id: str,
     *,
     use_llm: bool = True,
+    notice_product_id: str | None = None,
+    category: str | None = None,
 ) -> dict[str, Any]:
     notice = _load_notice(db, current_user, notice_id)
     catalog_products = (
@@ -48,17 +50,39 @@ def run_notice_item_match(
         .all()
     )
 
-    db.query(CrmNoticeProductMatch).filter(
-        CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
-        CrmNoticeProductMatch.notice_id == notice_id,
-    ).delete(synchronize_session=False)
-    db.flush()
-
     embedding_cache: dict[str, list[float]] = {}
     best_scores: list[dict[str, Any]] = []
     reusable_matches = _build_reusable_match_index(db, current_user)
+    notice_products = notice.notice_products
+    if notice_product_id:
+        notice_products = [p for p in notice_products if p.id == notice_product_id]
+        if not notice_products:
+            raise LookupError("Item do edital nao encontrado para rodar match.")
 
-    for product in notice.notice_products:
+    catalog_products_filtered = catalog_products
+    if category:
+        wanted = normalize_text(category)
+        catalog_products_filtered = [
+            p for p in catalog_products if normalize_text(getattr(p, "category", None)) == wanted
+        ]
+        if not catalog_products_filtered:
+            raise ValueError("Nenhum produto ativo encontrado no catalogo para a categoria selecionada.")
+
+    if notice_product_id:
+        db.query(CrmNoticeProductMatch).filter(
+            CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
+            CrmNoticeProductMatch.notice_id == notice_id,
+            CrmNoticeProductMatch.notice_product_id == notice_product_id,
+        ).delete(synchronize_session=False)
+        db.flush()
+    else:
+        db.query(CrmNoticeProductMatch).filter(
+            CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
+            CrmNoticeProductMatch.notice_id == notice_id,
+        ).delete(synchronize_session=False)
+        db.flush()
+
+    for product in notice_products:
         reused_catalog = _find_reusable_catalog_product(product, reusable_matches)
         if reused_catalog is not None:
             reused_match = CrmNoticeProductMatch(
@@ -92,7 +116,7 @@ def run_notice_item_match(
             })
             continue
 
-        ranked = _rank_candidates(product, catalog_products, embedding_cache=embedding_cache, use_llm=use_llm)
+        ranked = _rank_candidates(product, catalog_products_filtered, embedding_cache=embedding_cache, use_llm=use_llm)
         matches: list[CrmNoticeProductMatch] = []
         for rank, candidate in enumerate(ranked[:SUGGESTIONS_PER_ITEM], start=1):
             score: MatchScore = candidate["score"]
@@ -410,6 +434,7 @@ def _serialize_notice_product(product: CrmNoticeProduct) -> dict[str, Any]:
             "brand": product.catalog_product.brand,
             "model": product.catalog_product.model,
             "sku": product.catalog_product.sku,
+            "category": getattr(product.catalog_product, "category", None),
         } if product.catalog_product else None,
     }
 
@@ -437,6 +462,7 @@ def _serialize_match(match: CrmNoticeProductMatch) -> dict[str, Any]:
             "brand": catalog.brand,
             "model": catalog.model,
             "sku": catalog.sku,
+            "category": getattr(catalog, "category", None),
             "description": catalog.description,
             "specification": catalog.specification,
             "keywords": catalog.keywords,
