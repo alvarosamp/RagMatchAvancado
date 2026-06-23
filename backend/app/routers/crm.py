@@ -3,16 +3,19 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from io import BytesIO
 from pathlib import Path
+from urllib.parse import quote
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
-from app.crm.models import CrmNotice, CrmNoticeStage
+from app.crm.models import CrmNotice, CrmNoticeProduct, CrmNoticeStage
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
 from app.jobs.models import Job, JobStatus, JobType
@@ -24,6 +27,10 @@ from app.services.crm_item_matcher import (
     run_notice_item_match,
 )
 from app.services.ops_summary import summarize_crm
+from app.services.proposal_generator import (
+    build_notice_proposal_docx,
+    proposal_filename,
+)
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 
@@ -96,6 +103,65 @@ def crm_summary(
         .all()
     )
     return summarize_crm(notices)
+
+
+@router.post("/notices/{notice_id}/proposal")
+def crm_generate_notice_proposal(
+    notice_id: str,
+    payload: dict[str, Any] | None = Body(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in {"admin", "editor"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permissao insuficiente para gerar proposta.",
+        )
+
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ),
+            selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_item_results),
+            selectinload(CrmNotice.notice_products).selectinload(
+                CrmNoticeProduct.catalog_product
+            ),
+        )
+        .filter(
+            CrmNotice.id == notice_id,
+            CrmNotice.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not notice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Edital CRM nao encontrado.",
+        )
+
+    payload = payload or {}
+    try:
+        content = build_notice_proposal_docx(
+            notice,
+            company=payload.get("company") or {},
+            options=payload.get("options") or {},
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    filename = proposal_filename(notice)
+    encoded = quote(filename)
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded}",
+        },
+    )
 
 
 @router.get("/notices/{notice_id}/matches")

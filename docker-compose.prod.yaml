@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
       OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:1b
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
@@ -60,7 +61,7 @@ services:
       /bin/sh -c "
         sleep 10 &&
         ollama pull nomic-embed-text &&
-        ollama pull llama3
+        ollama pull llama3.2:1b
       "
     environment:
       OLLAMA_HOST: http://ollama:11434

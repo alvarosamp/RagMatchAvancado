@@ -77,6 +77,10 @@ export const opsApi = {
   summary: () => api.get('/ops/summary'),
 }
 
+export const reportsApi = {
+  executive: () => api.get('/reports/executive'),
+}
+
 export const crmApi = {
   importSalesProcesses: (formData) =>
     api.post('/crm/imports/sales-processes', formData, {
@@ -102,7 +106,7 @@ export const ragApi = {
    * @param {number|string} editalId
    * @param {{ question: string, model: 'gpt'|'ollama', history: Array }} body
    */
-  chat: (editalId, body) => api.post(`/editais/${editalId}/chat`, body, { timeout: 60_000 }),
+  chat: (editalId, body) => api.post(`/editais/${editalId}/chat`, body, { timeout: 180_000 }),
 }
 
 // ── Análise LLM (pipeline pipelinellm.py) ────────────────────────────────────

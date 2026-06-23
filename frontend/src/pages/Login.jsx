@@ -4,47 +4,28 @@ import { useAuth } from '../contexts/AuthContext'
 import torLogo from '../images/Tor.jpeg'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
-function ThemeToggle({ theme, onToggle }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`rounded-full border px-4 py-2 text-xs font-mono uppercase tracking-[0.24em] transition-colors ${
-        theme === 'light'
-          ? 'border-stone-300 bg-white text-stone-700 hover:border-red-400 hover:text-red-700'
-          : 'border-slate-border bg-ink-50 text-gray-300 hover:border-azure/40 hover:text-white'
-      }`}
-    >
-      {theme === 'light' ? 'Modo escuro' : 'Modo claro'}
-    </button>
-  )
-}
-
 export default function Login() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [theme, setTheme] = useState(() => readStoredTheme())
-  const { login } = useAuth()
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [theme, setTheme]               = useState(() => readStoredTheme())
+  const { login }                       = useAuth()
+  const navigate                        = useNavigate()
+  const [form, setForm]                 = useState({ email: '', password: '' })
 
-  useEffect(() => {
-    persistTheme(theme)
-  }, [theme])
+  useEffect(() => { persistTheme(theme) }, [theme])
 
-  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+  const set = (key, val) => setForm(c => ({ ...c, [key]: val }))
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
       await login(form.email, form.password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao autenticar. Verifique suas credenciais.')
+      setError(err.response?.data?.detail || 'Credenciais inválidas.')
     } finally {
       setLoading(false)
     }
@@ -53,182 +34,139 @@ export default function Login() {
   const isLight = theme === 'light'
 
   return (
-    <div className={`min-h-screen flex ${isLight ? 'bg-[#f7f1ea] text-stone-900' : 'bg-ink text-white'}`}>
-      <div
-        className={`hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r relative overflow-hidden ${
-          isLight ? 'border-stone-200 bg-[#f8f2ea]' : 'border-slate-border'
-        }`}
-      >
-        <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage: isLight
-              ? 'linear-gradient(rgba(185,28,28,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(185,28,28,0.55) 1px, transparent 1px)'
-              : 'linear-gradient(rgba(220,38,38,1) 1px, transparent 1px), linear-gradient(90deg, rgba(220,38,38,1) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: isLight
-              ? 'radial-gradient(ellipse 60% 50% at 30% 40%, rgba(220,38,38,0.10) 0%, transparent 70%)'
-              : 'radial-gradient(ellipse 60% 50% at 30% 40%, rgba(220,38,38,0.06) 0%, transparent 70%)',
-          }}
-        />
+    <div className={`min-h-screen flex ${isLight ? 'bg-white' : 'bg-ink'}`}>
 
-        <div className="relative z-10">
-          <div className="flex items-center justify-between gap-3 mb-16">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className={`absolute inset-0 rounded-xl blur-md ${isLight ? 'bg-red-300 opacity-30' : 'bg-azure opacity-30'}`} />
-                <img
-                  src={torLogo}
-                  alt="Tor Tecnologias"
-                  className={`relative w-11 h-11 rounded-xl object-cover ring-1 ${isLight ? 'ring-red-300/70' : 'ring-azure/50'}`}
-                />
-              </div>
-              <div>
-                <span className={`font-display font-bold text-xl block leading-tight ${isLight ? 'text-stone-900' : 'text-white'}`}>
-                  Tor Tecnologias
-                </span>
-                <span className={`font-mono text-[10px] tracking-widest uppercase ${isLight ? 'text-red-700' : 'text-azure-glow'}`}>
-                  Plataforma de Licitacoes
-                </span>
-              </div>
-            </div>
-            <ThemeToggle theme={theme} onToggle={() => setTheme(isLight ? 'dark' : 'light')} />
+      {/* ── Painel esquerdo — branding ─────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between bg-[#b91c1c] p-14 select-none">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <img
+            src={torLogo}
+            alt="Tor Tecnologias"
+            className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/20"
+          />
+          <div>
+            <p className="font-display font-bold text-white text-base leading-tight">Tor Tecnologias</p>
+            <p className="text-red-200 text-[10px] font-mono uppercase tracking-widest">Portal de Licitações</p>
           </div>
+        </div>
 
-          <h1 className={`font-display font-extrabold text-5xl leading-tight mb-4 ${isLight ? 'text-stone-900' : 'text-white'}`}>
-            Licitacoes
-            <br />
-            <span className={isLight ? 'text-red-700' : 'text-azure-glow'}>operacionais</span>
-            <br />
-            para sua empresa
+        {/* Headline */}
+        <div>
+          <h1 className="font-display font-extrabold text-white text-5xl leading-[1.15] mb-5">
+            Gestão de<br />editais em<br />um só lugar.
           </h1>
-          <p className={`font-body text-lg leading-relaxed max-w-xs ${isLight ? 'text-stone-600' : 'text-gray-400'}`}>
-            Analise automatizada de editais com OCR e matching de produtos.
+          <p className="text-red-200 text-base leading-relaxed max-w-xs">
+            Receba, organize e acompanhe licitações com o seu time comercial alinhado.
           </p>
         </div>
 
-        <div className="relative z-10 grid grid-cols-3 gap-4">
-          {[['RAG', 'Retrieval'], ['LLM', 'Reasoning'], ['MLOps', 'Tracking']].map(([title, sub]) => (
-            <div
-              key={title}
-              className={`rounded-xl border p-4 transition-colors ${
-                isLight
-                  ? 'border-stone-200 bg-white/80 hover:border-red-300'
-                  : 'border-slate-border bg-slate-card hover:border-azure/30'
-              }`}
-            >
-              <p className={`font-display font-bold text-lg ${isLight ? 'text-red-700' : 'text-azure-glow'}`}>{title}</p>
-              <p className={`font-mono text-xs ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>{sub}</p>
-            </div>
-          ))}
-        </div>
+        {/* Rodapé */}
+        <p className="text-red-300/60 text-xs font-mono">
+          © {new Date().getFullYear()} Tor Tecnologias
+        </p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm animate-fade-up">
-          <div className="flex items-center justify-between gap-3 mb-8 lg:hidden">
-            <div className="flex items-center gap-2">
-              <img src={torLogo} alt="Tor" className="w-8 h-8 rounded-lg object-cover" />
-              <span className={`font-display font-bold ${isLight ? 'text-stone-900' : 'text-white'}`}>Tor Tecnologias</span>
-            </div>
-            <ThemeToggle theme={theme} onToggle={() => setTheme(isLight ? 'dark' : 'light')} />
+      {/* ── Painel direito — formulário ───────────────────────────────── */}
+      <div className={`flex-1 flex flex-col items-center justify-center p-8 ${isLight ? 'bg-white' : 'bg-ink'}`}>
+
+        {/* Logo mobile */}
+        <div className="flex items-center gap-2 mb-10 lg:hidden">
+          <img src={torLogo} alt="Tor" className="w-8 h-8 rounded-lg object-cover" />
+          <span className={`font-display font-bold ${isLight ? 'text-stone-900' : 'text-white'}`}>
+            Tor Tecnologias
+          </span>
+        </div>
+
+        <div className="w-full max-w-[340px]">
+          <div className="mb-8">
+            <h2 className={`font-display text-2xl font-bold mb-1 ${isLight ? 'text-stone-900' : 'text-white'}`}>
+              Acessar portal
+            </h2>
+            <p className={`text-sm ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+              Entre com suas credenciais para continuar.
+            </p>
           </div>
 
-          <div
-            className={`rounded-[28px] border p-6 shadow-xl ${
-              isLight
-                ? 'border-stone-200 bg-white/95 shadow-stone-200/50'
-                : 'border-slate-border bg-slate-card/95 shadow-black/20'
-            }`}
-          >
-            <div className="mb-8">
-              <p className={`text-[11px] font-mono uppercase tracking-[0.28em] ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
-                Acesso ao portal
-              </p>
-              <h1 className={`mt-3 font-display text-3xl font-black ${isLight ? 'text-stone-900' : 'text-white'}`}>Entrar</h1>
-              <p className={`mt-2 text-sm leading-7 ${isLight ? 'text-stone-600' : 'text-gray-400'}`}>
-                O cadastro inicial foi separado da tela publica. Novos usuarios continuam sendo criados pelo administrador dentro do portal.
-              </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+                E-mail
+              </label>
+              <input
+                type="email"
+                placeholder="voce@empresa.com"
+                value={form.email}
+                onChange={e => set('email', e.target.value)}
+                required
+                className={`w-full rounded-lg px-4 py-2.5 text-sm transition-all ${
+                  isLight
+                    ? 'border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
+                    : 'input'
+                }`}
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>
-                  Email
-                </label>
+            <div>
+              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+                Senha
+              </label>
+              <div className="relative">
                 <input
-                  className={`w-full rounded-lg px-4 py-2.5 text-sm transition-all ${
-                    isLight
-                      ? 'border border-stone-300 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200'
-                      : 'input'
-                  }`}
-                  type="email"
-                  placeholder="admin@empresa.com.br"
-                  value={form.email}
-                  onChange={(event) => set('email', event.target.value)}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={e => set('password', e.target.value)}
                   required
+                  className={`w-full rounded-lg px-4 py-2.5 pr-20 text-sm transition-all ${
+                    isLight
+                      ? 'border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
+                      : 'input pr-20'
+                  }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-mono transition-colors ${
+                    isLight ? 'text-stone-400 hover:text-stone-600' : 'text-gray-600 hover:text-white'
+                  }`}
+                >
+                  {showPassword ? 'Ocultar' : 'Mostrar'}
+                </button>
               </div>
+            </div>
 
-              <div>
-                <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>
-                  Senha
-                </label>
-                <div className="relative">
-                  <input
-                    className={`w-full rounded-lg px-4 py-2.5 pr-20 text-sm transition-all ${
-                      isLight
-                        ? 'border border-stone-300 bg-stone-50 text-stone-900 placeholder-stone-400 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200'
-                        : 'input pr-20'
-                    }`}
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={(event) => set('password', event.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border text-xs font-mono transition-colors ${
-                      isLight
-                        ? 'border-stone-300 text-stone-500 hover:border-red-400 hover:text-red-700'
-                        : 'border-slate-border text-gray-400 hover:text-white hover:border-azure/40'
-                    }`}
-                  >
-                    {showPassword ? 'Ocultar' : 'Mostrar'}
-                  </button>
-                </div>
-              </div>
+            {error && (
+              <p className={`text-xs font-mono ${isLight ? 'text-red-700' : 'text-red-fail'}`}>
+                {error}
+              </p>
+            )}
 
-              {error && (
-                <div className={`rounded-lg px-4 py-2.5 border ${isLight ? 'bg-red-50 border-red-200' : 'bg-red-dim/30 border-red-fail/30'}`}>
-                  <p className={`text-sm font-mono ${isLight ? 'text-red-700' : 'text-red-fail'}`}>{error}</p>
-                </div>
-              )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg py-2.5 text-sm font-semibold bg-[#b91c1c] text-white hover:bg-[#991b1b] transition-colors disabled:opacity-40"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Aguarde…
+                </span>
+              ) : 'Entrar'}
+            </button>
+          </form>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full rounded-lg py-3 text-base font-display font-semibold transition-all disabled:opacity-40 ${
-                  isLight
-                    ? 'bg-red-700 text-white hover:bg-red-800'
-                    : 'btn-primary'
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Aguarde...
-                  </span>
-                ) : 'Entrar'}
-              </button>
-            </form>
+          {/* Tema */}
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setTheme(isLight ? 'dark' : 'light')}
+              className={`text-xs font-mono transition-colors ${
+                isLight ? 'text-stone-400 hover:text-stone-600' : 'text-gray-600 hover:text-gray-400'
+              }`}
+            >
+              {isLight ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
+            </button>
           </div>
         </div>
       </div>

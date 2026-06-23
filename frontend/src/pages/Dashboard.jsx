@@ -4,513 +4,272 @@ import { downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
-function formatSyncDate(value) {
-  if (!value) return 'aguardando primeira sincronizacao'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'aguardando primeira sincronizacao'
-  return date.toLocaleString('pt-BR')
-}
-
-function StatusChip({ label, tone = 'neutral' }) {
-  const tones = {
-    success: 'border-green-match/25 bg-green-match/10 text-green-match',
-    warning: 'border-yellow-warn/25 bg-yellow-warn/10 text-yellow-warn',
-    neutral: 'border-slate-border bg-ink-50 text-gray-400',
-  }
-
-  return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-body font-semibold ${tones[tone]}`}>
-      <span className={`h-2 w-2 rounded-full ${tone === 'success' ? 'bg-green-match' : tone === 'warning' ? 'bg-yellow-warn' : 'bg-gray-500'}`} />
-      {label}
-    </span>
-  )
-}
-
-function renderModuleIcon(badge) {
-  const props = { className: "h-5 w-5 stroke-current", fill: "none", stroke: "currentColor", strokeWidth: "2" };
-  switch (badge) {
-    case 'RAG':
-      return (
-        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <line x1="10" y1="9" x2="8" y2="9" />
-        </svg>
-      );
-    case 'PN':
-      return (
-        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      );
-    case 'CRM':
-      return (
-        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          <path d="M12 11v6" />
-          <path d="M9 14h6" />
-        </svg>
-      );
-    case 'OPS':
-      return (
-        <svg {...props} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      );
-    default:
-      return badge;
-  }
-}
-
-function StatCard({ label, value, sub, tone = 'azure' }) {
-  const tones = {
-    azure: 'from-azure/14 to-azure/5 border-azure/20',
-    green: 'from-green-match/14 to-green-match/5 border-green-match/20',
-    yellow: 'from-yellow-warn/14 to-yellow-warn/5 border-yellow-warn/20',
-    slate: 'from-white/8 to-white/[0.02] border-slate-border',
-  }
-
-  return (
-    <div className={`rounded-[24px] border bg-gradient-to-br p-5 ${tones[tone]}`}>
-      <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm text-gray-400">{sub}</p>
-    </div>
-  )
-}
-
-function SignalCard({ label, value, sub, tone = 'neutral' }) {
-  const tones = {
-    success: 'border-green-match/20 bg-green-match/10 text-green-match',
-    warning: 'border-yellow-warn/20 bg-yellow-warn/10 text-yellow-warn',
-    danger: 'border-red-fail/20 bg-red-fail/10 text-red-fail',
-    neutral: 'border-slate-border bg-ink-50 text-gray-300',
-  }
-
-  return (
-    <div className={`rounded-[22px] border p-4 ${tones[tone]}`}>
-      <p className="text-xs font-semibold tracking-wide text-gray-400">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm text-gray-400">{sub}</p>
-    </div>
-  )
-}
-
-function ModuleCard({ badge, title, description, meta, onClick, actionLabel }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group rounded-2xl border border-slate-border bg-slate-card/95 p-5 text-left transition-colors hover:bg-slate-hover"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-ink-50 text-azure-glow">
-          {renderModuleIcon(badge)}
-        </div>
-        <span className="text-xs font-medium text-gray-500 group-hover:text-gray-300">
-          {actionLabel}
-        </span>
-      </div>
-      <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-gray-400">{description}</p>
-      <p className="mt-4 text-xs font-medium text-gray-500">{meta}</p>
-    </button>
-  )
+function formatDate(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 async function readCrmSync() {
   try {
-    const response = await fetch(`/crm/tor-sync.json?ts=${Date.now()}`, { cache: 'no-store' })
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  }
+    const r = await fetch(`/crm/tor-sync.json?ts=${Date.now()}`, { cache: 'no-store' })
+    if (!r.ok) return null
+    return await r.json()
+  } catch { return null }
 }
 
 export default function Dashboard() {
-  const [editais, setEditais] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [exporting, setExporting] = useState(null)
-  const [apiOnline, setApiOnline] = useState(null)
-  const [opsSummary, setOpsSummary] = useState(null)
-  const [crmSync, setCrmSync] = useState(null)
+  const [editais,     setEditais]     = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [exporting,   setExporting]   = useState(null)
+  const [apiOnline,   setApiOnline]   = useState(null)
+  const [opsSummary,  setOpsSummary]  = useState(null)
+  const [crmSync,     setCrmSync]     = useState(null)
   const { user, isEditor } = useAuth()
-  const { toast } = useToast()
-  const navigate = useNavigate()
+  const { toast }          = useToast()
+  const navigate           = useNavigate()
 
   useEffect(() => {
     let active = true
-
-    async function loadDashboard() {
+    async function load() {
       setLoading(true)
-      const [editaisResult, opsResult, crmResult] = await Promise.allSettled([
-        editaisApi.list(),
-        opsApi.summary(),
-        readCrmSync(),
+      const [eRes, oRes, cRes] = await Promise.allSettled([
+        editaisApi.list(), opsApi.summary(), readCrmSync(),
       ])
-
       if (!active) return
-
-      if (editaisResult.status === 'fulfilled') {
-        setEditais(editaisResult.value.data || [])
-      } else {
-        setEditais([])
-      }
-
-      if (opsResult.status === 'fulfilled') {
-        setOpsSummary(opsResult.value.data || null)
-        setApiOnline(true)
-      } else {
-        setOpsSummary(null)
-        setApiOnline(false)
-      }
-      setCrmSync(crmResult.status === 'fulfilled' ? crmResult.value : null)
+      setEditais(eRes.status === 'fulfilled' ? eRes.value.data || [] : [])
+      if (oRes.status === 'fulfilled') { setOpsSummary(oRes.value.data); setApiOnline(true) }
+      else { setOpsSummary(null); setApiOnline(false) }
+      setCrmSync(cRes.status === 'fulfilled' ? cRes.value : null)
       setLoading(false)
     }
-
-    loadDashboard()
-    return () => {
-      active = false
-    }
+    load()
+    return () => { active = false }
   }, [])
 
-  const handleExport = async (event, id, tipo) => {
-    event.stopPropagation()
+  const handleExport = async (e, id, tipo) => {
+    e.stopPropagation()
     setExporting(`${id}-${tipo}`)
-
     try {
-      const exporter = { xlsx: exportApi.xlsx, csv: exportApi.csv }[tipo]
-      const response = await exporter(id)
-      downloadBlob(response.data, `edital_${id}_resultado.${tipo}`)
-      toast({ type: 'success', message: `${tipo.toUpperCase()} gerado com sucesso.` })
-    } catch (error) {
-      toast({
-        type: 'error',
-        title: 'Falha ao exportar',
-        message: error.response?.data?.detail || `Nao foi possivel exportar o edital em ${tipo.toUpperCase()}.`,
-      })
-    } finally {
-      setExporting(null)
-    }
+      const r = await { xlsx: exportApi.xlsx, csv: exportApi.csv }[tipo](id)
+      downloadBlob(r.data, `edital_${id}_resultado.${tipo}`)
+      toast({ type: 'success', message: `${tipo.toUpperCase()} gerado.` })
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || `Erro ao exportar ${tipo.toUpperCase()}.` })
+    } finally { setExporting(null) }
   }
 
-  const totalChunks = useMemo(
-    () => opsSummary?.editais?.total_chunks ?? editais.reduce((sum, edital) => sum + (edital.chunks || 0), 0),
-    [editais, opsSummary]
-  )
-  const totalRequirements = useMemo(
-    () => opsSummary?.editais?.total_requirements ?? editais.reduce((sum, edital) => sum + (edital.requirements || 0), 0),
-    [editais, opsSummary]
-  )
-  const jobsSummary = opsSummary?.jobs
-  const crmSummary = opsSummary?.crm
+  const totalChunks       = useMemo(() => opsSummary?.editais?.total_chunks       ?? editais.reduce((s, e) => s + (e.chunks || 0), 0),       [editais, opsSummary])
+  const totalRequirements = useMemo(() => opsSummary?.editais?.total_requirements ?? editais.reduce((s, e) => s + (e.requirements || 0), 0), [editais, opsSummary])
+  const jobs   = opsSummary?.jobs
+  const crm    = opsSummary?.crm
+  const nEditais = opsSummary?.editais?.total_editais ?? editais.length
 
   return (
-    <div className="p-6 lg:p-8 space-y-8">
-      <section className="relative overflow-hidden rounded-3xl border border-slate-border bg-ink-100/60 p-6 lg:p-8">
-        <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 30% -10%, rgba(220,38,38,0.16), transparent 55%), radial-gradient(circle at 80% 0%, rgba(255,255,255,0.06), transparent 60%)' }} />
-        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-sm font-medium text-gray-400">{user?.tenant?.name || 'Tor Tecnologias'}</p>
-            <h1 className="mt-2 text-2xl font-semibold text-white lg:text-3xl">Visao geral</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
-              Acompanhe status do ambiente, fila e CRM. Atalhos rapidos para as areas mais usadas.
-            </p>
+    <div className="p-6 lg:p-8 space-y-6">
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <StatusChip label={apiOnline ? 'API online' : 'API indisponivel'} tone={apiOnline ? 'success' : 'warning'} />
-              <StatusChip label={crmSync ? 'CRM pronto' : 'CRM pendente'} tone={crmSync ? 'success' : 'warning'} />
-              <StatusChip label={`Atualizado: ${formatSyncDate(crmSync?.builtAt)}`} />
+      {/* ── Cabeçalho ─────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-stone-900 dark:text-white">
+            {user?.tenant?.name || 'Portal'}
+          </h1>
+          <p className="text-sm text-stone-500 dark:text-gray-500 mt-0.5">
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {apiOnline !== null && (
+            <span className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border ${
+              apiOnline
+                ? 'border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400'
+                : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${apiOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              {apiOnline ? 'API online' : 'API offline'}
+            </span>
+          )}
+          {isEditor && (
+            <button onClick={() => navigate('/upload')} className="btn-primary">
+              Enviar edital
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Números ───────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {[
+          { label: 'Editais',    value: nEditais,                         action: () => navigate('/upload') },
+          { label: 'Chunks',     value: totalChunks.toLocaleString('pt-BR') },
+          { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
+          { label: 'CRM ativos', value: crm?.active_pipeline ?? '—',      action: () => navigate('/crm') },
+        ].map(({ label, value, action }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={action}
+            disabled={!action}
+            className={`rounded-xl border p-4 text-left transition-colors
+              border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card
+              ${action ? 'hover:border-stone-300 dark:hover:bg-slate-hover cursor-pointer' : 'cursor-default'}`}
+          >
+            <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
+            <p className="mt-2 text-2xl font-bold text-stone-900 dark:text-white">{loading ? '—' : value}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Sinais operacionais ────────────────────────────────────────── */}
+      {!loading && (
+        <div className="grid gap-4 lg:grid-cols-2">
+
+          {/* Fila de jobs */}
+          <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">Fila de processamento</p>
+              <button onClick={() => navigate('/jobs')} className="text-xs text-stone-400 dark:text-gray-500 hover:text-stone-600 dark:hover:text-white">
+                Ver tudo →
+              </button>
             </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[
+                { label: 'Em andamento', value: jobs?.active_count ?? 0,  warn: (jobs?.active_count ?? 0) > 0 },
+                { label: 'Atrasados',    value: jobs?.stale_count  ?? 0,  warn: (jobs?.stale_count  ?? 0) > 0 },
+              ].map(({ label, value, warn }) => (
+                <div key={label} className={`rounded-lg border p-3 ${
+                  warn
+                    ? 'border-yellow-500/20 bg-yellow-500/5 dark:bg-yellow-500/5'
+                    : 'border-stone-100 bg-stone-50 dark:border-slate-border dark:bg-ink-50'
+                }`}>
+                  <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
+                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-yellow-600 dark:text-yellow-400' : 'text-stone-900 dark:text-white'}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+            {jobs?.active_jobs?.length ? (
+              <div className="space-y-2">
+                {jobs.active_jobs.map(job => (
+                  <div key={job.id} className="flex items-center justify-between rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-stone-800 dark:text-white">{job.label}</p>
+                      <p className="text-[11px] text-stone-400 dark:text-gray-500">{job.status}</p>
+                    </div>
+                    <span className="ml-3 text-sm font-bold text-stone-600 dark:text-azure-glow flex-shrink-0">{job.progress_pct}%</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 dark:text-gray-600">Nenhum processamento em andamento.</p>
+            )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:w-[340px]">
-            {isEditor && (
-              <button onClick={() => navigate('/upload')} className="btn-primary h-12">
-                Novo edital
+          {/* CRM */}
+          <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM comercial</p>
+              <button onClick={() => navigate('/crm')} className="text-xs text-stone-400 dark:text-gray-500 hover:text-stone-600 dark:hover:text-white">
+                Abrir →
               </button>
-            )}
-            <button onClick={() => navigate('/crm')} className="btn-ghost h-12">
-              Abrir CRM
-            </button>
-            <div className="rounded-2xl border border-slate-border bg-ink-50/60 px-4 py-4 sm:col-span-2">
-              <p className="text-xs font-medium text-gray-500">Ambiente</p>
-              <p className="mt-1 text-sm font-semibold text-white">Operacao Tor</p>
-              <p className="mt-1 text-xs leading-6 text-gray-500">Triagem, operacao e CRM no mesmo portal.</p>
             </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[
+                { label: 'Atenção',  value: crm?.attention_required    ?? 0, warn: (crm?.attention_required    ?? 0) > 0 },
+                { label: 'Disputas próximas', value: crm?.upcoming_auctions_count ?? 0, warn: (crm?.upcoming_auctions_count ?? 0) > 0 },
+              ].map(({ label, value, warn }) => (
+                <div key={label} className={`rounded-lg border p-3 ${
+                  warn
+                    ? 'border-red-500/20 bg-red-500/5'
+                    : 'border-stone-100 bg-stone-50 dark:border-slate-border dark:bg-ink-50'
+                }`}>
+                  <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
+                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-red-600 dark:text-red-400' : 'text-stone-900 dark:text-white'}`}>{value}</p>
+                </div>
+              ))}
+            </div>
+            {crm?.upcoming_auctions?.length ? (
+              <div className="space-y-2">
+                {crm.upcoming_auctions.map(n => (
+                  <div key={n.id} className="rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-3 py-2">
+                    <p className="text-xs font-medium text-stone-800 dark:text-white truncate">{n.number || n.title || 'Sem número'}</p>
+                    <p className="text-[11px] text-stone-400 dark:text-gray-500 mt-0.5">{n.organ_name || '—'} · {n.auction_date ? new Date(n.auction_date).toLocaleDateString('pt-BR') : 'sem data'}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 dark:text-gray-600">Nenhuma disputa nos próximos 7 dias.</p>
+            )}
           </div>
         </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <ModuleCard
-          badge="RAG"
-          title="Editais"
-          description="Upload e processamento (OCR, indexacao e requisitos)."
-          meta="entrada e processamento"
-          actionLabel="abrir"
-          onClick={() => navigate('/upload')}
-        />
-        <ModuleCard
-          badge="PN"
-          title="PNCP"
-          description="Buscar e importar oportunidades publicas."
-          meta="captacao"
-          actionLabel="buscar"
-          onClick={() => navigate('/pncp')}
-        />
-        <ModuleCard
-          badge="CRM"
-          title="CRM"
-          description="Funil comercial por item, documentos e disputa."
-          meta={crmSync ? `Atualizado: ${formatSyncDate(crmSync.builtAt)}` : 'Atualizacao pendente'}
-          actionLabel="abrir"
-          onClick={() => navigate('/crm')}
-        />
-        <ModuleCard
-          badge="OPS"
-          title="Jobs"
-          description="Fila, execucoes e monitoramento."
-          meta="operacao"
-          actionLabel="acompanhar"
-          onClick={() => navigate('/jobs')}
-        />
-      </section>
-
-      {!loading && (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Editais" value={opsSummary?.editais?.total_editais ?? editais.length} sub="documentos registrados no ambiente" tone="azure" />
-          <StatCard label="Chunks" value={totalChunks.toLocaleString('pt-BR')} sub="fragmentos indexados para busca" tone="yellow" />
-          <StatCard label="Requisitos" value={totalRequirements.toLocaleString('pt-BR')} sub="criterios estruturados no sistema" tone="green" />
-          <StatCard
-            label="CRM"
-            value={crmSummary ? `${crmSummary.active_pipeline || 0} ativos` : crmSync ? 'Pronto' : 'Pendente'}
-            sub={crmSummary ? `${crmSummary.attention_required || 0} pontos de atencao no funil comercial` : crmSync ? `sincronizado em ${formatSyncDate(crmSync.builtAt)}` : 'aguardando a primeira publicacao em /crm/'}
-            tone="slate"
-          />
-        </section>
       )}
 
-      {!loading && (
-        <section className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-              <p className="text-xs font-medium text-gray-500">Radar operacional</p>
-              <h2 className="mt-2 text-xl font-semibold text-white">Saude do fluxo</h2>
-                <p className="mt-2 text-sm text-gray-400">
-                  Acompanhe gargalos de processamento e pontos de atencao no CRM sem sair do portal.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => navigate('/jobs')} className="btn-ghost">
-                  Ver jobs
-                </button>
-                <button onClick={() => navigate('/crm')} className="btn-ghost">
-                  Abrir CRM
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <SignalCard
-                label="Jobs ativos"
-                value={jobsSummary?.active_count ?? 0}
-                sub={`${jobsSummary?.status_counts?.running ?? 0} rodando agora e ${jobsSummary?.status_counts?.pending ?? 0} aguardando fila`}
-                tone={(jobsSummary?.active_count ?? 0) > 0 ? 'warning' : 'success'}
-              />
-              <SignalCard
-                label="Fila travada"
-                value={jobsSummary?.stale_count ?? 0}
-                sub="jobs executando ha mais de 20 minutos"
-                tone={(jobsSummary?.stale_count ?? 0) > 0 ? 'danger' : 'success'}
-              />
-              <SignalCard
-                label="CRM em atencao"
-                value={crmSummary?.attention_required ?? 0}
-                sub="pregoes vencidos ou prazos de pos-disputa estourados"
-                tone={(crmSummary?.attention_required ?? 0) > 0 ? 'danger' : 'success'}
-              />
-              <SignalCard
-                label="Pregoes proximos"
-                value={crmSummary?.upcoming_auctions_count ?? 0}
-                sub="disputas previstas para os proximos 7 dias"
-                tone={(crmSummary?.upcoming_auctions_count ?? 0) > 0 ? 'warning' : 'neutral'}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
-            <div>
-              <p className="text-xs font-medium text-gray-500">Prioridades</p>
-              <h2 className="mt-2 text-xl font-semibold text-white">O que merece olhar agora</h2>
-            </div>
-
-            <div className="mt-6 space-y-6">
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-white">Jobs em andamento</p>
-                  <button onClick={() => navigate('/jobs')} className="text-xs font-medium text-gray-300 hover:text-white">
-                    Ver fila
-                  </button>
-                </div>
-                {jobsSummary?.active_jobs?.length ? (
-                  <div className="mt-3 space-y-3">
-                    {jobsSummary.active_jobs.map((job) => (
-                      <div key={job.id} className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{job.label}</p>
-                            <p className="mt-1 text-xs text-gray-500">
-                              {job.job_type} | {job.status}
-                            </p>
-                          </div>
-                          <span className="text-sm font-bold text-azure-glow">{job.progress_pct}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-gray-500">Nenhum job ativo no momento.</p>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-white">Pregoes proximos</p>
-                  <button onClick={() => navigate('/crm')} className="text-xs font-medium text-gray-300 hover:text-white">
-                    Ver CRM
-                  </button>
-                </div>
-                {crmSummary?.upcoming_auctions?.length ? (
-                  <div className="mt-3 space-y-3">
-                    {crmSummary.upcoming_auctions.map((notice) => (
-                      <div key={notice.id} className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3">
-                        <p className="text-sm font-semibold text-white">{notice.number || notice.title || 'Licitacao sem numero'}</p>
-                        <p className="mt-1 text-xs text-gray-400">{notice.organ_name || 'Orgao nao informado'}</p>
-                        <p className="mt-2 text-xs font-medium text-yellow-warn">
-                          {notice.auction_date ? new Date(notice.auction_date).toLocaleString('pt-BR') : 'sem data'}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-gray-500">Nenhum pregao previsto para os proximos dias.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="rounded-[28px] border border-slate-border bg-slate-card/95 p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500">Base ativa</p>
-            <h2 className="mt-2 text-xl font-semibold text-white">Editais processados</h2>
-            <p className="mt-2 text-sm text-gray-400">
-              Consulte os ultimos documentos, abra o chat RAG e exporte os resultados.
-            </p>
-          </div>
+      {/* ── Editais ───────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-semibold text-stone-900 dark:text-white">Editais</p>
           {crmSync && (
-            <div className="rounded-2xl border border-slate-border bg-ink-50 px-4 py-3 text-sm text-gray-300">
-              CRM atualizado em <span className="font-semibold text-white">{formatSyncDate(crmSync.builtAt)}</span>
-            </div>
+            <p className="text-xs text-stone-400 dark:text-gray-600">
+              CRM em {formatDate(crmSync.builtAt)}
+            </p>
           )}
         </div>
 
         {loading ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-56 animate-pulse rounded-[24px] border border-slate-border bg-ink-50" />
-            ))}
+          <div className="space-y-2">
+            {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-stone-100 dark:bg-ink-50 animate-pulse" />)}
           </div>
         ) : editais.length === 0 ? (
-          <div className="mt-8 grid place-items-center rounded-[24px] border border-dashed border-slate-border bg-ink-50 px-6 py-16 text-center">
-            <div>
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-dashed border-slate-border text-sm font-semibold text-gray-500">
-                PDF
-              </div>
-              <p className="mt-5 text-lg font-semibold text-white">Nenhum edital enviado ainda</p>
-              <p className="mt-2 text-sm text-gray-500">Envie um PDF para iniciar a indexacao e destravar o restante do fluxo.</p>
-              {isEditor && (
-                <button onClick={() => navigate('/upload')} className="btn-primary mt-6">
-                  Enviar primeiro edital
-                </button>
-              )}
-            </div>
+          <div className="rounded-lg border border-dashed border-stone-200 dark:border-slate-border py-12 text-center">
+            <p className="text-sm text-stone-400 dark:text-gray-500">Nenhum edital enviado ainda.</p>
+            {isEditor && (
+              <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
+                Enviar primeiro edital
+              </button>
+            )}
           </div>
         ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {editais.map((edital, index) => (
+          <div className="space-y-2">
+            {editais.map(edital => (
               <div
                 key={edital.id}
                 onClick={() => navigate(`/editais/${edital.id}`)}
-                className="group flex cursor-pointer flex-col rounded-2xl border border-slate-border bg-ink-50/60 p-5 transition-colors hover:bg-slate-hover"
-                style={{ animationDelay: `${index * 60}ms` }}
+                className="flex items-center gap-4 rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-4 py-3 cursor-pointer hover:bg-stone-100 dark:hover:bg-slate-hover transition-colors"
               >
-                <div className="flex items-start gap-3">
-                  <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-2xl border border-white/10 bg-black/20 text-xs font-semibold text-gray-200">
-                    PDF
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{edital.filename}</p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {edital.parsed_at ? new Date(edital.parsed_at).toLocaleDateString('pt-BR') : 'sem data de processamento'}
-                    </p>
-                  </div>
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-stone-200 dark:border-slate-border bg-white dark:bg-ink-100 grid place-items-center">
+                  <span className="text-[9px] font-bold text-stone-400 dark:text-gray-500">PDF</span>
                 </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
-                    <p className="text-xs font-medium text-gray-500">Chunks</p>
-                    <p className="mt-2 text-xl font-bold text-white">{edital.chunks || 0}</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-border bg-black/20 p-3">
-                    <p className="text-xs font-medium text-gray-500">Requisitos</p>
-                    <p className="mt-2 text-xl font-bold text-white">{edital.requirements || 0}</p>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-stone-900 dark:text-white truncate">{edital.filename}</p>
+                  <p className="text-xs text-stone-400 dark:text-gray-500 mt-0.5">
+                    {edital.chunks || 0} chunks · {edital.requirements || 0} requisitos
+                    {edital.parsed_at && ` · ${formatDate(edital.parsed_at)}`}
+                  </p>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-border pt-4" onClick={(event) => event.stopPropagation()}>
-                  <button
-                    onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                    className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-black/20 hover:text-white"
-                  >
-                    Consulta
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-500 dark:text-gray-400 hover:text-stone-800 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors">
+                    Chat
                   </button>
-                  <button
-                    onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                    className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-black/20 hover:text-white"
-                  >
-                    Analise
+                  <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-500 dark:text-gray-400 hover:text-stone-800 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors">
+                    Análise
                   </button>
-                  <div className="ml-auto flex gap-2">
-                    {[
-                      ['xlsx', 'XLS'],
-                      ['csv', 'CSV'],
-                    ].map(([tipo, label]) => (
-                      <button
-                        key={tipo}
-                        onClick={(event) => handleExport(event, edital.id, tipo)}
-                        disabled={Boolean(exporting)}
-                        className="rounded-xl border border-slate-border px-3 py-2 text-xs font-medium text-gray-400 transition-colors hover:bg-black/20 hover:text-white disabled:opacity-40"
-                      >
-                        {exporting === `${edital.id}-${tipo}` ? '...' : label}
-                      </button>
-                    ))}
-                  </div>
+                  {['xlsx','csv'].map(tipo => (
+                    <button key={tipo} onClick={e => handleExport(e, edital.id, tipo)}
+                      disabled={Boolean(exporting)}
+                      className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-400 dark:text-gray-500 hover:text-stone-700 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors disabled:opacity-40">
+                      {exporting === `${edital.id}-${tipo}` ? '…' : tipo.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </div>
     </div>
   )
 }

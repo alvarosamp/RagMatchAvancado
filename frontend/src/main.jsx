@@ -15,6 +15,7 @@ import EditalChat     from './pages/EditalChat'
 import Jobs           from './pages/Jobs'
 import Usuarios       from './pages/Usuarios'
 import Analytics      from './pages/Analytics'
+import Reports        from './pages/Reports'
 import Chatbot        from './pages/Chatbot'
 import Controle       from './pages/Controle'
 import AnaliseAta     from './pages/AnaliseAta'
@@ -55,6 +56,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />
             <Route path="/jobs"                   element={<PrivateRoute><Jobs          /></PrivateRoute>} />
             <Route path="/analytics"              element={<PrivateRoute><Analytics     /></PrivateRoute>} />
+            <Route path="/relatorios"             element={<PrivateRoute><Reports       /></PrivateRoute>} />
             <Route path="/chat"                   element={<PrivateRoute><Chatbot       /></PrivateRoute>} />
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />

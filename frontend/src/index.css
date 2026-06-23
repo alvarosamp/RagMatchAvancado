@@ -8,8 +8,14 @@
   }
 
   body {
-    @apply bg-ink text-white font-body antialiased;
-    /* Visual mais "produto": menos neon/IA, mais discreto e consistente */
+    @apply bg-[#f6f1ea] text-stone-950 font-body antialiased;
+    background-image:
+      radial-gradient(900px 420px at 18% 0%, rgba(185, 28, 28, 0.08) 0%, rgba(185, 28, 28, 0.00) 62%),
+      linear-gradient(180deg, rgba(255,255,255,0.72), rgba(246,241,234,1));
+  }
+
+  html.dark body {
+    @apply bg-ink text-white;
     background-image:
       linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.00) 40%),
       radial-gradient(900px 420px at 18% 0%, rgba(220, 38, 38, 0.06) 0%, rgba(220, 38, 38, 0.00) 62%),
@@ -29,24 +35,27 @@
 
 @layer components {
   .card {
-    @apply bg-slate-card border border-slate-border rounded-2xl p-6;
+    @apply rounded-2xl border border-stone-200 bg-white p-6 text-stone-950 shadow-sm
+           dark:border-slate-border dark:bg-slate-card dark:text-white;
   }
 
   .btn-primary {
-    @apply bg-azure text-white font-body font-semibold px-5 py-2.5 rounded-xl
-           hover:bg-azure-dim transition-all duration-200 disabled:opacity-40
+    @apply bg-red-700 text-white font-body font-semibold px-5 py-2.5 rounded-xl
+           hover:bg-red-800 transition-all duration-200 disabled:opacity-40
            disabled:cursor-not-allowed active:scale-[0.99] text-sm;
   }
 
   .btn-ghost {
-    @apply border border-slate-border text-gray-300 font-body px-5 py-2.5 rounded-xl
-           hover:bg-slate-hover hover:text-white transition-all duration-200 text-sm;
+    @apply border border-stone-200 bg-white text-stone-700 font-body px-5 py-2.5 rounded-xl
+           hover:bg-stone-50 hover:text-stone-950 transition-all duration-200 text-sm
+           dark:border-slate-border dark:bg-transparent dark:text-gray-300 dark:hover:bg-slate-hover dark:hover:text-white;
   }
 
   .input {
-    @apply w-full bg-ink-50 border border-slate-border rounded-xl px-4 py-2.5
-           text-white placeholder-gray-500 font-body text-sm
-           focus:outline-none focus:border-azure focus:ring-1 focus:ring-azure/30
+    @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-2.5
+           text-stone-950 placeholder-stone-400 font-body text-sm
+           focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200
+           dark:border-slate-border dark:bg-ink-50 dark:text-white dark:placeholder-gray-500 dark:focus:border-azure dark:focus:ring-azure/30
            transition-all duration-200;
   }
 
@@ -61,5 +70,65 @@
   }
   .badge-pending {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium bg-slate-border/40 text-gray-400 border border-slate-border;
+  }
+}
+
+@layer utilities {
+  body.theme-light {
+    @apply bg-[#f7f1ea] text-stone-900;
+    background-image:
+      radial-gradient(900px 420px at 18% 0%, rgba(185, 28, 28, 0.08) 0%, rgba(185, 28, 28, 0.00) 62%),
+      linear-gradient(180deg, rgba(255,255,255,0.72), rgba(247,241,234,1));
+  }
+
+  .theme-light .theme-surface,
+  .theme-light .bg-ink {
+    @apply bg-[#f7f1ea] text-stone-900;
+  }
+
+  .theme-light .bg-ink-100,
+  .theme-light .bg-ink-100\/95,
+  .theme-light .bg-ink-100\/90 {
+    @apply bg-[#f0e7dc] text-stone-900;
+  }
+
+  .theme-light .bg-ink-50,
+  .theme-light .bg-ink-50\/80,
+  .theme-light .bg-ink-50\/60,
+  .theme-light .bg-ink-50\/40,
+  .theme-light .theme-card {
+    @apply bg-white text-stone-900;
+  }
+
+  .theme-light .bg-slate-card,
+  .theme-light .bg-slate-card\/95,
+  .theme-light .card {
+    @apply border-stone-200 bg-white text-stone-900 shadow-sm;
+  }
+
+  .theme-light .border-slate-border {
+    @apply border-stone-200;
+  }
+
+  .theme-light .text-white {
+    @apply text-stone-950;
+  }
+
+  .theme-light .text-gray-300,
+  .theme-light .text-gray-400 {
+    @apply text-stone-600;
+  }
+
+  .theme-light .text-gray-500,
+  .theme-light .text-gray-600 {
+    @apply text-stone-500;
+  }
+
+  .theme-light .btn-ghost {
+    @apply border-stone-300 bg-white text-stone-700 hover:bg-stone-100 hover:text-stone-950;
+  }
+
+  .theme-light .input {
+    @apply border-stone-300 bg-white text-stone-900 placeholder-stone-400;
   }
 }

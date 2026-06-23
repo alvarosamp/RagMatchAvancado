@@ -1,6 +1,6 @@
 from sqlalchemy import (
-    JSON, Column, Integer, String, ForeignKey,
-    Text, Float, DateTime, Enum
+    JSON, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.sql import func
@@ -84,6 +84,67 @@ class Requirement(Base):
         back_populates="requirement",
         cascade="all, delete-orphan",
     )
+
+
+class AnalysisDocument(Base):
+    """Resultado estruturado de uma analise repetivel de documento."""
+    __tablename__ = "analysis_documents"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "source_kind",
+            "source_hash",
+            name="uq_analysis_documents_tenant_kind_hash",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    source_kind = Column(String, nullable=False, index=True)
+    source_hash = Column(String, nullable=False, index=True)
+    source_name = Column(String)
+    status = Column(String, nullable=False, default="done", index=True)
+    full_text = Column(Text)
+    result = Column(JSON)
+    tokens_used = Column(Integer, default=0)
+    processing_ms = Column(Integer)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    items = relationship(
+        "AnalysisItem",
+        back_populates="analysis",
+        cascade="all, delete-orphan",
+    )
+
+
+class AnalysisItem(Base):
+    """Item extraido de edital, ata ou datasheet e salvo para reuso."""
+    __tablename__ = "analysis_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    analysis_id = Column(
+        Integer,
+        ForeignKey("analysis_documents.id"),
+        nullable=False,
+        index=True,
+    )
+    item_number = Column(String, index=True)
+    item_type = Column(String, index=True)
+    description = Column(Text)
+    brand = Column(String)
+    model = Column(String)
+    quantity = Column(Float)
+    unit = Column(String)
+    unit_value = Column(Float)
+    total_value = Column(Float)
+    supplier = Column(String)
+    supplier_tax_id = Column(String)
+    raw_text = Column(Text)
+    raw_payload = Column(JSON)
+    created_at = Column(DateTime, server_default=func.now())
+
+    analysis = relationship("AnalysisDocument", back_populates="items")
 
 
 # ──────────────────────────────────────────

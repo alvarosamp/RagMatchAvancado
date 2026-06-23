@@ -1,19 +1,6 @@
 from __future__ import annotations
 
-import os
-from io import BytesIO
-
-from reportlab.pdfgen import canvas
-
-
-def _make_pdf_bytes(text: str) -> bytes:
-    buf = BytesIO()
-    c = canvas.Canvas(buf)
-    c.setFont("Helvetica", 12)
-    c.drawString(72, 720, text)
-    c.showPage()
-    c.save()
-    return buf.getvalue()
+from pathlib import Path
 
 
 def test_parse_pdf_fallback_uses_pypdf_when_docling_missing(monkeypatch):
@@ -23,9 +10,9 @@ def test_parse_pdf_fallback_uses_pypdf_when_docling_missing(monkeypatch):
 
     from app.pipeline.docling_parser import parse_pdf
 
-    pdf_bytes = _make_pdf_bytes("EDITAL TESTE 123")
-    doc = parse_pdf(pdf_bytes, filename="teste.pdf")
+    pdf_path = Path("data/editais/UFBA.pdf")
+    doc = parse_pdf(pdf_path, filename=pdf_path.name)
 
-    assert "EDITAL" in doc.full_text.upper()
+    assert "PREGÃO" in doc.full_text.upper() or "PREGAO" in doc.full_text.upper()
     assert len(doc.full_text.strip()) > 0
 

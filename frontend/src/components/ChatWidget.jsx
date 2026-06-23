@@ -139,32 +139,29 @@ export default function ChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl
-                     bg-gradient-to-br from-azure to-amber
-                     hover:scale-110 active:scale-95 transition-transform duration-150
-                     flex items-center justify-center"
-          title="Abrir ChatBot"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-800 shadow-xl transition-transform duration-150 hover:-translate-y-0.5 hover:border-red-200 dark:border-slate-border dark:bg-ink-50 dark:text-white"
+          title="Abrir assistente"
         >
-          <span className="text-2xl select-none">💬</span>
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-red-700 text-xs text-white dark:bg-azure">?</span>
+          Assistente
         </button>
       )}
 
       {/* ── Painel do chat ───────────────────────────────────────────────── */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 h-[580px] flex flex-col
-                        rounded-2xl border border-slate-border bg-ink-50 shadow-2xl overflow-hidden">
+        <div className="fixed bottom-6 right-6 z-50 flex h-[580px] w-96 flex-col overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-2xl dark:border-slate-border dark:bg-ink-50">
 
           {/* Header */}
-          <div className="flex-shrink-0 bg-ink-100 border-b border-slate-border px-4 py-3">
+          <div className="flex-shrink-0 border-b border-stone-200 bg-[#fbf8f3] px-4 py-3 dark:border-slate-border dark:bg-ink-100">
             <div className="flex items-center justify-between">
               {/* Título */}
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-azure to-amber flex items-center justify-center">
-                  <span className="text-white text-[10px] font-mono font-black">T</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-700 text-white dark:bg-azure">
+                  <span className="text-xs font-bold">T</span>
                 </div>
                 <div>
-                  <p className="text-sm font-display font-bold text-white leading-none">ChatBot</p>
-                  <p className="text-[10px] text-gray-500 font-mono mt-0.5 truncate max-w-[160px]">
+                  <p className="text-sm font-display font-bold text-stone-950 leading-none dark:text-white">Assistente do edital</p>
+                  <p className="mt-0.5 max-w-[160px] truncate text-[11px] text-stone-500 dark:text-gray-500">
                     {selected ? selected.filename : 'Nenhum edital selecionado'}
                   </p>
                 </div>
@@ -172,15 +169,15 @@ export default function ChatWidget() {
 
               {/* Modelo + fechar */}
               <div className="flex items-center gap-1.5">
-                <div className="flex rounded border border-slate-border overflow-hidden">
-                  {[['gpt', 'GPT'], ['ollama', 'Local']].map(([val, lbl]) => (
+                <div className="flex overflow-hidden rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-ink-50">
+                  {[['gpt', 'Online'], ['ollama', 'Local leve']].map(([val, lbl]) => (
                     <button
                       key={val}
                       onClick={() => setLlmModel(val)}
-                      className={`px-2 py-1 text-[10px] font-mono transition-all duration-100 ${
+                      className={`px-2 py-1 text-[10px] font-semibold transition-all duration-100 ${
                         llmModel === val
-                          ? 'bg-azure text-white'
-                          : 'text-gray-500 hover:text-white hover:bg-slate-hover'
+                          ? 'bg-red-700 text-white dark:bg-azure'
+                          : 'text-stone-500 hover:bg-stone-50 hover:text-stone-900 dark:text-gray-500 dark:hover:bg-slate-hover dark:hover:text-white'
                       }`}
                     >
                       {lbl}
@@ -190,15 +187,15 @@ export default function ChatWidget() {
                 {messages.length > 0 && (
                   <button
                     onClick={() => setMessages([])}
-                    className="text-[10px] font-mono text-gray-600 hover:text-red-fail transition-colors px-1 py-1"
+                    className="px-1 py-1 text-[10px] font-semibold text-stone-400 transition-colors hover:text-red-fail dark:text-gray-600"
                     title="Limpar histórico"
                   >
-                    ✕hist
+                    limpar
                   </button>
                 )}
                 <button
                   onClick={() => setOpen(false)}
-                  className="text-gray-500 hover:text-white transition-colors p-1 text-lg leading-none"
+                  className="p-1 text-lg leading-none text-stone-500 transition-colors hover:text-stone-950 dark:text-gray-500 dark:hover:text-white"
                   title="Fechar"
                 >
                   ×
@@ -210,12 +207,10 @@ export default function ChatWidget() {
             <div className="mt-2 relative">
               <button
                 onClick={() => setShowSelector(v => !v)}
-                className="w-full text-left px-3 py-2 rounded-lg bg-ink-50 border border-slate-border
-                           text-xs font-mono text-gray-400 hover:border-azure/40 hover:text-white
-                           transition-all flex items-center justify-between gap-2"
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 text-left text-xs text-stone-600 transition-all hover:border-red-200 hover:text-stone-950 dark:border-slate-border dark:bg-ink-50 dark:text-gray-400 dark:hover:border-azure/40 dark:hover:text-white"
               >
                 <span className="truncate flex-1">
-                  {selected ? `#${selected.id} — ${selected.filename}` : 'Clique para selecionar um edital…'}
+                  {selected ? `#${selected.id} - ${selected.filename}` : 'Selecionar edital para conversar'}
                 </span>
                 <span className="text-[9px] flex-shrink-0">{showSelector ? '▲' : '▼'}</span>
               </button>
@@ -259,11 +254,11 @@ export default function ChatWidget() {
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {!selected && (
               <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-                <div className="text-4xl">📄</div>
+                <div className="grid h-14 w-14 place-items-center rounded-2xl border border-stone-200 bg-white text-sm font-semibold text-stone-500 dark:border-slate-border dark:bg-ink-50 dark:text-gray-400">PDF</div>
                 <div>
-                  <p className="text-sm font-display font-bold text-white">Selecione um edital</p>
-                  <p className="text-xs text-gray-500 mt-1 max-w-[220px] leading-relaxed">
-                    Use o seletor acima para escolher o documento com o qual deseja conversar.
+                  <p className="text-sm font-display font-bold text-stone-950 dark:text-white">Escolha um edital</p>
+                  <p className="text-xs text-stone-500 mt-1 max-w-[220px] leading-relaxed dark:text-gray-500">
+                    Depois disso, pergunte sobre prazos, requisitos, itens ou documentos.
                   </p>
                 </div>
               </div>
@@ -271,11 +266,11 @@ export default function ChatWidget() {
 
             {selected && messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-                <div className="text-4xl">💬</div>
+                <div className="grid h-14 w-14 place-items-center rounded-2xl border border-stone-200 bg-white text-sm font-semibold text-stone-500 dark:border-slate-border dark:bg-ink-50 dark:text-gray-400">?</div>
                 <div>
-                  <p className="text-sm font-display font-bold text-white">Pronto para conversar</p>
-                  <p className="text-xs text-gray-500 mt-1 max-w-[220px] leading-relaxed">
-                    Faça uma pergunta sobre <span className="text-azure-glow">{selected.filename}</span>
+                  <p className="text-sm font-display font-bold text-stone-950 dark:text-white">Como posso ajudar?</p>
+                  <p className="text-xs text-stone-500 mt-1 max-w-[220px] leading-relaxed dark:text-gray-500">
+                    Pergunte sobre <span className="text-red-700 dark:text-azure-glow">{selected.filename}</span>
                   </p>
                 </div>
               </div>

@@ -34,8 +34,10 @@ def chunk_document(
     final  = _apply_sliding_window(merged, max_chars, overlap)
 
     logger.info(
-        f"[Chunker] '{doc.filename}' → {len(doc.chunks)} chunks Docling "
-        f"→ {len(final)} chunks finais"
+        "[Chunker] '%s' -> %s chunks Docling -> %s chunks finais",
+        doc.filename,
+        len(doc.chunks),
+        len(final),
     )
     return final
 

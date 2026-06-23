@@ -30,6 +30,12 @@ from app.auth.models import User
 from app.auth.dependencies import get_current_user, require_role
 from app.jobs.queue import JobQueue
 from app.logs.config import logger
+from app.services.edital_analysis import (
+    build_analysis_payload,
+    extract_items_from_edital_text,
+    sync_analysis_to_crm,
+)
+from app.services.analysis_store import persist_analysis_document
 
 router = APIRouter(prefix="/editais", tags=["editais"])
 _queue = JobQueue()
@@ -214,6 +220,93 @@ def get_results(
     return {"edital_id": edital_id, "results": results}
 
 
+@router.get("/{edital_id}/llm-results")
+def get_llm_results(
+    edital_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retorna a analise estruturada do edital a partir do texto OCRizado."""
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
+    if not edital.full_text:
+        raise HTTPException(
+            status_code=404,
+            detail="Edital ainda nao possui texto extraido. Aguarde o OCR concluir.",
+        )
+    payload = build_analysis_payload(edital)
+    if not payload["itens"] and not edital.requirements:
+        raise HTTPException(
+            status_code=404,
+            detail="Analise ainda nao encontrada para este edital.",
+        )
+    return payload
+
+
+@router.post("/{edital_id}/analyze")
+def analyze_edital(
+    edital_id: int,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    """
+    Extrai itens/requisitos do texto OCRizado e persiste requisitos para matching.
+    """
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
+    if not edital.full_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Edital sem texto extraido. Reenvie o PDF ou aguarde o OCR concluir.",
+        )
+
+    items = extract_items_from_edital_text(edital.full_text)
+    if not items:
+        raise HTTPException(
+            status_code=422,
+            detail="Nao encontrei itens tecnicos no texto extraido deste edital.",
+        )
+
+    (
+        db.query(Requirement)
+        .filter(
+            Requirement.edital_id == edital.id,
+            Requirement.attribute.like("item_%"),
+        )
+        .delete(synchronize_session=False)
+    )
+
+    for item in items:
+        db.add(
+            Requirement(
+                edital_id=edital.id,
+                attribute=f"item_{item.numero_item}",
+                raw_value=item.descricao,
+                parsed_value=str(item.quantidade) if item.quantidade is not None else None,
+                unit=item.unidade,
+            )
+        )
+
+    payload = build_analysis_payload(edital)
+    analysis_record = persist_analysis_document(
+        db,
+        tenant_id=current_user.tenant_id,
+        source_kind="edital",
+        source_name=edital.filename,
+        full_text=edital.full_text,
+        result=payload,
+    )
+    crm_result = sync_analysis_to_crm(db, edital, current_user)
+    db.commit()
+    logger.info(
+        "[Editais] Analise estruturada concluida | edital=%s | itens=%s | crm=%s",
+        edital_id,
+        len(items),
+        crm_result,
+    )
+    payload["analysis_document_id"] = analysis_record.id
+    payload["crm"] = crm_result
+    return payload
+
+
 # ── Chat RAG ─────────────────────────────────────────────────────────────────
 
 class ChatMessage(BaseModel):
@@ -275,16 +368,22 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
     else:
         try:
             import ollama
-            ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-            ollama_model = os.getenv("OLLAMA_MODEL", "llama3")
+            ollama_host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
+            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 
-            # Usa client explícito para respeitar host do Docker e reduzir falhas intermitentes.
             client = ollama.Client(host=ollama_host)
+
             try:
                 resp = client.chat(model=ollama_model, messages=messages)
-            except Exception:
-                # Primeiro request pode falhar enquanto o modelo ainda está subindo.
-                resp = client.chat(model=ollama_model, messages=messages)
+            except ollama.ResponseError as e:
+                if e.status_code == 404:
+                    # Modelo não encontrado — tenta puxar e reinicia uma vez.
+                    logger.info("[Chat] Modelo '%s' não encontrado, iniciando pull...", ollama_model)
+                    client.pull(ollama_model)
+                    logger.info("[Chat] Pull concluído, tentando novamente.")
+                    resp = client.chat(model=ollama_model, messages=messages)
+                else:
+                    raise
 
             return resp["message"]["content"].strip(), ollama_model
         except Exception as e:
@@ -292,8 +391,8 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
             raise HTTPException(
                 status_code=502,
                 detail=(
-                    f"Erro ao chamar Ollama ({os.getenv('OLLAMA_MODEL', 'llama3')}): {e}. "
-                    "Verifique se o container 'ollama' está saudável e se o modelo foi baixado por completo."
+                    f"Erro ao chamar Ollama ({os.getenv('OLLAMA_MODEL', 'llama3.2:1b')}): {e}. "
+                    "Verifique se o container 'ollama' está saudável."
                 ),
             )
 

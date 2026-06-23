@@ -1,6 +1,6 @@
 const THEME_KEY = 'tor-ui-theme'
 
-export function readStoredTheme(defaultTheme = 'dark') {
+export function readStoredTheme(defaultTheme = 'light') {
   if (typeof window === 'undefined') return defaultTheme
   const value = window.localStorage.getItem(THEME_KEY)
   return value === 'light' ? 'light' : defaultTheme
