@@ -154,7 +154,7 @@ def _fill_header_table(
         if row_index >= len(table.rows):
             break
         for cell, value in zip(table.rows[row_index].cells, row_values):
-            _set_cell_text(cell, value)
+            _set_cell_text_preserving_style(cell, value)
 
 
 def _fill_items_table(table: Table, items: list[dict[str, Any]]) -> None:
@@ -181,13 +181,13 @@ def _fill_items_table(table: Table, items: list[dict[str, Any]]) -> None:
             _money(item["total"]),
         ]
         for cell, value in zip(row.cells, values):
-            _set_cell_text(cell, value)
+            _set_cell_text_preserving_style(cell, value)
 
     table._tbl.append(total_row)
     total_text = _money(total)
     total_in_words = valor_por_extenso(total)
     for index, cell in enumerate(table.rows[-1].cells):
-        _set_cell_text(
+        _set_cell_text_preserving_style(
             cell,
             "VALOR TOTAL"
             if index < len(table.rows[-1].cells) - 1
@@ -204,8 +204,6 @@ def _replace_common_text(
     current_city = options.get("proposal_city") or "Santa Rita do Sapucai"
     current_date = options.get("proposal_date") or _date_pt_br(datetime.now())
     replacements = {
-        "PROPOSTA DE PRE": "PROPOSTA DE PRECOS",
-        "PROPOSTA:": "PROPOSTA: itens vencidos conforme apuracao do pregao.",
         "O prazo de validade da proposta": (
             f"O prazo de validade da proposta e de "
             f"{options.get('validity_days', 90)} dias."
@@ -258,6 +256,16 @@ def _remove_images(document: Document) -> None:
 
 def _set_cell_text(cell: _Cell, text: Any) -> None:
     cell.text = str(text or "")
+
+
+def _set_cell_text_preserving_style(cell: _Cell, text: Any) -> None:
+    paragraphs = cell.paragraphs
+    if not paragraphs:
+        cell.text = str(text or "")
+        return
+    _set_paragraph_text(paragraphs[0], str(text or ""))
+    for paragraph in paragraphs[1:]:
+        _set_paragraph_text(paragraph, "")
 
 
 def _set_paragraph_text(paragraph: Any, text: str) -> None:
@@ -320,11 +328,11 @@ def _int_to_words(number: int) -> str:
             parts.append(f"{_int_to_words_under_1000(chunk)} {label}")
 
     if remaining:
-        if parts and remaining < 1000:
+        if parts and remaining < 100:
             parts.append("e " + _int_to_words_under_1000(remaining))
         else:
             parts.append(_int_to_words_under_1000(remaining))
-    return ", ".join(parts).replace(", e ", " e ")
+    return ", ".join(parts).replace(", e ", " e ").replace("mil, ", "mil ")
 
 
 def _int_to_words_under_1000(number: int) -> str:

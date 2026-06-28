@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user
 from app.auth.models import User
+from app.crm.lpu_importer import import_lpu_catalog
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
 from app.crm.models import CrmNotice, CrmNoticeProduct, CrmNoticeStage
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
@@ -33,6 +34,7 @@ from app.services.proposal_generator import (
 )
 
 router = APIRouter(prefix="/crm", tags=["crm"])
+MATCH_PAUSED_MESSAGE = "Match temporariamente pausado para manutenção."
 
 
 def _parse_json_param(raw: str | None, fallback: Any) -> Any:
@@ -47,6 +49,13 @@ def _parse_json_param(raw: str | None, fallback: Any) -> Any:
 def _ensure_table(table_name: str) -> None:
     if table_name not in TABLES:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Tabela CRM '{table_name}' nao suportada.")
+
+
+def _raise_match_paused() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=MATCH_PAUSED_MESSAGE,
+    )
 
 
 @router.get("/auth/user")
@@ -85,6 +94,50 @@ async def crm_import_sales_processes(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    finally:
+        await file.close()
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+@router.post("/imports/lpu")
+async def crm_import_lpu_catalog(
+    file: UploadFile = File(..., description="Planilha XLSX de LPU/catalogo"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Somente administradores podem importar a LPU.",
+        )
+
+    filename = (file.filename or "").lower()
+    if not filename.endswith(".xlsx"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Envie uma planilha .xlsx.",
+        )
+
+    temp_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            temp_path = tmp.name
+            tmp.write(await file.read())
+
+        summary = import_lpu_catalog(
+            Path(temp_path),
+            db=db,
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+        )
+        db.expire_all()
+        return {"ok": True, "summary": summary}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
     finally:
         await file.close()
         if temp_path and os.path.exists(temp_path):
@@ -183,6 +236,7 @@ def crm_run_notice_matches(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _raise_match_paused()
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
     payload = payload or {}
@@ -209,6 +263,7 @@ def crm_run_notice_matches_job(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _raise_match_paused()
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
 
@@ -311,6 +366,7 @@ def crm_run_match_batch(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _raise_match_paused()
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match em lote.")
 
