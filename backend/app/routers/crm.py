@@ -16,7 +16,13 @@ from app.auth.dependencies import get_current_user
 from app.auth.models import User
 from app.crm.lpu_importer import import_lpu_catalog
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
-from app.crm.models import CrmNotice, CrmNoticeProduct, CrmNoticeStage
+from app.crm.models import (
+    CrmBidAssistLog,
+    CrmItemWinnerType,
+    CrmNotice,
+    CrmNoticeProduct,
+    CrmNoticeStage,
+)
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
 from app.jobs.models import Job, JobStatus, JobType
@@ -34,6 +40,7 @@ from app.services.proposal_generator import (
 )
 
 router = APIRouter(prefix="/crm", tags=["crm"])
+DEFAULT_BID_DECREMENT = 1.0
 MATCH_PAUSED_MESSAGE = "Match temporariamente pausado para manutenção."
 
 
@@ -56,6 +63,34 @@ def _raise_match_paused() -> None:
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail=MATCH_PAUSED_MESSAGE,
     )
+
+
+def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
+    catalog = product.catalog_product
+    if catalog is not None:
+        return float(getattr(catalog, "min_price", None) or catalog.cost or 0.0)
+    return float(product.unit_price or product.cost or 0.0)
+
+
+def _suggest_bid(
+    *,
+    current_best_bid: float | None,
+    reference_price: float | None,
+    minimum_viable_bid: float,
+    decrement: float = DEFAULT_BID_DECREMENT,
+) -> tuple[float | None, str, str]:
+    anchor = current_best_bid if current_best_bid and current_best_bid > 0 else reference_price
+    if not anchor or anchor <= 0:
+        return None, "missing_price", "Informe o menor lance atual ou o preco de referencia."
+
+    suggested = max(float(anchor) - decrement, 0.01)
+    if minimum_viable_bid and suggested < minimum_viable_bid:
+        return (
+            minimum_viable_bid,
+            "stop",
+            "Sugestao chegou no limite minimo. Nao reduzir sem autorizacao.",
+        )
+    return suggested, "ok", "Lance sugerido dentro do limite configurado."
 
 
 @router.get("/auth/user")
@@ -215,6 +250,213 @@ def crm_generate_notice_proposal(
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded}",
         },
     )
+
+
+@router.get("/notices/{notice_id}/bid-room")
+def crm_notice_bid_room(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ),
+            selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_products).selectinload(
+                CrmNoticeProduct.catalog_product
+            ),
+            selectinload(CrmNotice.notice_item_results),
+            selectinload(CrmNotice.bid_assist_logs),
+        )
+        .filter(
+            CrmNotice.id == notice_id,
+            CrmNotice.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not notice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Edital CRM nao encontrado.",
+        )
+
+    result_by_product = {
+        result.notice_product_id: result
+        for result in notice.notice_item_results
+    }
+    logs_by_product: dict[str, list[CrmBidAssistLog]] = {}
+    for log in sorted(
+        notice.bid_assist_logs,
+        key=lambda item: item.created_at,
+        reverse=True,
+    ):
+        logs_by_product.setdefault(log.notice_product_id, []).append(log)
+
+    items = []
+    for product in notice.notice_products:
+        result = result_by_product.get(product.id)
+        if result and result.winner_type == CrmItemWinnerType.CANCELLED:
+            continue
+
+        last_log = (logs_by_product.get(product.id) or [None])[0]
+        current_best_bid = (
+            float(last_log.current_best_bid)
+            if last_log and last_log.current_best_bid is not None
+            else None
+        )
+        reference_price = (
+            float(product.reference_price)
+            if product.reference_price is not None
+            else None
+        )
+        minimum = _minimum_viable_bid(product)
+        suggested, status_value, message = _suggest_bid(
+            current_best_bid=current_best_bid,
+            reference_price=reference_price,
+            minimum_viable_bid=minimum,
+        )
+        catalog = product.catalog_product
+        items.append(
+            {
+                "id": product.id,
+                "item_number": product.item_number,
+                "lot": product.lot,
+                "description": product.description,
+                "quantity": product.quantity,
+                "reference_price": product.reference_price,
+                "reference_total_price": product.reference_total_price,
+                "minimum_viable_bid": minimum,
+                "suggested_bid": suggested,
+                "suggestion_status": status_value,
+                "suggestion_message": message,
+                "current_best_bid": current_best_bid,
+                "catalog_product": {
+                    "id": catalog.id,
+                    "name": catalog.name,
+                    "brand": catalog.brand,
+                    "model": catalog.model,
+                    "sku": catalog.sku,
+                    "min_price": getattr(catalog, "min_price", None),
+                }
+                if catalog
+                else None,
+                "last_logs": [
+                    {
+                        "id": log.id,
+                        "current_best_bid": log.current_best_bid,
+                        "suggested_bid": log.suggested_bid,
+                        "minimum_viable_bid": log.minimum_viable_bid,
+                        "decision": log.decision,
+                        "notes": log.notes,
+                        "created_at": log.created_at.isoformat()
+                        if log.created_at
+                        else None,
+                    }
+                    for log in (logs_by_product.get(product.id) or [])[:5]
+                ],
+            }
+        )
+
+    return {
+        "notice": {
+            "id": notice.id,
+            "number": notice.number,
+            "tor_id": notice.tor_id,
+            "title": notice.title,
+            "municipality_name": notice.municipality_name,
+            "organ": notice.organ.name if notice.organ else None,
+            "portal": notice.portal.name if notice.portal else None,
+            "auction_date": notice.auction_date.isoformat()
+            if notice.auction_date
+            else None,
+        },
+        "items": items,
+    }
+
+
+@router.post("/notices/{notice_id}/bid-room/logs")
+def crm_record_bid_room_log(
+    notice_id: str,
+    payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in {"admin", "editor"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permissao insuficiente para registrar lance.",
+        )
+
+    product_id = payload.get("notice_product_id")
+    if not product_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="notice_product_id obrigatorio.",
+        )
+
+    product = (
+        db.query(CrmNoticeProduct)
+        .options(selectinload(CrmNoticeProduct.catalog_product))
+        .filter(
+            CrmNoticeProduct.id == product_id,
+            CrmNoticeProduct.notice_id == notice_id,
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item do edital nao encontrado.",
+        )
+
+    current_best_bid = payload.get("current_best_bid")
+    current_best_bid = float(current_best_bid) if current_best_bid not in (None, "") else None
+    reference_price = (
+        float(product.reference_price)
+        if product.reference_price is not None
+        else None
+    )
+    minimum = _minimum_viable_bid(product)
+    suggested, status_value, message = _suggest_bid(
+        current_best_bid=current_best_bid,
+        reference_price=reference_price,
+        minimum_viable_bid=minimum,
+        decrement=float(payload.get("decrement") or DEFAULT_BID_DECREMENT),
+    )
+    requested_suggested = payload.get("suggested_bid")
+    if requested_suggested not in (None, ""):
+        suggested = float(requested_suggested)
+
+    log = CrmBidAssistLog(
+        tenant_id=current_user.tenant_id,
+        notice_id=notice_id,
+        notice_product_id=product.id,
+        current_best_bid=current_best_bid,
+        suggested_bid=suggested,
+        minimum_viable_bid=minimum,
+        reference_price=reference_price,
+        quantity=product.quantity,
+        decision=payload.get("decision") or status_value,
+        authorized_by=current_user.id,
+        notes=payload.get("notes") or message,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return {
+        "ok": True,
+        "log": {
+            "id": log.id,
+            "current_best_bid": log.current_best_bid,
+            "suggested_bid": log.suggested_bid,
+            "minimum_viable_bid": log.minimum_viable_bid,
+            "decision": log.decision,
+            "notes": log.notes,
+            "created_at": log.created_at.isoformat() if log.created_at else None,
+        },
+    }
 
 
 @router.get("/notices/{notice_id}/matches")

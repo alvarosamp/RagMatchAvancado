@@ -274,6 +274,7 @@ class CrmNotice(Base):
     notice_item_results = relationship("CrmNoticeItemResult", back_populates="notice", cascade="all, delete-orphan")
     notice_competitors = relationship("CrmNoticeCompetitor", back_populates="notice", cascade="all, delete-orphan")
     notice_product_matches = relationship("CrmNoticeProductMatch", back_populates="notice", cascade="all, delete-orphan")
+    bid_assist_logs = relationship("CrmBidAssistLog", back_populates="notice", cascade="all, delete-orphan")
 
 
 class CrmNoticeProduct(Base):
@@ -304,6 +305,7 @@ class CrmNoticeProduct(Base):
     notice = relationship("CrmNotice", back_populates="notice_products")
     catalog_product = relationship("CrmCatalogProduct", back_populates="notice_products")
     item_result = relationship("CrmNoticeItemResult", back_populates="notice_product", uselist=False, cascade="all, delete-orphan")
+    bid_assist_logs = relationship("CrmBidAssistLog", back_populates="notice_product", cascade="all, delete-orphan")
     product_matches = relationship(
         "CrmNoticeProductMatch",
         back_populates="notice_product",
@@ -441,3 +443,28 @@ class CrmNoticeCompetitor(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     notice = relationship("CrmNotice", back_populates="notice_competitors")
+
+
+class CrmBidAssistLog(Base):
+    __tablename__ = "crm_bid_assist_logs"
+    __table_args__ = (
+        Index("ix_crm_bid_assist_logs_notice_created", "notice_id", "created_at"),
+        Index("ix_crm_bid_assist_logs_product_created", "notice_product_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
+    notice_product_id = Column(String(36), ForeignKey("crm_notice_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    current_best_bid = Column(Float)
+    suggested_bid = Column(Float)
+    minimum_viable_bid = Column(Float)
+    reference_price = Column(Float)
+    quantity = Column(Float)
+    decision = Column(String, nullable=False, default="suggested")
+    authorized_by = Column(Integer, ForeignKey("users.id"))
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    notice = relationship("CrmNotice", back_populates="bid_assist_logs")
+    notice_product = relationship("CrmNoticeProduct", back_populates="bid_assist_logs")

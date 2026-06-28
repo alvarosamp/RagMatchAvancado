@@ -37,6 +37,7 @@ def import_lpu_catalog(
 ) -> dict[str, int]:
     workbook = load_workbook(path, data_only=True)
     summary = LpuImportSummary()
+    seen_skus: set[str] = set()
 
     for sheet in workbook.worksheets:
         header = [str(value or "").strip() for value in next(sheet.iter_rows(max_row=1, values_only=True))]
@@ -50,6 +51,8 @@ def import_lpu_catalog(
             if not record:
                 summary.skipped += 1
                 continue
+            record["sku"] = _dedupe_sku(record["sku"], record.get("model"), seen_skus)
+            seen_skus.add(record["sku"])
 
             summary.processed += 1
             existing = (
@@ -74,6 +77,7 @@ def import_lpu_catalog(
                     )
                 )
                 summary.created += 1
+            db.flush()
 
     db.commit()
     return summary.as_dict()
@@ -99,7 +103,7 @@ def _row_to_record(
         description = _clean_text(_get(values, "description", "descricao", "descrição"))
         model = part_no or pn_tor or description
 
-    sku = _valid_sku(pn_tor) or _valid_sku(part_no)
+    sku = _build_sku(pn_tor=pn_tor, part_no=part_no, model=model, category=category)
     if not sku or not description:
         return None
 
@@ -165,6 +169,33 @@ def _valid_sku(value: str) -> str:
     if not value or value in {"-", "0", "0.0"}:
         return ""
     return value
+
+
+def _build_sku(*, pn_tor: str, part_no: str, model: str, category: str) -> str:
+    pn = _valid_sku(pn_tor)
+    part = _valid_sku(part_no)
+    model_value = _valid_sku(model)
+    if category == "switch" and pn and model_value and pn != model_value:
+        return _safe_sku(f"{pn}-{model_value}")
+    return _safe_sku(pn or part or model_value)
+
+
+def _safe_sku(value: str) -> str:
+    safe = "".join(ch if ch.isalnum() else "-" for ch in value.strip())
+    return "-".join(part for part in safe.split("-") if part)
+
+
+def _dedupe_sku(sku: str, model: Any, seen_skus: set[str]) -> str:
+    if sku not in seen_skus:
+        return sku
+    model_sku = _safe_sku(str(model or ""))
+    if model_sku and model_sku not in seen_skus:
+        return model_sku
+    base = sku
+    counter = 2
+    while f"{base}-{counter}" in seen_skus:
+        counter += 1
+    return f"{base}-{counter}"
 
 
 def _to_float(value: Any) -> float:
