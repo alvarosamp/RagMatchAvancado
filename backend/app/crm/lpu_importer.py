@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -38,15 +39,18 @@ def import_lpu_catalog(
     workbook = load_workbook(path, data_only=True)
     summary = LpuImportSummary()
     seen_skus: set[str] = set()
+    has_proposal_sheet = any(_norm(sheet.title) == "proposta" for sheet in workbook.worksheets)
 
     for sheet in workbook.worksheets:
-        header = [str(value or "").strip() for value in next(sheet.iter_rows(max_row=1, values_only=True))]
+        if has_proposal_sheet and _norm(sheet.title) == "fob":
+            continue
+        header_row, header = _find_header(sheet)
         if not any(header):
             continue
         summary.sheets += 1
         normalized_header = [_norm(value) for value in header]
 
-        for row in sheet.iter_rows(min_row=2, values_only=True):
+        for row in sheet.iter_rows(min_row=header_row + 1, values_only=True):
             record = _row_to_record(header, normalized_header, row, sheet.title)
             if not record:
                 summary.skipped += 1
@@ -90,6 +94,10 @@ def _row_to_record(
     sheet_name: str,
 ) -> dict[str, Any] | None:
     values = {normalized_header[index]: row[index] for index in range(min(len(row), len(header)))}
+    proposal_record = _proposal_row_to_record(values, sheet_name)
+    if proposal_record:
+        return proposal_record
+
     brand = _clean_text(_get(values, "marca")) or "TOR"
     pn_tor = _clean_text(_get(values, "pn tor", "part number tor", "partnumber tor"))
     part_no = _clean_text(_get(values, "part no", "part number", "partno"))
@@ -143,6 +151,70 @@ def _row_to_record(
     }
 
 
+def _proposal_row_to_record(values: dict[str, Any], sheet_name: str) -> dict[str, Any] | None:
+    item_number = _clean_text(_get(values, "item"))
+    model = _clean_text(_get(values, "modelo"))
+    minimum_price = _to_float_or_none(_get(values, "preco minimo", "preco mínimo", "preço minimo", "preço mínimo"))
+    if not item_number or not (model or minimum_price is not None):
+        return None
+
+    brand = _clean_text(_get(values, "marca")) or "TOR"
+    description = _clean_text(
+        _get(
+            values,
+            "description",
+            "descricao",
+            "descrição",
+            "descricao conforme descricao complementar no termo de referencia deste processo",
+        )
+    )
+    model = model or description or item_number
+    description = description or model
+    proposal_price = _to_float_or_none(_get(values, "preco proposta", "preço proposta", "preco", "preço", "price"))
+    price = minimum_price if minimum_price is not None else proposal_price or 0.0
+    sku = _safe_sku(f"{item_number}-{model}") or _safe_sku(model)
+    if not sku or not description:
+        return None
+
+    notes = _clean_text(_get(values, "disponibilidade"))
+    if proposal_price is not None:
+        notes = "\n".join(part for part in [notes, f"Preco proposta: {proposal_price:.4f}"] if part)
+    if notes and "Preco proposta:" not in notes:
+        notes = f"Disponibilidade: {notes}"
+
+    category = _category_from_sheet(sheet_name)
+    unit = _clean_text(_get(values, "unidade", "unidade ")) or "UN"
+    name = " ".join(part for part in [brand, model] if part) or description
+    keywords = " ".join(part for part in [item_number, brand, model, description] if part)
+
+    return {
+        "name": name[:255],
+        "description": description,
+        "category": category,
+        "brand": brand,
+        "model": model[:255],
+        "specification": description,
+        "sku": sku[:255],
+        "keywords": keywords,
+        "unit": unit[:40],
+        "cost": price,
+        "tax_percent": 0.0,
+        "margin_percent": 0.0,
+        "notes": notes,
+        "is_active": True,
+    }
+
+
+def _find_header(sheet) -> tuple[int, list[str]]:
+    for row_index, row in enumerate(sheet.iter_rows(min_row=1, max_row=min(sheet.max_row, 12), values_only=True), start=1):
+        header = [str(value or "").strip() for value in row]
+        normalized = {_norm(value) for value in header if value}
+        if {"marca", "modelo"}.issubset(normalized) or {"item", "marca"}.issubset(normalized):
+            return row_index, header
+    first = next(sheet.iter_rows(max_row=1, values_only=True))
+    return 1, [str(value or "").strip() for value in first]
+
+
 def _get(values: dict[str, Any], *keys: str) -> Any:
     for key in keys:
         normalized = _norm(key)
@@ -155,6 +227,17 @@ def _norm(value: Any) -> str:
     text = str(value or "").strip().lower()
     replacements = str.maketrans("áàâãéêíóôõúüçº°", "aaaaeeiooouucoo")
     return " ".join(text.translate(replacements).replace("-", " ").split())
+
+
+def _norm(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    ascii_text = (
+        unicodedata.normalize("NFKD", text)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    cleaned = "".join(char if char.isalnum() else " " for char in ascii_text)
+    return " ".join(cleaned.split())
 
 
 def _clean_text(value: Any) -> str:
@@ -210,6 +293,20 @@ def _to_float(value: Any) -> float:
         return float(text)
     except ValueError:
         return 0.0
+
+
+def _to_float_or_none(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().replace("R$", "").replace(" ", "")
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        return float(text)
+    except ValueError:
+        return None
 
 
 def _category_from_sheet(sheet_name: str) -> str:
