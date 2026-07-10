@@ -12,6 +12,8 @@ const NAV = [
   { path: '/controle', badge: 'CT', label: 'Controle', hint: 'Acompanhar processos' },
   { path: '/relatorios', badge: 'RP', label: 'Relatorios', hint: 'Resumo executivo' },
   { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
+  { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
+  { path: '/analise/upload', badge: 'JS', label: 'Importar JSON', hint: 'Lote de editais em JSON' },
   { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
   { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
 ]

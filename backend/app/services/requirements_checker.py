@@ -9,10 +9,10 @@ As chaves usadas aqui espelham EXATAMENTE as do all_devices.json:
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 from app.logs.config import logger
+from app.services.attribute_parsers import classify_field, compare_attribute, extract_number
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -26,15 +26,7 @@ REQUIREMENTS: dict[str, str | int | bool] = {
 }
 
 
-def _extract_number(value) -> float | None:
-    """Extrai o primeiro numero inteiro ou decimal de uma string."""
-    if isinstance(value, (int, float)):
-        return float(value)
-    match = re.search(r"[\d]+(?:[.,]\d+)?", str(value))
-    return float(match.group().replace(",", ".")) if match else None
-
-
-def _check_field(actual, requirement) -> dict:
+def _check_field(actual, requirement, field_name: str | None = None) -> dict:
     """
     Compara um valor do catalogo com o requisito do edital.
     Retorna dict com 'status' e 'details'.
@@ -49,8 +41,18 @@ def _check_field(actual, requirement) -> dict:
             else {"status": "❌ Não atende", "details": f"Esperado: {requirement}, encontrado: {actual}"}
         )
 
-    req_num = _extract_number(requirement)
-    act_num = _extract_number(actual)
+    # Atributos com forma própria de leitura (portas, velocidade, PoE,
+    # tensão, temperatura, uplink) — ver attribute_parsers.py para o porquê
+    # de "pega o primeiro número" não bastar aqui.
+    if field_name and classify_field(field_name) != "generic":
+        result = compare_attribute(field_name, actual, requirement)
+        if result.match is not None:
+            status = "✅ Atende" if result.match else "❌ Não atende"
+            return {"status": status, "details": result.detail}
+        return {"status": "⚠️ Verificar", "details": result.detail}
+
+    req_num = extract_number(requirement)
+    act_num = extract_number(actual)
     if req_num is not None and act_num is not None:
         if act_num >= req_num:
             return {"status": "✅ Atende", "details": f"{act_num} >= {req_num} (exigido)"}
@@ -98,7 +100,7 @@ def check_requirements(
             }
             continue
 
-        result[field] = _check_field(actual, requirement)
+        result[field] = _check_field(actual, requirement, field_name=field)
 
     logger.info("[RequirementsChecker] Resultado: %s", result)
     return result

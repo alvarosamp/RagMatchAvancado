@@ -37,6 +37,7 @@ _ollama_client = ollama.Client(host=_OLLAMA_HOST)
 from app.db.models import MatchingResult, MatchStatus, Product, Requirement
 from app.vector.pgvector_store import search_similar
 from app.logs.config import logger
+from app.services.attribute_parsers import classify_field, compare_attribute, extract_number
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MLOps — carregamento condicional (graceful degradation)
@@ -67,7 +68,36 @@ except Exception as mlops_err:
     logger.warning(f"[MatchingEngine] MLOps desativado (nao critico): {mlops_err}")
 
 
-LLM_MODEL = "phi3"   # troque por qualquer modelo disponivel no seu Ollama
+LLM_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")   # deve bater com o modelo puxado no docker-compose.yaml
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pesos e criticidade por tipo de atributo
+#
+# Por que isso existe?
+# Nem todo requisito pesa igual no score geral do produto — um switch com
+# 2 portas a menos do que o pedido é bem diferente de um switch que só
+# aceita 220V quando o edital exige bivolt (isso último é uma incompatibi-
+# lidade física, não uma questão de "quase atende"). ATTRIBUTE_WEIGHTS pondera
+# a média geral; CRITICAL_ATTRIBUTE_KINDS marca os tipos onde uma falha na
+# heurística (via attribute_parsers.compare_attribute) desqualifica o produto
+# de cara, sem o LLM poder "argumentar" isso pra cima.
+#
+# Os pesos abaixo são um ponto de partida por bom senso de domínio — ainda
+# não foram calibrados com dados reais (isso exige o dataset de ground truth,
+# ver mlops/evaluator.py). Ajustar aqui conforme os dados forem mostrando
+# onde o sistema erra mais.
+# ─────────────────────────────────────────────────────────────────────────────
+ATTRIBUTE_WEIGHTS = {
+    "tensao":      1.5,
+    "temperatura": 1.5,
+    "poe":         1.3,
+    "porta":       1.2,
+    "velocidade":  1.2,
+    "uplink":      1.1,
+    "generic":     1.0,
+}
+CRITICAL_ATTRIBUTE_KINDS = {"tensao", "temperatura"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -77,25 +107,28 @@ LLM_MODEL = "phi3"   # troque por qualquer modelo disponivel no seu Ollama
 @dataclass
 class MatchDetail:
     """Resultado do matching para um par (produto, requisito)."""
-    attribute:    str
-    required:     str
-    found:        str
-    rule_score:   float   # 0.0 - 1.0  (score das heurísticas)
-    llm_score:    float   # 0.0 - 1.0  (score do LLM)
-    final_score:  float   # média ponderada: 30% regras + 70% LLM
-    status:       MatchStatus
-    reasoning:    str = ""
+    attribute:      str
+    required:       str
+    found:          str
+    rule_score:     float   # 0.0 - 1.0  (score das heurísticas)
+    llm_score:      float   # 0.0 - 1.0  (score do LLM)
+    final_score:    float   # média ponderada: 30% regras + 70% LLM (ou 0.0 se critical_fail)
+    status:         MatchStatus
+    reasoning:      str = ""
+    missing_data:   bool = False   # catálogo não tem esse campo — score nunca vira "Atende"
+    critical_fail:  bool = False   # incompatibilidade física/crítica — desqualifica o produto
 
 
 @dataclass
 class MatchReport:
     """Relatório consolidado do matching para um produto inteiro."""
-    product_model:  str
-    edital_id:      int
-    overall_score:  float
-    status:         MatchStatus
-    details:        list[MatchDetail] = field(default_factory=list)
-    summary:        str = ""
+    product_model:      str
+    edital_id:          int
+    overall_score:      float
+    status:             MatchStatus
+    details:            list[MatchDetail] = field(default_factory=list)
+    summary:            str = ""
+    critical_failures:  list[str] = field(default_factory=list)  # atributos que desqualificaram o produto
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -149,28 +182,40 @@ def run_matching(
         # ── Camada 2: Heurísticas ─────────────────────────────────────────────
         # Score rápido por comparação direta de valores (sem LLM).
         # Roda em microsegundos — serve como sinal inicial para o LLM.
-        rule_score = _rule_score(product.data, req)
+        rule_result = _rule_score(product.data, req)
 
         # ── Camada 3: LLM ─────────────────────────────────────────────────────
         # Avaliação com contexto completo: especificações do produto +
         # requisito do edital + trechos RAG. Retorna score + justificativa.
         llm_score, reasoning = _llm_score(product, req, context_text)
 
-        # ── Score final ponderado ─────────────────────────────────────────────
+        # ── Score final ponderado + penalidades ──────────────────────────────
         # Regras têm menos peso (30%) porque são comparações simplificadas.
-        # LLM tem mais peso (70%) porque entende nuances e contexto.
-        final_score = round(0.3 * rule_score + 0.7 * llm_score, 3)
-        status      = _score_to_status(final_score)
+        # LLM tem mais peso (70%) porque entende nuances e contexto — MAS:
+        #   - incompatibilidade crítica (ex: tensão fora da faixa) zera o
+        #     score direto. O LLM não pode "argumentar" isso pra cima.
+        #   - dado faltante no catálogo nunca vira "Atende" sozinho, mesmo
+        #     que o LLM esteja confiante sem evidência real no catálogo.
+        if rule_result.critical_fail:
+            final_score = 0.0
+            reasoning   = f"⛔ Incompatibilidade crítica em '{req.attribute}': {reasoning}".strip()
+        else:
+            final_score = round(0.3 * rule_result.score + 0.7 * llm_score, 3)
+            if rule_result.missing_data:
+                final_score = min(final_score, 0.70)  # nunca cruza o threshold de "Atende" (0.75)
+        status = _score_to_status(final_score)
 
         detail = MatchDetail(
-            attribute   = req.attribute or "",
-            required    = req.raw_value or "",
-            found       = str(product.data.get(req.attribute, "N/A")),
-            rule_score  = rule_score,
-            llm_score   = llm_score,
-            final_score = final_score,
-            status      = status,
-            reasoning   = reasoning,
+            attribute     = req.attribute or "",
+            required      = req.raw_value or "",
+            found         = str(product.data.get(req.attribute, "N/A")),
+            rule_score    = rule_result.score,
+            llm_score     = llm_score,
+            final_score   = final_score,
+            status        = status,
+            reasoning     = reasoning,
+            missing_data  = rule_result.missing_data,
+            critical_fail = rule_result.critical_fail,
         )
         details.append(detail)
 
@@ -186,17 +231,46 @@ def run_matching(
 
     db.commit()
 
-    overall = round(sum(d.final_score for d in details) / len(details), 3)
-    status  = _score_to_status(overall)
+    return _aggregate_report(product, requirements[0].edital_id, details)
+
+
+def _aggregate_report(product: Product, edital_id: int, details: list[MatchDetail]) -> MatchReport:
+    """
+    Consolida os MatchDetail de um produto em um MatchReport (score geral +
+    status + desqualificações). Separado de run_matching() para ser testável
+    sem precisar de banco/Ollama — só depende dos detalhes já calculados.
+    """
+    if not details:
+        return MatchReport(
+            product_model=product.model, edital_id=edital_id,
+            overall_score=0.0, status=MatchStatus.VERIFICAR,
+        )
+
+    # ── Score geral ponderado por tipo de atributo ────────────────────────────
+    # Média simples trataria "1 porta a menos" e "tensão incompatível" como
+    # igualmente graves. Pesos em ATTRIBUTE_WEIGHTS dão mais peso aos atributos
+    # que mais importam na prática (ver comentário da constante, no topo do
+    # arquivo).
+    weights = [ATTRIBUTE_WEIGHTS.get(classify_field(d.attribute), 1.0) for d in details]
+    overall = round(sum(d.final_score * w for d, w in zip(details, weights)) / sum(weights), 3)
+
+    # ── Penalidade por incompatibilidade crítica ──────────────────────────────
+    # Uma única incompatibilidade física (tensão/temperatura fora da faixa)
+    # desqualifica o produto inteiro — não deixamos isso ser "diluído" pela
+    # média com outros requisitos que atendem bem.
+    critical_failures = [d.attribute for d in details if d.critical_fail]
+    status = MatchStatus.NAO_ATENDE if critical_failures else _score_to_status(overall)
+
     summary = _generate_summary(product, details, overall)
 
     return MatchReport(
-        product_model = product.model,
-        edital_id     = requirements[0].edital_id,
-        overall_score = overall,
-        status        = status,
-        details       = details,
-        summary       = summary,
+        product_model     = product.model,
+        edital_id         = edital_id,
+        overall_score     = overall,
+        status            = status,
+        details           = details,
+        summary           = summary,
+        critical_failures = critical_failures,
     )
 
 
@@ -416,61 +490,74 @@ def _executar_mlops(
 # Camada 1 – Heurísticas / Regras
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _rule_score(specs: dict, req: Requirement) -> float:
+@dataclass
+class RuleScoreResult:
+    """Saída de _rule_score — score cru + sinais que run_matching usa para penalizar."""
+    score:          float   # 0.0 - 1.0
+    missing_data:   bool = False   # campo não existe no catálogo do produto
+    critical_fail:  bool = False   # incompatibilidade física/crítica (ver CRITICAL_ATTRIBUTE_KINDS)
+
+
+def _rule_score(specs: dict, req: Requirement) -> RuleScoreResult:
     """
     Score rápido por comparação direta entre especificação e requisito.
 
-    Retorna:
+    score:
       1.0 → atende completamente
       0.5 → inconclusivo (sem dados ou comparação parcial)
       0.0 → não atende
 
     Estratégias (nesta ordem de prioridade):
-      1. Sem dados → 0.5 (inconclusivo, não penaliza)
+      1. Sem dados → 0.5 inconclusivo, com missing_data=True
       2. Booleano  → compara "sim/yes/true/1"
-      3. Numérico  → compara valores, aceita até 20% abaixo (score 0.5)
-      4. Textual   → verifica se required está contido em actual ou vice-versa
+      3. Atributo com parser dedicado (attribute_parsers) → se o tipo é
+         crítico (tensão/temperatura) e a faixa não bate, critical_fail=True
+      4. Numérico  → compara valores, aceita até 20% abaixo (score 0.5)
+      5. Textual   → verifica se required está contido em actual ou vice-versa
     """
     key = req.attribute
     if not key or key not in specs:
-        return 0.5   # sem dados no catálogo → inconclusivo
+        return RuleScoreResult(score=0.5, missing_data=True)   # sem dados no catálogo → inconclusivo
 
     actual   = str(specs[key]).strip().lower()
     required = str(req.parsed_value or req.raw_value or "").strip().lower()
 
     if not required:
-        return 0.5   # requisito vazio → inconclusivo
+        return RuleScoreResult(score=0.5, missing_data=True)   # requisito vazio → inconclusivo
 
     # ── Comparação booleana ───────────────────────────────────────────────────
     bool_yes = {"sim", "yes", "true", "1"}
     if required in bool_yes:
-        return 1.0 if actual in bool_yes else 0.0
+        return RuleScoreResult(score=1.0 if actual in bool_yes else 0.0)
+
+    # ── Atributos com forma própria de leitura ────────────────────────────────
+    # Portas/velocidade/PoE/tensão/temperatura/uplink não são "extrai o
+    # primeiro número e compara >=" — ver attribute_parsers.py.
+    kind = classify_field(key)
+    if kind != "generic":
+        result = compare_attribute(key, actual, required)
+        if result.match is True:
+            return RuleScoreResult(score=1.0)
+        if result.match is False:
+            return RuleScoreResult(score=0.0, critical_fail=kind in CRITICAL_ATTRIBUTE_KINDS)
+        # inconclusivo → cai no fallback numérico/textual genérico abaixo
 
     # ── Comparação numérica ───────────────────────────────────────────────────
     # Exemplo: required="24", actual="24 portas" → extrai 24 de cada
-    actual_num   = _extract_number(actual)
-    required_num = _extract_number(required)
+    actual_num   = extract_number(actual)
+    required_num = extract_number(required)
     if actual_num is not None and required_num is not None:
         if actual_num >= required_num:
-            return 1.0
+            return RuleScoreResult(score=1.0)
         elif actual_num >= required_num * 0.8:  # até 20% abaixo = parcial
-            return 0.5
-        return 0.0
+            return RuleScoreResult(score=0.5)
+        return RuleScoreResult(score=0.0)
 
     # ── Comparação textual ────────────────────────────────────────────────────
     # Verifica se o valor exigido está contido na especificação (ou vice-versa)
-    return 1.0 if required in actual or actual in required else 0.0
-
-
-def _extract_number(text: str) -> float | None:
-    """
-    Extrai o primeiro número de uma string.
-    Exemplos: "24 portas" → 24.0 | "10Gbps" → 10.0 | "N/A" → None
-    """
-    m = re.search(r"[\d]+(?:[.,]\d+)?", text)
-    if m:
-        return float(m.group().replace(",", "."))
-    return None
+    if required in actual or actual in required:
+        return RuleScoreResult(score=1.0)
+    return RuleScoreResult(score=0.0)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -574,7 +661,9 @@ def _generate_summary(product: Product, details: list[MatchDetail], overall: flo
     atende     = sum(1 for d in details if d.status == MatchStatus.ATENDE)
     nao_atende = sum(1 for d in details if d.status == MatchStatus.NAO_ATENDE)
     verificar  = sum(1 for d in details if d.status == MatchStatus.VERIFICAR)
+    criticos   = [d.attribute for d in details if d.critical_fail]
+    aviso      = f" | ⛔ desqualificado por: {', '.join(criticos)}" if criticos else ""
     return (
         f"{product.model}: score geral {overall:.0%} | "
-        f"✅ {atende} atende · ⚠️ {verificar} verificar · ❌ {nao_atende} não atende"
+        f"✅ {atende} atende · ⚠️ {verificar} verificar · ❌ {nao_atende} não atende{aviso}"
     )

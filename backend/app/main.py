@@ -14,6 +14,7 @@ from app.routers.analytics  import router as analytics_router  # ← NOVO
 from app.routers.ops        import router as ops_router
 from app.routers.reports    import router as reports_router
 from app.routers.analysis   import router as analysis_router
+from app.routers.analysis_dashboard import router as analysis_dashboard_router
 from app.auth.router        import router as auth_router
 from app.jobs.router        import router as jobs_router
 from app.logs.config import logger
@@ -31,6 +32,7 @@ app.include_router(jobs_router)
 app.include_router(ops_router)
 app.include_router(reports_router)
 app.include_router(analysis_router)
+app.include_router(analysis_dashboard_router)
 app.include_router(switches_router)
 app.include_router(editais_router)
 app.include_router(export_router)

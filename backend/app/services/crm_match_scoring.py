@@ -17,7 +17,7 @@ STOPWORDS = {
 
 DEFAULT_EMBEDDING_WEIGHT = float(os.environ.get("CRM_MATCH_EMBEDDING_WEIGHT", "0.55"))
 DEFAULT_LEXICAL_WEIGHT = 1.0 - DEFAULT_EMBEDDING_WEIGHT
-LLM_MODEL = os.environ.get("CRM_MATCH_LLM_MODEL", "phi3")
+LLM_MODEL = os.environ.get("CRM_MATCH_LLM_MODEL", "llama3.2:1b")
 
 
 @dataclass(frozen=True)

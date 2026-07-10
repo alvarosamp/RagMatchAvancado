@@ -24,7 +24,7 @@ from pydantic_settings import BaseSettings
 
 class MLConfig(BaseSettings):
     # ── Modelos ───────────────────────────────────────────────────────────────
-    llm_model: str = "phi3"
+    llm_model: str = "llama3.2:1b"
     embed_model: str = "nomic-embed-text"
     embed_dims: int = 768
 

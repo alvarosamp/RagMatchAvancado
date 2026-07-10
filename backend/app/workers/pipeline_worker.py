@@ -159,7 +159,7 @@ class PipelineWorker:
         self,
         edital_id: str,
         resultados_matching: list[dict],
-        llm_model: str = 'llama3',
+        llm_model: str = 'llama3.2:1b',
         tenant_id: Optional[str] = None,
     ) -> dict:
         '''

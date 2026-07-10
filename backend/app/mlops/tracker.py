@@ -135,7 +135,7 @@ class MatchingTracker:
         mlflow.log_artifact(local_path)
         logger.info(f"[MLflow] Artefato logado: {local_path}")
         
-    def log_matching_run(self, edital_id: str, resultados : list[dict], llm_model : str = 'phi3', embed_model: str = 'nomic-embed-text', score_weight_heuristic: float =0.3,
+    def log_matching_run(self, edital_id: str, resultados : list[dict], llm_model : str = 'llama3.2:1b', embed_model: str = 'nomic-embed-text', score_weight_heuristic: float =0.3,
                          score_weight_llm: float = 0.7, tenant_id: Optional[str] = None):
         '''
         Método principal - loga um run completo de matching de uma so vez

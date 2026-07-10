@@ -45,7 +45,7 @@ class TestMLConfigDefaults:
 
     def test_modelos_default(self):
         cfg = MLConfig()
-        assert cfg.llm_model == "phi3"
+        assert cfg.llm_model == "llama3.2:1b"
         assert cfg.embed_model == "nomic-embed-text"
         assert cfg.embed_dims == 768
 

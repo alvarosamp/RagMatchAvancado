@@ -85,6 +85,9 @@ def _serialize_document(
     *,
     include_items: bool = False,
 ) -> dict[str, Any]:
+    result = document.result or {}
+    edital_header = result.get("edital") or {}
+    riscos = result.get("riscos") or {}
     payload: dict[str, Any] = {
         "id": document.id,
         "source_kind": document.source_kind,
@@ -96,9 +99,14 @@ def _serialize_document(
         "created_at": document.created_at,
         "updated_at": document.updated_at,
         "items_count": len(document.items),
-        "result": document.result if include_items else None,
+        "edital": edital_header,
+        "risco_identificado": riscos.get("risco_identificado"),
+        "result": result if include_items else None,
     }
     if include_items:
+        payload["riscos"] = riscos
+        payload["documentacao"] = result.get("documentacao")
+        payload["declaracoes"] = result.get("declaracoes")
         payload["items"] = [
             {
                 "id": item.id,
@@ -113,6 +121,11 @@ def _serialize_document(
                 "total_value": item.total_value,
                 "supplier": item.supplier,
                 "supplier_tax_id": item.supplier_tax_id,
+                "categoria": item.categoria,
+                "uf": item.uf,
+                "has_direcionamento_marca": item.has_direcionamento_marca,
+                "has_risco": item.has_risco,
+                "caracteristicas_bi": item.caracteristicas_bi,
                 "raw_payload": item.raw_payload,
             }
             for item in document.items

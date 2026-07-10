@@ -35,14 +35,14 @@ O Edital Matcher analisa PDFs de editais de licitação, extrai os requisitos t�
 | **Banco** | PostgreSQL 16 + pgvector | Dados relacionais + busca vetorial |
 | **OCR/Parser** | Docling | Extração de texto estruturado de PDFs |
 | **Embeddings** | Ollama `nomic-embed-text` (768d) | Vetorização de chunks |
-| **LLM Matching** | Ollama `phi3` | Avaliação semântica dos requisitos |
+| **LLM Matching** | Ollama `llama3.2:1b` | Avaliação semântica dos requisitos |
 | **Autenticação** | JWT + bcrypt | Multi-tenant e RBAC |
 | **Experiment Tracking** | MLflow | Rastreamento de runs, métricas e artefatos |
 | **Drift Monitoring** | Evidently | Detecção de mudanças nos scores ao longo do tempo |
 | **Frontend** | React 18 + Vite 5 + Tailwind 3 | SPA web |
 | **Exportação** | openpyxl + reportlab | XLSX, PDF, CSV |
 
-> Observação: o fluxo de matching usa `phi3` por padrão no código. O `docker-compose.yaml` ainda faz pull de `llama3` no serviço de setup do Ollama.
+> O modelo de LLM usado no matching é configurável via env var `OLLAMA_MODEL` (default `llama3.2:1b`, o mesmo que o `docker-compose.yaml` faz pull no serviço `ollama-setup`).
 
 ---
 
@@ -74,7 +74,7 @@ Requisito do Edital
 [2] Heurísticas/Regras   → score rápido baseado em atributos (peso: 30%)
         │
         ▼
-[3] LLM phi3             → raciocínio semântico + justificativa JSON (peso: 70%)
+[3] LLM llama3.2:1b      → raciocínio semântico + justificativa JSON (peso: 70%)
         │
         ▼
 Score Final
@@ -168,7 +168,7 @@ tracker = MatchingTracker()
 tracker.log_matching_run(
     edital_id="42",
     resultados=resultados,
-    llm_model="phi3",
+    llm_model="llama3.2:1b",
 )
 ```
 
@@ -382,7 +382,7 @@ MLFLOW_TRACKING_URI=http://mlflow:5000
 
 ```
 ✅  Pipeline OCR → Chunk → Embed (Docling + nomic-embed-text)
-✅  Motor de Matching RAG + heurísticas + LLM (phi3)
+✅  Motor de Matching RAG + heurísticas + LLM (llama3.2:1b)
 ✅  Catálogo de produtos (data/Produtos/all_devices.json)
 ✅  Exportação XLSX / PDF / CSV
 ✅  Autenticação JWT com multi-tenant

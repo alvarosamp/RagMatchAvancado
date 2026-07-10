@@ -21,6 +21,7 @@ def init_db(db: Session) -> dict:
         Base.metadata.create_all(bind=engine)
         _ensure_job_enum_updates()
         _ensure_crm_schema_updates()
+        _ensure_analysis_items_schema_updates()
         logger.info("Tabelas do portal e do CRM criadas com sucesso.")
 
         inserted = load_switch_catalog(db)
@@ -73,6 +74,27 @@ def _ensure_crm_schema_updates() -> None:
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_municipality ON crm_notices (tenant_id, municipality_name)",
         ]
     )
+
+def _ensure_analysis_items_schema_updates() -> None:
+    inspector = inspect(engine)
+    _ensure_columns(
+        inspector,
+        "analysis_items",
+        {
+            "categoria": "VARCHAR",
+            "uf": "VARCHAR",
+            "has_direcionamento_marca": "BOOLEAN",
+            "has_risco": "BOOLEAN",
+            "caracteristicas_bi": "JSON",
+        },
+    )
+    _ensure_indexes(
+        [
+            "CREATE INDEX IF NOT EXISTS ix_analysis_items_categoria ON analysis_items (categoria)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_items_uf ON analysis_items (uf)",
+        ]
+    )
+
 
 def _ensure_job_enum_updates() -> None:
     """

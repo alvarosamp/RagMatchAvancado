@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    JSON, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text,
+    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text,
     UniqueConstraint,
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
@@ -142,6 +142,11 @@ class AnalysisItem(Base):
     supplier_tax_id = Column(String)
     raw_text = Column(Text)
     raw_payload = Column(JSON)
+    categoria = Column(String, index=True)
+    uf = Column(String, index=True)
+    has_direcionamento_marca = Column(Boolean, default=False, index=True)
+    has_risco = Column(Boolean, default=False, index=True)
+    caracteristicas_bi = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
 
     analysis = relationship("AnalysisDocument", back_populates="items")

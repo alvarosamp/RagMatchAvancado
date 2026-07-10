@@ -19,6 +19,9 @@ import Reports        from './pages/Reports'
 import Chatbot        from './pages/Chatbot'
 import Controle       from './pages/Controle'
 import AnaliseAta     from './pages/AnaliseAta'
+import AnaliseJson    from './pages/AnaliseJson'
+import UploadJson     from './pages/UploadJson'
+import AnalysisDashboard from './pages/AnalysisDashboard'
 import PncpSearch     from './pages/PncpSearch'
 import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
@@ -65,6 +68,9 @@ createRoot(document.getElementById('root')).render(
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
             <Route path="/editais/:id/chat"       element={<PrivateRoute><EditalChat    /></PrivateRoute>} />
             <Route path="/editais/:id/analise-llm" element={<PrivateRoute><AnaliseAta   /></PrivateRoute>} />
+            <Route path="/analise/documentos/:id"  element={<PrivateRoute><AnaliseJson  /></PrivateRoute>} />
+            <Route path="/analise/upload"          element={<PrivateRoute><UploadJson   /></PrivateRoute>} />
+            <Route path="/analise/dashboard"       element={<PrivateRoute><AnalysisDashboard /></PrivateRoute>} />
 
             <Route path="/usuarios" element={
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>
