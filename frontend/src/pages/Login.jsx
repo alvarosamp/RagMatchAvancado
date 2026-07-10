@@ -43,7 +43,7 @@ export default function Login() {
           <img
             src={torLogo}
             alt="Tor Tecnologias"
-            className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/20"
+            className="w-10 h-10 rounded-lg object-cover ring-2 ring-white/20"
           />
           <div>
             <p className="font-display font-bold text-white text-base leading-tight">Tor Tecnologias</p>
@@ -73,24 +73,24 @@ export default function Login() {
         {/* Logo mobile */}
         <div className="flex items-center gap-2 mb-10 lg:hidden">
           <img src={torLogo} alt="Tor" className="w-8 h-8 rounded-lg object-cover" />
-          <span className={`font-display font-bold ${isLight ? 'text-stone-900' : 'text-white'}`}>
+          <span className={`font-display font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
             Tor Tecnologias
           </span>
         </div>
 
         <div className="w-full max-w-[340px]">
           <div className="mb-8">
-            <h2 className={`font-display text-2xl font-bold mb-1 ${isLight ? 'text-stone-900' : 'text-white'}`}>
+            <h2 className={`font-display text-2xl font-bold mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
               Acessar portal
             </h2>
-            <p className={`text-sm ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+            <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
               Entre com suas credenciais para continuar.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
                 E-mail
               </label>
               <input
@@ -101,14 +101,14 @@ export default function Login() {
                 required
                 className={`w-full rounded-lg px-4 py-2.5 text-sm transition-all ${
                   isLight
-                    ? 'border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
+                    ? 'border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
                     : 'input'
                 }`}
               />
             </div>
 
             <div>
-              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-stone-500' : 'text-gray-500'}`}>
+              <label className={`block text-xs font-mono mb-1.5 ${isLight ? 'text-slate-500' : 'text-gray-500'}`}>
                 Senha
               </label>
               <div className="relative">
@@ -120,7 +120,7 @@ export default function Login() {
                   required
                   className={`w-full rounded-lg px-4 py-2.5 pr-20 text-sm transition-all ${
                     isLight
-                      ? 'border border-stone-200 bg-stone-50 text-stone-900 placeholder-stone-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
+                      ? 'border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-red-400 focus:bg-white focus:ring-1 focus:ring-red-100'
                       : 'input pr-20'
                   }`}
                 />
@@ -128,7 +128,7 @@ export default function Login() {
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-mono transition-colors ${
-                    isLight ? 'text-stone-400 hover:text-stone-600' : 'text-gray-600 hover:text-white'
+                    isLight ? 'text-slate-400 hover:text-slate-600' : 'text-gray-600 hover:text-white'
                   }`}
                 >
                   {showPassword ? 'Ocultar' : 'Mostrar'}
@@ -162,7 +162,7 @@ export default function Login() {
               type="button"
               onClick={() => setTheme(isLight ? 'dark' : 'light')}
               className={`text-xs font-mono transition-colors ${
-                isLight ? 'text-stone-400 hover:text-stone-600' : 'text-gray-600 hover:text-gray-400'
+                isLight ? 'text-slate-400 hover:text-slate-600' : 'text-gray-600 hover:text-gray-400'
               }`}
             >
               {isLight ? 'Mudar para modo escuro' : 'Mudar para modo claro'}

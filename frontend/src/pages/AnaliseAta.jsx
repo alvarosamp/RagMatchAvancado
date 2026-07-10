@@ -26,7 +26,7 @@ function TipoTag({ text }) {
   if (!text) return null
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono
-                     bg-azure/10 border border-azure/20 text-azure-glow whitespace-nowrap">
+                     bg-red-600/10 border border-red-600/20 text-red-400 whitespace-nowrap">
       {text}
     </span>
   )
@@ -39,7 +39,7 @@ function SpecList({ specs }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1.5">
       {visible.map((s, i) => (
-        <span key={i} className="text-[10px] font-mono text-gray-600 bg-ink-50 border border-slate-border/40 px-1.5 py-0.5 rounded">
+        <span key={i} className="text-[10px] font-mono text-gray-600 bg-ink-50 border border-slate-700/40 px-1.5 py-0.5 rounded">
           {s}
         </span>
       ))}
@@ -142,7 +142,7 @@ export default function AnaliseAta() {
   if (loading) return (
     <div className="p-6 space-y-4">
       {[...Array(7)].map((_, i) => (
-        <div key={i} className="h-12 rounded-xl bg-slate-card border border-slate-border animate-pulse" />
+        <div key={i} className="h-12 rounded-lg bg-slate-800 border border-slate-700 animate-pulse" />
       ))}
     </div>
   )
@@ -156,7 +156,7 @@ export default function AnaliseAta() {
         <div>
           <button
             onClick={() => navigate(`/editais/${id}`)}
-            className="text-xs font-mono text-gray-500 hover:text-azure-glow transition-colors mb-2 flex items-center gap-1"
+            className="text-xs font-mono text-gray-500 hover:text-red-400 transition-colors mb-2 flex items-center gap-1"
           >
             ← Edital #{id}
           </button>
@@ -225,7 +225,7 @@ export default function AnaliseAta() {
 
           {/* Objeto */}
           {data.objeto && (
-            <div className="card p-4 border-azure/15">
+            <div className="card p-4 border-red-600/15">
               <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-1.5">Objeto</p>
               <p className="text-sm text-gray-200 font-body leading-relaxed">{data.objeto}</p>
             </div>
@@ -273,8 +273,8 @@ export default function AnaliseAta() {
                 onClick={() => setFilterTipo('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all ${
                   filterTipo === 'all'
-                    ? 'bg-azure text-white border-azure'
-                    : 'text-gray-400 border-slate-border hover:text-white hover:bg-slate-hover'
+                    ? 'bg-red-600 text-white border-red-600'
+                    : 'text-gray-400 border-slate-700 hover:text-white hover:bg-slate-hover'
                 }`}
               >
                 Todos ({data.itens?.length || 0})
@@ -285,8 +285,8 @@ export default function AnaliseAta() {
                   onClick={() => setFilterTipo(tipo)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all ${
                     filterTipo === tipo
-                      ? 'bg-azure text-white border-azure'
-                      : 'text-gray-400 border-slate-border hover:text-white hover:bg-slate-hover'
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'text-gray-400 border-slate-700 hover:text-white hover:bg-slate-hover'
                   }`}
                 >
                   {tipo} ({data.itens.filter(i => i.tipo === tipo).length})
@@ -299,7 +299,7 @@ export default function AnaliseAta() {
           <div className="card p-0 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-ink-100 border-b border-slate-border">
+                <thead className="bg-ink-100 border-b border-slate-700">
                   <tr>
                     {['#', 'Tipo', 'Marca / Modelo', 'Descrição / Specs', 'Qtd', 'Vlr Unit.', 'Vlr Total', 'Fornecedor'].map(h => (
                       <th key={h}
@@ -393,7 +393,7 @@ export default function AnaliseAta() {
             </div>
 
             {itens.length > 0 && (
-              <div className="px-4 py-2.5 border-t border-slate-border/30 bg-ink-100 flex items-center justify-between">
+              <div className="px-4 py-2.5 border-t border-slate-700/30 bg-ink-100 flex items-center justify-between">
                 <p className="text-xs text-gray-600 font-mono">
                   {itens.length} item{itens.length !== 1 ? 's' : ''}
                   {data.tokens_usados > 0 && ` · ${data.tokens_usados.toLocaleString('pt-BR')} tokens usados`}

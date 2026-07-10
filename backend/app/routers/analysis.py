@@ -10,6 +10,8 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.db.models import AnalysisDocument
 from app.db.session import get_db
+from app.crm.json_analysis_importer import sync_analysis_json_to_crm
+from app.crm.sales_process_importer import build_import_context_for_user
 from app.services.analysis_store import persist_analysis_document
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -31,6 +33,7 @@ def store_analysis_document(
     current_user: User = Depends(require_role("admin", "editor")),
     db: Session = Depends(get_db),
 ):
+    crm_sync = None
     document = persist_analysis_document(
         db,
         tenant_id=current_user.tenant_id,
@@ -42,8 +45,17 @@ def store_analysis_document(
         processing_ms=payload.processing_ms,
         status=payload.status,
     )
+    if payload.source_kind == "edital":
+        crm_sync = sync_analysis_json_to_crm(
+            db,
+            build_import_context_for_user(current_user),
+            payload.result,
+            source_name=payload.source_name,
+        )
     db.commit()
-    return _serialize_document(document, include_items=True)
+    response = _serialize_document(document, include_items=True)
+    response["crm_sync"] = crm_sync
+    return response
 
 
 @router.get("/documents")

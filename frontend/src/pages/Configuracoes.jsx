@@ -10,14 +10,14 @@ import { useToast } from '../contexts/ToastContext'
 
 const ROLE_LABELS = {
   admin:  { label: 'Administrador', color: 'text-amber border-amber/30 bg-amber/10'           },
-  editor: { label: 'Editor',        color: 'text-azure-glow border-azure/30 bg-azure/10'      },
-  viewer: { label: 'Visualizador',  color: 'text-gray-400 border-slate-border bg-slate-card'  },
+  editor: { label: 'Editor',        color: 'text-red-400 border-red-600/30 bg-red-600/10'      },
+  viewer: { label: 'Visualizador',  color: 'text-gray-400 border-slate-700 bg-slate-800'  },
 }
 
 function Section({ title, description, children }) {
   return (
     <div className="card space-y-4">
-      <div className="border-b border-slate-border pb-3">
+      <div className="border-b border-slate-700 pb-3">
         <p className="font-display font-bold text-white text-sm">{title}</p>
         {description && <p className="text-xs text-gray-500 font-mono mt-0.5">{description}</p>}
       </div>
@@ -105,10 +105,10 @@ export default function Configuracoes() {
             <button
               key={val}
               onClick={() => setDefaultModel(val)}
-              className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all ${
+              className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all ${
                 defaultModel === val
-                  ? 'border-azure bg-azure/10'
-                  : 'border-slate-border hover:border-azure/40 hover:bg-slate-hover'
+                  ? 'border-red-600 bg-red-600/10'
+                  : 'border-slate-700 hover:border-red-600/40 hover:bg-slate-hover'
               }`}
             >
               <div className="flex items-center justify-between mb-0.5">
@@ -120,10 +120,10 @@ export default function Configuracoes() {
                     </span>
                   )}
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    defaultModel === val ? 'border-azure' : 'border-slate-border'
+                    defaultModel === val ? 'border-red-600' : 'border-slate-700'
                   }`}>
                     {defaultModel === val && (
-                      <div className="w-2 h-2 rounded-full bg-azure" />
+                      <div className="w-2 h-2 rounded-full bg-red-600" />
                     )}
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export default function Configuracoes() {
               <button
                 onClick={() => set(v => !v)}
                 className={`relative w-11 h-6 rounded-full transition-all duration-200 flex-shrink-0 ${
-                  value ? 'bg-azure' : 'bg-slate-border'
+                  value ? 'bg-red-600' : 'bg-slate-border'
                 }`}
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
@@ -176,7 +176,7 @@ export default function Configuracoes() {
       {/* ── Plano ──────────────────────────────────────────────────────────── */}
       <Section title="Plano atual">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-azure to-amber flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-red-600 to-amber flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xl">★</span>
           </div>
           <div>
@@ -186,7 +186,7 @@ export default function Configuracoes() {
             </p>
           </div>
         </div>
-        <p className="text-xs text-gray-600 font-mono mt-2 pt-3 border-t border-slate-border/40">
+        <p className="text-xs text-gray-600 font-mono mt-2 pt-3 border-t border-slate-700/40">
           Para alterar o plano ou gerenciar faturamento, entre em contato com suporte@tortec.com.br
         </p>
       </Section>

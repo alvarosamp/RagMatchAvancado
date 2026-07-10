@@ -25,7 +25,7 @@ const SUGESTOES = [
 function BubbleUser({ text }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[75%] bg-azure/20 border border-azure/30 rounded-2xl rounded-tr-sm px-4 py-3">
+      <div className="max-w-[75%] bg-red-600/20 border border-red-600/30 rounded-lg rounded-tr-sm px-4 py-3">
         <p className="text-sm text-white font-body leading-relaxed whitespace-pre-wrap">{text}</p>
       </div>
     </div>
@@ -42,7 +42,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
           {[0, 1, 2].map(i => (
             <div
               key={i}
-              className="w-1.5 h-1.5 rounded-full bg-azure-glow animate-pulse-dot"
+              className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse-dot"
               style={{ animationDelay: `${i * 0.2}s` }}
             />
           ))}
@@ -55,9 +55,9 @@ function BubbleAssistant({ text, sources, model, loading }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[80%] space-y-2">
-        <div className="card py-3 px-4 rounded-2xl rounded-tl-sm">
+        <div className="card py-3 px-4 rounded-lg rounded-tl-sm">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded bg-gradient-to-br from-azure to-amber flex items-center justify-center">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-red-600 to-amber flex items-center justify-center">
               <span className="text-white text-xs font-mono font-black">T</span>
             </div>
             <span className="text-xs font-mono text-gray-500">{model || 'modelo'}</span>
@@ -69,7 +69,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
           <div>
             <button
               onClick={() => setShowSources(v => !v)}
-              className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-azure-glow transition-colors px-1"
+              className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-red-400 transition-colors px-1"
             >
               <span>{showSources ? '▼' : '▶'}</span>
               {sources.length} trecho{sources.length !== 1 ? 's' : ''} consultado{sources.length !== 1 ? 's' : ''}
@@ -77,7 +77,7 @@ function BubbleAssistant({ text, sources, model, loading }) {
             {showSources && (
               <div className="mt-2 space-y-1.5">
                 {sources.map((s, i) => (
-                  <div key={i} className="bg-ink-50 border border-slate-border rounded-lg px-3 py-2">
+                  <div key={i} className="bg-ink-50 border border-slate-700 rounded-lg px-3 py-2">
                     <p className="text-xs font-mono text-gray-500 mb-1">Trecho #{s.chunk_idx + 1}</p>
                     <p className="text-xs text-gray-400 font-body leading-relaxed line-clamp-3">{s.text}</p>
                   </div>
@@ -210,8 +210,8 @@ export default function Chatbot() {
     <div className="flex h-full min-h-full overflow-hidden">
 
       {/* ── Sidebar de editais ──────────────────────────────────────────── */}
-      <aside className="w-64 flex-shrink-0 border-r border-slate-border bg-ink-100 flex flex-col">
-        <div className="px-4 py-4 border-b border-slate-border">
+      <aside className="w-64 flex-shrink-0 border-r border-slate-700 bg-ink-100 flex flex-col">
+        <div className="px-4 py-4 border-b border-slate-700">
           <p className="font-display font-bold text-white text-sm">Editais</p>
           <p className="text-xs text-gray-500 font-mono mt-0.5">Selecione para conversar</p>
         </div>
@@ -237,7 +237,7 @@ export default function Chatbot() {
                   onClick={() => handleSelectEdital(edital)}
                   className={`w-full text-left px-4 py-3 transition-all duration-150 border-l-2 ${
                     active
-                      ? 'border-azure bg-azure/10 text-white'
+                      ? 'border-red-600 bg-red-600/10 text-white'
                       : 'border-transparent text-gray-400 hover:bg-slate-hover hover:text-white'
                   }`}
                 >
@@ -258,10 +258,10 @@ export default function Chatbot() {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Header */}
-        <div className="flex-shrink-0 border-b border-slate-border bg-ink-100 px-6 py-4">
+        <div className="flex-shrink-0 border-b border-slate-700 bg-ink-100 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-azure to-amber flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600 to-amber flex items-center justify-center">
                 <span className="text-white text-xs font-mono font-black">T</span>
               </div>
               <div>
@@ -285,14 +285,14 @@ export default function Chatbot() {
                   Limpar
                 </button>
               )}
-              <div className="flex rounded-lg border border-slate-border overflow-hidden">
+              <div className="flex rounded-lg border border-slate-700 overflow-hidden">
                 {[['gpt', 'GPT'], ['ollama', 'Local']].map(([val, lbl]) => (
                   <button
                     key={val}
                     onClick={() => setLlmModel(val)}
                     className={`px-3 py-1.5 text-xs font-mono transition-all duration-150 ${
                       llmModel === val
-                        ? 'bg-azure text-white'
+                        ? 'bg-red-600 text-white'
                         : 'text-gray-400 hover:text-white hover:bg-slate-hover'
                     }`}
                   >
@@ -310,7 +310,7 @@ export default function Chatbot() {
           {/* Sem edital selecionado */}
           {!selected && (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-azure/20 to-amber/20 border border-azure/20 flex items-center justify-center text-3xl mb-4">
+              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-red-600/20 to-amber/20 border border-red-600/20 flex items-center justify-center text-3xl mb-4">
                 💬
               </div>
               <p className="font-display font-bold text-white text-lg mb-1">
@@ -325,7 +325,7 @@ export default function Chatbot() {
           {/* Edital selecionado, sem mensagens — sugestões */}
           {selected && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-azure/20 to-amber/20 border border-azure/20 flex items-center justify-center text-2xl mb-4">
+              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-red-600/20 to-amber/20 border border-red-600/20 flex items-center justify-center text-2xl mb-4">
                 📄
               </div>
               <p className="font-display font-bold text-white text-lg mb-1">
@@ -339,7 +339,7 @@ export default function Chatbot() {
                   <button
                     key={i}
                     onClick={() => enviar(s)}
-                    className="text-left px-4 py-3 rounded-xl border border-slate-border bg-ink-50 hover:border-azure/40 hover:bg-azure/5 text-sm text-gray-400 hover:text-white font-body transition-all duration-150"
+                    className="text-left px-4 py-3 rounded-lg border border-slate-700 bg-ink-50 hover:border-red-600/40 hover:bg-red-600/5 text-sm text-gray-400 hover:text-white font-body transition-all duration-150"
                   >
                     {s}
                   </button>
@@ -365,7 +365,7 @@ export default function Chatbot() {
         </div>
 
         {/* Input */}
-        <div className="flex-shrink-0 border-t border-slate-border bg-ink-100 px-6 py-4">
+        <div className="flex-shrink-0 border-t border-slate-700 bg-ink-100 px-6 py-4">
           {error && (
             <p className="text-xs text-red-fail font-mono mb-2 px-1">⚠️ {error}</p>
           )}

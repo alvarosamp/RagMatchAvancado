@@ -1,23 +1,38 @@
-/**
- * pages/AnaliseJson.jsx
- * ───────────────────────
- * Exibe um AnalysisDocument (source_kind="edital") ingerido via JSON
- * estruturado (schema v7.3): itens elegíveis + riscos + documentação +
- * declarações do edital.
- */
-
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { analysisApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
-import AnalysisItemCard from '../components/AnalysisItemCard'
+import { formatNumber, compactDescription } from '../components/ui/format'
+import Card from '../components/ui/Card'
+import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
 
 const TABS = [
-  { key: 'itens', label: 'Itens' },
+  { key: 'itens', label: 'Itens elegiveis' },
+  { key: 'documentacao', label: 'Documentacao' },
   { key: 'riscos', label: 'Riscos' },
-  { key: 'documentacao', label: 'Documentação' },
-  { key: 'declaracoes', label: 'Declarações' },
+  { key: 'declaracoes', label: 'Declaracoes' },
 ]
+
+function formatMoney(value) {
+  if (value == null || value === '') return '-'
+  const number = Number(String(value).replace(',', '.'))
+  if (Number.isNaN(number)) return String(value)
+  return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function itemDetails(item) {
+  const bi = item.caracteristicas_bi || item.raw_payload?.caracteristicas_bi || {}
+  return Object.values(bi).filter((value) => value && value !== 'N/C').join(' / ') || '-'
+}
+
+function InfoCard({ label, value }) {
+  return (
+    <Card className="p-4">
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-2 truncate text-base font-semibold text-slate-950 dark:text-white" title={String(value || '-')}>{value || '-'}</p>
+    </Card>
+  )
+}
 
 export default function AnaliseJson() {
   const { id } = useParams()
@@ -33,165 +48,211 @@ export default function AnaliseJson() {
     setLoading(true)
     setNotFound(false)
     analysisApi.get(id)
-      .then((r) => setData(r.data))
+      .then((response) => setData(response.data))
       .catch((err) => {
         if (err.response?.status === 404) setNotFound(true)
-        else toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao carregar análise.' })
+        else toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao carregar a analise.' })
       })
       .finally(() => setLoading(false))
   }, [id])
 
+  const edital = data?.edital || {}
+  const riscos = data?.riscos || {}
+  const documentacao = data?.documentacao || []
+  const declaracoes = data?.declaracoes || []
+  const items = data?.items || []
+  const totalUnits = useMemo(() => items.reduce((sum, item) => sum + Number(item.quantity || 0), 0), [items])
+  const totalValue = useMemo(
+    () => items.reduce((sum, item) => sum + Number(item.total_value || 0), 0),
+    [items],
+  )
+
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 rounded-xl bg-slate-card border border-slate-border animate-pulse" />
-        ))}
+      <div className="min-h-screen bg-surface p-6 dark:bg-surface-dark lg:p-8">
+        <div className="mx-auto max-w-6xl space-y-4">
+          {[...Array(5)].map((_, index) => (
+            <div key={index} className="h-16 animate-pulse rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" />
+          ))}
+        </div>
       </div>
     )
   }
 
   if (notFound || !data) {
     return (
-      <div className="p-6">
-        <div className="card border border-amber/20 bg-amber/5 text-center py-14">
-          <div className="text-4xl mb-3">🔍</div>
-          <p className="font-display font-bold text-white text-lg mb-1">Análise não encontrada</p>
-          <p className="text-sm text-gray-400">Este edital ainda não tem um JSON importado.</p>
-        </div>
+      <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
+        <Card className="mx-auto max-w-3xl p-10 text-center">
+          <h1 className="text-2xl font-semibold">Analise nao encontrada</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Este edital ainda nao tem arquivo importado.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/analise/upload')}
+            className="mt-5 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark dark:bg-brand-light dark:hover:bg-brand"
+          >
+            Importar analise
+          </button>
+        </Card>
       </div>
     )
   }
 
-  const edital = data.edital || {}
-  const riscos = data.riscos || {}
-  const documentacao = data.documentacao || []
-  const declaracoes = data.declaracoes || []
-  const items = data.items || []
-
   return (
-    <div className="p-6 space-y-6 min-h-screen">
-      <div>
-        <button
-          onClick={() => navigate(-1)}
-          className="text-xs font-mono text-gray-500 hover:text-azure-glow transition-colors mb-2 flex items-center gap-1"
-        >
-          ← Voltar
-        </button>
-        <h1 className="font-display font-black text-2xl text-white">{edital.orgao || data.source_name || `Edital #${id}`}</h1>
-        <p className="text-sm text-gray-500 font-mono mt-1">
-          {edital.numero_pregao} {edital.uf ? `· ${edital.uf}` : ''} {edital.cidade ? `· ${edital.cidade}` : ''}
-        </p>
-      </div>
-
-      {/* Metadados do edital */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Data da disputa', value: edital.data_disputa || '—' },
-          { label: 'Critério', value: edital.criterio || '—' },
-          { label: 'ME/EPP', value: edital.exclusividade_me_epp || '—' },
-          { label: 'Valor total', value: edital.valor_total_edital || '—' },
-        ].map(({ label, value }) => (
-          <div key={label} className="card p-4">
-            <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-1">{label}</p>
-            <p className="text-sm text-white font-body font-medium truncate" title={value}>{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Abas */}
-      <div className="flex gap-1 flex-wrap border-b border-slate-border/40 pb-px">
-        {TABS.map((t) => (
+    <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
+      <div className="mx-auto max-w-[1400px] space-y-6">
+        <Card className="p-6">
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-xs font-mono rounded-t-lg border-b-2 transition-all ${
-              tab === t.key
-                ? 'text-azure-glow border-azure'
-                : 'text-gray-500 border-transparent hover:text-white'
-            }`}
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mb-4 text-sm font-medium text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white"
           >
-            {t.label} {t.key === 'itens' ? `(${items.length})` : ''}
+            Voltar
           </button>
-        ))}
-      </div>
-
-      {tab === 'itens' && (
-        <div className="space-y-2">
-          {items.length === 0 ? (
-            <p className="text-sm text-gray-500 font-body text-center py-10">Nenhum item elegível neste edital.</p>
-          ) : (
-            items.map((item) => <AnalysisItemCard key={item.id} item={item} />)
-          )}
-        </div>
-      )}
-
-      {tab === 'riscos' && (
-        <div className="space-y-3">
-          <div className="card p-4">
-            <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-1">Risco identificado</p>
-            <p className="text-sm text-white">{riscos.risco_identificado || '—'}</p>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Analise de edital</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
+                {edital.orgao || data.source_name || `Edital #${id}`}
+              </h1>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                {edital.numero_pregao || '-'} · {edital.uf || '-'} · {edital.cidade || '-'}
+              </p>
+            </div>
+            <Badge tone={riskTone(riscos.risco_identificado)} className="w-fit">
+              {riscos.risco_identificado && riscos.risco_identificado !== 'Nenhum' ? 'Risco identificado' : 'Sem risco'}
+            </Badge>
           </div>
-          {['risco_operacional', 'risco_documental'].map((key) => {
-            const r = riscos[key]
-            if (!r) return null
-            return (
-              <div key={key} className="card p-4">
-                <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-1">
-                  {key.replace('_', ' ')}
-                </p>
-                <p className="text-sm text-white">{r.existe ? 'Existe' : 'Não existe'}</p>
-                {r.motivos?.length > 0 && (
-                  <ul className="mt-2 list-disc list-inside text-xs text-gray-300 space-y-1">
-                    {r.motivos.map((m, i) => <li key={i}>{m}</li>)}
-                  </ul>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+        </Card>
 
-      {tab === 'documentacao' && (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-ink-100 border-b border-slate-border">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-mono text-gray-500 uppercase tracking-wider">Categoria</th>
-                <th className="px-4 py-3 text-left text-xs font-mono text-gray-500 uppercase tracking-wider">Documento</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-border/20">
-              {documentacao.length === 0 ? (
-                <tr><td colSpan={2} className="px-4 py-10 text-center text-sm text-gray-500">Nenhum documento listado.</td></tr>
-              ) : (
-                documentacao.map((doc, i) => (
-                  <tr key={i}>
-                    <td className="px-4 py-2 text-xs text-gray-400 font-mono whitespace-nowrap">{doc.categoria}</td>
-                    <td className="px-4 py-2 text-sm text-gray-200">{doc.documento}</td>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <InfoCard label="Data da disputa" value={edital.data_disputa} />
+          <InfoCard label="Criterio" value={edital.criterio} />
+          <InfoCard label="ME/EPP" value={edital.exclusividade_me_epp} />
+          <InfoCard label="Itens" value={formatNumber(items.length)} />
+          <InfoCard label="Unidades" value={formatNumber(totalUnits)} />
+        </section>
+
+        <nav className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700">
+          {TABS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setTab(item.key)}
+              className={`border-b-2 px-4 py-3 text-sm font-medium ${
+                tab === item.key
+                  ? 'border-brand text-brand dark:border-brand-light dark:text-brand-light'
+                  : 'border-transparent text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              {item.label}{item.key === 'itens' ? ` (${items.length})` : ''}
+            </button>
+          ))}
+        </nav>
+
+        {tab === 'itens' && (
+          <Card className="overflow-hidden">
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Itens elegiveis</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Total mapeado: {formatNumber(totalUnits)} unidades · {formatMoney(totalValue)}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] text-left">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Item</th>
+                    <th className="px-5 py-3 font-semibold">Categoria</th>
+                    <th className="px-5 py-3 font-semibold">Descricao</th>
+                    <th className="px-5 py-3 font-semibold">Classificacao</th>
+                    <th className="px-5 py-3 text-right font-semibold">Qtd</th>
+                    <th className="px-5 py-3 text-right font-semibold">Preco unit.</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum item elegivel listado.</td>
+                    </tr>
+                  ) : (
+                    items.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-5 py-4 text-sm font-semibold text-slate-950 dark:text-white">{item.item_number || '-'}</td>
+                        <td className="px-5 py-4">
+                          <Badge tone={categoryTone(item.categoria)}>{item.categoria || '-'}</Badge>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{compactDescription(item.description)}</td>
+                        <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{itemDetails(item)}</td>
+                        <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatNumber(item.quantity)}</td>
+                        <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatMoney(item.unit_value ?? item.raw_payload?.preco_unitario)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
-      {tab === 'declaracoes' && (
-        <div className="card p-4">
-          {declaracoes.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-10">Nenhuma declaração listada.</p>
-          ) : (
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {declaracoes.map((d, i) => (
-                <li key={i} className="text-sm text-gray-200 flex items-center gap-2">
-                  <span className="text-azure-glow">✓</span> {d.declaracao}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+        {tab === 'documentacao' && (
+          <Card className="overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Categoria</th>
+                  <th className="px-5 py-3 font-semibold">Documento</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                {documentacao.length === 0 ? (
+                  <tr><td colSpan={2} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum documento listado.</td></tr>
+                ) : (
+                  documentacao.map((doc, index) => (
+                    <tr key={`${doc.documento}-${index}`}>
+                      <td className="px-5 py-4 text-sm text-slate-600 dark:text-slate-300">{doc.categoria || '-'}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-950 dark:text-white">{doc.documento || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Card>
+        )}
+
+        {tab === 'riscos' && (
+          <section className="grid gap-4 lg:grid-cols-3">
+            <InfoCard label="Risco identificado" value={riscos.risco_identificado || 'Nenhum'} />
+            {['risco_operacional', 'risco_documental'].map((key) => {
+              const risk = riscos[key]
+              return (
+                <Card key={key} className="p-4">
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{key.replace(/_/g, ' ')}</p>
+                  <p className="mt-2 text-base font-semibold text-slate-950 dark:text-white">{risk?.existe ? 'Existe' : 'Nao existe'}</p>
+                  {risk?.motivos?.length > 0 && (
+                    <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                      {risk.motivos.map((motivo, index) => <li key={index}>{motivo}</li>)}
+                    </ul>
+                  )}
+                </Card>
+              )
+            })}
+          </section>
+        )}
+
+        {tab === 'declaracoes' && (
+          <Card className="p-5">
+            {declaracoes.length === 0 ? (
+              <p className="text-center text-sm text-slate-500 dark:text-slate-400">Nenhuma declaracao listada.</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {declaracoes.map((declaracao, index) => (
+                  <div key={`${declaracao.declaracao}-${index}`} className="rounded border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                    {declaracao.declaracao}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

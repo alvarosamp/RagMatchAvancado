@@ -4,7 +4,11 @@
       "Bash(docker compose *)",
       "Bash(npm run *)",
       "Bash(python -c ' *)",
-      "Bash(.venv/Scripts/python.exe -c \"from docling.document_converter import DocumentConverter; print\\('Docling import OK'\\)\")"
+      "Bash(.venv/Scripts/python.exe -c \"from docling.document_converter import DocumentConverter; print\\('Docling import OK'\\)\")",
+      "Bash(grep -n \"^\\\\.env$\\\\|^\\\\.env\" .gitignore)",
+      "Bash(powershell.exe -NoProfile -Command \"Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(powershell.exe -NoProfile -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(docker volume *)"
     ]
   }
 }

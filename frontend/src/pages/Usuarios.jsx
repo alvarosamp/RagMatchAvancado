@@ -94,7 +94,7 @@ export default function Usuarios() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(s => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border border-slate-border text-xs font-mono text-gray-400 hover:text-white hover:border-azure/40 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border border-slate-700 text-xs font-mono text-gray-400 hover:text-white hover:border-red-600/40 transition-colors"
                     aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   >
                     {showPassword ? 'Ocultar' : 'Mostrar'}
@@ -128,7 +128,7 @@ export default function Usuarios() {
       {/* Lista */}
       {loading ? (
         <div className="space-y-3">
-          {[1,2].map(i => <div key={i} className="h-16 bg-slate-card rounded-xl border border-slate-border animate-pulse" />)}
+          {[1,2].map(i => <div key={i} className="h-16 bg-slate-800 rounded-lg border border-slate-700 animate-pulse" />)}
         </div>
       ) : (
         <div className="space-y-2">
@@ -136,7 +136,7 @@ export default function Usuarios() {
             const cfg = ROLE_CFG[u.role] || ROLE_CFG.viewer
             return (
               <div key={u.id} className="card flex items-center gap-4 py-4 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                <div className="w-9 h-9 rounded-full bg-azure/10 border border-azure/20 flex items-center justify-center text-azure-glow font-display font-bold text-sm flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-red-600/10 border border-red-600/20 flex items-center justify-center text-red-400 font-display font-bold text-sm flex-shrink-0">
                   {(u.full_name || u.email)[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">

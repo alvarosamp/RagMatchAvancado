@@ -70,7 +70,7 @@ export default function EditalDetail() {
         <div className="h-8 bg-slate-border rounded w-64" />
         <div className="h-4 bg-slate-border rounded w-48" />
         <div className="grid grid-cols-3 gap-4 mt-6">
-          {[1,2,3].map(i => <div key={i} className="h-24 bg-slate-card rounded-xl border border-slate-border" />)}
+          {[1,2,3].map(i => <div key={i} className="h-24 bg-slate-800 rounded-lg border border-slate-700" />)}
         </div>
       </div>
     </div>
@@ -85,7 +85,7 @@ export default function EditalDetail() {
           <div className="flex items-center gap-2 mb-1">
             <button
               onClick={() => navigate('/dashboard')}
-              className="text-xs font-mono text-gray-500 hover:text-azure-glow transition-colors"
+              className="text-xs font-mono text-gray-500 hover:text-red-400 transition-colors"
             >
               ← Dashboard
             </button>
@@ -110,7 +110,7 @@ export default function EditalDetail() {
           {/* Chat RAG — destaque */}
           <button
             onClick={() => navigate(`/editais/${id}/chat`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-azure/20 to-amber/20 border border-azure/30 hover:border-azure/60 text-azure-glow font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-azure/10"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600/20 to-amber/20 border border-red-600/30 hover:border-red-600/60 text-red-400 font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-red-600/10"
           >
             <span>💬</span>
             Perguntar ao edital
@@ -151,8 +151,8 @@ export default function EditalDetail() {
                   onClick={() => setSelected(p.product)}
                   className={`w-full text-left card py-3.5 px-4 transition-all duration-200
                     ${isSelected
-                      ? 'border-azure/50 bg-azure/5 shadow-sm shadow-azure/10'
-                      : 'hover:border-slate-border/80 hover:bg-slate-hover'
+                      ? 'border-red-600/50 bg-red-600/5 shadow-sm shadow-red-600/10'
+                      : 'hover:border-slate-700/80 hover:bg-slate-hover'
                     }`}
                 >
                   <div className="flex items-center gap-3">
@@ -160,7 +160,7 @@ export default function EditalDetail() {
                       {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-mono text-sm font-medium truncate ${isSelected ? 'text-azure-glow' : 'text-white'}`}>
+                      <p className={`font-mono text-sm font-medium truncate ${isSelected ? 'text-red-400' : 'text-white'}`}>
                         {p.product}
                       </p>
                       <div className="mt-1.5 h-1 bg-slate-border rounded-full overflow-hidden">
@@ -190,7 +190,7 @@ export default function EditalDetail() {
                   <p className="text-xs text-gray-500 font-mono mt-0.5">{selectedData.rows.length} requisito{selectedData.rows.length !== 1 ? 's' : ''} avaliado{selectedData.rows.length !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="text-right">
-                  <span className="font-mono text-3xl font-black text-azure-glow">
+                  <span className="font-mono text-3xl font-black text-red-400">
                     {Math.round(selectedData.avgScore * 100)}%
                   </span>
                   <p className="text-xs text-gray-500 font-mono">compatibilidade</p>
@@ -200,7 +200,7 @@ export default function EditalDetail() {
               {/* Barra de progresso geral */}
               <div className="h-1.5 bg-slate-border rounded-full overflow-hidden mb-5">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-azure to-amber transition-all duration-1000"
+                  className="h-full rounded-full bg-gradient-to-r from-red-600 to-amber transition-all duration-1000"
                   style={{ width: `${Math.round(selectedData.avgScore * 100)}%` }}
                 />
               </div>

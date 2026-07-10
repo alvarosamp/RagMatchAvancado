@@ -25,6 +25,7 @@ import AnalysisDashboard from './pages/AnalysisDashboard'
 import PncpSearch     from './pages/PncpSearch'
 import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
+import DatasheetCompare from './pages/DatasheetCompare'
 import Layout         from './components/Layout'
 
 const INTERNAL_REGISTER_PATH = import.meta.env.VITE_INTERNAL_REGISTER_PATH || '/cadastro-tor-gestao-interna'
@@ -71,6 +72,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/analise/documentos/:id"  element={<PrivateRoute><AnaliseJson  /></PrivateRoute>} />
             <Route path="/analise/upload"          element={<PrivateRoute><UploadJson   /></PrivateRoute>} />
             <Route path="/analise/dashboard"       element={<PrivateRoute><AnalysisDashboard /></PrivateRoute>} />
+            <Route path="/inteligencia/datasheets" element={<PrivateRoute><DatasheetCompare /></PrivateRoute>} />
 
             <Route path="/usuarios" element={
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>

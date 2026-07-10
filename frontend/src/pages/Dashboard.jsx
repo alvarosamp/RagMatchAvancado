@@ -72,10 +72,10 @@ export default function Dashboard() {
       {/* ── Cabeçalho ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-stone-900 dark:text-white">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
             {user?.tenant?.name || 'Portal'}
           </h1>
-          <p className="text-sm text-stone-500 dark:text-gray-500 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -111,12 +111,12 @@ export default function Dashboard() {
             type="button"
             onClick={action}
             disabled={!action}
-            className={`rounded-xl border p-4 text-left transition-colors
-              border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card
-              ${action ? 'hover:border-stone-300 dark:hover:bg-slate-hover cursor-pointer' : 'cursor-default'}`}
+            className={`rounded-lg border p-4 text-left transition-colors
+              border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800
+              ${action ? 'hover:border-slate-300 dark:hover:bg-slate-700 cursor-pointer' : 'cursor-default'}`}
           >
-            <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
-            <p className="mt-2 text-2xl font-bold text-stone-900 dark:text-white">{loading ? '—' : value}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
           </button>
         ))}
       </div>
@@ -126,10 +126,10 @@ export default function Dashboard() {
         <div className="grid gap-4 lg:grid-cols-2">
 
           {/* Fila de jobs */}
-          <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">Fila de processamento</p>
-              <button onClick={() => navigate('/jobs')} className="text-xs text-stone-400 dark:text-gray-500 hover:text-stone-600 dark:hover:text-white">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">Fila de processamento</p>
+              <button onClick={() => navigate('/jobs')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 Ver tudo →
               </button>
             </div>
@@ -141,35 +141,35 @@ export default function Dashboard() {
                 <div key={label} className={`rounded-lg border p-3 ${
                   warn
                     ? 'border-yellow-500/20 bg-yellow-500/5 dark:bg-yellow-500/5'
-                    : 'border-stone-100 bg-stone-50 dark:border-slate-border dark:bg-ink-50'
+                    : 'border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-900'
                 }`}>
-                  <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
-                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-yellow-600 dark:text-yellow-400' : 'text-stone-900 dark:text-white'}`}>{value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-900 dark:text-white'}`}>{value}</p>
                 </div>
               ))}
             </div>
             {jobs?.active_jobs?.length ? (
               <div className="space-y-2">
                 {jobs.active_jobs.map(job => (
-                  <div key={job.id} className="flex items-center justify-between rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-3 py-2">
+                  <div key={job.id} className="flex items-center justify-between rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2">
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-stone-800 dark:text-white">{job.label}</p>
-                      <p className="text-[11px] text-stone-400 dark:text-gray-500">{job.status}</p>
+                      <p className="truncate text-xs font-medium text-slate-800 dark:text-white">{job.label}</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-400">{job.status}</p>
                     </div>
-                    <span className="ml-3 text-sm font-bold text-stone-600 dark:text-azure-glow flex-shrink-0">{job.progress_pct}%</span>
+                    <span className="ml-3 text-sm font-bold text-slate-600 dark:text-red-400 flex-shrink-0">{job.progress_pct}%</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-stone-400 dark:text-gray-600">Nenhum processamento em andamento.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Nenhum processamento em andamento.</p>
             )}
           </div>
 
           {/* CRM */}
-          <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-stone-900 dark:text-white">CRM comercial</p>
-              <button onClick={() => navigate('/crm')} className="text-xs text-stone-400 dark:text-gray-500 hover:text-stone-600 dark:hover:text-white">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">CRM comercial</p>
+              <button onClick={() => navigate('/crm')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 Abrir →
               </button>
             </div>
@@ -181,35 +181,35 @@ export default function Dashboard() {
                 <div key={label} className={`rounded-lg border p-3 ${
                   warn
                     ? 'border-red-500/20 bg-red-500/5'
-                    : 'border-stone-100 bg-stone-50 dark:border-slate-border dark:bg-ink-50'
+                    : 'border-slate-100 bg-slate-50 dark:border-slate-700 dark:bg-slate-900'
                 }`}>
-                  <p className="text-xs text-stone-500 dark:text-gray-500">{label}</p>
-                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-red-600 dark:text-red-400' : 'text-stone-900 dark:text-white'}`}>{value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                  <p className={`mt-1 text-xl font-bold ${warn ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}>{value}</p>
                 </div>
               ))}
             </div>
             {crm?.upcoming_auctions?.length ? (
               <div className="space-y-2">
                 {crm.upcoming_auctions.map(n => (
-                  <div key={n.id} className="rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-3 py-2">
-                    <p className="text-xs font-medium text-stone-800 dark:text-white truncate">{n.number || n.title || 'Sem número'}</p>
-                    <p className="text-[11px] text-stone-400 dark:text-gray-500 mt-0.5">{n.organ_name || '—'} · {n.auction_date ? new Date(n.auction_date).toLocaleDateString('pt-BR') : 'sem data'}</p>
+                  <div key={n.id} className="rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2">
+                    <p className="text-xs font-medium text-slate-800 dark:text-white truncate">{n.number || n.title || 'Sem número'}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">{n.organ_name || '—'} · {n.auction_date ? new Date(n.auction_date).toLocaleDateString('pt-BR') : 'sem data'}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-stone-400 dark:text-gray-600">Nenhuma disputa nos próximos 7 dias.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Nenhuma disputa nos próximos 7 dias.</p>
             )}
           </div>
         </div>
       )}
 
       {/* ── Editais ───────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-stone-200 bg-white dark:border-slate-border dark:bg-slate-card p-5">
+      <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-stone-900 dark:text-white">Editais</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">Editais</p>
           {crmSync && (
-            <p className="text-xs text-stone-400 dark:text-gray-600">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               CRM em {formatDate(crmSync.builtAt)}
             </p>
           )}
@@ -217,11 +217,11 @@ export default function Dashboard() {
 
         {loading ? (
           <div className="space-y-2">
-            {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-stone-100 dark:bg-ink-50 animate-pulse" />)}
+            {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
           </div>
         ) : editais.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-stone-200 dark:border-slate-border py-12 text-center">
-            <p className="text-sm text-stone-400 dark:text-gray-500">Nenhum edital enviado ainda.</p>
+          <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 py-12 text-center">
+            <p className="text-sm text-slate-400 dark:text-slate-400">Nenhum edital enviado ainda.</p>
             {isEditor && (
               <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
                 Enviar primeiro edital
@@ -234,15 +234,15 @@ export default function Dashboard() {
               <div
                 key={edital.id}
                 onClick={() => navigate(`/editais/${edital.id}`)}
-                className="flex items-center gap-4 rounded-lg border border-stone-100 dark:border-slate-border bg-stone-50 dark:bg-ink-50 px-4 py-3 cursor-pointer hover:bg-stone-100 dark:hover:bg-slate-hover transition-colors"
+                className="flex items-center gap-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-stone-200 dark:border-slate-border bg-white dark:bg-ink-100 grid place-items-center">
-                  <span className="text-[9px] font-bold text-stone-400 dark:text-gray-500">PDF</span>
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 grid place-items-center">
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400">PDF</span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-stone-900 dark:text-white truncate">{edital.filename}</p>
-                  <p className="text-xs text-stone-400 dark:text-gray-500 mt-0.5">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{edital.filename}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">
                     {edital.chunks || 0} chunks · {edital.requirements || 0} requisitos
                     {edital.parsed_at && ` · ${formatDate(edital.parsed_at)}`}
                   </p>
@@ -250,17 +250,17 @@ export default function Dashboard() {
 
                 <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
                   <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-500 dark:text-gray-400 hover:text-stone-800 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors">
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
                     Chat
                   </button>
                   <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-500 dark:text-gray-400 hover:text-stone-800 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors">
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
                     Análise
                   </button>
                   {['xlsx','csv'].map(tipo => (
                     <button key={tipo} onClick={e => handleExport(e, edital.id, tipo)}
                       disabled={Boolean(exporting)}
-                      className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-slate-border text-[11px] font-mono text-stone-400 dark:text-gray-500 hover:text-stone-700 dark:hover:text-white hover:bg-white dark:hover:bg-ink-100 transition-colors disabled:opacity-40">
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-40">
                       {exporting === `${edital.id}-${tipo}` ? '…' : tipo.toUpperCase()}
                     </button>
                   ))}

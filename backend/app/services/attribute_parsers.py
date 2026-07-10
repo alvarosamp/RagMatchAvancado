@@ -24,6 +24,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+# Placeholders de "sem dado" usados no catálogo (all_devices.json usa
+# travessão "—" com frequência, não só hífen comum).
+_EMPTY_TOKENS = {"", "-", "—", "–", "n/c", "n/a"}
+
 _NUM_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
 # Aceita unidade colada no primeiro número ("-10°C a 60°C", "100–240 VAC")
 # entre o valor e o separador de faixa.
@@ -139,10 +143,12 @@ def parse_poe(value) -> dict:
     True/False → {"has_poe": bool, "budget_w": None}
     "PoE 370W" → {"has_poe": True, "budget_w": 370.0}
     """
+    if value is None:
+        return {"has_poe": False, "budget_w": None}
     if isinstance(value, bool):
         return {"has_poe": value, "budget_w": None}
     s = str(value).strip()
-    if not s or s.lower() in ("false", "não", "nao", "-", "0", "sem poe"):
+    if s.lower() in _EMPTY_TOKENS or s.lower() in ("false", "não", "nao", "0", "sem poe"):
         return {"has_poe": False, "budget_w": None}
 
     budget = None
@@ -272,3 +278,128 @@ def compare_attribute(field_name: str, actual, required) -> ComparisonResult:
         return ComparisonResult(ok, f"Uplink {act_u} x exigido {req_u}")
 
     return ComparisonResult(None, "generic")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Comparação produto × produto (inteligência comercial / benchmark de datasheet)
+#
+# Diferente de compare_attribute() (que julga "atende/não atende" um requisito
+# de edital), aqui não há um lado "certo" — só qual dos dois produtos leva
+# vantagem naquele atributo. Reaproveita os mesmos parsers tipados.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass
+class ProductFieldComparison:
+    field:    str
+    value_a:  object
+    value_b:  object
+    winner:   str | None  # "a" | "b" | "tie" | None (não comparável)
+
+
+def compare_products(field_name: str, value_a, value_b) -> ProductFieldComparison:
+    """
+    Compara o mesmo atributo em dois produtos e diz qual leva vantagem.
+
+    Duas noções diferentes de "vazio" importam aqui:
+      - Campo AUSENTE ou placeholder ("—", "-", None, ...): para atributos
+        QUANTITATIVOS (portas, velocidade, faixa), quem tem o número
+        documentado leva vantagem — é uma vantagem informativa real.
+      - Campo presente com um valor negativo real ("Não", false): para
+        atributos de CAPACIDADE (PoE, uplink), "não tenho" não é vantagem
+        de ninguém quando comparado a um branco nosso — os dois não têm o
+        recurso. Só os parsers tipados (parse_poe/parse_uplink) sabem fazer
+        essa distinção, por isso rodam direto nos valores crus, sem atalho
+        textual de "vazio" antes.
+    """
+    kind = classify_field(field_name)
+
+    def _result(winner):
+        return ProductFieldComparison(field_name, value_a, value_b, winner)
+
+    # ── Atributos de capacidade (tem ou não tem) ──────────────────────────────
+    # parse_poe/parse_uplink já tratam None/"—"/"Não"/false como "sem a
+    # capacidade" de forma consistente — não precisam de atalho antes.
+    if kind == "poe":
+        poe_a, poe_b = parse_poe(value_a), parse_poe(value_b)
+        if poe_a["has_poe"] != poe_b["has_poe"]:
+            return _result("a" if poe_a["has_poe"] else "b")
+        if poe_a["budget_w"] is not None and poe_b["budget_w"] is not None and poe_a["budget_w"] != poe_b["budget_w"]:
+            return _result("a" if poe_a["budget_w"] > poe_b["budget_w"] else "b")
+        return _result("tie")
+
+    if kind == "uplink":
+        u_a, u_b = parse_uplink(value_a), parse_uplink(value_b)
+        score_a = (u_a["quantidade"] or 0) * (u_a["velocidade_mbps"] or 1)
+        score_b = (u_b["quantidade"] or 0) * (u_b["velocidade_mbps"] or 1)
+        if not score_a and not score_b:
+            return _result(None)
+        return _result("tie" if score_a == score_b else ("a" if score_a > score_b else "b"))
+
+    # ── Atributos quantitativos ────────────────────────────────────────────────
+    # Aqui "sem dado que dê pra extrair número" (seja "—", seja texto livre)
+    # perde pra quem tem o número documentado — é uma vantagem informativa
+    # real (você consegue provar a especificação, o outro lado não).
+    if kind == "porta":
+        n_a, n_b = parse_port_count(value_a), parse_port_count(value_b)
+        if n_a is None and n_b is None:
+            return _result("tie")
+        if n_a is None:
+            return _result("b")
+        if n_b is None:
+            return _result("a")
+        return _result("tie" if n_a == n_b else ("a" if n_a > n_b else "b"))
+
+    if kind == "velocidade":
+        v_a, v_b = parse_speed_mbps(value_a), parse_speed_mbps(value_b)
+        if v_a is None and v_b is None:
+            return _result("tie")
+        if v_a is None:
+            return _result("b")
+        if v_b is None:
+            return _result("a")
+        return _result("tie" if v_a == v_b else ("a" if v_a > v_b else "b"))
+
+    if kind in ("tensao", "temperatura"):
+        # Faixa mais larga = mais flexível/compatível com mais cenários.
+        r_a, r_b = _parse_range(value_a), _parse_range(value_b)
+        if r_a is None and r_b is None:
+            return _result("tie")
+        if r_a is None:
+            return _result("b")
+        if r_b is None:
+            return _result("a")
+        width_a, width_b = r_a[1] - r_a[0], r_b[1] - r_b[0]
+        return _result("tie" if width_a == width_b else ("a" if width_a > width_b else "b"))
+
+    # ── Genérico: sem parser especializado, cai no atalho textual de vazio ────
+    def _is_empty(value):
+        if value is None:
+            return True
+        if isinstance(value, bool):
+            return False
+        return str(value).strip().lower() in _EMPTY_TOKENS
+
+    empty_a, empty_b = _is_empty(value_a), _is_empty(value_b)
+    if empty_a and empty_b:
+        return _result("tie")
+    if empty_a:
+        return _result("b")
+    if empty_b:
+        return _result("a")
+
+    # Genérico: booleano ou número puro comparam; texto livre não tem "vencedor".
+    if isinstance(value_a, bool) or isinstance(value_b, bool):
+        bool_a, bool_b = bool(value_a), bool(value_b)
+        return _result("tie" if bool_a == bool_b else ("a" if bool_a else "b"))
+
+    n_a, n_b = extract_number(value_a), extract_number(value_b)
+    if n_a is not None and n_b is not None:
+        return _result("tie" if n_a == n_b else ("a" if n_a > n_b else "b"))
+
+    return _result("tie" if str(value_a).strip().lower() == str(value_b).strip().lower() else None)
+
+
+def compare_product_specs(specs_a: dict, specs_b: dict) -> list[ProductFieldComparison]:
+    """Une os campos de dois dicts de specs e compara campo a campo."""
+    fields = list(dict.fromkeys(list(specs_a.keys()) + list(specs_b.keys())))
+    return [compare_products(field, specs_a.get(field), specs_b.get(field)) for field in fields]

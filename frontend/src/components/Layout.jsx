@@ -6,7 +6,7 @@ import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
 const NAV = [
   { path: '/dashboard', badge: 'DB', label: 'Inicio', hint: 'Resumo e proximas acoes' },
-  { path: '/upload', badge: 'UP', label: 'Enviar edital', hint: 'PDF ou planilha' },
+  { path: '/upload', badge: 'UP', label: 'Enviar edital', hint: 'PDF ou JSON' },
   { path: '/crm', badge: 'CRM', label: 'CRM comercial', hint: 'Funil, itens e disputa' },
   { path: '/pncp', badge: 'PN', label: 'Buscar PNCP', hint: 'Novas oportunidades' },
   { path: '/controle', badge: 'CT', label: 'Controle', hint: 'Acompanhar processos' },
@@ -14,6 +14,7 @@ const NAV = [
   { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
   { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
   { path: '/analise/upload', badge: 'JS', label: 'Importar JSON', hint: 'Lote de editais em JSON' },
+  { path: '/inteligencia/datasheets', badge: 'VS', label: 'Comparar concorrente', hint: 'Datasheet x seu catalogo' },
   { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
   { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
 ]
@@ -99,6 +100,17 @@ function renderIcon(badge) {
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       );
+    case 'VS':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M8 3v18" />
+          <path d="M16 3v18" />
+          <path d="M3 8h5" />
+          <path d="M16 8h5" />
+          <path d="M3 16h5" />
+          <path d="M16 16h5" />
+        </svg>
+      );
     case 'USR':
       return (
         <svg {...props} viewBox="0 0 24 24">
@@ -119,26 +131,26 @@ function NavItem({ item, pathname }) {
   return (
     <Link
       to={item.path}
-      className={`group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all duration-200 ${
+      className={`group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
         active
-          ? 'border-red-200 bg-red-50 text-red-900 shadow-sm dark:border-azure/35 dark:bg-azure/10 dark:text-white dark:shadow-lg dark:shadow-azure/5'
-          : 'border-transparent text-stone-600 hover:border-stone-200 hover:bg-white hover:text-stone-950 dark:text-gray-400 dark:hover:border-slate-border/50 dark:hover:bg-slate-hover dark:hover:text-white'
+          ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/30 dark:text-white'
+          : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white'
       }`}
     >
       <div
-        className={`grid h-10 w-10 place-items-center rounded-xl border transition-all ${
+        className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg border transition-colors ${
           active
-            ? 'border-red-200 bg-white text-red-700 dark:border-azure/30 dark:bg-azure/20 dark:text-azure-glow'
-            : 'border-stone-200 bg-white text-stone-500 group-hover:text-red-700 dark:border-slate-border dark:bg-ink-50 dark:text-gray-500 dark:group-hover:text-white'
+            ? 'border-red-200 bg-white text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
+            : 'border-slate-200 bg-white text-slate-500 group-hover:text-red-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:group-hover:text-white'
         }`}
       >
         {renderIcon(item.badge)}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{item.label}</p>
-        <p className="truncate text-xs text-stone-400 dark:text-gray-500">{item.hint}</p>
+        <p className="truncate text-xs text-slate-400 dark:text-slate-500">{item.hint}</p>
       </div>
-      {active && <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-azure-glow" />}
+      {active && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-red-500 dark:bg-red-400" />}
     </Link>
   )
 }
@@ -159,25 +171,25 @@ export default function Layout({ children }) {
   }, [theme, isLight])
 
   return (
-    <div className="min-h-screen bg-[#f6f1ea] text-stone-950 md:flex dark:bg-ink dark:text-white">
-      <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-stone-200 bg-[#fbf8f3]/95 md:flex dark:border-slate-border dark:bg-ink-100/95">
-        <div className="border-b border-stone-200 px-5 py-5 dark:border-slate-border">
+    <div className="min-h-screen bg-surface text-slate-950 dark:bg-surface-dark dark:text-white md:flex">
+      <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex dark:border-slate-700 dark:bg-slate-900">
+        <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <img
               src={torLogo}
               alt="Tor Tecnologias"
-              className="h-11 w-11 flex-shrink-0 rounded-2xl object-cover ring-1 ring-white/10"
+              className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
             />
             <div className="leading-tight">
-              <p className="text-base font-semibold text-stone-950 dark:text-white">Tor Tecnologias</p>
-              <p className="text-xs text-stone-500 dark:text-gray-500">Portal de licitacoes</p>
+              <p className="text-base font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-3xl border border-stone-200 bg-white px-4 py-4 shadow-sm dark:border-slate-border dark:bg-ink-50/80">
-            <p className="text-xs font-medium text-stone-500 dark:text-gray-500">Ambiente de trabalho</p>
-            <p className="mt-2 truncate text-sm font-semibold text-stone-950 dark:text-white">{user?.tenant?.name || 'Ambiente Tor'}</p>
-            <p className="mt-1 truncate text-xs text-stone-500 dark:text-gray-500">{user?.email || 'sem email informado'}</p>
+          <div className="mt-5 rounded-lg border border-slate-200 bg-white px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Ambiente de trabalho</p>
+            <p className="mt-2 truncate text-sm font-semibold text-slate-950 dark:text-white">{user?.tenant?.name || 'Ambiente Tor'}</p>
+            <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{user?.email || 'sem email informado'}</p>
           </div>
         </div>
 
@@ -187,16 +199,16 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        <div className="border-t border-stone-200 px-4 py-4 dark:border-slate-border">
+        <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
           <button
             onClick={() => setTheme(isLight ? 'dark' : 'light')}
-            className="mb-3 flex w-full items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition-colors hover:border-red-200 hover:text-red-700 dark:border-slate-border dark:bg-ink-50 dark:text-gray-300 dark:hover:border-azure/40 dark:hover:text-white"
+            className="mb-3 flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-red-200 hover:text-red-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-red-800 dark:hover:text-white"
           >
             {isLight ? 'Usar modo escuro' : 'Usar modo claro'}
           </button>
           <button
             onClick={logout}
-            className="flex w-full items-center justify-center rounded-2xl border border-stone-200 bg-transparent px-4 py-3 text-sm font-semibold text-stone-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-slate-border dark:text-gray-300 dark:hover:border-red-fail/40 dark:hover:text-red-fail"
+            className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-red-800 dark:hover:text-red-400"
           >
             Encerrar sessao
           </button>
@@ -204,24 +216,24 @@ export default function Layout({ children }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#fbf8f3]/95 backdrop-blur md:hidden dark:border-slate-border dark:bg-ink-100/95">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white md:hidden dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-2xl object-cover ring-1 ring-white/10" />
+              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-lg object-cover" />
               <div>
-                <p className="text-sm font-semibold text-stone-950 dark:text-white">Tor Tecnologias</p>
-                <p className="text-[11px] text-stone-500 dark:text-gray-500">Portal de licitacoes</p>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
               </div>
             </div>
             <button
               onClick={() => setTheme(isLight ? 'dark' : 'light')}
-              className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 dark:border-slate-border dark:bg-ink-50 dark:text-gray-300"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
               {isLight ? 'Escuro' : 'Claro'}
             </button>
             <button
               onClick={logout}
-              className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 dark:border-slate-border dark:bg-ink-50 dark:text-gray-300"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
               Sair
             </button>
@@ -235,10 +247,10 @@ export default function Layout({ children }) {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium ${
+                    className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
                       active
-                        ? 'border-red-200 bg-red-50 text-red-800 dark:border-azure/30 dark:bg-azure/10 dark:text-azure-glow'
-                        : 'border-stone-200 bg-white text-stone-500 dark:border-slate-border dark:bg-ink-50 dark:text-gray-400'
+                        ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300'
+                        : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
                     }`}
                   >
                     {item.label}
@@ -251,7 +263,7 @@ export default function Layout({ children }) {
 
         <main className="flex-1 overflow-y-auto">{children}</main>
 
-        <footer className="border-t border-stone-200 bg-[#fbf8f3]/80 px-4 py-3 text-xs text-stone-500 md:px-6 dark:border-slate-border dark:bg-ink-100/95 dark:text-gray-500">
+        <footer className="border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 md:px-6 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <p>Tor Tecnologias | Portal operacional de licitacoes.</p>
             <p>Captar, analisar, disputar e acompanhar em um lugar.</p>

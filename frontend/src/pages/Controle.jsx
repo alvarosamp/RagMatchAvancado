@@ -14,10 +14,10 @@ import { editaisApi, jobsApi } from '../api/client'
 
 const STATUS_CFG = {
   done:    { label: 'Concluído',    color: 'text-green-match', bg: 'bg-green-match/10 border-green-match/30' },
-  running: { label: 'Processando',  color: 'text-azure-glow',  bg: 'bg-azure/10 border-azure/30'            },
+  running: { label: 'Processando',  color: 'text-red-400',  bg: 'bg-red-600/10 border-red-600/30'            },
   pending: { label: 'Aguardando',   color: 'text-amber',       bg: 'bg-amber/10 border-amber/30'            },
   failed:  { label: 'Erro',         color: 'text-red-fail',    bg: 'bg-red-fail/10 border-red-fail/30'      },
-  unknown: { label: 'Sem info',     color: 'text-gray-500',    bg: 'bg-slate-border/20 border-slate-border' },
+  unknown: { label: 'Sem info',     color: 'text-gray-500',    bg: 'bg-slate-border/20 border-slate-700' },
 }
 
 function StatusBadge({ status }) {
@@ -31,7 +31,7 @@ function StatusBadge({ status }) {
 
 function ProgressBar({ progress, status }) {
   const pct = status === 'done' ? 100 : (progress || 0)
-  const bar = status === 'done' ? 'bg-green-match' : status === 'failed' ? 'bg-red-fail' : 'bg-azure'
+  const bar = status === 'done' ? 'bg-green-match' : status === 'failed' ? 'bg-red-fail' : 'bg-red-600'
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 bg-slate-border/30 rounded-full overflow-hidden">
@@ -109,7 +109,7 @@ function ImportPanel({ onClose }) {
   }
 
   return (
-    <div className="card border border-azure/20 space-y-4">
+    <div className="card border border-red-600/20 space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="font-display font-bold text-white text-sm">Importar planilha de editais</p>
@@ -128,13 +128,13 @@ function ImportPanel({ onClose }) {
         onDragOver={e => e.preventDefault()}
         onDrop={handleDrop}
         onClick={() => fileRef.current?.click()}
-        className="border-2 border-dashed border-slate-border rounded-xl p-8 text-center
-                   cursor-pointer hover:border-azure/40 hover:bg-azure/3 transition-all"
+        className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center
+                   cursor-pointer hover:border-red-600/40 hover:bg-red-600/3 transition-all"
       >
         <div className="text-3xl mb-2">📊</div>
         <p className="text-sm text-gray-400">
           Arraste seu arquivo ou{' '}
-          <span className="text-azure-glow font-medium">clique para selecionar</span>
+          <span className="text-red-400 font-medium">clique para selecionar</span>
         </p>
         <p className="text-xs text-gray-600 mt-1">Formatos aceitos: .csv, .xlsx, .xls</p>
         <input
@@ -164,9 +164,9 @@ function ImportPanel({ onClose }) {
               Limpar
             </button>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-border max-h-56">
+          <div className="overflow-x-auto rounded-lg border border-slate-700 max-h-56">
             <table className="w-full text-xs font-mono">
-              <thead className="bg-ink-100 border-b border-slate-border sticky top-0">
+              <thead className="bg-ink-100 border-b border-slate-700 sticky top-0">
                 <tr>
                   <th className="px-3 py-2 text-left text-gray-600">#</th>
                   {headers.map(h => (
@@ -176,7 +176,7 @@ function ImportPanel({ onClose }) {
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr key={i} className="border-b border-slate-border/20 hover:bg-slate-hover/20">
+                  <tr key={i} className="border-b border-slate-700/20 hover:bg-slate-hover/20">
                     <td className="px-3 py-2 text-gray-600">{i + 1}</td>
                     {headers.map(h => (
                       <td key={h} className="px-3 py-2 text-gray-300 whitespace-nowrap max-w-[200px] truncate">
@@ -313,7 +313,7 @@ export default function Controle() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setShowImport(v => !v)}
-            className={`btn-ghost text-sm px-4 py-2 flex items-center gap-2 ${showImport ? 'border-azure/40 text-azure-glow' : ''}`}
+            className={`btn-ghost text-sm px-4 py-2 flex items-center gap-2 ${showImport ? 'border-red-600/40 text-red-400' : ''}`}
           >
             <span>↑</span>
             <span>Importar planilha</span>
@@ -343,15 +343,15 @@ export default function Controle() {
         {[
           { key: 'all',     label: 'Total',        icon: '▦', accent: 'text-white'       },
           { key: 'done',    label: 'Concluídos',   icon: '✓', accent: 'text-green-match' },
-          { key: 'running', label: 'Processando',  icon: '⟳', accent: 'text-azure-glow'  },
+          { key: 'running', label: 'Processando',  icon: '⟳', accent: 'text-red-400'  },
           { key: 'pending', label: 'Aguardando',   icon: '◌', accent: 'text-amber'       },
           { key: 'failed',  label: 'Com erro',     icon: '✕', accent: 'text-red-fail'    },
         ].map(({ key, label, icon, accent }) => (
           <button
             key={key}
             onClick={() => setFilterStatus(key)}
-            className={`card p-4 text-left transition-all hover:border-azure/30 cursor-pointer ${
-              filterStatus === key ? 'border-azure/40 bg-azure/5' : ''
+            className={`card p-4 text-left transition-all hover:border-red-600/30 cursor-pointer ${
+              filterStatus === key ? 'border-red-600/40 bg-red-600/5' : ''
             }`}
           >
             <p className="text-xs text-gray-500 font-mono">{icon} {label}</p>
@@ -385,7 +385,7 @@ export default function Controle() {
       <div className="card p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-ink-100 border-b border-slate-border">
+            <thead className="bg-ink-100 border-b border-slate-700">
               <tr>
                 {[
                   'ID', 'Arquivo', 'Status', 'Progresso',
@@ -475,8 +475,8 @@ export default function Controle() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigate(`/editais/${row.id}`)}
-                          className="text-xs font-mono text-azure-glow hover:text-white transition-colors
-                                     px-2 py-1 rounded hover:bg-azure/10"
+                          className="text-xs font-mono text-red-400 hover:text-white transition-colors
+                                     px-2 py-1 rounded hover:bg-red-600/10"
                         >
                           Ver
                         </button>
@@ -498,7 +498,7 @@ export default function Controle() {
 
         {/* Footer da tabela */}
         {!loading && filtered.length > 0 && (
-          <div className="px-4 py-2.5 border-t border-slate-border/30 bg-ink-100 flex items-center justify-between">
+          <div className="px-4 py-2.5 border-t border-slate-700/30 bg-ink-100 flex items-center justify-between">
             <p className="text-xs text-gray-600 font-mono">
               {filtered.length} registro{filtered.length !== 1 ? 's' : ''} exibido{filtered.length !== 1 ? 's' : ''}
             </p>

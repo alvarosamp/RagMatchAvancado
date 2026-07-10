@@ -1,42 +1,111 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { crmApi, editaisApi } from '../api/client'
+import { analysisApi, editaisApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 import JobPoller from '../components/JobPoller'
+import Card from '../components/ui/Card'
+import Badge from '../components/ui/Badge'
 
-const MAX_FILE_MB = 50
+const MAX_PDF_MB = 50
+const JSON_CONCURRENCY = 4
 
-function validateFile(file) {
+function isPdfFile(file) {
+  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+}
+
+function isJsonFile(file) {
+  return file.name.toLowerCase().endsWith('.json')
+}
+
+function validatePdf(file) {
   if (!file) return 'Nenhum arquivo selecionado.'
-  if (file.type !== 'application/pdf') return 'Apenas arquivos PDF (.pdf) sao aceitos.'
-  if (file.size > MAX_FILE_MB * 1024 * 1024) return `O arquivo excede o limite de ${MAX_FILE_MB} MB.`
+  if (!isPdfFile(file)) return 'Apenas arquivos PDF (.pdf) sao aceitos.'
+  if (file.size > MAX_PDF_MB * 1024 * 1024) return `O arquivo excede o limite de ${MAX_PDF_MB} MB.`
   return null
 }
 
+function readJsonFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        resolve(JSON.parse(reader.result))
+      } catch {
+        reject(new Error('Arquivo de analise invalido.'))
+      }
+    }
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
+    reader.readAsText(file)
+  })
+}
+
+async function runWithConcurrency(tasks, limit, onEach) {
+  let cursor = 0
+  async function worker() {
+    while (cursor < tasks.length) {
+      const index = cursor++
+      const result = await tasks[index]()
+      onEach(index, result)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker))
+}
+
 export default function Upload() {
-  const [file, setFile] = useState(null)
-  const [dragging, setDragging] = useState(false)
+  // ── PDF (edital unico → OCR) ────────────────────────────────────────────
+  const [pdfFile, setPdfFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [jobId, setJobId] = useState(null)
   const [error, setError] = useState(null)
-  const [sheetLoading, setSheetLoading] = useState(false)
-  const [sheetError, setSheetError] = useState(null)
-  const [sheetSummary, setSheetSummary] = useState(null)
+
+  // ── JSON (um ou varios arquivos de analise → BI + CRM) ──────────────────
+  const [jsonFiles, setJsonFiles] = useState([])
+  const [jsonProcessing, setJsonProcessing] = useState(false)
+  const [jsonResults, setJsonResults] = useState([])
+  const [jsonDoneCount, setJsonDoneCount] = useState(0)
+
+  const [dragging, setDragging] = useState(false)
 
   const inputRef = useRef(null)
-  const sheetInputRef = useRef(null)
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  const applyFile = (next) => {
-    const err = validateFile(next)
-    if (err) {
-      setError(err)
-      setFile(null)
+  const clearAll = () => {
+    setPdfFile(null)
+    setJsonFiles([])
+    setJsonResults([])
+    setJsonDoneCount(0)
+    setError(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const applyFiles = (fileList) => {
+    const all = Array.from(fileList || [])
+    const jsons = all.filter(isJsonFile)
+    const pdfs = all.filter(isPdfFile)
+
+    if (jsons.length) {
+      setJsonFiles(jsons)
+      setJsonResults([])
+      setJsonDoneCount(0)
+      setPdfFile(null)
+      setError(null)
       return
     }
-    setFile(next)
-    setError(null)
+    if (pdfs.length) {
+      const err = validatePdf(pdfs[0])
+      if (err) {
+        setError(err)
+        setPdfFile(null)
+        return
+      }
+      setPdfFile(pdfs[0])
+      setJsonFiles([])
+      setJsonResults([])
+      setError(null)
+      return
+    }
+    setError('Envie um PDF (.pdf) ou arquivo(s) de analise (.json).')
   }
 
   const onDragOver = (e) => {
@@ -47,20 +116,12 @@ export default function Upload() {
   const onDrop = (e) => {
     e.preventDefault()
     setDragging(false)
-    applyFile(e.dataTransfer.files[0])
+    applyFiles(e.dataTransfer.files)
   }
-  const onFileChange = (e) => applyFile(e.target.files[0])
+  const onFileChange = (e) => applyFiles(e.target.files)
 
-  const resetUpload = () => {
-    setJobId(null)
-    setFile(null)
-    setError(null)
-    if (inputRef.current) inputRef.current.value = ''
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    const err = validateFile(file)
+  const handlePdfSubmit = async () => {
+    const err = validatePdf(pdfFile)
     if (err) {
       setError(err)
       return
@@ -71,7 +132,7 @@ export default function Upload() {
 
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', pdfFile)
 
       const res = await editaisApi.upload(formData)
       const jid = res.data?.job_id || res.data?.id
@@ -113,233 +174,306 @@ export default function Upload() {
     toast({ type: 'error', title: 'Erro no processamento', message: msg })
   }
 
-  const handleSheetUpload = async (event) => {
-    const sheet = event.target.files?.[0]
-    if (!sheet) return
+  const processJsonFiles = async () => {
+    if (!jsonFiles.length) return
+    setJsonProcessing(true)
+    setJsonDoneCount(0)
+    const outcomes = new Array(jsonFiles.length)
 
-    setSheetLoading(true)
-    setSheetError(null)
-    setSheetSummary(null)
+    const tasks = jsonFiles.map((file) => async () => {
+      try {
+        const parsed = await readJsonFile(file)
+        if (!parsed.schema_version) {
+          return { name: file.name, status: 'error', message: 'Arquivo fora do modelo de importacao.' }
+        }
+        const response = await analysisApi.create({
+          source_kind: 'edital',
+          source_name: file.name,
+          result: parsed,
+        })
+        return {
+          name: file.name,
+          status: 'ok',
+          id: response.data.id,
+          crmNoticeId: response.data.crm_sync?.notice_id,
+          products: response.data.crm_sync?.products ?? 0,
+          documents: response.data.crm_sync?.documents ?? 0,
+        }
+      } catch (err) {
+        return {
+          name: file.name,
+          status: 'error',
+          message: err.response?.data?.detail || err.message || 'Erro ao processar arquivo.',
+        }
+      }
+    })
 
-    try {
-      const formData = new FormData()
-      formData.append('file', sheet)
-      const response = await crmApi.importSalesProcesses(formData)
-      const summary = response.data?.summary || {}
-      setSheetSummary(summary)
-      toast({
-        type: 'success',
-        title: 'Planilha importada',
-        message: `${summary.grupos_processados || 0} editais e ${summary.itens_processados || 0} itens sincronizados no CRM.`,
-      })
-    } catch (err) {
-      const msg = err.response?.data?.detail || 'Nao foi possivel importar a planilha.'
-      setSheetError(msg)
-      toast({ type: 'error', title: 'Erro na planilha', message: msg })
-    } finally {
-      setSheetLoading(false)
-      if (sheetInputRef.current) sheetInputRef.current.value = ''
-    }
+    await runWithConcurrency(tasks, JSON_CONCURRENCY, (index, outcome) => {
+      outcomes[index] = outcome
+      setJsonDoneCount((count) => count + 1)
+      setJsonResults([...outcomes.filter(Boolean)])
+    })
+
+    setJsonProcessing(false)
+    const okCount = outcomes.filter((outcome) => outcome?.status === 'ok').length
+    const errCount = outcomes.filter((outcome) => outcome?.status === 'error').length
+    toast({
+      type: errCount ? 'error' : 'success',
+      message: `${okCount} analise(s) importada(s)${errCount ? `, ${errCount} com erro` : ''}.`,
+    })
   }
 
   if (jobId) {
     return (
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-        <div>
-          <p className="text-sm text-stone-500 dark:text-gray-400">Documento recebido</p>
-          <h1 className="mt-1 text-2xl font-semibold text-stone-950 dark:text-white">Estamos preparando o edital</h1>
-          <p className="mt-2 text-sm text-stone-600 dark:text-gray-400">
-            O sistema esta lendo o PDF, separando o texto e organizando as informacoes para consulta.
-          </p>
-        </div>
-
-        <div className="card border-slate-border/80 space-y-4">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-border">
-            <div className="w-11 h-11 rounded-2xl bg-black/20 border border-white/10 flex items-center justify-center text-gray-200 text-xs font-semibold flex-shrink-0">
-              PDF
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{file?.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : ''}
-              </p>
-            </div>
-            <span className="ml-auto text-green-match text-sm flex-shrink-0">OK</span>
-          </div>
-
+      <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
+        <div className="mx-auto max-w-3xl space-y-6">
           <div>
-            <p className="text-xs text-gray-500 font-medium mb-3">Progresso</p>
-            <JobPoller jobId={jobId} onDone={handleJobDone} onFailed={handleJobFailed} />
+            <p className="text-sm text-slate-500 dark:text-slate-400">Documento recebido</p>
+            <h1 className="mt-1 text-2xl font-semibold text-slate-950 dark:text-white">Estamos preparando o edital</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              O sistema esta lendo o PDF, separando o texto e organizando as informacoes para consulta.
+            </p>
           </div>
 
-          {error && (
-            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-fail/5 border border-red-fail/20">
-              <span className="text-red-fail text-sm mt-0.5">ERRO</span>
-              <p className="text-sm text-red-fail leading-relaxed">{error}</p>
+          <Card className="space-y-4 p-6">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-4 dark:border-slate-700">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                PDF
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{pdfFile?.name}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {pdfFile ? `${(pdfFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+                </p>
+              </div>
+              <Badge tone="emerald" className="ml-auto flex-shrink-0">Recebido</Badge>
             </div>
-          )}
-        </div>
 
-        <div className="flex gap-3">
-          <button onClick={() => navigate('/jobs')} className="btn-ghost text-sm">
-            Ver jobs
-          </button>
-          <button onClick={resetUpload} className="btn-ghost text-sm">
-            Enviar outro arquivo
-          </button>
+            <div>
+              <p className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">Progresso</p>
+              <JobPoller jobId={jobId} onDone={handleJobDone} onFailed={handleJobFailed} />
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/40">
+                <span className="mt-0.5 text-sm text-red-700 dark:text-red-300">Erro</span>
+                <p className="text-sm leading-relaxed text-red-700 dark:text-red-300">{error}</p>
+              </div>
+            )}
+          </Card>
+
+          <div className="flex gap-3">
+            <button onClick={() => navigate('/jobs')} className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+              Ver jobs
+            </button>
+            <button onClick={clearAll} className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+              Enviar outro arquivo
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
+  const hasSelection = Boolean(pdfFile) || jsonFiles.length > 0
+
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
-      <div className="rounded-[32px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-border dark:bg-slate-card/95">
-        <p className="text-sm text-stone-500 dark:text-gray-400">Entrada de documentos</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-stone-950 dark:text-white">Adicionar processos ao portal</h1>
-        <p className="mt-3 max-w-2xl text-base leading-7 text-stone-600 dark:text-gray-400">
-          Use PDF quando quiser analisar um edital novo. Use planilha quando o time ja trouxe uma lista de processos analisados para entrar no CRM.
-        </p>
-      </div>
+    <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <Card className="p-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Entrada de documentos</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Adicionar processos ao portal</h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
+            Arraste o PDF do edital para OCR e analise dos requisitos, ou um (ou vários) arquivo de análise em JSON
+            para atualizar o BI e o CRM automaticamente — a mesma área reconhece o tipo do arquivo.
+          </p>
+        </Card>
 
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm dark:border-slate-border dark:bg-slate-card/95">
-        <div>
-          <p className="text-lg font-semibold text-stone-950 dark:text-white">1. Enviar PDF do edital</p>
-          <p className="mt-1 text-sm text-stone-500 dark:text-gray-400">Ideal para OCR, busca no documento e analise dos requisitos.</p>
-        </div>
-        <div
-          className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-            dragging
-              ? 'border-red-300 bg-red-50 dark:border-azure/60 dark:bg-azure/5'
-              : 'border-stone-200 bg-[#fbf8f3] hover:border-red-200 hover:bg-red-50/50 dark:border-slate-border dark:bg-transparent dark:hover:bg-slate-hover dark:hover:border-slate-border/80'
-          }`}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDrop={onDrop}
-        >
-          <input ref={inputRef} type="file" accept="application/pdf" className="hidden" onChange={onFileChange} />
+        <Card className="space-y-6 p-6">
+          <div
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-colors ${
+              dragging
+                ? 'border-brand bg-blue-50 dark:border-brand-light dark:bg-brand/10'
+                : 'border-slate-300 bg-slate-50 hover:border-brand dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-light'
+            }`}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf,.pdf,.json"
+              multiple
+              className="hidden"
+              onChange={onFileChange}
+            />
 
-          {file ? (
-            <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-700 font-semibold mb-3 dark:bg-black/20 dark:border-white/10 dark:text-gray-200">
-                PDF
+            {pdfFile ? (
+              <div className="flex flex-col items-center">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  PDF
+                </div>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">{pdfFile.name}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <button
+                  type="button"
+                  className="mt-3 rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onClick={(e) => { e.stopPropagation(); clearAll() }}
+                >
+                  Remover arquivo
+                </button>
               </div>
-              <p className="font-semibold text-stone-950 text-sm dark:text-white">{file.name}</p>
-              <p className="text-xs text-stone-500 mt-1 dark:text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            ) : jsonFiles.length > 0 ? (
+              <div className="flex flex-col items-center">
+                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  JSON
+                </div>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">
+                  {jsonFiles.length} arquivo(s) de analise selecionado(s)
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {jsonFiles.slice(0, 3).map((f) => f.name).join(', ')}{jsonFiles.length > 3 ? '…' : ''}
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onClick={(e) => { e.stopPropagation(); clearAll() }}
+                >
+                  Remover selecao
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                  +
+                </div>
+                <p className="font-semibold text-slate-950 dark:text-white">{dragging ? 'Solte o(s) arquivo(s)' : 'Arraste o PDF ou o(s) JSON aqui'}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ou clique para selecionar no computador</p>
+                <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+                  PDF: um arquivo, max. {MAX_PDF_MB} MB · JSON: um ou varios arquivos de analise
+                </p>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/40">
+              <span className="flex-shrink-0 text-sm text-red-700 dark:text-red-300">Erro</span>
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          {!hasSelection && !error && (
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+              <span className="mt-0.5 flex-shrink-0 text-xs text-slate-500 dark:text-slate-400">Dica</span>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                PDF: acompanhe o job em tempo real e acesse o edital assim que terminar o OCR. JSON: o edital, os
+                itens e os documentos sao sincronizados automaticamente no CRM na mesma importacao.
+              </p>
+            </div>
+          )}
+
+          {jsonFiles.length > 0 && jsonProcessing && (
+            <div className="h-2 overflow-hidden rounded bg-slate-100 dark:bg-slate-700">
+              <div className="h-2 rounded bg-brand dark:bg-brand-light" style={{ width: `${(jsonDoneCount / jsonFiles.length) * 100}%` }} />
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              onClick={() => navigate('/dashboard')}
+              disabled={loading || jsonProcessing}
+            >
+              Cancelar
+            </button>
+            {jsonFiles.length > 0 ? (
               <button
                 type="button"
-                className="mt-3 text-xs font-medium text-gray-400 hover:text-white transition-colors px-3 py-1 rounded-xl border border-slate-border hover:bg-black/20"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  resetUpload()
-                }}
+                onClick={processJsonFiles}
+                disabled={jsonProcessing}
+                className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
               >
-                Remover arquivo
+                {jsonProcessing ? `Importando ${jsonDoneCount}/${jsonFiles.length}` : 'Importar analise(s)'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePdfSubmit}
+                disabled={!pdfFile || loading}
+                className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
+              >
+                {loading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>Enviar edital</>
+                )}
+              </button>
+            )}
+          </div>
+        </Card>
+
+        {jsonResults.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Resultado da importacao</h2>
+              <button
+                type="button"
+                onClick={() => navigate('/analise/dashboard')}
+                className="text-sm font-medium text-brand hover:underline dark:text-brand-light"
+              >
+                Ver BI
               </button>
             </div>
-          ) : (
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl border border-stone-200 bg-white flex items-center justify-center text-stone-500 mb-4 dark:border-slate-border dark:bg-ink-50 dark:text-gray-300">
-                PDF
-              </div>
-              <p className="font-semibold text-stone-950 dark:text-white">{dragging ? 'Solte o arquivo' : 'Arraste o PDF aqui'}</p>
-              <p className="text-sm text-stone-500 mt-1 dark:text-gray-500">ou clique para selecionar no computador</p>
-              <p className="text-xs text-stone-400 mt-3 dark:text-gray-600">Somente .pdf | max. {MAX_FILE_MB} MB</p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Arquivo</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                    <th className="px-5 py-3 font-semibold">CRM</th>
+                    <th className="px-5 py-3 font-semibold">Itens</th>
+                    <th className="px-5 py-3 font-semibold">Documentos</th>
+                    <th className="px-5 py-3 font-semibold"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {jsonResults.map((result, index) => (
+                    <tr key={`${result.name}-${index}`}>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-950 dark:text-white">{result.name}</td>
+                      <td className="px-5 py-4">
+                        <Badge tone={result.status === 'ok' ? 'emerald' : 'red'}>
+                          {result.status === 'ok' ? 'Importado' : 'Erro'}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.crmNoticeId ? 'Sincronizado' : result.message || '-'}</td>
+                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.products ?? '-'}</td>
+                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.documents ?? '-'}</td>
+                      <td className="px-5 py-4 text-right">
+                        {result.status === 'ok' && (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/analise/documentos/${result.id}`)}
+                            className="text-sm font-medium text-brand hover:underline dark:text-brand-light"
+                          >
+                            Abrir
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-
-        {error && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-fail/5 border border-red-fail/20">
-            <span className="text-red-fail text-sm flex-shrink-0">ERRO</span>
-            <p className="text-sm text-red-fail">{error}</p>
-          </div>
+          </Card>
         )}
-
-        {!file && !error && (
-          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 dark:bg-ink-50/60 dark:border-slate-border">
-            <span className="text-xs text-stone-500 mt-0.5 flex-shrink-0 dark:text-gray-400">Dica</span>
-            <p className="text-xs text-stone-500 leading-relaxed dark:text-gray-400">
-              Depois do upload, voce pode acompanhar o job em tempo real e acessar o edital assim que terminar.
-            </p>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button type="button" className="btn-ghost" onClick={() => navigate('/dashboard')} disabled={loading}>
-            Cancelar
-          </button>
-          <button type="submit" className="btn-primary flex items-center gap-2 disabled:opacity-40" disabled={!file || loading}>
-            {loading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>Enviar edital</>
-            )}
-          </button>
-        </div>
-      </form>
-
-      <section className="card border-slate-border/80 space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm text-stone-500 dark:text-gray-400">2. Importar planilha analisada</p>
-            <h2 className="mt-1 text-xl font-semibold text-stone-950 dark:text-white">Levar processos direto para o CRM</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-stone-600 dark:text-gray-400">
-              A planilha vira editais, lotes e itens no CRM, ja entrando na fase de triagem.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn-ghost text-sm"
-            onClick={() => navigate('/crm')}
-          >
-            Abrir CRM
-          </button>
-        </div>
-
-        <div className="rounded-2xl border border-dashed border-slate-border bg-ink-50/60 p-5 theme-card">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-semibold text-white">Selecione a planilha</p>
-              <p className="mt-1 text-xs text-gray-500">Formato aceito: .xlsx</p>
-            </div>
-            <input
-              ref={sheetInputRef}
-              type="file"
-              accept=".xlsx"
-              className="block text-xs text-gray-300 file:mr-3 file:rounded-lg file:border file:border-azure/20 file:bg-azure/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-azure-glow cursor-pointer"
-              onChange={handleSheetUpload}
-              disabled={sheetLoading}
-            />
-          </div>
-
-          {(sheetLoading || sheetSummary || sheetError) && (
-            <div className="mt-4 border-t border-slate-border pt-4 text-sm">
-              {sheetLoading && <p className="text-azure-glow animate-pulse">Importando e sincronizando...</p>}
-              {sheetError && <p className="text-red-fail">{sheetError}</p>}
-              {sheetSummary && (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-green-match">
-                    Importacao concluida: {sheetSummary.grupos_processados || 0} editais e {sheetSummary.itens_processados || 0} itens.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-primary text-sm"
-                    onClick={() => navigate('/crm')}
-                  >
-                    Ver no CRM
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
-

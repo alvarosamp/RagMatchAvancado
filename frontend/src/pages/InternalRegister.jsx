@@ -73,14 +73,14 @@ export default function InternalRegister() {
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-8 ${isLight ? 'bg-[#f7f1ea] text-stone-900' : 'bg-ink text-white'}`}>
-      <div className={`w-full max-w-xl rounded-[32px] border p-8 shadow-xl ${isLight ? 'border-stone-200 bg-white/95' : 'border-slate-border bg-slate-card/95'}`}>
+    <div className={`min-h-screen flex items-center justify-center p-8 ${isLight ? 'bg-[#f7f1ea] text-slate-900' : 'bg-ink text-white'}`}>
+      <div className={`w-full max-w-xl rounded-[32px] border p-8 shadow-xl ${isLight ? 'border-slate-200 bg-white/95' : 'border-slate-700 bg-slate-800/95'}`}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={torLogo} alt="Tor Tecnologias" className="w-11 h-11 rounded-xl object-cover" />
+            <img src={torLogo} alt="Tor Tecnologias" className="w-11 h-11 rounded-lg object-cover" />
             <div>
-              <p className={`font-display text-xl font-black ${isLight ? 'text-stone-900' : 'text-white'}`}>Tor Tecnologias</p>
-              <p className={`text-[11px] font-mono uppercase tracking-[0.28em] ${isLight ? 'text-red-700' : 'text-azure-glow'}`}>
+              <p className={`font-display text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>Tor Tecnologias</p>
+              <p className={`text-[11px] font-mono uppercase tracking-[0.28em] ${isLight ? 'text-red-700' : 'text-red-400'}`}>
                 Cadastro interno
               </p>
             </div>
@@ -88,49 +88,49 @@ export default function InternalRegister() {
           <button
             type="button"
             onClick={() => setTheme(isLight ? 'dark' : 'light')}
-            className={`rounded-full border px-4 py-2 text-xs font-mono uppercase tracking-[0.24em] ${isLight ? 'border-stone-300 text-stone-700' : 'border-slate-border text-gray-300'}`}
+            className={`rounded-full border px-4 py-2 text-xs font-mono uppercase tracking-[0.24em] ${isLight ? 'border-slate-300 text-slate-700' : 'border-slate-700 text-gray-300'}`}
           >
             {isLight ? 'Modo escuro' : 'Modo claro'}
           </button>
         </div>
 
         <div className="mt-8">
-          <p className={`text-sm leading-7 ${isLight ? 'text-stone-600' : 'text-gray-400'}`}>
+          <p className={`text-sm leading-7 ${isLight ? 'text-slate-600' : 'text-gray-400'}`}>
             Essa rota ficou separada da tela publica. Use este acesso apenas para abrir um tenant novo quando realmente precisar.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>Nome da empresa</label>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Nome da empresa</label>
             <input
-              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-stone-300 bg-stone-50 text-stone-900' : 'input'}`}
+              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
               value={form.tenant_name}
               onChange={(event) => set('tenant_name', event.target.value)}
               required
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>Identificador</label>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Identificador</label>
             <input
-              className={`w-full rounded-lg px-4 py-2.5 text-sm font-mono ${isLight ? 'border border-stone-300 bg-stone-50 text-stone-900' : 'input font-mono'}`}
+              className={`w-full rounded-lg px-4 py-2.5 text-sm font-mono ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input font-mono'}`}
               value={form.tenant_slug}
               onChange={(event) => set('tenant_slug', event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
               required
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>Seu nome</label>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Seu nome</label>
             <input
-              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-stone-300 bg-stone-50 text-stone-900' : 'input'}`}
+              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
               value={form.full_name}
               onChange={(event) => set('full_name', event.target.value)}
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>Email</label>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Email</label>
             <input
-              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-stone-300 bg-stone-50 text-stone-900' : 'input'}`}
+              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
               type="email"
               value={form.email}
               onChange={(event) => set('email', event.target.value)}
@@ -138,10 +138,10 @@ export default function InternalRegister() {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-stone-500' : 'text-gray-400'}`}>Senha</label>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Senha</label>
             <div className="relative">
               <input
-                className={`w-full rounded-lg px-4 py-2.5 pr-20 text-sm ${isLight ? 'border border-stone-300 bg-stone-50 text-stone-900' : 'input pr-20'}`}
+                className={`w-full rounded-lg px-4 py-2.5 pr-20 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input pr-20'}`}
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={(event) => set('password', event.target.value)}
@@ -150,7 +150,7 @@ export default function InternalRegister() {
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border text-xs font-mono ${isLight ? 'border-stone-300 text-stone-500' : 'border-slate-border text-gray-400'}`}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-md border text-xs font-mono ${isLight ? 'border-slate-300 text-slate-500' : 'border-slate-700 text-gray-400'}`}
               >
                 {showPassword ? 'Ocultar' : 'Mostrar'}
               </button>

@@ -23,16 +23,16 @@ function ResultCard({ item, onImport, importing }) {
   const isImporting = importing === item.id_pncp
 
   return (
-    <div className="card hover:border-azure/30 transition-all space-y-3">
+    <div className="card hover:border-red-600/30 transition-all space-y-3">
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-xs font-mono text-azure-glow font-semibold">
+            <span className="text-xs font-mono text-red-400 font-semibold">
               {item.id_pncp || item.numero_controle}
             </span>
             {item.modalidade && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-slate-border text-gray-400">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-slate-700 text-gray-400">
                 {item.modalidade}
               </span>
             )}
@@ -40,7 +40,7 @@ function ResultCard({ item, onImport, importing }) {
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
                 item.situacao === 'Publicado'
                   ? 'border-green-match/30 bg-green-match/10 text-green-match'
-                  : 'border-slate-border text-gray-500'
+                  : 'border-slate-700 text-gray-500'
               }`}>
                 {item.situacao}
               </span>
@@ -97,18 +97,18 @@ function ResultCard({ item, onImport, importing }) {
       {item.link_sistema_origem && (
         <button
           onClick={() => setExpanded(v => !v)}
-          className="text-[10px] font-mono text-gray-600 hover:text-azure-glow transition-colors flex items-center gap-1"
+          className="text-[10px] font-mono text-gray-600 hover:text-red-400 transition-colors flex items-center gap-1"
         >
           {expanded ? '▼' : '▶'} Ver mais detalhes
         </button>
       )}
 
       {expanded && (
-        <div className="pt-2 border-t border-slate-border/40 space-y-1">
+        <div className="pt-2 border-t border-slate-700/40 space-y-1">
           {item.link_sistema_origem && (
             <p className="text-[10px] font-mono text-gray-500">
               Link:{' '}
-              <span className="text-azure-glow break-all">{item.link_sistema_origem}</span>
+              <span className="text-red-400 break-all">{item.link_sistema_origem}</span>
             </p>
           )}
           {item.informacao_complementar && (
@@ -292,7 +292,7 @@ export default function PncpSearch() {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400 font-mono">
                   {total > 0 ? `${total.toLocaleString('pt-BR')} resultado${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}` : `${results.length} resultado${results.length !== 1 ? 's' : ''}`}
-                  {importing && <span className="text-azure-glow ml-2">· importando…</span>}
+                  {importing && <span className="text-red-400 ml-2">· importando…</span>}
                 </p>
               </div>
 

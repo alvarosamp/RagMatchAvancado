@@ -137,7 +137,7 @@ function Histograma({ buckets, total }) {
           <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
             <div className="relative w-full flex flex-col justify-end" style={{ height: '100px' }}>
               {/* Tooltip */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-ink-50 border border-slate-border rounded px-2 py-1 text-xs font-mono text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-ink-50 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                 {b.count} ({Math.round(b.pct * 100)}%)
               </div>
               <div
@@ -214,10 +214,10 @@ export default function Analytics() {
       <div className="animate-pulse space-y-4">
         <div className="h-8 bg-slate-border rounded w-48" />
         <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-slate-card rounded-xl border border-slate-border" />)}
+          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-slate-800 rounded-lg border border-slate-700" />)}
         </div>
         <div className="grid grid-cols-2 gap-4">
-          {[1,2].map(i => <div key={i} className="h-64 bg-slate-card rounded-xl border border-slate-border" />)}
+          {[1,2].map(i => <div key={i} className="h-64 bg-slate-800 rounded-lg border border-slate-700" />)}
         </div>
       </div>
     </div>
@@ -278,7 +278,7 @@ export default function Analytics() {
         {[['produtos','Produtos'], ['gaps','Gaps'], ['evolucao','Evolução'], ['distribuicao','Distribuição']].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`px-4 py-1.5 rounded-lg text-xs font-mono transition-all duration-150
-              ${tab === k ? 'bg-azure text-white' : 'text-gray-400 border border-slate-border hover:text-white'}`}>
+              ${tab === k ? 'bg-red-600 text-white' : 'text-gray-400 border border-slate-700 hover:text-white'}`}>
             {label}
           </button>
         ))}
@@ -362,7 +362,7 @@ export default function Analytics() {
           ) : (
             <div className="space-y-3">
               {requisitos.slice(0, 15).map((r, i) => (
-                <div key={i} className="flex items-center gap-4 py-3 border-b border-slate-border last:border-0 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
+                <div key={i} className="flex items-center gap-4 py-3 border-b border-slate-700 last:border-0 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
                   {/* Ícone de severidade */}
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0 ${
                     r.taxa_falha >= 0.7 ? 'bg-red-dim/40 text-red-fail' :
@@ -412,7 +412,7 @@ export default function Analytics() {
               {evolucao.length === 0 ? (
                 <p className="text-xs text-gray-500 font-mono">Nenhum dado ainda.</p>
               ) : evolucao.map((e, i) => (
-                <div key={e.edital_id} className="flex items-center gap-3 py-2 border-b border-slate-border last:border-0 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
+                <div key={e.edital_id} className="flex items-center gap-3 py-2 border-b border-slate-700 last:border-0 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
                   <span className="font-mono text-xs text-gray-500 w-16">#{e.edital_id}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-xs text-white truncate">{e.filename}</p>
@@ -442,7 +442,7 @@ export default function Analytics() {
             <Histograma buckets={distribuicao?.buckets} total={distribuicao?.total} />
 
             {/* Legenda */}
-            <div className="flex gap-4 mt-4 pt-3 border-t border-slate-border">
+            <div className="flex gap-4 mt-4 pt-3 border-t border-slate-700">
               {[['bg-red-fail/70','Falhou (0–44%)'], ['bg-yellow-warn','Verificar (45–74%)'], ['bg-green-match','Atende (75–100%)']].map(([cls, label]) => (
                 <div key={label} className="flex items-center gap-1.5">
                   <div className={`w-2.5 h-2.5 rounded-sm ${cls}`} />

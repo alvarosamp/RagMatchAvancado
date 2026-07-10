@@ -19,10 +19,12 @@ EMBEDDING_DIM = 768  # nomic-embed-text via Ollama
 class Product(Base):
     __tablename__ = "products"
 
-    id       = Column(Integer, primary_key=True, index=True)
-    model    = Column(String, unique=True, index=True)   # ex: "TL-SG3210"
-    category = Column(String)                             # ex: "switch"
-    data     = Column(JSON)                               # specs completas
+    id            = Column(Integer, primary_key=True, index=True)
+    model         = Column(String, unique=True, index=True)   # ex: "TL-SG3210"
+    category      = Column(String)                             # ex: "switch"
+    data          = Column(JSON)                               # specs completas
+    manufacturer  = Column(String)                              # ex: "TP-Link", "Cisco"
+    is_competitor = Column(Boolean, default=False, index=True)  # False = catálogo próprio
 
     matching_results = relationship(
         "MatchingResult",

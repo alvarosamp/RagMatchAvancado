@@ -44,6 +44,11 @@ def get_dashboard(
                 "unidades_mapeadas": 0,
                 "editais_com_risco": 0,
                 "editais_com_me_epp": 0,
+                "unidades_switches": 0,
+                "unidades_access_points": 0,
+                "unidades_transceivers": 0,
+                "editais_com_switches": 0,
+                "editais_com_access_points": 0,
             },
             "categories": [],
             "series": [],
@@ -71,12 +76,24 @@ def get_dashboard(
         exclusividade_me_epp != "Ampla concorrência",
     ).count()
 
+    category_summary = _category_summary(items_q)
+
     kpis = {
         "editais_selecionados": len(doc_ids),
         "itens_categorizados": itens_categorizados,
         "unidades_mapeadas": unidades_mapeadas,
         "editais_com_risco": editais_com_risco,
         "editais_com_me_epp": editais_com_me_epp,
+        "unidades_switches": category_summary["units"].get("Switch", 0),
+        "unidades_access_points": category_summary["units"].get("Access Point", 0),
+        "unidades_transceivers": _sum_categories(
+            category_summary["units"],
+            "Transceiver",
+            "MÃ³dulo Ã³ptico",
+            "Modulo optico",
+        ),
+        "editais_com_switches": category_summary["documents"].get("Switch", 0),
+        "editais_com_access_points": category_summary["documents"].get("Access Point", 0),
     }
 
     category_rows = (
@@ -101,6 +118,7 @@ def get_dashboard(
                 "unidades": unidades,
                 "valor_mapeado": valor_mapeado,
                 "breakdowns": _breakdowns_for_category(db, doc_ids, categoria),
+                "ufs": _uf_breakdown_for_category(db, doc_ids, categoria),
             }
         )
 
@@ -124,6 +142,32 @@ _BREAKDOWN_FIELDS = {
     "Módulo óptico": ["formato", "tipo_meio"],
     "Transceiver": ["formato", "tipo_meio"],
 }
+
+def _category_summary(items_q) -> dict[str, dict[str, Any]]:
+    rows = (
+        items_q.with_entities(
+            AnalysisItem.categoria,
+            AnalysisItem.analysis_id,
+            func.coalesce(func.sum(AnalysisItem.quantity), 0),
+        )
+        .group_by(AnalysisItem.categoria, AnalysisItem.analysis_id)
+        .all()
+    )
+    units: dict[str, float] = {}
+    documents_by_category: dict[str, set[int]] = {}
+    for categoria, analysis_id, quantity in rows:
+        if not categoria:
+            continue
+        units[categoria] = units.get(categoria, 0) + float(quantity or 0)
+        documents_by_category.setdefault(categoria, set()).add(analysis_id)
+    return {
+        "units": units,
+        "documents": {key: len(value) for key, value in documents_by_category.items()},
+    }
+
+
+def _sum_categories(values: dict[str, float], *categories: str) -> float:
+    return sum(values.get(category, 0) for category in categories)
 
 
 def _breakdowns_for_category(
@@ -149,6 +193,27 @@ def _breakdowns_for_category(
             {"valor": valor, "unidades": count} for valor, count in rows if valor is not None
         ]
     return breakdowns
+
+
+def _uf_breakdown_for_category(
+    db: Session, doc_ids: list[int], categoria: str
+) -> list[dict[str, Any]]:
+    rows = (
+        db.query(
+            AnalysisItem.uf,
+            func.coalesce(func.sum(AnalysisItem.quantity), 0),
+        )
+        .filter(
+            AnalysisItem.analysis_id.in_(doc_ids),
+            AnalysisItem.categoria == categoria,
+            AnalysisItem.uf.isnot(None),
+        )
+        .group_by(AnalysisItem.uf)
+        .order_by(func.coalesce(func.sum(AnalysisItem.quantity), 0).desc())
+        .limit(8)
+        .all()
+    )
+    return [{"uf": uf, "unidades": unidades} for uf, unidades in rows if uf]
 
 
 @router.get("/editais-listagem")

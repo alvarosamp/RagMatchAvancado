@@ -17,6 +17,12 @@ export default {
         green:  { match: '#10B981', dim: '#065F46' },
         red:    { fail: '#EF4444',   dim: '#7F1D1D' },
         yellow: { warn: '#EAB308',   dim: '#713F12' },
+        // ── Padrão comercial (BI Editais e telas restilizadas) ────────────
+        // Navy usado em barras/gráficos de dados — distinto do vermelho da
+        // marca (usado em ações primárias/navegação). surface é o fundo
+        // neutro sólido que substitui o gradiente com glow.
+        brand:   { DEFAULT: '#1f3f68', light: '#3B6EA5', dark: '#16304F' },
+        surface: { DEFAULT: '#F7F8FA', dark: '#0F172A' },
       },
       animation: {
         'fade-up':   'fadeUp 0.4s ease forwards',

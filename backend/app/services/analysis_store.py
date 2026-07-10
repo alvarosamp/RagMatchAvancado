@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -31,7 +32,8 @@ def persist_analysis_document(
     status: str = "done",
 ) -> AnalysisDocument:
     """Upsert a structured analysis and its items by content hash."""
-    source_hash = build_source_hash(source_kind, full_text or "", source_name or "")
+    result_signature = json.dumps(result, sort_keys=True, ensure_ascii=False)
+    source_hash = build_source_hash(source_kind, full_text or result_signature, source_name or "")
     document = (
         db.query(AnalysisDocument)
         .filter(

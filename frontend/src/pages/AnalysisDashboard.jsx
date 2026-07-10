@@ -1,17 +1,14 @@
-/**
- * pages/AnalysisDashboard.jsx
- * ─────────────────────────────
- * Dashboard de BI dos editais/itens ingeridos via JSON (schema v7.3).
- * KPIs + blocos por categoria + listagem de editais, com toggle de
- * período (diário/semanal/mensal/anual) e atualização ao vivo (polling).
- */
-
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { analysisApi } from '../api/client'
+import { formatNumber, formatMoney, compactDescription } from '../components/ui/format'
+import StatCard from '../components/ui/StatCard'
+import Card from '../components/ui/Card'
+import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
+import { BreakdownGroup } from '../components/ui/MetricBar'
 
 const PERIODS = [
-  { key: 'day', label: 'Diário' },
+  { key: 'day', label: 'Diario' },
   { key: 'week', label: 'Semanal' },
   { key: 'month', label: 'Mensal' },
   { key: 'year', label: 'Anual' },
@@ -19,36 +16,62 @@ const PERIODS = [
 
 const POLL_MS = 20_000
 
-function KPICard({ label, value, accent }) {
-  return (
-    <div className="card flex flex-col gap-1">
-      <p className="text-xs font-mono text-gray-500 uppercase tracking-widest">{label}</p>
-      <p className={`font-display font-extrabold text-3xl ${accent || 'text-white'}`}>{value}</p>
-    </div>
-  )
+function normalizeRisk(value) {
+  return value && value !== 'Nenhum' ? 'Risco' : 'Sem risco'
 }
 
-function HBar({ label, value, max, colorClass = 'text-azure-glow' }) {
-  const pctWidth = max > 0 ? (value / max) * 100 : 0
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-mono text-xs text-gray-300 truncate max-w-[160px]">{label}</span>
-        <span className={`font-mono text-xs font-bold ${colorClass}`}>{value}</span>
-      </div>
-      <div className="h-1.5 bg-slate-border rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${colorClass.replace('text-', 'bg-')}`}
-          style={{ width: `${pctWidth}%` }}
-        />
-      </div>
-    </div>
-  )
+function itemCategorization(item) {
+  const bi = item.caracteristicas_bi || {}
+  const fields = [
+    bi.quantidade_portas,
+    bi.gerenciamento,
+    bi.alimentacao_poe || bi.alimentacao,
+    bi.portas_acesso,
+    bi.uplinks,
+    bi.tecnologia_wifi,
+    bi.ambiente,
+    bi.formato,
+    bi.tipo_meio,
+  ].filter(Boolean)
+  return fields.length ? fields.join(' / ') : item.categoria || '-'
 }
 
-function formatMoney(value) {
-  if (!value) return 'R$ 0,00'
-  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+function CategoryPanel({ category }) {
+  const breakdownEntries = Object.entries(category.breakdowns || {})
+  const primaryRows = breakdownEntries.slice(0, 3)
+  const ufRows = (category.ufs || []).map((row) => ({ valor: row.uf, unidades: row.unidades }))
+
+  return (
+    <Card className="p-6">
+      <div className="mb-5 flex flex-col gap-4 border-b border-slate-100 pb-4 dark:border-slate-700 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h3 className="text-xl font-semibold text-slate-950 dark:text-white">{category.categoria}</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Resumo comercial por classificacao e volume.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-6 text-right">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Itens</p>
+            <p className="text-lg font-semibold text-slate-950 dark:text-white">{formatNumber(category.itens)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Unidades</p>
+            <p className="text-lg font-semibold text-slate-950 dark:text-white">{formatNumber(category.unidades)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Valor</p>
+            <p className="text-lg font-semibold text-slate-950 dark:text-white">{formatMoney(category.valor_mapeado)}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        {primaryRows.map(([field, rows]) => (
+          <BreakdownGroup key={field} title={field.replace(/_/g, ' ')} rows={rows} />
+        ))}
+        <BreakdownGroup title="UFs com mais unidades" rows={ufRows} />
+      </div>
+    </Card>
+  )
 }
 
 export default function AnalysisDashboard() {
@@ -73,7 +96,7 @@ export default function AnalysisDashboard() {
       setEditais(editaisRes.data)
       setLastUpdated(new Date())
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao carregar dashboard.')
+      setError(err.response?.data?.detail || 'Erro ao carregar o painel.')
     } finally {
       if (showSpinner) setLoading(false)
     }
@@ -87,135 +110,202 @@ export default function AnalysisDashboard() {
 
   const kpis = dashboard?.kpis || {}
   const categories = dashboard?.categories || []
+  const selectedPeriod = PERIODS.find((item) => item.key === period)?.label || 'Mensal'
+
+  const categoryRows = useMemo(() => categories.slice(0, 3), [categories])
+  const recentRows = useMemo(() => editais.slice(0, 12), [editais])
 
   return (
-    <div className="p-6 space-y-6 min-h-screen">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display font-black text-2xl text-white">BI de Editais</h1>
-          <p className="text-sm text-gray-500 font-mono mt-1">
-            {lastUpdated ? `Atualizado às ${lastUpdated.toLocaleTimeString('pt-BR')}` : 'Carregando…'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => fetchAll(true)} className="btn-ghost text-xs px-3 py-2">
-            ↻ Atualizar
-          </button>
-          <button onClick={() => navigate('/analise/upload')} className="btn-primary text-xs px-3 py-2">
-            + Importar JSON
-          </button>
-        </div>
-      </div>
-
-      {/* Toggle de período */}
-      <div className="flex gap-1 flex-wrap">
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            onClick={() => setPeriod(p.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all ${
-              period === p.key
-                ? 'bg-azure text-white border-azure'
-                : 'text-gray-400 border-slate-border hover:text-white hover:bg-slate-hover'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="px-4 py-3 rounded-lg bg-red-500/5 border border-red-500/20 text-xs text-red-400">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 rounded-xl bg-slate-card border border-slate-border animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <KPICard label="Editais selecionados" value={kpis.editais_selecionados ?? 0} />
-            <KPICard label="Itens categorizados" value={kpis.itens_categorizados ?? 0} />
-            <KPICard label="Unidades mapeadas" value={Math.round(kpis.unidades_mapeadas ?? 0)} />
-            <KPICard label="Editais com risco" value={kpis.editais_com_risco ?? 0} accent="text-red-400" />
-            <KPICard label="Com ME/EPP" value={kpis.editais_com_me_epp ?? 0} accent="text-amber" />
+    <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
+      <div className="mx-auto max-w-[1480px] space-y-8">
+        <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Business Intelligence</p>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">Editais</h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {lastUpdated ? `Atualizado as ${lastUpdated.toLocaleTimeString('pt-BR')}` : 'Carregando dados'} · atualizacao automatica a cada 20s
+            </p>
           </div>
 
-          {/* Blocos por categoria */}
-          {categories.length === 0 ? (
-            <div className="card text-center py-14">
-              <p className="text-sm text-gray-500">Nenhum item categorizado neste período. Importe um JSON para começar.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {categories.map((cat) => {
-                const breakdownEntries = Object.entries(cat.breakdowns || {})
-                return (
-                  <div key={cat.categoria} className="card p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-display font-bold text-white">{cat.categoria}</h3>
-                      <span className="text-xs font-mono text-gray-500">{cat.itens} itens</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs font-mono text-gray-400">
-                      <span>Unidades: <span className="text-white">{Math.round(cat.unidades)}</span></span>
-                      <span>Valor mapeado: <span className="text-white">{formatMoney(cat.valor_mapeado)}</span></span>
-                    </div>
-                    {breakdownEntries.map(([field, rows]) => {
-                      if (!rows.length) return null
-                      const max = Math.max(...rows.map((r) => r.unidades))
-                      return (
-                        <div key={field} className="space-y-1.5">
-                          <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">
-                            {field.replace(/_/g, ' ')}
-                          </p>
-                          {rows.map((r) => (
-                            <HBar key={r.valor} label={r.valor} value={r.unidades} max={max} />
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Listagem de editais */}
-          <div className="space-y-2">
-            <h3 className="font-display font-bold text-white">Editais</h3>
-            {editais.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-10">Nenhum edital importado ainda.</p>
-            ) : (
-              editais.map((e) => (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+              {PERIODS.map((item) => (
                 <button
-                  key={e.id}
-                  onClick={() => navigate(`/analise/documentos/${e.id}`)}
-                  className="card w-full text-left p-4 hover:bg-slate-hover/20 transition-colors flex items-center justify-between gap-3"
+                  key={item.key}
+                  type="button"
+                  onClick={() => setPeriod(item.key)}
+                  className={`rounded-md px-5 py-2 text-sm font-medium transition-colors ${
+                    period === item.key
+                      ? 'bg-brand text-white dark:bg-brand-light'
+                      : 'text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+                  }`}
                 >
-                  <div className="min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{e.orgao || e.source_name}</p>
-                    <p className="text-xs text-gray-500 font-mono mt-0.5">
-                      {e.numero_pregao} {e.uf ? `· ${e.uf}` : ''} {e.data_disputa ? `· ${e.data_disputa}` : ''}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {e.risco_identificado && e.risco_identificado !== 'Nenhum' && (
-                      <span className="text-amber text-xs">⚠</span>
-                    )}
-                    <span className="text-[10px] font-mono text-gray-500">{e.items?.length ?? 0} itens</span>
-                  </div>
+                  {item.label}
                 </button>
-              ))
-            )}
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchAll(true)}
+              className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Atualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/analise/upload')}
+              className="rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark dark:bg-brand-light dark:hover:bg-brand"
+            >
+              Importar analise
+            </button>
           </div>
-        </>
-      )}
+        </header>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="h-20 animate-pulse rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+              <StatCard label="Editais selecionados" value={formatNumber(kpis.editais_selecionados)} />
+              <StatCard label="Itens mapeados" value={formatNumber(kpis.itens_categorizados)} />
+              <StatCard label="Unidades mapeadas" value={formatNumber(kpis.unidades_mapeadas)} />
+              <StatCard label="Editais com risco" value={formatNumber(kpis.editais_com_risco)} danger />
+              <StatCard label="Com ME/EPP" value={formatNumber(kpis.editais_com_me_epp)} />
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Por categoria de equipamento</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{selectedPeriod} · principais familias mapeadas</p>
+                </div>
+              </div>
+              <div className="grid gap-5 xl:grid-cols-2">
+                {categoryRows.length === 0 ? (
+                  <Card className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Nenhuma analise importada no periodo selecionado.
+                  </Card>
+                ) : (
+                  categoryRows.map((category) => <CategoryPanel key={category.categoria} category={category} />)
+                )}
+              </div>
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Editais recentes</h2>
+                <button
+                  type="button"
+                  onClick={() => navigate('/analise/upload')}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Nova importacao
+                </button>
+              </div>
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] text-left">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                      <tr>
+                        <th className="px-5 py-4 font-semibold">Edital</th>
+                        <th className="px-5 py-4 font-semibold">Orgao</th>
+                        <th className="px-5 py-4 font-semibold">UF</th>
+                        <th className="px-5 py-4 font-semibold">Disputa</th>
+                        <th className="px-5 py-4 font-semibold">Itens</th>
+                        <th className="px-5 py-4 font-semibold">Categorias</th>
+                        <th className="px-5 py-4 font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {recentRows.length === 0 ? (
+                        <tr>
+                          <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan={7}>
+                            Nenhum edital importado ainda.
+                          </td>
+                        </tr>
+                      ) : (
+                        recentRows.map((edital) => {
+                          const categoriesFound = Array.from(new Set((edital.items || []).map((item) => item.categoria).filter(Boolean)))
+                          return (
+                            <tr
+                              key={edital.id}
+                              className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                              onClick={() => navigate(`/analise/documentos/${edital.id}`)}
+                            >
+                              <td className="px-5 py-4">
+                                <p className="font-semibold text-slate-950 dark:text-white">{edital.numero_pregao || edital.source_name || '-'}</p>
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{compactDescription(edital.orgao, 64) || '-'}</td>
+                              <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{edital.uf || '-'}</td>
+                              <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{edital.data_disputa || '-'}</td>
+                              <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{formatNumber(edital.items?.length)}</td>
+                              <td className="px-5 py-4">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {categoriesFound.length === 0 ? (
+                                    <span className="text-sm text-slate-400">-</span>
+                                  ) : (
+                                    categoriesFound.slice(0, 3).map((category) => (
+                                      <Badge key={category} tone={categoryTone(category)}>{category}</Badge>
+                                    ))
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <Badge tone={riskTone(edital.risco_identificado)}>{normalizeRisk(edital.risco_identificado)}</Badge>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </section>
+
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Itens mapeados</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Amostra consolidada dos itens classificados nas analises recentes.</p>
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[920px] text-left">
+                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <tr>
+                      <th className="py-3 pr-4 font-semibold">Categoria</th>
+                      <th className="px-4 py-3 font-semibold">Descricao</th>
+                      <th className="px-4 py-3 font-semibold">Classificacao</th>
+                      <th className="px-4 py-3 text-right font-semibold">Qtd</th>
+                      <th className="py-3 pl-4 text-right font-semibold">Preco unit.</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {recentRows.flatMap((edital) => (edital.items || []).slice(0, 3)).slice(0, 12).map((item, index) => (
+                      <tr key={`${item.description}-${index}`}>
+                        <td className="py-3 pr-4">
+                          <Badge tone={categoryTone(item.categoria)}>{item.categoria || '-'}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{compactDescription(item.description)}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{itemCategorization(item)}</td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-700 dark:text-slate-300">{formatNumber(item.quantity)}</td>
+                        <td className="py-3 pl-4 text-right text-sm text-slate-700 dark:text-slate-300">{item.unit_value ? formatMoney(item.unit_value) : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </>
+        )}
+      </div>
     </div>
   )
 }

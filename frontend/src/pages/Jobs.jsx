@@ -8,7 +8,7 @@ const isCancelled = (job) =>
 
 const STATUS_CFG = {
   pending: { label: 'Aguardando', cls: 'badge-pending', barCls: 'bg-gray-500' },
-  running: { label: 'Processando', cls: 'badge-atende', barCls: 'bg-azure' },
+  running: { label: 'Processando', cls: 'badge-atende', barCls: 'bg-red-600' },
   done: { label: 'Concluido', cls: 'badge-atende', barCls: 'bg-green-match' },
   failed: { label: 'Falhou', cls: 'badge-falhou', barCls: 'bg-red-fail' },
   cancelled: { label: 'Cancelado', cls: 'badge-pending', barCls: 'bg-gray-500' },
@@ -128,8 +128,8 @@ export default function Jobs() {
               onClick={() => setFilter(item.key)}
               className={`px-4 py-1.5 rounded-lg text-xs font-body font-semibold transition-all duration-150 ${
                 filter === item.key
-                  ? 'bg-azure text-white'
-                  : 'text-gray-400 border border-slate-border hover:text-white'
+                  ? 'bg-red-600 text-white'
+                  : 'text-gray-400 border border-slate-700 hover:text-white'
               }`}
             >
               {item.label}
@@ -177,7 +177,7 @@ export default function Jobs() {
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {summary.recent_failures.map((item) => (
-              <div key={item.id} className="rounded-xl border border-red-fail/20 bg-red-fail/5 px-4 py-3">
+              <div key={item.id} className="rounded-lg border border-red-fail/20 bg-red-fail/5 px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{item.label}</p>
@@ -199,7 +199,7 @@ export default function Jobs() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((item) => (
-            <div key={item} className="h-16 bg-slate-card rounded-xl border border-slate-border animate-pulse" />
+            <div key={item} className="h-16 bg-slate-800 rounded-lg border border-slate-700 animate-pulse" />
           ))}
         </div>
       ) : filteredJobs.length === 0 ? (
@@ -220,7 +220,7 @@ export default function Jobs() {
                 key={job.id}
                 onClick={() => job.result?.edital_id && navigate(`/editais/${job.result.edital_id}`)}
                 className={`card py-4 flex items-center gap-4 animate-fade-up transition-all duration-200 ${
-                  job.result?.edital_id ? 'cursor-pointer hover:border-azure/40 hover:bg-slate-hover' : ''
+                  job.result?.edital_id ? 'cursor-pointer hover:border-red-600/40 hover:bg-slate-hover' : ''
                 } ${cancelled ? 'opacity-60' : ''}`}
                 style={{ animationDelay: `${index * 40}ms` }}
               >
@@ -240,7 +240,7 @@ export default function Jobs() {
                   <div className="flex items-center justify-between mb-1 gap-3">
                     <span className={cfg.cls}>{cfg.label}</span>
                     {job.status === 'running' && (
-                      <span className="text-xs font-body font-semibold text-azure-glow">{pct}%</span>
+                      <span className="text-xs font-body font-semibold text-red-400">{pct}%</span>
                     )}
                     {job.duration_seconds && (
                       <span className="text-xs font-body text-gray-600">{job.duration_seconds}s</span>

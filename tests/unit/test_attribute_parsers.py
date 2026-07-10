@@ -9,6 +9,8 @@ Casos-limite de telecom que uma regex "pega o primeiro número" erra:
 from app.services.attribute_parsers import (
     classify_field,
     compare_attribute,
+    compare_product_specs,
+    compare_products,
     compare_range,
     extract_number,
     parse_poe,
@@ -136,6 +138,84 @@ class TestCompareAttribute:
     def test_generic_retorna_none(self):
         result = compare_attribute("Camada", "L3 Full", "L3")
         assert result.match is None
+
+
+class TestCompareProducts:
+    def test_mais_portas_vence(self):
+        result = compare_products("Portas RJ45", "24x 1G", "8x 1G")
+        assert result.winner == "a"
+
+    def test_empate_portas(self):
+        result = compare_products("Portas RJ45", "24 portas", "24x 1G")
+        assert result.winner == "tie"
+
+    def test_poe_presente_vence_ausente(self):
+        result = compare_products("PoE", True, False)
+        assert result.winner == "a"
+
+    def test_poe_budget_maior_vence(self):
+        result = compare_products("PoE", "PoE 370W", "PoE 120W")
+        assert result.winner == "a"
+
+    def test_faixa_tensao_mais_larga_vence(self):
+        result = compare_products(
+            "Power Requirement / Tensão de Entrada", "100–240 VAC", "220 VAC",
+        )
+        assert result.winner == "a"
+
+    def test_campo_ausente_em_um_lado(self):
+        result = compare_products("Portas RJ45", "24x 1G", None)
+        assert result.winner == "a"
+
+    def test_ambos_ausentes_empata(self):
+        result = compare_products("Portas RJ45", None, "-")
+        assert result.winner == "tie"
+
+    def test_travessao_e_tratado_como_sem_dado(self):
+        # catálogo usa "—" (em-dash), não só "-", pra sinalizar campo vazio
+        result = compare_products("PoE", "—", True)
+        assert result.winner == "b"
+
+    def test_capacidade_negativa_nao_e_vantagem_sobre_branco(self):
+        """
+        "Uplinks": "—" (nosso, sem dado) vs "Não" (concorrente, resposta
+        negativa real) — nenhum dos dois tem a capacidade, então não é
+        vantagem de ninguém. Bug real encontrado testando a UI.
+        """
+        result = compare_products("Uplinks", "—", "Não")
+        assert result.winner in (None, "tie")
+
+    def test_poe_none_cru_e_tratado_como_sem_poe(self):
+        # dict.get em campo que nem existe devolve None puro, não string
+        result = compare_products("PoE", None, True)
+        assert result.winner == "b"
+
+    def test_quantitativo_ausente_favorece_quem_tem_dado(self):
+        # portas/velocidade continuam favorecendo o lado com número real
+        result = compare_products("Portas RJ45", None, "24x 1G")
+        assert result.winner == "b"
+
+    def test_texto_livre_igual_empata(self):
+        result = compare_products("Camada", "L2", "L2")
+        assert result.winner == "tie"
+
+    def test_texto_livre_diferente_sem_vencedor(self):
+        result = compare_products("Tipo de Gerenciamento", "Managed (CLI/Web)", "Unmanaged")
+        assert result.winner is None
+
+
+class TestCompareProductSpecs:
+    def test_une_campos_dos_dois_lados(self):
+        specs_a = {"Portas RJ45": "24x 1G", "PoE": True}
+        specs_b = {"Portas RJ45": "8x 1G", "VLANs": "256"}
+        results = compare_product_specs(specs_a, specs_b)
+        fields = {r.field for r in results}
+        assert fields == {"Portas RJ45", "PoE", "VLANs"}
+
+        by_field = {r.field: r for r in results}
+        assert by_field["Portas RJ45"].winner == "a"
+        assert by_field["PoE"].winner == "a"  # so o produto A tem o campo
+        assert by_field["VLANs"].winner == "b"
 
 
 class TestExtractNumber:

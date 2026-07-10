@@ -148,6 +148,19 @@ export const analysisApi = {
   editaisListagem: (params = {}) => api.get('/analysis/editais-listagem', { params }),
 }
 
+export const datasheetsApi = {
+  extract:  (formData) => api.post('/datasheets/extract', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 90_000,
+  }),
+  import:   (payload)  => api.post('/datasheets/import', payload),
+  products: (params = {}) => api.get('/datasheets/products', { params }),
+  compare:  (productAId, productBId) => api.get('/datasheets/compare', {
+    params: { product_a_id: productAId, product_b_id: productBId },
+  }),
+  gaps: (params = {}) => api.get('/datasheets/gaps', { params }),
+}
+
 // ── Utilidade para download de blob ──────────────────────────────────────────
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
