@@ -153,10 +153,10 @@ export default function AnalysisDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/analise/upload')}
+              onClick={() => navigate('/upload')}
               className="rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark dark:bg-brand-light dark:hover:bg-brand"
             >
-              Importar analise
+              Enviar edital
             </button>
           </div>
         </header>
@@ -206,10 +206,10 @@ export default function AnalysisDashboard() {
                 <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Editais recentes</h2>
                 <button
                   type="button"
-                  onClick={() => navigate('/analise/upload')}
+                  onClick={() => navigate('/upload')}
                   className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
-                  Nova importacao
+                  Novo envio
                 </button>
               </div>
               <Card className="overflow-hidden">

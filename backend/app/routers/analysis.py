@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,7 @@ from app.db.models import AnalysisDocument
 from app.db.session import get_db
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
+from app.services.analysis_export_service import export_analysis_pdf
 from app.services.analysis_store import persist_analysis_document
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -90,6 +91,31 @@ def get_analysis_document(
     if document is None:
         raise HTTPException(status_code=404, detail="Analise nao encontrada.")
     return _serialize_document(document, include_items=True)
+
+
+@router.get("/documents/{document_id}/export/pdf")
+def export_analysis_document_pdf(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    document = (
+        db.query(AnalysisDocument)
+        .filter(
+            AnalysisDocument.id == document_id,
+            AnalysisDocument.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if document is None:
+        raise HTTPException(status_code=404, detail="Analise nao encontrada.")
+
+    filename = f"bi_edital_analise_{document.id}.pdf"
+    return Response(
+        content=export_analysis_pdf(document),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 def _serialize_document(

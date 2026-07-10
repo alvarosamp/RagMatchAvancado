@@ -1,0 +1,403 @@
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from io import BytesIO
+from typing import TYPE_CHECKING, Any
+from xml.sax.saxutils import escape
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    KeepTogether,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
+if TYPE_CHECKING:
+    from app.db.models import AnalysisDocument
+
+
+BLUE = colors.HexColor("#1F3F68")
+BLUE_LIGHT = colors.HexColor("#EAF1F8")
+TEXT = colors.HexColor("#111827")
+MUTED = colors.HexColor("#64748B")
+BORDER = colors.HexColor("#D9E0EA")
+SURFACE = colors.HexColor("#F6F8FB")
+RED = colors.HexColor("#B91C1C")
+GREEN = colors.HexColor("#047857")
+
+
+def export_analysis_pdf(document: "AnalysisDocument") -> bytes:
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.2 * cm,
+        leftMargin=1.2 * cm,
+        topMargin=1.0 * cm,
+        bottomMargin=1.0 * cm,
+        title=f"BI Editais - Analise {document.id}",
+    )
+    styles = _styles()
+    story: list[Any] = []
+    result = document.result or {}
+    edital = result.get("edital") or {}
+    items = list(document.items or [])
+    total_units = sum(float(item.quantity or 0) for item in items)
+    total_value = sum(float(item.total_value or 0) for item in items)
+    risk_count = sum(1 for item in items if item.has_risco)
+    categories = Counter(_text(item.categoria) or "N/C" for item in items)
+
+    story.extend(_cover(styles, document, edital, items, total_units, total_value, risk_count, categories))
+    story.append(Spacer(1, 0.35 * cm))
+    story.extend(_category_summary(styles, items))
+    story.append(PageBreak())
+    story.extend(_items_section(styles, items))
+    story.append(PageBreak())
+    story.extend(_documents_section(styles, result))
+
+    doc.build(story, onFirstPage=_page_footer, onLaterPages=_page_footer)
+    return buffer.getvalue()
+
+
+def _styles() -> dict[str, ParagraphStyle]:
+    sample = getSampleStyleSheet()
+    return {
+        "eyebrow": ParagraphStyle(
+            "eyebrow",
+            parent=sample["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=8,
+            leading=10,
+            textColor=MUTED,
+            uppercase=True,
+            spaceAfter=4,
+        ),
+        "title": ParagraphStyle(
+            "title",
+            parent=sample["Title"],
+            fontName="Helvetica-Bold",
+            fontSize=28,
+            leading=32,
+            textColor=TEXT,
+            spaceAfter=8,
+        ),
+        "subtitle": ParagraphStyle(
+            "subtitle",
+            parent=sample["Normal"],
+            fontSize=10,
+            leading=14,
+            textColor=MUTED,
+            spaceAfter=10,
+        ),
+        "section": ParagraphStyle(
+            "section",
+            parent=sample["Heading2"],
+            fontName="Helvetica-Bold",
+            fontSize=14,
+            leading=18,
+            textColor=TEXT,
+            spaceBefore=12,
+            spaceAfter=8,
+        ),
+        "body": ParagraphStyle(
+            "body",
+            parent=sample["Normal"],
+            fontSize=8,
+            leading=10,
+            textColor=TEXT,
+        ),
+        "small": ParagraphStyle(
+            "small",
+            parent=sample["Normal"],
+            fontSize=7,
+            leading=9,
+            textColor=MUTED,
+        ),
+        "right": ParagraphStyle(
+            "right",
+            parent=sample["Normal"],
+            fontSize=8,
+            leading=10,
+            textColor=TEXT,
+            alignment=TA_RIGHT,
+        ),
+    }
+
+
+def _cover(
+    styles: dict[str, ParagraphStyle],
+    document: AnalysisDocument,
+    edital: dict[str, Any],
+    items: list[Any],
+    total_units: float,
+    total_value: float,
+    risk_count: int,
+    categories: Counter,
+) -> list[Any]:
+    title = _text(edital.get("orgao")) or _text(document.source_name) or f"Analise #{document.id}"
+    rows = [
+        [Paragraph("BUSINESS INTELLIGENCE", styles["eyebrow"])],
+        [Paragraph("Editais", styles["title"])],
+        [_para(_line([title, edital.get("numero_pregao"), edital.get("uf"), edital.get("cidade")]), styles["subtitle"])],
+    ]
+    header = Table(rows, colWidths=[18.6 * cm])
+    header.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), SURFACE),
+                ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+                ("LEFTPADDING", (0, 0), (-1, -1), 14),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
+
+    kpis = [
+        ("Itens mapeados", _num(len(items))),
+        ("Unidades", _num(total_units)),
+        ("Valor mapeado", _money(total_value)),
+        ("Categorias", _num(len(categories))),
+        ("Itens com risco", _num(risk_count)),
+    ]
+    kpi_table = Table(
+        [[Paragraph(label, styles["small"]), Paragraph(value, styles["body"])] for label, value in kpis],
+        colWidths=[3.05 * cm, 3.9 * cm],
+    )
+    kpi_table.setStyle(_plain_table_style())
+
+    info_table = Table(
+        [
+            ["Data da disputa", _text(edital.get("data_disputa")) or "-"],
+            ["Criterio", _text(edital.get("criterio")) or "-"],
+            ["ME/EPP", _text(edital.get("exclusividade_me_epp")) or "-"],
+            ["Fonte", _text(document.source_name) or "-"],
+        ],
+        colWidths=[3.3 * cm, 8.1 * cm],
+    )
+    info_table.setStyle(_plain_table_style())
+
+    return [
+        header,
+        Spacer(1, 0.35 * cm),
+        Paragraph("Visao geral", styles["section"]),
+        Table([[kpi_table, info_table]], colWidths=[7.2 * cm, 11.2 * cm]),
+    ]
+
+
+def _category_summary(styles: dict[str, ParagraphStyle], items: list[Any]) -> list[Any]:
+    story: list[Any] = [Paragraph("Resumo por categoria", styles["section"])]
+    grouped: dict[str, list[Any]] = defaultdict(list)
+    for item in items:
+        grouped[_text(item.categoria) or "N/C"].append(item)
+
+    if not grouped:
+        story.append(Paragraph("Nenhum item elegivel listado.", styles["body"]))
+        return story
+
+    data = [["Categoria", "Itens", "Unidades", "Valor mapeado", "Principais UFs"]]
+    for category, rows in sorted(grouped.items(), key=lambda entry: (-sum(float(i.quantity or 0) for i in entry[1]), entry[0])):
+        ufs = Counter(_text(item.uf) or "N/C" for item in rows)
+        data.append(
+            [
+                _para(category, styles["body"]),
+                _num(len(rows)),
+                _num(sum(float(item.quantity or 0) for item in rows)),
+                _money(sum(float(item.total_value or 0) for item in rows)),
+                _para(", ".join(f"{uf} ({_num(count)})" for uf, count in ufs.most_common(4)), styles["body"]),
+            ]
+        )
+
+    table = Table(data, colWidths=[4.5 * cm, 2 * cm, 2.4 * cm, 3.2 * cm, 6.2 * cm], repeatRows=1)
+    table.setStyle(_grid_table_style())
+    story.append(table)
+
+    for category, rows in list(grouped.items())[:4]:
+        breakdown = _breakdown_rows(rows)
+        if not breakdown:
+            continue
+        story.append(Spacer(1, 0.25 * cm))
+        story.append(KeepTogether([_para(category, styles["section"]), _breakdown_table(styles, breakdown)]))
+    return story
+
+
+def _items_section(styles: dict[str, ParagraphStyle], items: list[Any]) -> list[Any]:
+    story = [Paragraph("Relacao de itens", styles["section"])]
+    data = [["Item", "Categoria", "Descricao resumida", "Classificacao", "Qtd", "Preco unit."]]
+    for item in sorted(items, key=lambda row: (_text(row.item_number) or "", row.id or 0)):
+        raw = item.raw_payload or {}
+        data.append(
+            [
+                _para(item.item_number, styles["body"]),
+                _para(item.categoria, styles["body"]),
+                _para(item.description, styles["body"], 140),
+                _para(_item_classification(item), styles["body"], 100),
+                Paragraph(_num(item.quantity), styles["right"]),
+                Paragraph(_money(item.unit_value or raw.get("preco_unitario")), styles["right"]),
+            ]
+        )
+    table = Table(data, colWidths=[1.5 * cm, 2.4 * cm, 6.2 * cm, 4.3 * cm, 1.6 * cm, 2.3 * cm], repeatRows=1)
+    table.setStyle(_grid_table_style())
+    story.append(table)
+    return story
+
+
+def _documents_section(styles: dict[str, ParagraphStyle], result: dict[str, Any]) -> list[Any]:
+    story = [Paragraph("Documentacao, declaracoes e riscos", styles["section"])]
+    docs = result.get("documentacao") or []
+    doc_rows = [["Categoria", "Documento"]]
+    for doc in docs:
+        doc_rows.append([_text(doc.get("categoria")) or "-", _para(doc.get("documento"), styles["body"])])
+    if len(doc_rows) == 1:
+        doc_rows.append(["-", "Nenhum documento listado."])
+    table = Table(doc_rows, colWidths=[5 * cm, 13.2 * cm], repeatRows=1)
+    table.setStyle(_grid_table_style())
+    story.append(table)
+
+    story.append(Spacer(1, 0.35 * cm))
+    riscos = result.get("riscos") or {}
+    risco_rows = [["Tipo", "Status", "Observacao"]]
+    risco_rows.append(["Geral", _text(riscos.get("risco_identificado")) or "Nenhum", _text(riscos.get("observacao")) or "-"])
+    for key in ("risco_operacional", "risco_documental"):
+        value = riscos.get(key) or {}
+        motivos = value.get("motivos") or []
+        risco_rows.append([key.replace("_", " ").title(), "Existe" if value.get("existe") else "Nao existe", _para("; ".join(map(str, motivos)), styles["body"])])
+    risk_table = Table(risco_rows, colWidths=[4 * cm, 3.2 * cm, 11 * cm], repeatRows=1)
+    risk_table.setStyle(_grid_table_style())
+    story.append(risk_table)
+
+    declaracoes = result.get("declaracoes") or []
+    if declaracoes:
+        story.append(Spacer(1, 0.35 * cm))
+        dec_rows = [["Declaracoes exigidas"]]
+        for item in declaracoes:
+            dec_rows.append([_para(item.get("declaracao"), styles["body"])])
+        dec_table = Table(dec_rows, colWidths=[18.2 * cm], repeatRows=1)
+        dec_table.setStyle(_grid_table_style())
+        story.append(dec_table)
+    return story
+
+
+def _breakdown_rows(rows: list[Any]) -> list[tuple[str, str, float]]:
+    counters: dict[str, Counter] = defaultdict(Counter)
+    for item in rows:
+        bi = item.caracteristicas_bi or {}
+        for key, value in bi.items():
+            text = _text(value)
+            if text and text.upper() != "N/C":
+                counters[key.replace("_", " ").title()][text] += float(item.quantity or 0) or 1
+    output: list[tuple[str, str, float]] = []
+    for key, counter in counters.items():
+        for label, value in counter.most_common(3):
+            output.append((key, label, value))
+    return output[:12]
+
+
+def _breakdown_table(styles: dict[str, ParagraphStyle], rows: list[tuple[str, str, float]]) -> Table:
+    data = [["Atributo", "Valor", "Unidades"]]
+    data.extend([[attr, _para(value, styles["body"]), _num(total)] for attr, value, total in rows])
+    table = Table(data, colWidths=[5 * cm, 9.5 * cm, 3.7 * cm], repeatRows=1)
+    table.setStyle(_grid_table_style())
+    return table
+
+
+def _plain_table_style() -> TableStyle:
+    return TableStyle(
+        [
+            ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+            ("INNERGRID", (0, 0), (-1, -1), 0.3, BORDER),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("TEXTCOLOR", (0, 0), (0, -1), MUTED),
+            ("TEXTCOLOR", (1, 0), (1, -1), TEXT),
+            ("FONTNAME", (1, 0), (1, -1), "Helvetica-Bold"),
+        ]
+    )
+
+
+def _grid_table_style() -> TableStyle:
+    return TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), BLUE),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ("LEADING", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.35, BORDER),
+            ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BLUE_LIGHT]),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]
+    )
+
+
+def _page_footer(canvas, doc) -> None:
+    canvas.saveState()
+    canvas.setStrokeColor(BORDER)
+    canvas.setLineWidth(0.5)
+    canvas.line(doc.leftMargin, 0.75 * cm, A4[0] - doc.rightMargin, 0.75 * cm)
+    canvas.setFont("Helvetica", 7)
+    canvas.setFillColor(MUTED)
+    canvas.drawString(doc.leftMargin, 0.45 * cm, "Categorizacao automatica - revisao recomendada")
+    canvas.drawRightString(A4[0] - doc.rightMargin, 0.45 * cm, f"Pagina {doc.page}")
+    canvas.restoreState()
+
+
+def _item_classification(item: Any) -> str:
+    bi = item.caracteristicas_bi or {}
+    values = [str(value) for value in bi.values() if value and str(value).upper() != "N/C"]
+    return " - ".join(values) or _text(item.item_type) or "-"
+
+
+def _line(values: list[Any]) -> str:
+    return " - ".join(_text(value) for value in values if _text(value)) or "-"
+
+
+def _text(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _para(value: Any, style: ParagraphStyle, limit: int | None = None) -> Paragraph:
+    text = _short(value, limit) if limit else _text(value)
+    return Paragraph(escape(text or "-"), style)
+
+
+def _short(value: str, limit: int) -> str:
+    text = _text(value).replace("\n", " ")
+    return text if len(text) <= limit else f"{text[:limit - 3]}..."
+
+
+def _num(value: Any) -> str:
+    try:
+        number = float(value or 0)
+    except (TypeError, ValueError):
+        return "-"
+    if number.is_integer():
+        return f"{int(number):,}".replace(",", ".")
+    return f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _money(value: Any) -> str:
+    try:
+        number = float(value or 0)
+    except (TypeError, ValueError):
+        return "-"
+    return "R$ " + f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")

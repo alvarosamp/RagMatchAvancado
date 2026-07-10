@@ -53,9 +53,9 @@ async function runWithConcurrency(tasks, limit, onEach) {
 
 export default function Upload() {
   // ── PDF (edital unico → OCR) ────────────────────────────────────────────
-  const [pdfFile, setPdfFile] = useState(null)
+  const [pdfFiles, setPdfFiles] = useState([])
   const [loading, setLoading] = useState(false)
-  const [jobId, setJobId] = useState(null)
+  const [jobs, setJobs] = useState([])
   const [error, setError] = useState(null)
 
   // ── JSON (um ou varios arquivos de analise → BI + CRM) ──────────────────
@@ -71,10 +71,11 @@ export default function Upload() {
   const { toast } = useToast()
 
   const clearAll = () => {
-    setPdfFile(null)
+    setPdfFiles([])
     setJsonFiles([])
     setJsonResults([])
     setJsonDoneCount(0)
+    setJobs([])
     setError(null)
     if (inputRef.current) inputRef.current.value = ''
   }
@@ -88,18 +89,18 @@ export default function Upload() {
       setJsonFiles(jsons)
       setJsonResults([])
       setJsonDoneCount(0)
-      setPdfFile(null)
+      setPdfFiles([])
       setError(null)
       return
     }
     if (pdfs.length) {
-      const err = validatePdf(pdfs[0])
+      const err = pdfs.map(validatePdf).find(Boolean)
       if (err) {
         setError(err)
-        setPdfFile(null)
+        setPdfFiles([])
         return
       }
-      setPdfFile(pdfs[0])
+      setPdfFiles(pdfs)
       setJsonFiles([])
       setJsonResults([])
       setError(null)
@@ -121,7 +122,7 @@ export default function Upload() {
   const onFileChange = (e) => applyFiles(e.target.files)
 
   const handlePdfSubmit = async () => {
-    const err = validatePdf(pdfFile)
+    const err = pdfFiles.length ? pdfFiles.map(validatePdf).find(Boolean) : 'Nenhum arquivo selecionado.'
     if (err) {
       setError(err)
       return
@@ -131,23 +132,22 @@ export default function Upload() {
     setError(null)
 
     try {
-      const formData = new FormData()
-      formData.append('file', pdfFile)
-
-      const res = await editaisApi.upload(formData)
-      const jid = res.data?.job_id || res.data?.id
-
-      if (jid) {
-        setJobId(jid)
-        toast({
-          type: 'success',
-          title: 'Upload concluido',
-          message: 'Documento em processamento. Acompanhe o progresso abaixo.',
-        })
-      } else {
-        toast({ type: 'success', title: 'Edital enviado', message: 'Acompanhe o processamento em Jobs.' })
-        navigate('/jobs')
+      const submitted = []
+      for (const file of pdfFiles) {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await editaisApi.upload(formData)
+        const jid = res.data?.job_id || res.data?.id
+        if (jid) {
+          submitted.push({ id: jid, filename: file.name, size: file.size })
+        }
       }
+      setJobs(submitted)
+      toast({
+        type: 'success',
+        title: 'Upload concluido',
+        message: `${submitted.length} documento(s) em processamento.`,
+      })
     } catch (err2) {
       const msg = err2.response?.data?.detail ?? 'Falha ao enviar o arquivo. Tente novamente.'
       setError(msg)
@@ -165,7 +165,7 @@ export default function Upload() {
       message: 'O edital foi indexado e esta pronto para analise.',
       duration: 6000,
     })
-    navigate(editalId ? `/editais/${editalId}` : '/dashboard')
+    if (jobs.length <= 1) navigate(editalId ? `/editais/${editalId}` : '/dashboard')
   }
 
   const handleJobFailed = (job) => {
@@ -223,7 +223,7 @@ export default function Upload() {
     })
   }
 
-  if (jobId) {
+  if (jobs.length > 0) {
     return (
       <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
         <div className="mx-auto max-w-3xl space-y-6">
@@ -241,17 +241,23 @@ export default function Upload() {
                 PDF
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{pdfFile?.name}</p>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  {pdfFile ? `${(pdfFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
-                </p>
+                <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{jobs.length} documento(s) recebido(s)</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Acompanhe cada processamento abaixo.</p>
               </div>
               <Badge tone="emerald" className="ml-auto flex-shrink-0">Recebido</Badge>
             </div>
 
-            <div>
-              <p className="mb-3 text-xs font-medium text-slate-500 dark:text-slate-400">Progresso</p>
-              <JobPoller jobId={jobId} onDone={handleJobDone} onFailed={handleJobFailed} />
+            <div className="space-y-4">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Progresso</p>
+              {jobs.map((item) => (
+                <div key={item.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{item.filename}</p>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{(item.size / 1024 / 1024).toFixed(2)} MB</span>
+                  </div>
+                  <JobPoller jobId={item.id} onDone={handleJobDone} onFailed={handleJobFailed} />
+                </div>
+              ))}
             </div>
 
             {error && (
@@ -275,7 +281,7 @@ export default function Upload() {
     )
   }
 
-  const hasSelection = Boolean(pdfFile) || jsonFiles.length > 0
+  const hasSelection = pdfFiles.length > 0 || jsonFiles.length > 0
 
   return (
     <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
@@ -310,13 +316,15 @@ export default function Upload() {
               onChange={onFileChange}
             />
 
-            {pdfFile ? (
+            {pdfFiles.length > 0 ? (
               <div className="flex flex-col items-center">
                 <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   PDF
                 </div>
-                <p className="text-sm font-semibold text-slate-950 dark:text-white">{pdfFile.name}</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">{pdfFiles.length} PDF(s) selecionado(s)</p>
+                <p className="mt-1 max-w-xl text-xs text-slate-500 dark:text-slate-400">
+                  {pdfFiles.slice(0, 3).map((file) => file.name).join(', ')}{pdfFiles.length > 3 ? '...' : ''}
+                </p>
                 <button
                   type="button"
                   className="mt-3 rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -352,7 +360,7 @@ export default function Upload() {
                 <p className="font-semibold text-slate-950 dark:text-white">{dragging ? 'Solte o(s) arquivo(s)' : 'Arraste o PDF ou o(s) JSON aqui'}</p>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ou clique para selecionar no computador</p>
                 <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
-                  PDF: um arquivo, max. {MAX_PDF_MB} MB · JSON: um ou varios arquivos de analise
+                  PDF: um ou varios arquivos, max. {MAX_PDF_MB} MB cada - JSON: um ou varios arquivos de analise
                 </p>
               </div>
             )}
@@ -369,7 +377,7 @@ export default function Upload() {
             <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
               <span className="mt-0.5 flex-shrink-0 text-xs text-slate-500 dark:text-slate-400">Dica</span>
               <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                PDF: acompanhe o job em tempo real e acesse o edital assim que terminar o OCR. JSON: o edital, os
+                PDF: acompanhe cada job em tempo real e acesse o edital assim que terminar o OCR. JSON: o edital, os
                 itens e os documentos sao sincronizados automaticamente no CRM na mesma importacao.
               </p>
             </div>
@@ -403,7 +411,7 @@ export default function Upload() {
               <button
                 type="button"
                 onClick={handlePdfSubmit}
-                disabled={!pdfFile || loading}
+                disabled={pdfFiles.length === 0 || loading}
                 className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
               >
                 {loading ? (

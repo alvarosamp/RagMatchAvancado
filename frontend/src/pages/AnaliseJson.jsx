@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { analysisApi } from '../api/client'
+import { analysisApi, downloadBlob } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 import { formatNumber, compactDescription } from '../components/ui/format'
 import Card from '../components/ui/Card'
@@ -43,6 +43,7 @@ export default function AnaliseJson() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [tab, setTab] = useState('itens')
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -67,6 +68,18 @@ export default function AnaliseJson() {
     [items],
   )
 
+  const exportPdf = async () => {
+    setExporting(true)
+    try {
+      const response = await analysisApi.exportPdf(id)
+      downloadBlob(response.data, `bi_edital_analise_${id}.pdf`)
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel exportar a analise.' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-surface p-6 dark:bg-surface-dark lg:p-8">
@@ -87,10 +100,10 @@ export default function AnaliseJson() {
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Este edital ainda nao tem arquivo importado.</p>
           <button
             type="button"
-            onClick={() => navigate('/analise/upload')}
+            onClick={() => navigate('/upload')}
             className="mt-5 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark dark:bg-brand-light dark:hover:bg-brand"
           >
-            Importar analise
+            Enviar edital
           </button>
         </Card>
       </div>
@@ -118,9 +131,19 @@ export default function AnaliseJson() {
                 {edital.numero_pregao || '-'} · {edital.uf || '-'} · {edital.cidade || '-'}
               </p>
             </div>
-            <Badge tone={riskTone(riscos.risco_identificado)} className="w-fit">
-              {riscos.risco_identificado && riscos.risco_identificado !== 'Nenhum' ? 'Risco identificado' : 'Sem risco'}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge tone={riskTone(riscos.risco_identificado)} className="w-fit">
+                {riscos.risco_identificado && riscos.risco_identificado !== 'Nenhum' ? 'Risco identificado' : 'Sem risco'}
+              </Badge>
+              <button
+                type="button"
+                onClick={exportPdf}
+                disabled={exporting}
+                className="rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 dark:bg-brand-light dark:hover:bg-brand"
+              >
+                {exporting ? 'Exportando...' : 'Exportar analise'}
+              </button>
+            </div>
           </div>
         </Card>
 

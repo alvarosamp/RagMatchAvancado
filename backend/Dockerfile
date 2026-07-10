@@ -27,8 +27,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Docling usa Transformers/Torchvision em tempo de import. Reinstalar pelo índice
 # CPU evita misturar wheels incompatíveis puxadas por dependências transitivas.
-RUN pip install --no-cache-dir --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cpu
-
 COPY app ./app
 
 EXPOSE 8000

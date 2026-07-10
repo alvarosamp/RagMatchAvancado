@@ -13,7 +13,6 @@ const NAV = [
   { path: '/relatorios', badge: 'RP', label: 'Relatorios', hint: 'Resumo executivo' },
   { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
   { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
-  { path: '/analise/upload', badge: 'JS', label: 'Importar JSON', hint: 'Lote de editais em JSON' },
   { path: '/inteligencia/datasheets', badge: 'VS', label: 'Comparar concorrente', hint: 'Datasheet x seu catalogo' },
   { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
   { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
@@ -133,15 +132,15 @@ function NavItem({ item, pathname }) {
       to={item.path}
       className={`group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
         active
-          ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/30 dark:text-white'
+          ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-white'
           : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white'
       }`}
     >
       <div
         className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg border transition-colors ${
           active
-            ? 'border-red-200 bg-white text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
-            : 'border-slate-200 bg-white text-slate-500 group-hover:text-red-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:group-hover:text-white'
+            ? 'border-blue-200 bg-white text-brand dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
+            : 'border-slate-200 bg-white text-slate-500 group-hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:group-hover:text-white'
         }`}
       >
         {renderIcon(item.badge)}
@@ -150,7 +149,7 @@ function NavItem({ item, pathname }) {
         <p className="truncate text-sm font-semibold">{item.label}</p>
         <p className="truncate text-xs text-slate-400 dark:text-slate-500">{item.hint}</p>
       </div>
-      {active && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-red-500 dark:bg-red-400" />}
+      {active && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-brand dark:bg-brand-light" />}
     </Link>
   )
 }
@@ -202,13 +201,13 @@ export default function Layout({ children }) {
         <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
           <button
             onClick={() => setTheme(isLight ? 'dark' : 'light')}
-            className="mb-3 flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-red-200 hover:text-red-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-red-800 dark:hover:text-white"
+            className="mb-3 flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-white"
           >
             {isLight ? 'Usar modo escuro' : 'Usar modo claro'}
           </button>
           <button
             onClick={logout}
-            className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-red-800 dark:hover:text-red-400"
+            className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-brand dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-blue-300"
           >
             Encerrar sessao
           </button>
@@ -249,7 +248,7 @@ export default function Layout({ children }) {
                     to={item.path}
                     className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
                       active
-                        ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300'
+                        ? 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
                         : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
                     }`}
                   >

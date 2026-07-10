@@ -35,8 +35,8 @@
   }
 
   .btn-primary {
-    @apply bg-red-700 text-white font-body font-semibold px-5 py-2.5 rounded-lg
-           hover:bg-red-800 transition-colors duration-150 disabled:opacity-40
+    @apply bg-brand text-white font-body font-semibold px-5 py-2.5 rounded-lg
+           hover:bg-brand-dark transition-colors duration-150 disabled:opacity-40
            disabled:cursor-not-allowed text-sm;
   }
 
@@ -49,8 +49,8 @@
   .input {
     @apply w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5
            text-stone-950 placeholder-stone-400 font-body text-sm
-           focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-200
-           dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-red-500 dark:focus:ring-red-500/30
+           focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200
+           dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-gray-500 dark:focus:border-blue-500 dark:focus:ring-blue-500/30
            transition-colors duration-150;
   }
 

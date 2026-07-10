@@ -12,7 +12,7 @@ export default {
       colors: {
         ink:    { DEFAULT: '#080808', 50: '#141414', 100: '#0F0F0F' },
         slate:  { card: '#111111', border: '#2A2A2A', hover: '#1A1A1A' },
-        azure:  { DEFAULT: '#DC2626', dim: '#991B1B', glow: '#F87171' },
+        azure:  { DEFAULT: '#1F3F68', dim: '#16304F', glow: '#3B6EA5' },
         amber:  { DEFAULT: '#F0F0F0', dim: '#D4D4D4', glow: '#FFFFFF' },
         green:  { match: '#10B981', dim: '#065F46' },
         red:    { fail: '#EF4444',   dim: '#7F1D1D' },

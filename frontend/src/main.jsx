@@ -20,7 +20,6 @@ import Chatbot        from './pages/Chatbot'
 import Controle       from './pages/Controle'
 import AnaliseAta     from './pages/AnaliseAta'
 import AnaliseJson    from './pages/AnaliseJson'
-import UploadJson     from './pages/UploadJson'
 import AnalysisDashboard from './pages/AnalysisDashboard'
 import PncpSearch     from './pages/PncpSearch'
 import Configuracoes  from './pages/Configuracoes'
@@ -70,7 +69,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/editais/:id/chat"       element={<PrivateRoute><EditalChat    /></PrivateRoute>} />
             <Route path="/editais/:id/analise-llm" element={<PrivateRoute><AnaliseAta   /></PrivateRoute>} />
             <Route path="/analise/documentos/:id"  element={<PrivateRoute><AnaliseJson  /></PrivateRoute>} />
-            <Route path="/analise/upload"          element={<PrivateRoute><UploadJson   /></PrivateRoute>} />
+            <Route path="/analise/upload"          element={<Navigate to="/upload" replace />} />
             <Route path="/analise/dashboard"       element={<PrivateRoute><AnalysisDashboard /></PrivateRoute>} />
             <Route path="/inteligencia/datasheets" element={<PrivateRoute><DatasheetCompare /></PrivateRoute>} />
 
