@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisDocument, AnalysisItem
+from app.services.document_identity import edital_business_key_from_result
 
 
 def build_source_hash(*parts: str | None) -> str:
@@ -32,22 +33,7 @@ def build_business_key(result: dict[str, Any], source_name: str | None) -> str |
     Mesma lógica usada em app/crm/json_analysis_importer.py::_build_import_key,
     reimplementada aqui sem acoplar services -> crm.
     """
-    edital = result.get("edital") or {}
-    n_interno = result.get("n_interno")
-    if _meaningful(n_interno):
-        return f"analysis-json|{str(n_interno).strip()}"
-
-    parts = [
-        edital.get("numero_pregao"),
-        edital.get("orgao"),
-        edital.get("data_disputa"),
-        edital.get("hora_disputa"),
-    ]
-    meaningful_parts = [str(part).strip().lower() for part in parts if _meaningful(part)]
-    if not meaningful_parts:
-        return None  # sem dado suficiente pra identificar o edital — não deduplica por chave de negócio
-    digest = hashlib.sha1("|".join(meaningful_parts).encode("utf-8", errors="ignore")).hexdigest()[:12]
-    return f"analysis-json|{digest}"
+    return edital_business_key_from_result(result)
 
 
 def persist_analysis_document(

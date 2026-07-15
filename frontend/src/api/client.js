@@ -61,6 +61,7 @@ export const editaisApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 60_000,
   }),
+  remove:  (id)                 => api.delete(`/editais/${id}`),
   addRequirements: (id, reqs)   => api.post(`/editais/${id}/requirements`, reqs),
   match:   (id)                 => api.post(`/editais/${id}/match`),
   results: (id)                 => api.get(`/editais/${id}/results`),

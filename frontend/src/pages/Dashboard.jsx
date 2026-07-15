@@ -23,11 +23,12 @@ export default function Dashboard() {
   const [editais,     setEditais]     = useState([])
   const [loading,     setLoading]     = useState(true)
   const [exporting,   setExporting]   = useState(null)
+  const [deleting,    setDeleting]    = useState(null)
   const [apiOnline,   setApiOnline]   = useState(null)
   const [opsSummary,  setOpsSummary]  = useState(null)
   const [crmSync,     setCrmSync]     = useState(null)
   const { user, isEditor } = useAuth()
-  const { toast }          = useToast()
+  const { toast, confirm } = useToast()
   const navigate           = useNavigate()
 
   useEffect(() => {
@@ -58,6 +59,25 @@ export default function Dashboard() {
     } catch (err) {
       toast({ type: 'error', message: err.response?.data?.detail || `Erro ao exportar ${tipo.toUpperCase()}.` })
     } finally { setExporting(null) }
+  }
+
+  const handleDelete = async (e, edital) => {
+    e.stopPropagation()
+    const ok = await confirm(
+      `Apagar "${edital.filename}"? O PDF, chunks, requisitos e resultados vinculados serao removidos.`,
+      { title: 'Apagar edital?' },
+    )
+    if (!ok) return
+    setDeleting(edital.id)
+    try {
+      await editaisApi.remove(edital.id)
+      setEditais((rows) => rows.filter((row) => row.id !== edital.id))
+      toast({ type: 'success', message: 'Edital apagado.' })
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao apagar edital.' })
+    } finally {
+      setDeleting(null)
+    }
   }
 
   const totalChunks       = useMemo(() => opsSummary?.editais?.total_chunks       ?? editais.reduce((s, e) => s + (e.chunks || 0), 0),       [editais, opsSummary])
@@ -264,6 +284,13 @@ export default function Dashboard() {
                       {exporting === `${edital.id}-${tipo}` ? '…' : tipo.toUpperCase()}
                     </button>
                   ))}
+                  {isEditor && (
+                    <button onClick={e => handleDelete(e, edital)}
+                      disabled={deleting === edital.id}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-40">
+                      {deleting === edital.id ? '...' : 'Apagar'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

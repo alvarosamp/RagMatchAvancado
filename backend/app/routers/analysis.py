@@ -14,6 +14,7 @@ from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
 from app.services.analysis_export_service import export_analysis_pdf
 from app.services.analysis_store import persist_analysis_document
+from app.services.document_identity import is_unidentified_edital_result
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -34,6 +35,12 @@ def store_analysis_document(
     current_user: User = Depends(require_role("admin", "editor")),
     db: Session = Depends(get_db),
 ):
+    if payload.source_kind == "edital" and is_unidentified_edital_result(payload.result):
+        raise HTTPException(
+            status_code=422,
+            detail="Documento nao identificado. Informe n_interno ou dados do edital (pregao, orgao e data) antes de importar.",
+        )
+
     crm_sync = None
     document, is_duplicate = persist_analysis_document(
         db,

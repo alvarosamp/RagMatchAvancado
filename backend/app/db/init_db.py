@@ -23,6 +23,7 @@ def init_db(db: Session) -> dict:
         _ensure_crm_schema_updates()
         _ensure_analysis_items_schema_updates()
         _ensure_products_schema_updates()
+        _ensure_editais_schema_updates()
         _ensure_analysis_documents_schema_updates()
         logger.info("Tabelas do portal e do CRM criadas com sucesso.")
 
@@ -111,6 +112,26 @@ def _ensure_products_schema_updates() -> None:
     _ensure_indexes(
         [
             "CREATE INDEX IF NOT EXISTS ix_products_is_competitor ON products (is_competitor)",
+        ]
+    )
+
+
+def _ensure_editais_schema_updates() -> None:
+    inspector = inspect(engine)
+    _ensure_columns(
+        inspector,
+        "editais",
+        {
+            "source_hash": "VARCHAR",
+            "business_key": "VARCHAR",
+            "status": "VARCHAR DEFAULT 'done'",
+        },
+    )
+    _ensure_indexes(
+        [
+            "CREATE INDEX IF NOT EXISTS ix_editais_source_hash ON editais (source_hash)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_business_key ON editais (business_key)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_status ON editais (status)",
         ]
     )
 

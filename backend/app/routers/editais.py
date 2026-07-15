@@ -20,7 +20,7 @@ import os
 import re
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -36,6 +36,7 @@ from app.services.edital_analysis import (
     sync_analysis_to_crm,
 )
 from app.services.analysis_store import persist_analysis_document
+from app.services.document_identity import content_hash
 
 router = APIRouter(prefix="/editais", tags=["editais"])
 _queue = JobQueue()
@@ -46,9 +47,11 @@ class JobCreatedResponse(BaseModel):
     Resposta imediata após criar um job assíncrono.
     O cliente usa o job_id para consultar progresso: GET /jobs/{job_id}
     """
-    job_id:  str
+    job_id:  str | None = None
     status:  str = "pending"
     message: str
+    duplicate: bool = False
+    edital_id: int | None = None
 
 
 class EditalResponse(BaseModel):
@@ -78,6 +81,24 @@ async def upload_edital(
 
     pdf_bytes = await file.read()
     tenant_id = current_user.tenant.slug
+    source_hash = content_hash(pdf_bytes)
+
+    existing = (
+        db.query(Edital)
+        .filter(
+            Edital.tenant_id == tenant_id,
+            Edital.source_hash == source_hash,
+        )
+        .first()
+    )
+    if existing is not None:
+        logger.info("[Editais] PDF duplicado ignorado | arquivo=%s | edital=%s", file.filename, existing.id)
+        return JobCreatedResponse(
+            status="duplicate",
+            duplicate=True,
+            edital_id=existing.id,
+            message=f"PDF '{file.filename}' ja estava cadastrado e nao foi reprocessado.",
+        )
 
     logger.info(f"[Editais] Upload recebido | arquivo={file.filename} | tenant={tenant_id}")
 
@@ -88,6 +109,7 @@ async def upload_edital(
         tenant_id        = tenant_id,
         user_id          = current_user.id,
         db               = db,
+        source_hash      = source_hash,
     )
 
     return JobCreatedResponse(
@@ -189,12 +211,28 @@ def list_editais(
         {
             "id":           e.id,
             "filename":     e.filename,
+            "status":       e.status,
+            "source_hash":  e.source_hash,
+            "business_key": e.business_key,
             "chunks":       len(e.chunks),
             "requirements": len(e.requirements),
             "parsed_at":    e.parsed_at,
         }
         for e in editais
     ]
+
+
+@router.delete("/{edital_id}", status_code=204)
+def delete_edital(
+    edital_id: int,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    """Apaga um PDF/Edital do pipeline antigo, incluindo chunks, requisitos e resultados vinculados."""
+    edital = _get_edital_do_tenant(edital_id, current_user, db)
+    db.delete(edital)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/{edital_id}/results")
@@ -286,7 +324,7 @@ def analyze_edital(
         )
 
     payload = build_analysis_payload(edital)
-    analysis_record, _analysis_is_duplicate = persist_analysis_document(
+    analysis_record, analysis_is_duplicate = persist_analysis_document(
         db,
         tenant_id=current_user.tenant_id,
         source_kind="edital",
@@ -294,7 +332,7 @@ def analyze_edital(
         full_text=edital.full_text,
         result=payload,
     )
-    crm_result = sync_analysis_to_crm(db, edital, current_user)
+    crm_result = None if analysis_is_duplicate else sync_analysis_to_crm(db, edital, current_user)
     db.commit()
     logger.info(
         "[Editais] Analise estruturada concluida | edital=%s | itens=%s | crm=%s",

@@ -79,6 +79,7 @@ class JobQueue:
         tenant_id:        str,
         user_id:          int,
         db:               Session,
+        source_hash:      str | None = None,
     ) -> str:
         """
         Cria um job de upload+processamento de edital.
@@ -121,6 +122,7 @@ class JobQueue:
                 "pdf_path": pdf_path,
                 "filename": filename,
                 "tenant_id": tenant_id,
+                "source_hash": source_hash,
             },
         )
         db.add(job)
@@ -136,6 +138,7 @@ class JobQueue:
             pdf_path  = pdf_path,
             filename  = filename,
             tenant_id = tenant_id,
+            source_hash = source_hash,
         )
 
         return job_id
@@ -249,6 +252,7 @@ def _executar_job_upload(
     pdf_path:  str,
     filename:  str,
     tenant_id: str,
+    source_hash: str | None = None,
 ) -> None:
     """
     Handler do job de upload — roda em background thread.
@@ -286,10 +290,48 @@ def _executar_job_upload(
 
         # ── Etapa 2: Salva Edital + Chunking ──────────────────────────────────
         from app.db.models import Edital
+        from app.services.document_identity import edital_business_key_from_text, is_unidentified_pdf_text
         from app.pipeline.chunker import chunk_document
+
+        business_key = edital_business_key_from_text(parsed_doc.full_text, filename)
+        if is_unidentified_pdf_text(parsed_doc.full_text, filename):
+            raise ValueError(
+                "Documento nao identificado. O PDF nao possui texto suficiente ou dados de edital reconheciveis."
+            )
+
+        duplicate = (
+            db.query(Edital)
+            .filter(
+                Edital.tenant_id == tenant_id,
+                Edital.business_key == business_key,
+            )
+            .first()
+        )
+        if duplicate is not None:
+            try:
+                os.remove(pdf_path)
+            except OSError:
+                pass
+            _update_job(
+                db, job_id,
+                status      = JobStatus.DONE,
+                progress    = 1.0,
+                finished_at = datetime.now(timezone.utc),
+                result      = {
+                    "edital_id": duplicate.id,
+                    "filename": filename,
+                    "duplicate": True,
+                    "message": "Documento ja cadastrado. Este arquivo nao foi reprocessado.",
+                },
+            )
+            logger.info("[Worker] Documento duplicado ignorado | job=%s | edital=%s", job_id[:8], duplicate.id)
+            return
 
         edital = Edital(
             filename  = filename,
+            source_hash = source_hash,
+            business_key = business_key,
+            status = "done",
             full_text = parsed_doc.full_text,
             tenant_id = tenant_id,
         )
@@ -347,6 +389,10 @@ def _executar_job_upload(
 
     except Exception as e:
         logger.error(f"[Worker] Job falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
+        try:
+            os.remove(pdf_path)
+        except OSError:
+            pass
         _update_job(
             db, job_id,
             status        = JobStatus.FAILED,

@@ -57,6 +57,7 @@ export default function Upload() {
   const [loading, setLoading] = useState(false)
   const [jobs, setJobs] = useState([])
   const [error, setError] = useState(null)
+  const [pdfResults, setPdfResults] = useState([])
 
   // ── JSON (um ou varios arquivos de analise → BI + CRM) ──────────────────
   const [jsonFiles, setJsonFiles] = useState([])
@@ -75,6 +76,7 @@ export default function Upload() {
     setJsonFiles([])
     setJsonResults([])
     setJsonDoneCount(0)
+    setPdfResults([])
     setJobs([])
     setError(null)
     if (inputRef.current) inputRef.current.value = ''
@@ -85,24 +87,23 @@ export default function Upload() {
     const jsons = all.filter(isJsonFile)
     const pdfs = all.filter(isPdfFile)
 
-    if (jsons.length) {
-      setJsonFiles(jsons)
-      setJsonResults([])
-      setJsonDoneCount(0)
-      setPdfFiles([])
-      setError(null)
-      return
-    }
-    if (pdfs.length) {
+    if (jsons.length || pdfs.length) {
+      const unsupported = all.filter((file) => !isJsonFile(file) && !isPdfFile(file))
+      if (unsupported.length) {
+        setError(`Arquivo nao suportado: ${unsupported[0].name}. Envie apenas PDF ou JSON.`)
+        return
+      }
       const err = pdfs.map(validatePdf).find(Boolean)
       if (err) {
         setError(err)
         setPdfFiles([])
         return
       }
-      setPdfFiles(pdfs)
-      setJsonFiles([])
+      setJsonFiles(jsons)
       setJsonResults([])
+      setJsonDoneCount(0)
+      setPdfFiles(pdfs)
+      setPdfResults([])
       setError(null)
       return
     }
@@ -131,22 +132,37 @@ export default function Upload() {
     setLoading(true)
     setError(null)
 
+    const submitted = []
+    const outcomes = []
     try {
-      const submitted = []
       for (const file of pdfFiles) {
         const formData = new FormData()
         formData.append('file', file)
-        const res = await editaisApi.upload(formData)
-        const jid = res.data?.job_id || res.data?.id
-        if (jid) {
-          submitted.push({ id: jid, filename: file.name, size: file.size })
+        try {
+          const res = await editaisApi.upload(formData)
+          if (res.data?.duplicate) {
+            outcomes.push({ name: file.name, status: 'duplicate', editalId: res.data.edital_id, message: res.data.message })
+            continue
+          }
+          const jid = res.data?.job_id || res.data?.id
+          if (jid) {
+            submitted.push({ id: jid, filename: file.name, size: file.size })
+            outcomes.push({ name: file.name, status: 'queued', jobId: jid })
+          }
+        } catch (err2) {
+          outcomes.push({
+            name: file.name,
+            status: 'error',
+            message: err2.response?.data?.detail || 'Falha ao enviar o arquivo.',
+          })
         }
       }
       setJobs(submitted)
+      setPdfResults(outcomes)
       toast({
-        type: 'success',
-        title: 'Upload concluido',
-        message: `${submitted.length} documento(s) em processamento.`,
+        type: outcomes.some((item) => item.status === 'error') ? 'error' : 'success',
+        title: 'Envio de PDFs concluido',
+        message: `${submitted.length} novo(s), ${outcomes.filter((item) => item.status === 'duplicate').length} repetido(s), ${outcomes.filter((item) => item.status === 'error').length} com erro.`,
       })
     } catch (err2) {
       const msg = err2.response?.data?.detail ?? 'Falha ao enviar o arquivo. Tente novamente.'
@@ -158,6 +174,15 @@ export default function Upload() {
   }
 
   const handleJobDone = (job) => {
+    if (job.result?.duplicate) {
+      toast({
+        type: 'warning',
+        title: 'Documento ja existente',
+        message: job.result?.message || 'Este arquivo nao foi reprocessado.',
+        duration: 6000,
+      })
+      return
+    }
     const editalId = job.result?.edital_id
     toast({
       type: 'success',
@@ -175,7 +200,7 @@ export default function Upload() {
   }
 
   const processJsonFiles = async () => {
-    if (!jsonFiles.length) return
+    if (!jsonFiles.length) return []
     setJsonProcessing(true)
     setJsonDoneCount(0)
     const outcomes = new Array(jsonFiles.length)
@@ -224,6 +249,12 @@ export default function Upload() {
         + `${dupCount ? `, ${dupCount} ja existente(s) (ignorada(s))` : ''}`
         + `${errCount ? `, ${errCount} com erro` : ''}.`,
     })
+    return outcomes
+  }
+
+  const processSelectedFiles = async () => {
+    if (pdfFiles.length) await handlePdfSubmit()
+    if (jsonFiles.length) await processJsonFiles()
   }
 
   if (jobs.length > 0) {
@@ -270,6 +301,30 @@ export default function Upload() {
               </div>
             )}
           </Card>
+
+          {(pdfResults.length > 0 || jsonResults.length > 0) && (
+            <Card className="p-5">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Resumo do lote</h2>
+              <div className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                {pdfResults.map((result, index) => (
+                  <div key={`${result.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <span className="truncate">{result.name}</span>
+                    <Badge tone={result.status === 'queued' ? 'emerald' : result.status === 'duplicate' ? 'amber' : 'red'}>
+                      {result.status === 'queued' ? 'Em processamento' : result.status === 'duplicate' ? 'Ja existente' : 'Erro'}
+                    </Badge>
+                  </div>
+                ))}
+                {jsonResults.map((result, index) => (
+                  <div key={`${result.name}-json-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <span className="truncate">{result.name}</span>
+                    <Badge tone={result.status === 'ok' ? 'emerald' : result.status === 'duplicate' ? 'amber' : 'red'}>
+                      {result.status === 'ok' ? 'Importado' : result.status === 'duplicate' ? 'Ja existente' : 'Erro'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           <div className="flex gap-3">
             <button onClick={() => navigate('/jobs')} className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
@@ -319,21 +374,23 @@ export default function Upload() {
               onChange={onFileChange}
             />
 
-            {pdfFiles.length > 0 ? (
+            {hasSelection ? (
               <div className="flex flex-col items-center">
                 <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  PDF
+                  {pdfFiles.length && jsonFiles.length ? 'LOTE' : pdfFiles.length ? 'PDF' : 'JSON'}
                 </div>
-                <p className="text-sm font-semibold text-slate-950 dark:text-white">{pdfFiles.length} PDF(s) selecionado(s)</p>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">
+                  {pdfFiles.length ? `${pdfFiles.length} PDF(s)` : ''}{pdfFiles.length && jsonFiles.length ? ' + ' : ''}{jsonFiles.length ? `${jsonFiles.length} JSON(s)` : ''} selecionado(s)
+                </p>
                 <p className="mt-1 max-w-xl text-xs text-slate-500 dark:text-slate-400">
-                  {pdfFiles.slice(0, 3).map((file) => file.name).join(', ')}{pdfFiles.length > 3 ? '...' : ''}
+                  {[...pdfFiles, ...jsonFiles].slice(0, 3).map((file) => file.name).join(', ')}{pdfFiles.length + jsonFiles.length > 3 ? '...' : ''}
                 </p>
                 <button
                   type="button"
                   className="mt-3 rounded border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   onClick={(e) => { e.stopPropagation(); clearAll() }}
                 >
-                  Remover arquivo
+                  Remover selecao
                 </button>
               </div>
             ) : jsonFiles.length > 0 ? (
@@ -401,34 +458,57 @@ export default function Upload() {
             >
               Cancelar
             </button>
-            {jsonFiles.length > 0 ? (
-              <button
-                type="button"
-                onClick={processJsonFiles}
-                disabled={jsonProcessing}
-                className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
-              >
-                {jsonProcessing ? `Importando ${jsonDoneCount}/${jsonFiles.length}` : 'Importar analise(s)'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handlePdfSubmit}
-                disabled={pdfFiles.length === 0 || loading}
-                className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
-              >
-                {loading ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>Enviar edital</>
-                )}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={processSelectedFiles}
+              disabled={!hasSelection || loading || jsonProcessing}
+              className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
+            >
+              {loading || jsonProcessing ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  {jsonProcessing ? `Importando ${jsonDoneCount}/${jsonFiles.length}` : 'Enviando...'}
+                </>
+              ) : (
+                <>Processar arquivos</>
+              )}
+            </button>
           </div>
         </Card>
+
+        {pdfResults.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Resultado dos PDFs</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Arquivo</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                    <th className="px-5 py-3 font-semibold">Detalhe</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {pdfResults.map((result, index) => (
+                    <tr key={`${result.name}-${index}`}>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-950 dark:text-white">{result.name}</td>
+                      <td className="px-5 py-4">
+                        <Badge tone={result.status === 'queued' ? 'emerald' : result.status === 'duplicate' ? 'amber' : 'red'}>
+                          {result.status === 'queued' ? 'Em processamento' : result.status === 'duplicate' ? 'Ja existente' : 'Erro'}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {result.message || result.jobId || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
         {jsonResults.length > 0 && (
           <Card className="overflow-hidden">

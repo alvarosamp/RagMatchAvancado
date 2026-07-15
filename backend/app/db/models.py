@@ -43,6 +43,9 @@ class Edital(Base):
 
     id           = Column(Integer, primary_key=True, index=True)
     filename     = Column(String, nullable=False)
+    source_hash  = Column(String, index=True)
+    business_key = Column(String, index=True)
+    status       = Column(String, nullable=False, default="done", index=True)
     full_text    = Column(Text)                          # texto bruto extraído
     parsed_at    = Column(DateTime, server_default=func.now())
     tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
