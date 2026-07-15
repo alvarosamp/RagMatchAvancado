@@ -19,6 +19,37 @@ def build_source_hash(*parts: str | None) -> str:
     return digest.hexdigest()
 
 
+def _meaningful(value: Any) -> bool:
+    return value is not None and str(value).strip() not in ("", "-", "N/C")
+
+
+def build_business_key(result: dict[str, Any], source_name: str | None) -> str | None:
+    """
+    Identificador do EDITAL em si (não do arquivo/conteúdo) — usado pra saber
+    se "é o mesmo documento" mesmo que o JSON tenha sido reprocessado e o
+    conteúdo tenha mudado ligeiramente. Prioriza `n_interno` (identificador
+    explícito do schema); sem ele, cai numa combinação de pregão/órgão/data.
+    Mesma lógica usada em app/crm/json_analysis_importer.py::_build_import_key,
+    reimplementada aqui sem acoplar services -> crm.
+    """
+    edital = result.get("edital") or {}
+    n_interno = result.get("n_interno")
+    if _meaningful(n_interno):
+        return f"analysis-json|{str(n_interno).strip()}"
+
+    parts = [
+        edital.get("numero_pregao"),
+        edital.get("orgao"),
+        edital.get("data_disputa"),
+        edital.get("hora_disputa"),
+    ]
+    meaningful_parts = [str(part).strip().lower() for part in parts if _meaningful(part)]
+    if not meaningful_parts:
+        return None  # sem dado suficiente pra identificar o edital — não deduplica por chave de negócio
+    digest = hashlib.sha1("|".join(meaningful_parts).encode("utf-8", errors="ignore")).hexdigest()[:12]
+    return f"analysis-json|{digest}"
+
+
 def persist_analysis_document(
     db: Session,
     *,
@@ -30,8 +61,32 @@ def persist_analysis_document(
     tokens_used: int = 0,
     processing_ms: int | None = None,
     status: str = "done",
-) -> AnalysisDocument:
-    """Upsert a structured analysis and its items by content hash."""
+) -> tuple[AnalysisDocument, bool]:
+    """
+    Upsert a structured analysis and its items by content hash.
+
+    Retorna (document, is_duplicate). Quando um edital com o mesmo
+    `business_key` (n_interno/número do pregão) já existe, o documento NÃO
+    é reprocessado nem atualizado — é devolvido como está, com
+    is_duplicate=True, pra quem chamou saber que não deve avançar esse item
+    no processo (nem sincronizar CRM de novo). Pensado pro caso de importar
+    uma pasta inteira: os itens novos avançam normalmente, os repetidos são
+    pulados sem travar o lote.
+    """
+    business_key = build_business_key(result, source_name) if source_kind == "edital" else None
+    if business_key:
+        existing = (
+            db.query(AnalysisDocument)
+            .filter(
+                AnalysisDocument.tenant_id == tenant_id,
+                AnalysisDocument.source_kind == source_kind,
+                AnalysisDocument.business_key == business_key,
+            )
+            .first()
+        )
+        if existing is not None:
+            return existing, True
+
     result_signature = json.dumps(result, sort_keys=True, ensure_ascii=False)
     source_hash = build_source_hash(source_kind, full_text or result_signature, source_name or "")
     document = (
@@ -48,9 +103,12 @@ def persist_analysis_document(
             tenant_id=tenant_id,
             source_kind=source_kind,
             source_hash=source_hash,
+            business_key=business_key,
         )
         db.add(document)
         db.flush()
+    else:
+        document.business_key = business_key or document.business_key
 
     document.source_name = source_name
     document.full_text = full_text
@@ -68,7 +126,7 @@ def persist_analysis_document(
         document.items.append(_build_analysis_item(item, uf=edital_uf))
 
     db.flush()
-    return document
+    return document, False
 
 
 def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> AnalysisItem:

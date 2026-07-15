@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { analysisApi } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
 import { formatNumber, formatMoney, compactDescription } from '../components/ui/format'
 import StatCard from '../components/ui/StatCard'
 import Card from '../components/ui/Card'
@@ -76,12 +77,14 @@ function CategoryPanel({ category }) {
 
 export default function AnalysisDashboard() {
   const navigate = useNavigate()
+  const { toast, confirm } = useToast()
   const [period, setPeriod] = useState('month')
   const [dashboard, setDashboard] = useState(null)
   const [editais, setEditais] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const intervalRef = useRef(null)
 
   const fetchAll = useCallback(async (showSpinner) => {
@@ -114,6 +117,26 @@ export default function AnalysisDashboard() {
 
   const categoryRows = useMemo(() => categories.slice(0, 3), [categories])
   const recentRows = useMemo(() => editais.slice(0, 12), [editais])
+
+  const handleDelete = async (edital, event) => {
+    event.stopPropagation()
+    const label = edital.numero_pregao || edital.source_name || `edital #${edital.id}`
+    const ok = await confirm(
+      `Apagar "${label}"? Os itens ligados a ele somem do BI. O que já foi sincronizado no CRM não é afetado.`,
+      { title: 'Apagar edital?' },
+    )
+    if (!ok) return
+    setDeletingId(edital.id)
+    try {
+      await analysisApi.remove(edital.id)
+      toast({ type: 'success', message: `${label} apagado.` })
+      fetchAll(false)
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao apagar edital.' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-surface p-6 text-slate-950 dark:bg-surface-dark dark:text-white lg:p-8">
@@ -224,12 +247,13 @@ export default function AnalysisDashboard() {
                         <th className="px-5 py-4 font-semibold">Itens</th>
                         <th className="px-5 py-4 font-semibold">Categorias</th>
                         <th className="px-5 py-4 font-semibold">Status</th>
+                        <th className="px-5 py-4 font-semibold"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                       {recentRows.length === 0 ? (
                         <tr>
-                          <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan={7}>
+                          <td className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400" colSpan={8}>
                             Nenhum edital importado ainda.
                           </td>
                         </tr>
@@ -262,6 +286,16 @@ export default function AnalysisDashboard() {
                               </td>
                               <td className="px-5 py-4">
                                 <Badge tone={riskTone(edital.risco_identificado)}>{normalizeRisk(edital.risco_identificado)}</Badge>
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleDelete(edital, event)}
+                                  disabled={deletingId === edital.id}
+                                  className="rounded border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-40 dark:border-slate-700 dark:text-slate-400 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                >
+                                  {deletingId === edital.id ? '...' : 'Apagar'}
+                                </button>
                               </td>
                             </tr>
                           )

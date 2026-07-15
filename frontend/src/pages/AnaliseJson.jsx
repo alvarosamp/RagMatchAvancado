@@ -37,13 +37,14 @@ function InfoCard({ label, value }) {
 export default function AnaliseJson() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { toast } = useToast()
+  const { toast, confirm } = useToast()
 
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [tab, setTab] = useState('itens')
   const [exporting, setExporting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -77,6 +78,24 @@ export default function AnaliseJson() {
       toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel exportar a analise.' })
     } finally {
       setExporting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const label = edital.orgao || data?.source_name || `edital #${id}`
+    const ok = await confirm(
+      `Apagar "${label}"? Os itens ligados a ele somem do BI. O que já foi sincronizado no CRM não é afetado.`,
+      { title: 'Apagar edital?' },
+    )
+    if (!ok) return
+    setDeleting(true)
+    try {
+      await analysisApi.remove(id)
+      toast({ type: 'success', message: `${label} apagado.` })
+      navigate('/analise/dashboard')
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao apagar edital.' })
+      setDeleting(false)
     }
   }
 
@@ -142,6 +161,14 @@ export default function AnaliseJson() {
                 className="rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 dark:bg-brand-light dark:hover:bg-brand"
               >
                 {exporting ? 'Exportando...' : 'Exportar analise'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-lg border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+              >
+                {deleting ? 'Apagando...' : 'Apagar edital'}
               </button>
             </div>
           </div>

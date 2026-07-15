@@ -35,7 +35,7 @@ def store_analysis_document(
     db: Session = Depends(get_db),
 ):
     crm_sync = None
-    document = persist_analysis_document(
+    document, is_duplicate = persist_analysis_document(
         db,
         tenant_id=current_user.tenant_id,
         source_kind=payload.source_kind,
@@ -46,7 +46,7 @@ def store_analysis_document(
         processing_ms=payload.processing_ms,
         status=payload.status,
     )
-    if payload.source_kind == "edital":
+    if not is_duplicate and payload.source_kind == "edital":
         crm_sync = sync_analysis_json_to_crm(
             db,
             build_import_context_for_user(current_user),
@@ -56,6 +56,7 @@ def store_analysis_document(
     db.commit()
     response = _serialize_document(document, include_items=True)
     response["crm_sync"] = crm_sync
+    response["duplicate"] = is_duplicate
     return response
 
 
@@ -91,6 +92,28 @@ def get_analysis_document(
     if document is None:
         raise HTTPException(status_code=404, detail="Analise nao encontrada.")
     return _serialize_document(document, include_items=True)
+
+
+@router.delete("/documents/{document_id}", status_code=204)
+def delete_analysis_document(
+    document_id: int,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    """Apaga um edital/JSON importado (e seus itens, via cascade). Não mexe no CRM já sincronizado."""
+    document = (
+        db.query(AnalysisDocument)
+        .filter(
+            AnalysisDocument.id == document_id,
+            AnalysisDocument.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if document is None:
+        raise HTTPException(status_code=404, detail="Analise nao encontrada.")
+    db.delete(document)
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/documents/{document_id}/export/pdf")

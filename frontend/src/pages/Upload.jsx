@@ -193,7 +193,7 @@ export default function Upload() {
         })
         return {
           name: file.name,
-          status: 'ok',
+          status: response.data.duplicate ? 'duplicate' : 'ok',
           id: response.data.id,
           crmNoticeId: response.data.crm_sync?.notice_id,
           products: response.data.crm_sync?.products ?? 0,
@@ -216,10 +216,13 @@ export default function Upload() {
 
     setJsonProcessing(false)
     const okCount = outcomes.filter((outcome) => outcome?.status === 'ok').length
+    const dupCount = outcomes.filter((outcome) => outcome?.status === 'duplicate').length
     const errCount = outcomes.filter((outcome) => outcome?.status === 'error').length
     toast({
       type: errCount ? 'error' : 'success',
-      message: `${okCount} analise(s) importada(s)${errCount ? `, ${errCount} com erro` : ''}.`,
+      message: `${okCount} analise(s) importada(s)`
+        + `${dupCount ? `, ${dupCount} ja existente(s) (ignorada(s))` : ''}`
+        + `${errCount ? `, ${errCount} com erro` : ''}.`,
     })
   }
 
@@ -456,15 +459,17 @@ export default function Upload() {
                     <tr key={`${result.name}-${index}`}>
                       <td className="px-5 py-4 text-sm font-medium text-slate-950 dark:text-white">{result.name}</td>
                       <td className="px-5 py-4">
-                        <Badge tone={result.status === 'ok' ? 'emerald' : 'red'}>
-                          {result.status === 'ok' ? 'Importado' : 'Erro'}
+                        <Badge tone={result.status === 'ok' ? 'emerald' : result.status === 'duplicate' ? 'amber' : 'red'}>
+                          {result.status === 'ok' ? 'Importado' : result.status === 'duplicate' ? 'Ja existente' : 'Erro'}
                         </Badge>
                       </td>
-                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.crmNoticeId ? 'Sincronizado' : result.message || '-'}</td>
+                      <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">
+                        {result.status === 'duplicate' ? 'Nao reprocessado' : result.crmNoticeId ? 'Sincronizado' : result.message || '-'}
+                      </td>
                       <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.products ?? '-'}</td>
                       <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{result.documents ?? '-'}</td>
                       <td className="px-5 py-4 text-right">
-                        {result.status === 'ok' && (
+                        {(result.status === 'ok' || result.status === 'duplicate') && (
                           <button
                             type="button"
                             onClick={() => navigate(`/analise/documentos/${result.id}`)}

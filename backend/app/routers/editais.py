@@ -286,7 +286,7 @@ def analyze_edital(
         )
 
     payload = build_analysis_payload(edital)
-    analysis_record = persist_analysis_document(
+    analysis_record, _analysis_is_duplicate = persist_analysis_document(
         db,
         tenant_id=current_user.tenant_id,
         source_kind="edital",

@@ -104,6 +104,7 @@ class AnalysisDocument(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     source_kind = Column(String, nullable=False, index=True)
     source_hash = Column(String, nullable=False, index=True)
+    business_key = Column(String, index=True)  # identificador do documento (n_interno/numero_pregao) p/ deduplicar
     source_name = Column(String)
     status = Column(String, nullable=False, default="done", index=True)
     full_text = Column(Text)

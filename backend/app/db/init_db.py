@@ -23,6 +23,7 @@ def init_db(db: Session) -> dict:
         _ensure_crm_schema_updates()
         _ensure_analysis_items_schema_updates()
         _ensure_products_schema_updates()
+        _ensure_analysis_documents_schema_updates()
         logger.info("Tabelas do portal e do CRM criadas com sucesso.")
 
         inserted = load_switch_catalog(db)
@@ -110,6 +111,22 @@ def _ensure_products_schema_updates() -> None:
     _ensure_indexes(
         [
             "CREATE INDEX IF NOT EXISTS ix_products_is_competitor ON products (is_competitor)",
+        ]
+    )
+
+
+def _ensure_analysis_documents_schema_updates() -> None:
+    inspector = inspect(engine)
+    _ensure_columns(
+        inspector,
+        "analysis_documents",
+        {
+            "business_key": "VARCHAR",
+        },
+    )
+    _ensure_indexes(
+        [
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_business_key ON analysis_documents (business_key)",
         ]
     )
 

@@ -145,6 +145,7 @@ export const analysisApi = {
   get:       (id)          => api.get(`/analysis/documents/${id}`),
   exportPdf: (id)          => api.get(`/analysis/documents/${id}/export/pdf`, { responseType: 'blob' }),
   create:    (payload)     => api.post('/analysis/documents', payload, { timeout: 60_000 }),
+  remove:    (id)          => api.delete(`/analysis/documents/${id}`),
   dashboard: (params = {}) => api.get('/analysis/dashboard', { params }),
   editaisListagem: (params = {}) => api.get('/analysis/editais-listagem', { params }),
 }
