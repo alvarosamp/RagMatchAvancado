@@ -16,9 +16,10 @@ Fluxo:
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,10 @@ from app.db.session import get_db
 from app.logs.config import logger
 from app.services.attribute_parsers import compare_product_specs
 from app.services.datasheet_extractor import extract_specs_from_pdf
+from app.services.tor_datasheet_generator import (
+    build_tor_datasheet_preview,
+    export_tor_datasheet_pdf,
+)
 
 router = APIRouter(prefix="/datasheets", tags=["datasheets"])
 
@@ -51,6 +56,42 @@ async def extract_datasheet(
             detail="Nao foi possivel extrair especificacoes do datasheet. Preencha manualmente.",
         )
     return extracted
+
+
+@router.post("/tor/preview")
+async def preview_tor_datasheet(
+    file: UploadFile = File(..., description="PDF original do fabricante"),
+    pn_tor: str | None = Form(default=None),
+    category: str | None = Form(default=None),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Apenas arquivos PDF sao aceitos.")
+
+    pdf_bytes = await file.read()
+    logger.info("[Datasheets] Gerando preview TOR | arquivo=%s | tenant=%s", file.filename, current_user.tenant_id)
+    extracted = extract_specs_from_pdf(pdf_bytes, filename=file.filename)
+    preview = build_tor_datasheet_preview(extracted, pn_tor=pn_tor, category=category)
+    return {"preview": preview, "extracted": extracted}
+
+
+@router.post("/tor/export/pdf")
+def export_tor_datasheet(
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    preview = payload.get("preview") if "preview" in payload else payload
+    if not isinstance(preview, dict):
+        raise HTTPException(status_code=400, detail="Payload de datasheet invalido.")
+
+    content = export_tor_datasheet_pdf(preview)
+    pn = str(preview.get("pn_tor") or "datasheet_tor").strip() or "datasheet_tor"
+    safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", pn)
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="datasheet_tor_{safe_name}.pdf"'},
+    )
 
 
 class ImportDatasheetRequest(BaseModel):

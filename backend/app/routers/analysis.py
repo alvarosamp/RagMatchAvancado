@@ -13,6 +13,7 @@ from app.db.session import get_db
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
 from app.services.analysis_export_service import export_analysis_pdf
+from app.services.analysis_normalizer import normalize_analysis_result
 from app.services.analysis_store import persist_analysis_document
 from app.services.document_identity import is_unidentified_edital_result
 
@@ -35,7 +36,12 @@ def store_analysis_document(
     current_user: User = Depends(require_role("admin", "editor")),
     db: Session = Depends(get_db),
 ):
-    if payload.source_kind == "edital" and is_unidentified_edital_result(payload.result):
+    result = (
+        normalize_analysis_result(payload.result)
+        if payload.source_kind == "edital"
+        else payload.result
+    )
+    if payload.source_kind == "edital" and is_unidentified_edital_result(result):
         raise HTTPException(
             status_code=422,
             detail="Documento nao identificado. Informe n_interno ou dados do edital (pregao, orgao e data) antes de importar.",
@@ -48,7 +54,7 @@ def store_analysis_document(
         source_kind=payload.source_kind,
         source_name=payload.source_name,
         full_text=payload.full_text,
-        result=payload.result,
+        result=result,
         tokens_used=payload.tokens_used,
         processing_ms=payload.processing_ms,
         status=payload.status,
@@ -57,7 +63,7 @@ def store_analysis_document(
         crm_sync = sync_analysis_json_to_crm(
             db,
             build_import_context_for_user(current_user),
-            payload.result,
+            result,
             source_name=payload.source_name,
         )
     db.commit()
@@ -191,6 +197,13 @@ def _serialize_document(
                 "supplier_tax_id": item.supplier_tax_id,
                 "categoria": item.categoria,
                 "uf": item.uf,
+                "lote_grupo": item.lote_grupo,
+                "garantia": item.garantia,
+                "prazo_entrega": item.prazo_entrega,
+                "exclusividade_me_epp_item": item.exclusividade_me_epp_item,
+                "risco_associado": item.risco_associado,
+                "direcionamento_marca_tipo": item.direcionamento_marca_tipo,
+                "direcionamento_marca_justificativa": item.direcionamento_marca_justificativa,
                 "has_direcionamento_marca": item.has_direcionamento_marca,
                 "has_risco": item.has_risco,
                 "caracteristicas_bi": item.caracteristicas_bi,

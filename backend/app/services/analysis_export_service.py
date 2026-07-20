@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import re
 from collections import Counter, defaultdict
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_RIGHT
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
@@ -32,15 +33,17 @@ BORDER = colors.HexColor("#D9E0EA")
 SURFACE = colors.HexColor("#F6F8FB")
 RED = colors.HexColor("#B91C1C")
 GREEN = colors.HexColor("#047857")
+PAGE_SIZE = landscape(A4)
+CONTENT_WIDTH = 27.7 * cm
 
 
 def export_analysis_pdf(document: "AnalysisDocument") -> bytes:
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=A4,
-        rightMargin=1.2 * cm,
-        leftMargin=1.2 * cm,
+        pagesize=PAGE_SIZE,
+        rightMargin=1.0 * cm,
+        leftMargin=1.0 * cm,
         topMargin=1.0 * cm,
         bottomMargin=1.0 * cm,
         title=f"BI Editais - Analise {document.id}",
@@ -88,6 +91,7 @@ def _styles() -> dict[str, ParagraphStyle]:
             leading=32,
             textColor=TEXT,
             spaceAfter=8,
+            alignment=TA_CENTER,
         ),
         "subtitle": ParagraphStyle(
             "subtitle",
@@ -145,10 +149,10 @@ def _cover(
     title = _text(edital.get("orgao")) or _text(document.source_name) or f"Analise #{document.id}"
     rows = [
         [Paragraph("BUSINESS INTELLIGENCE", styles["eyebrow"])],
-        [Paragraph("Editais", styles["title"])],
+        [Paragraph("Relatorio BI de Editais", styles["title"])],
         [_para(_line([title, edital.get("numero_pregao"), edital.get("uf"), edital.get("cidade")]), styles["subtitle"])],
     ]
-    header = Table(rows, colWidths=[18.6 * cm])
+    header = Table(rows, colWidths=[CONTENT_WIDTH])
     header.setStyle(
         TableStyle(
             [
@@ -171,18 +175,22 @@ def _cover(
     ]
     kpi_table = Table(
         [[Paragraph(label, styles["small"]), Paragraph(value, styles["body"])] for label, value in kpis],
-        colWidths=[3.05 * cm, 3.9 * cm],
+        colWidths=[4.0 * cm, 3.5 * cm],
     )
     kpi_table.setStyle(_plain_table_style())
 
     info_table = Table(
         [
             ["Data da disputa", _text(edital.get("data_disputa")) or "-"],
+            ["Hora", _text(edital.get("hora_disputa")) or "-"],
             ["Criterio", _text(edital.get("criterio")) or "-"],
+            ["Portal", _text(edital.get("local")) or "-"],
+            ["UASG", _text(edital.get("uasg")) or "-"],
             ["ME/EPP", _text(edital.get("exclusividade_me_epp")) or "-"],
+            ["Validade proposta", _text(edital.get("validade_proposta")) or "-"],
             ["Fonte", _text(document.source_name) or "-"],
         ],
-        colWidths=[3.3 * cm, 8.1 * cm],
+        colWidths=[3.6 * cm, 16.0 * cm],
     )
     info_table.setStyle(_plain_table_style())
 
@@ -190,7 +198,7 @@ def _cover(
         header,
         Spacer(1, 0.35 * cm),
         Paragraph("Visao geral", styles["section"]),
-        Table([[kpi_table, info_table]], colWidths=[7.2 * cm, 11.2 * cm]),
+        Table([[kpi_table, info_table]], colWidths=[7.8 * cm, 19.9 * cm]),
     ]
 
 
@@ -217,7 +225,7 @@ def _category_summary(styles: dict[str, ParagraphStyle], items: list[Any]) -> li
             ]
         )
 
-    table = Table(data, colWidths=[4.5 * cm, 2 * cm, 2.4 * cm, 3.2 * cm, 6.2 * cm], repeatRows=1)
+    table = Table(data, colWidths=[5.5 * cm, 2.2 * cm, 2.6 * cm, 4.0 * cm, 13.4 * cm], repeatRows=1)
     table.setStyle(_grid_table_style())
     story.append(table)
 
@@ -232,20 +240,37 @@ def _category_summary(styles: dict[str, ParagraphStyle], items: list[Any]) -> li
 
 def _items_section(styles: dict[str, ParagraphStyle], items: list[Any]) -> list[Any]:
     story = [Paragraph("Relacao de itens", styles["section"])]
-    data = [["Item", "Categoria", "Descricao resumida", "Classificacao", "Qtd", "Preco unit."]]
-    for item in sorted(items, key=lambda row: (_text(row.item_number) or "", row.id or 0)):
+    data = [["Item", "Lote", "Categoria", "Descricao resumida", "Classificacao", "Prazo", "Qtd", "Preco unit.", "Valor total"]]
+    for item in sorted(items, key=_item_sort_key):
         raw = item.raw_payload or {}
         data.append(
             [
                 _para(item.item_number, styles["body"]),
+                _para(getattr(item, "lote_grupo", None) or raw.get("lote_grupo"), styles["body"], 18),
                 _para(item.categoria, styles["body"]),
-                _para(item.description, styles["body"], 140),
-                _para(_item_classification(item), styles["body"], 100),
+                _para(item.description, styles["body"], 170),
+                _para(_item_classification(item), styles["body"], 125),
+                _para(item.prazo_entrega or raw.get("prazo_entrega"), styles["body"], 45),
                 Paragraph(_num(item.quantity), styles["right"]),
                 Paragraph(_money(item.unit_value or raw.get("preco_unitario")), styles["right"]),
+                Paragraph(_money(item.total_value or raw.get("valor_total_item")), styles["right"]),
             ]
         )
-    table = Table(data, colWidths=[1.5 * cm, 2.4 * cm, 6.2 * cm, 4.3 * cm, 1.6 * cm, 2.3 * cm], repeatRows=1)
+    table = Table(
+        data,
+        colWidths=[
+            1.2 * cm,
+            1.6 * cm,
+            2.5 * cm,
+            7.1 * cm,
+            5.0 * cm,
+            2.4 * cm,
+            1.2 * cm,
+            3.0 * cm,
+            3.7 * cm,
+        ],
+        repeatRows=1,
+    )
     table.setStyle(_grid_table_style())
     story.append(table)
     return story
@@ -259,7 +284,7 @@ def _documents_section(styles: dict[str, ParagraphStyle], result: dict[str, Any]
         doc_rows.append([_text(doc.get("categoria")) or "-", _para(doc.get("documento"), styles["body"])])
     if len(doc_rows) == 1:
         doc_rows.append(["-", "Nenhum documento listado."])
-    table = Table(doc_rows, colWidths=[5 * cm, 13.2 * cm], repeatRows=1)
+    table = Table(doc_rows, colWidths=[6.0 * cm, 21.7 * cm], repeatRows=1)
     table.setStyle(_grid_table_style())
     story.append(table)
 
@@ -271,7 +296,7 @@ def _documents_section(styles: dict[str, ParagraphStyle], result: dict[str, Any]
         value = riscos.get(key) or {}
         motivos = value.get("motivos") or []
         risco_rows.append([key.replace("_", " ").title(), "Existe" if value.get("existe") else "Nao existe", _para("; ".join(map(str, motivos)), styles["body"])])
-    risk_table = Table(risco_rows, colWidths=[4 * cm, 3.2 * cm, 11 * cm], repeatRows=1)
+    risk_table = Table(risco_rows, colWidths=[5.5 * cm, 3.5 * cm, 18.7 * cm], repeatRows=1)
     risk_table.setStyle(_grid_table_style())
     story.append(risk_table)
 
@@ -281,7 +306,7 @@ def _documents_section(styles: dict[str, ParagraphStyle], result: dict[str, Any]
         dec_rows = [["Declaracoes exigidas"]]
         for item in declaracoes:
             dec_rows.append([_para(item.get("declaracao"), styles["body"])])
-        dec_table = Table(dec_rows, colWidths=[18.2 * cm], repeatRows=1)
+        dec_table = Table(dec_rows, colWidths=[27.7 * cm], repeatRows=1)
         dec_table.setStyle(_grid_table_style())
         story.append(dec_table)
     return story
@@ -305,7 +330,7 @@ def _breakdown_rows(rows: list[Any]) -> list[tuple[str, str, float]]:
 def _breakdown_table(styles: dict[str, ParagraphStyle], rows: list[tuple[str, str, float]]) -> Table:
     data = [["Atributo", "Valor", "Unidades"]]
     data.extend([[attr, _para(value, styles["body"]), _num(total)] for attr, value, total in rows])
-    table = Table(data, colWidths=[5 * cm, 9.5 * cm, 3.7 * cm], repeatRows=1)
+    table = Table(data, colWidths=[6.0 * cm, 17.7 * cm, 4.0 * cm], repeatRows=1)
     table.setStyle(_grid_table_style())
     return table
 
@@ -333,8 +358,8 @@ def _grid_table_style() -> TableStyle:
             ("BACKGROUND", (0, 0), (-1, 0), BLUE),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("LEADING", (0, 0), (-1, -1), 8),
+            ("FONTSIZE", (0, 0), (-1, -1), 6.8),
+            ("LEADING", (0, 0), (-1, -1), 8.2),
             ("GRID", (0, 0), (-1, -1), 0.35, BORDER),
             ("BACKGROUND", (0, 1), (-1, -1), colors.white),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, BLUE_LIGHT]),
@@ -351,11 +376,11 @@ def _page_footer(canvas, doc) -> None:
     canvas.saveState()
     canvas.setStrokeColor(BORDER)
     canvas.setLineWidth(0.5)
-    canvas.line(doc.leftMargin, 0.75 * cm, A4[0] - doc.rightMargin, 0.75 * cm)
+    canvas.line(doc.leftMargin, 0.75 * cm, PAGE_SIZE[0] - doc.rightMargin, 0.75 * cm)
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(MUTED)
     canvas.drawString(doc.leftMargin, 0.45 * cm, "Categorizacao automatica - revisao recomendada")
-    canvas.drawRightString(A4[0] - doc.rightMargin, 0.45 * cm, f"Pagina {doc.page}")
+    canvas.drawRightString(PAGE_SIZE[0] - doc.rightMargin, 0.45 * cm, f"Pagina {doc.page}")
     canvas.restoreState()
 
 
@@ -363,6 +388,14 @@ def _item_classification(item: Any) -> str:
     bi = item.caracteristicas_bi or {}
     values = [str(value) for value in bi.values() if value and str(value).upper() != "N/C"]
     return " - ".join(values) or _text(item.item_type) or "-"
+
+
+def _item_sort_key(item: Any) -> tuple[int, str, int]:
+    text = _text(getattr(item, "item_number", None))
+    match = re.search(r"\d+", text)
+    if match:
+        return (0, f"{int(match.group()):010d}", int(getattr(item, "id", 0) or 0))
+    return (1, text, int(getattr(item, "id", 0) or 0))
 
 
 def _line(values: list[Any]) -> str:
@@ -396,8 +429,10 @@ def _num(value: Any) -> str:
 
 
 def _money(value: Any) -> str:
+    if value in (None, ""):
+        return "-"
     try:
-        number = float(value or 0)
+        number = float(value)
     except (TypeError, ValueError):
         return "-"
     return "R$ " + f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")

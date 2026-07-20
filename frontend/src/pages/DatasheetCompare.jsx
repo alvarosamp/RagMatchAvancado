@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { datasheetsApi } from '../api/client'
+import { datasheetsApi, downloadBlob } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
@@ -20,9 +20,15 @@ function displayValue(value) {
 export default function DatasheetCompare() {
   const { toast } = useToast()
   const inputRef = useRef(null)
+  const torInputRef = useRef(null)
 
   const [dragging, setDragging] = useState(false)
+  const [torDragging, setTorDragging] = useState(false)
   const [extracting, setExtracting] = useState(false)
+  const [generatingTor, setGeneratingTor] = useState(false)
+  const [exportingTor, setExportingTor] = useState(false)
+  const [torMeta, setTorMeta] = useState({ pn_tor: '', category: '' })
+  const [torPreview, setTorPreview] = useState(null)
   const [preview, setPreview] = useState(null) // { model, manufacturer, category, specs }
   const [saving, setSaving] = useState(false)
   const [competitorProduct, setCompetitorProduct] = useState(null)
@@ -80,14 +86,85 @@ export default function DatasheetCompare() {
     }
   }
 
+  const handleTorFile = async (file) => {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      toast({ type: 'error', message: 'Envie um PDF do datasheet do fabricante.' })
+      return
+    }
+    setGeneratingTor(true)
+    setTorPreview(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      if (torMeta.pn_tor.trim()) formData.append('pn_tor', torMeta.pn_tor.trim())
+      if (torMeta.category.trim()) formData.append('category', torMeta.category.trim())
+      const res = await datasheetsApi.torPreview(formData)
+      setTorPreview(res.data.preview)
+      toast({ type: 'success', message: 'Previa TOR gerada. Revise antes de exportar.' })
+    } catch (err) {
+      toast({
+        type: 'error',
+        title: 'Erro ao gerar datasheet TOR',
+        message: err.response?.data?.detail || 'Nao foi possivel montar a previa TOR.',
+      })
+    } finally {
+      setGeneratingTor(false)
+    }
+  }
+
   const onDrop = (e) => {
     e.preventDefault()
     setDragging(false)
     handleFile(e.dataTransfer.files[0])
   }
 
+  const onTorDrop = (e) => {
+    e.preventDefault()
+    setTorDragging(false)
+    handleTorFile(e.dataTransfer.files[0])
+  }
+
   const updateSpecValue = (key, value) => {
     setPreview((prev) => ({ ...prev, specs: { ...prev.specs, [key]: value } }))
+  }
+
+  const updateTorField = (key, value) => {
+    setTorPreview((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const updateTorArray = (key, index, value) => {
+    setTorPreview((prev) => {
+      const rows = [...(prev?.[key] || [])]
+      rows[index] = value
+      return { ...prev, [key]: rows }
+    })
+  }
+
+  const addTorArrayItem = (key) => {
+    setTorPreview((prev) => ({ ...prev, [key]: [...(prev?.[key] || []), ''] }))
+  }
+
+  const updateTorTable = (key, value) => {
+    setTorPreview((prev) => ({
+      ...prev,
+      tabela_tecnica: { ...(prev?.tabela_tecnica || {}), [key]: value },
+    }))
+  }
+
+  const exportTorPdf = async () => {
+    if (!torPreview?.pn_tor?.trim()) {
+      toast({ type: 'error', message: 'Informe o PN TOR antes de exportar.' })
+      return
+    }
+    setExportingTor(true)
+    try {
+      const res = await datasheetsApi.torExportPdf({ preview: torPreview })
+      downloadBlob(res.data, `datasheet_tor_${torPreview.pn_tor}.pdf`)
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel exportar o PDF TOR.' })
+    } finally {
+      setExportingTor(false)
+    }
   }
 
   const saveCompetitor = async () => {
@@ -133,11 +210,198 @@ export default function DatasheetCompare() {
       <div className="mx-auto max-w-5xl space-y-6">
         <Card className="p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Inteligencia comercial</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Comparar datasheet de concorrente</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Datasheets</h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-            Envie o datasheet (PDF) de um produto concorrente. O sistema extrai as especificacoes
-            automaticamente e compara, atributo por atributo, com um produto do seu catalogo.
+            Gere datasheets no padrao TOR a partir do PDF do fabricante ou compare produtos concorrentes
+            com o seu catalogo.
           </p>
+        </Card>
+
+        <Card className="space-y-6 p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Gerador de datasheet TOR</h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
+                Envie o datasheet original do fabricante. O sistema traduz, consolida os dados tecnicos e monta uma previa editavel antes do PDF final.
+              </p>
+            </div>
+            {torPreview && (
+              <button
+                type="button"
+                onClick={exportTorPdf}
+                disabled={exportingTor}
+                className="rounded-lg bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 dark:bg-brand-light dark:hover:bg-brand"
+              >
+                {exportingTor ? 'Exportando...' : 'Exportar PDF TOR'}
+              </button>
+            )}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_220px]">
+            <label className="block">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">PN TOR desejado</span>
+              <input
+                className="input mt-1"
+                value={torMeta.pn_tor}
+                placeholder="Ex.: SFPX10GD1310NM10KM"
+                onChange={(e) => setTorMeta((prev) => ({ ...prev, pn_tor: e.target.value }))}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Categoria</span>
+              <select
+                className="input mt-1"
+                value={torMeta.category}
+                onChange={(e) => setTorMeta((prev) => ({ ...prev, category: e.target.value }))}
+              >
+                <option value="">Detectar automaticamente</option>
+                <option value="Transceiver">Transceiver</option>
+                <option value="Modulo optico">Modulo optico</option>
+                <option value="Switch">Switch</option>
+                <option value="Access Point">Access Point</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => torInputRef.current?.click()}
+              disabled={generatingTor}
+              className="mt-5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              {generatingTor ? 'Gerando...' : 'Selecionar PDF'}
+            </button>
+          </div>
+
+          <div
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+              torDragging
+                ? 'border-brand bg-blue-50 dark:border-brand-light dark:bg-brand/10'
+                : 'border-slate-300 bg-slate-50 hover:border-brand dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-light'
+            }`}
+            onClick={() => torInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setTorDragging(true) }}
+            onDragLeave={() => setTorDragging(false)}
+            onDrop={onTorDrop}
+          >
+            <input
+              ref={torInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => handleTorFile(e.target.files[0])}
+            />
+            {generatingTor ? (
+              <div className="flex flex-col items-center">
+                <span className="h-8 w-8 animate-spin rounded-full border-2 border-brand/30 border-t-brand dark:border-brand-light/30 dark:border-t-brand-light" />
+                <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">Montando previa TOR...</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                  PDF
+                </div>
+                <p className="font-semibold text-slate-950 dark:text-white">{torDragging ? 'Solte o datasheet do fabricante' : 'Arraste o datasheet do fabricante aqui'}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ou clique para selecionar</p>
+              </>
+            )}
+          </div>
+
+          {torPreview && (
+            <div className="space-y-5 border-t border-slate-200 pt-5 dark:border-slate-700">
+              <div className="grid gap-4 md:grid-cols-2">
+                {[
+                  ['pn_tor', 'PN TOR'],
+                  ['categoria', 'Categoria'],
+                  ['titulo', 'Titulo'],
+                  ['resumo', 'Resumo tecnico'],
+                ].map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+                    <input
+                      className="input mt-1"
+                      value={torPreview[key] || ''}
+                      onChange={(e) => updateTorField(key, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Descricao do produto</span>
+                <textarea
+                  className="input mt-1 min-h-28"
+                  value={torPreview.descricao || ''}
+                  onChange={(e) => updateTorField('descricao', e.target.value)}
+                />
+              </label>
+
+              <div className="grid gap-5 lg:grid-cols-3">
+                {[
+                  ['tags', 'Tags'],
+                  ['caracteristicas', 'Caracteristicas'],
+                  ['aplicacoes', 'Aplicacoes'],
+                ].map(([key, label]) => (
+                  <div key={key} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-slate-950 dark:text-white">{label}</p>
+                      <button
+                        type="button"
+                        onClick={() => addTorArrayItem(key)}
+                        className="rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      >
+                        Adicionar
+                      </button>
+                    </div>
+                    {(torPreview[key] || []).map((value, index) => (
+                      <input
+                        key={`${key}-${index}`}
+                        className="input"
+                        value={value}
+                        onChange={(e) => updateTorArray(key, index, e.target.value)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-950 dark:text-white">Tabela tecnica</h3>
+                <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                  <table className="w-full text-left">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                      <tr>
+                        <th className="px-4 py-2 font-semibold">Parametro</th>
+                        <th className="px-4 py-2 font-semibold">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {Object.entries(torPreview.tabela_tecnica || {}).map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300">{key}</td>
+                          <td className="px-4 py-2">
+                            <input
+                              className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm text-slate-950 focus:border-brand focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                              value={value || ''}
+                              onChange={(e) => updateTorTable(key, e.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Observacao de origem</span>
+                <input
+                  className="input mt-1"
+                  value={torPreview.observacao_origem || ''}
+                  onChange={(e) => updateTorField('observacao_origem', e.target.value)}
+                />
+              </label>
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">

@@ -13,7 +13,7 @@ const NAV = [
   { path: '/relatorios', badge: 'RP', label: 'Relatorios', hint: 'Resumo executivo' },
   { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
   { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
-  { path: '/inteligencia/datasheets', badge: 'VS', label: 'Comparar concorrente', hint: 'Datasheet x seu catalogo' },
+  { path: '/inteligencia/datasheets', badge: 'VS', label: 'Datasheets', hint: 'Gerar TOR e comparar' },
   { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
   { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
 ]

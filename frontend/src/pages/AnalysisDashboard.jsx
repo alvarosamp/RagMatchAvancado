@@ -29,10 +29,13 @@ function itemCategorization(item) {
     bi.alimentacao_poe || bi.alimentacao,
     bi.portas_acesso,
     bi.uplinks,
+    bi.camada,
     bi.tecnologia_wifi,
     bi.ambiente,
     bi.formato,
+    bi.velocidade,
     bi.tipo_meio,
+    bi.alcance,
   ].filter(Boolean)
   return fields.length ? fields.join(' / ') : item.categoria || '-'
 }
@@ -311,12 +314,13 @@ export default function AnalysisDashboard() {
               <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Itens mapeados</h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Amostra consolidada dos itens classificados nas analises recentes.</p>
               <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-[920px] text-left">
+                <table className="w-full min-w-[1060px] text-left">
                   <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
                     <tr>
                       <th className="py-3 pr-4 font-semibold">Categoria</th>
                       <th className="px-4 py-3 font-semibold">Descricao</th>
                       <th className="px-4 py-3 font-semibold">Classificacao</th>
+                      <th className="px-4 py-3 font-semibold">Prazo</th>
                       <th className="px-4 py-3 text-right font-semibold">Qtd</th>
                       <th className="py-3 pl-4 text-right font-semibold">Preco unit.</th>
                     </tr>
@@ -329,6 +333,7 @@ export default function AnalysisDashboard() {
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{compactDescription(item.description)}</td>
                         <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{itemCategorization(item)}</td>
+                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{item.prazo_entrega || '-'}</td>
                         <td className="px-4 py-3 text-right text-sm text-slate-700 dark:text-slate-300">{formatNumber(item.quantity)}</td>
                         <td className="py-3 pl-4 text-right text-sm text-slate-700 dark:text-slate-300">{item.unit_value ? formatMoney(item.unit_value) : '-'}</td>
                       </tr>

@@ -156,6 +156,14 @@ export const datasheetsApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 90_000,
   }),
+  torPreview: (formData) => api.post('/datasheets/tor/preview', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
+  }),
+  torExportPdf: (payload) => api.post('/datasheets/tor/export/pdf', payload, {
+    responseType: 'blob',
+    timeout: 60_000,
+  }),
   import:   (payload)  => api.post('/datasheets/import', payload),
   products: (params = {}) => api.get('/datasheets/products', { params }),
   compare:  (productAId, productBId) => api.get('/datasheets/compare', {

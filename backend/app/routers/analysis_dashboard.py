@@ -90,6 +90,7 @@ def get_dashboard(
             category_summary["units"],
             "Transceiver",
             "MÃ³dulo Ã³ptico",
+            "Módulo óptico",
             "Modulo optico",
         ),
         "editais_com_switches": category_summary["documents"].get("Switch", 0),
@@ -137,10 +138,11 @@ def get_dashboard(
 
 
 _BREAKDOWN_FIELDS = {
-    "Switch": ["quantidade_portas", "gerenciamento", "alimentacao_poe", "portas_acesso", "uplinks"],
+    "Switch": ["quantidade_portas", "gerenciamento", "alimentacao_poe", "portas_acesso", "uplinks", "camada"],
     "Access Point": ["tecnologia_wifi", "ambiente", "alimentacao"],
-    "Módulo óptico": ["formato", "tipo_meio"],
-    "Transceiver": ["formato", "tipo_meio"],
+    "Módulo óptico": ["formato", "velocidade", "tipo_meio", "alcance"],
+    "Modulo optico": ["formato", "velocidade", "tipo_meio", "alcance"],
+    "Transceiver": ["formato", "velocidade", "tipo_meio", "alcance"],
 }
 
 def _category_summary(items_q) -> dict[str, dict[str, Any]]:
@@ -254,6 +256,9 @@ def get_editais_listagem(
                         "caracteristicas_bi": item.caracteristicas_bi,
                         "quantity": item.quantity,
                         "unit_value": item.unit_value,
+                        "prazo_entrega": item.prazo_entrega,
+                        "garantia": item.garantia,
+                        "lote_grupo": item.lote_grupo,
                     }
                     for item in document.items
                 ],

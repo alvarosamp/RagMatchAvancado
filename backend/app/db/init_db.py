@@ -47,7 +47,14 @@ def _ensure_crm_schema_updates() -> None:
             "proposal_link": "TEXT",
             "supplier_proposal_link": "TEXT",
             "address": "VARCHAR",
+            "zipcode": "VARCHAR",
+            "uasg": "VARCHAR",
             "state": "VARCHAR",
+            "proposal_validity": "VARCHAR",
+            "document_delivery_moment": "VARCHAR",
+            "analysis_status": "VARCHAR",
+            "analysis_mode": "VARCHAR",
+            "analysis_confidence": "VARCHAR",
             "sales_status": "VARCHAR",
             "import_key": "VARCHAR",
         },
@@ -59,6 +66,10 @@ def _ensure_crm_schema_updates() -> None:
             "lot": "VARCHAR",
             "product_code": "VARCHAR",
             "is_exclusive_epp": "BOOLEAN",
+            "exclusive_epp_label": "VARCHAR",
+            "warranty": "VARCHAR",
+            "delivery_deadline": "VARCHAR",
+            "bi_features": "JSON",
             "cost": "DOUBLE PRECISION",
             "reference_total_price": "DOUBLE PRECISION",
         },
@@ -86,6 +97,13 @@ def _ensure_analysis_items_schema_updates() -> None:
         {
             "categoria": "VARCHAR",
             "uf": "VARCHAR",
+            "lote_grupo": "VARCHAR",
+            "garantia": "VARCHAR",
+            "prazo_entrega": "VARCHAR",
+            "exclusividade_me_epp_item": "VARCHAR",
+            "risco_associado": "TEXT",
+            "direcionamento_marca_tipo": "VARCHAR",
+            "direcionamento_marca_justificativa": "TEXT",
             "has_direcionamento_marca": "BOOLEAN",
             "has_risco": "BOOLEAN",
             "caracteristicas_bi": "JSON",
@@ -95,6 +113,7 @@ def _ensure_analysis_items_schema_updates() -> None:
         [
             "CREATE INDEX IF NOT EXISTS ix_analysis_items_categoria ON analysis_items (categoria)",
             "CREATE INDEX IF NOT EXISTS ix_analysis_items_uf ON analysis_items (uf)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_items_prazo_entrega ON analysis_items (prazo_entrega)",
         ]
     )
 

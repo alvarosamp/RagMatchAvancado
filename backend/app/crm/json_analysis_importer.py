@@ -20,6 +20,7 @@ from app.crm.sales_process_importer import (
     parse_datetime_pair,
     parse_float,
 )
+from app.services.analysis_normalizer import normalize_analysis_result
 
 
 def sync_analysis_json_to_crm(
@@ -33,7 +34,9 @@ def sync_analysis_json_to_crm(
     from app.crm.models import CrmNotice
     from app.services.crm_notice_sync import sync_notice_relationships
 
+    result = normalize_analysis_result(result)
     edital = result.get("edital") or {}
+    auditoria = result.get("auditoria") or {}
     import_key = _build_import_key(result, source_name)
     n_interno = optional_meaningful_text(result.get("n_interno"))
     tor_id = n_interno or build_tor_id("JSON", import_key)
@@ -65,9 +68,17 @@ def sync_analysis_json_to_crm(
         "modality": optional_meaningful_text(edital.get("tipo_licitacao")),
         "auction_date": parse_datetime_pair(edital.get("data_disputa"), edital.get("hora_disputa")),
         "estimated_value": parse_float(edital.get("valor_total_switches"))
+        or parse_float(edital.get("valor_total_itens"))
         or parse_float(edital.get("valor_total_edital")),
         "address": optional_meaningful_text(edital.get("endereco")),
+        "zipcode": optional_meaningful_text(edital.get("cep")),
+        "uasg": optional_meaningful_text(edital.get("uasg")),
         "state": state,
+        "proposal_validity": optional_meaningful_text(edital.get("validade_proposta")),
+        "document_delivery_moment": optional_meaningful_text(edital.get("momento_entrega_documentacao_habilitacao")),
+        "analysis_status": optional_meaningful_text(edital.get("status")),
+        "analysis_mode": optional_meaningful_text(auditoria.get("modo_analise")),
+        "analysis_confidence": optional_meaningful_text(auditoria.get("confianca_geral")),
         "particularities": _build_notice_notes(result),
         "sales_status": normalize_status_label(edital.get("status")),
         "owner_id": context.user.id,
@@ -129,7 +140,7 @@ def _build_import_key(result: dict[str, Any], source_name: str | None) -> str:
 def _build_title(edital: dict[str, Any]) -> str | None:
     parts = [
         optional_meaningful_text(edital.get("numero_pregao")),
-        optional_meaningful_text(edital.get("resumo_switches")),
+        optional_meaningful_text(edital.get("resumo_itens")) or optional_meaningful_text(edital.get("resumo_switches")),
     ]
     return " - ".join(part for part in parts if part) or None
 
@@ -138,8 +149,9 @@ def _build_notice_notes(result: dict[str, Any]) -> str | None:
     edital = result.get("edital") or {}
     riscos = result.get("riscos") or {}
     fields = [
-        ("Resumo", edital.get("resumo_switches")),
+        ("Resumo", edital.get("resumo_itens") or edital.get("resumo_switches")),
         ("Criterio", edital.get("criterio")),
+        ("UASG", edital.get("uasg")),
         ("Intervalo", edital.get("intervalo")),
         ("Exclusividade", edital.get("exclusividade_me_epp")),
         ("Validade proposta", edital.get("validade_proposta")),
@@ -186,7 +198,12 @@ def _upsert_products(db: Session, context: ImportContext, notice: Any, items: li
         product.lot = optional_meaningful_text(item.get("lote_grupo"))
         product.product_code = optional_meaningful_text((item.get("direcionamento_marca") or {}).get("marca_modelo"))
         product.is_exclusive_epp = parse_bool(item.get("exclusividade_me_epp_item"))
+        product.exclusive_epp_label = optional_meaningful_text(item.get("exclusividade_me_epp_item"))
         product.quantity = quantity
+        product.unit = optional_meaningful_text(item.get("unidade"))
+        product.warranty = optional_meaningful_text(item.get("garantia"))
+        product.delivery_deadline = optional_meaningful_text(item.get("prazo_entrega"))
+        product.bi_features = item.get("caracteristicas_bi") or None
         product.unit_price = unit_value
         product.reference_price = unit_value
         product.reference_total_price = total_value
@@ -210,6 +227,7 @@ def _item_notes(item: dict[str, Any]) -> str | None:
     fields = [
         ("Categoria BI", item.get("categoria")),
         ("Garantia", item.get("garantia")),
+        ("Prazo entrega", item.get("prazo_entrega")),
         ("Exclusividade ME/EPP", item.get("exclusividade_me_epp_item")),
         ("Risco associado", item.get("risco_associado")),
     ]

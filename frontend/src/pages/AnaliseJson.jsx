@@ -206,13 +206,14 @@ export default function AnaliseJson() {
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Total mapeado: {formatNumber(totalUnits)} unidades · {formatMoney(totalValue)}</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left">
+              <table className="w-full min-w-[1120px] text-left">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <th className="px-5 py-3 font-semibold">Item</th>
                     <th className="px-5 py-3 font-semibold">Categoria</th>
                     <th className="px-5 py-3 font-semibold">Descricao</th>
                     <th className="px-5 py-3 font-semibold">Classificacao</th>
+                    <th className="px-5 py-3 font-semibold">Prazo</th>
                     <th className="px-5 py-3 text-right font-semibold">Qtd</th>
                     <th className="px-5 py-3 text-right font-semibold">Preco unit.</th>
                   </tr>
@@ -220,7 +221,7 @@ export default function AnaliseJson() {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum item elegivel listado.</td>
+                      <td colSpan={7} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum item elegivel listado.</td>
                     </tr>
                   ) : (
                     items.map((item) => (
@@ -231,6 +232,7 @@ export default function AnaliseJson() {
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{compactDescription(item.description)}</td>
                         <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{itemDetails(item)}</td>
+                        <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{item.prazo_entrega || item.raw_payload?.prazo_entrega || '-'}</td>
                         <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatNumber(item.quantity)}</td>
                         <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatMoney(item.unit_value ?? item.raw_payload?.preco_unitario)}</td>
                       </tr>

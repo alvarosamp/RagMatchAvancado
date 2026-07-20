@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisDocument, AnalysisItem
+from app.services.analysis_normalizer import normalize_analysis_result
 from app.services.document_identity import edital_business_key_from_result
 
 
@@ -59,6 +60,9 @@ def persist_analysis_document(
     uma pasta inteira: os itens novos avançam normalmente, os repetidos são
     pulados sem travar o lote.
     """
+    if source_kind == "edital":
+        result = normalize_analysis_result(result)
+
     business_key = build_business_key(result, source_name) if source_kind == "edital" else None
     if business_key:
         existing = (
@@ -141,6 +145,13 @@ def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> Anal
         raw_payload=item,
         categoria=item.get("categoria"),
         uf=uf,
+        lote_grupo=item.get("lote_grupo"),
+        garantia=item.get("garantia"),
+        prazo_entrega=item.get("prazo_entrega"),
+        exclusividade_me_epp_item=item.get("exclusividade_me_epp_item"),
+        risco_associado=item.get("risco_associado"),
+        direcionamento_marca_tipo=direcionamento_marca.get("tipo"),
+        direcionamento_marca_justificativa=direcionamento_marca.get("justificativa"),
         has_direcionamento_marca=bool(direcionamento_marca.get("existe")),
         has_risco=_has_risco(item.get("risco_associado")),
         caracteristicas_bi=item.get("caracteristicas_bi"),
