@@ -326,6 +326,14 @@ def serialize_record(row: Any) -> dict[str, Any]:
         data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None
         data["portals"] = serialize_related(row.portal, ("id", "name", "url")) if row.portal else None
         data["notice_documents"] = [serialize_record(doc) for doc in sorted(row.notice_documents, key=lambda item: item.sort_order or 0)]
+        data["notice_products"] = [
+            serialize_record(product)
+            for product in sorted(row.notice_products, key=lambda item: item.sort_order or 0)
+        ]
+        data["notice_sessions"] = [
+            serialize_record(session)
+            for session in sorted(row.notice_sessions, key=lambda item: item.sequence or 0)
+        ]
         if not data.get("municipality_name") and row.organ and row.organ.city:
             data["municipality_name"] = row.organ.city
         if not data.get("title"):
