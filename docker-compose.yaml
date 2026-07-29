@@ -51,6 +51,15 @@ services:
     depends_on:
       - api
 
+  bid-buddy:
+    build:
+      context: ./bid-buddy
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
   ollama:
     image: ollama/ollama:latest
     ports:
