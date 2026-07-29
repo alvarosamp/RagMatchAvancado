@@ -15,7 +15,7 @@ import ollama
 
 from app.logs.config import logger
 
-EMBED_MODEL  = "nomic-embed-text"
+EMBED_MODEL  = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 BATCH_SIZE   = 32
 _OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 _client      = ollama.Client(host=_OLLAMA_HOST)
@@ -38,7 +38,7 @@ def embed_texts_batch(texts: list[str]) -> list[list[float]]:
         for attempt in range(3):
             try:
                 batch_embs = [
-                    ollama.embeddings(model=EMBED_MODEL, prompt=t)["embedding"]
+                    _client.embeddings(model=EMBED_MODEL, prompt=t)["embedding"]
                     for t in batch
                 ]
                 embeddings.extend(batch_embs)
@@ -51,7 +51,7 @@ def embed_texts_batch(texts: list[str]) -> list[list[float]]:
                 logger.warning(f"[Embedder] Erro (tentativa {attempt+1}), aguardando {wait}s: {e}")
                 time.sleep(wait)
 
-    logger.info(f"[Embedder] {len(texts)} textos → {len(embeddings)} embeddings gerados")
+    logger.info("[Embedder] %s textos -> %s embeddings gerados", len(texts), len(embeddings))
     return embeddings
 
 

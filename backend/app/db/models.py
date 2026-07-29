@@ -33,6 +33,53 @@ class Product(Base):
     )
 
 
+class OpportunityDecision(Base):
+    """Decisao humana sobre uma oportunidade encontrada no PNCP."""
+    __tablename__ = "opportunity_decisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "id_pncp",
+            name="uq_opportunity_decisions_tenant_id_pncp",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    id_pncp = Column(String, nullable=False, index=True)
+    score = Column(Integer)
+    priority = Column(String)
+    decision = Column(String, nullable=False, index=True)
+    reason = Column(Text)
+    notice_snapshot = Column(JSON)
+    crm_notice_id = Column(String(36), index=True)
+    import_job_id = Column(String)
+    pncp_files_count = Column(Integer, default=0)
+    import_error = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class PncpRadarItem(Base):
+    """Oportunidade PNCP capturada pela rotina diaria do Radar."""
+    __tablename__ = "pncp_radar_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "id_pncp",
+            name="uq_pncp_radar_items_id_pncp",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    id_pncp = Column(String, nullable=False, index=True)
+    notice = Column(JSON, nullable=False)
+    search_terms = Column(String)
+    status = Column(String, nullable=False, default="active", index=True)
+    first_seen_at = Column(DateTime, server_default=func.now())
+    last_seen_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), index=True)
+
+
 # ──────────────────────────────────────────
 # Editais
 # ──────────────────────────────────────────
@@ -49,6 +96,9 @@ class Edital(Base):
     full_text    = Column(Text)                          # texto bruto extraído
     parsed_at    = Column(DateTime, server_default=func.now())
     tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
+    import_batch_id = Column(Integer, ForeignKey("import_batches.id", ondelete="SET NULL"), index=True)
+    source_path  = Column(String)
+    analysis_only = Column(Boolean, default=False, index=True)
 
     tenant       = relationship("Tenant", back_populates="editais")
     chunks       = relationship("DocumentChunk", back_populates="edital", cascade="all, delete-orphan")
@@ -105,10 +155,16 @@ class AnalysisDocument(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    import_batch_id = Column(Integer, ForeignKey("import_batches.id", ondelete="SET NULL"), index=True)
     source_kind = Column(String, nullable=False, index=True)
+    schema_name = Column(String, index=True)
+    schema_version = Column(String, index=True)
     source_hash = Column(String, nullable=False, index=True)
     business_key = Column(String, index=True)  # identificador do documento (n_interno/numero_pregao) p/ deduplicar
     source_name = Column(String)
+    source_path = Column(String)
+    analysis_only = Column(Boolean, default=False, index=True)
+    crm_notice_id = Column(String, index=True)
     status = Column(String, nullable=False, default="done", index=True)
     full_text = Column(Text)
     result = Column(JSON)
@@ -122,6 +178,53 @@ class AnalysisDocument(Base):
         back_populates="analysis",
         cascade="all, delete-orphan",
     )
+
+
+class ImportBatch(Base):
+    """Lote de importacao para desfazer historicos sem depender do nome do arquivo."""
+    __tablename__ = "import_batches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    label = Column(String, nullable=False)
+    source_path = Column(String)
+    source_mode = Column(String, default="upload")
+    analysis_only = Column(Boolean, default=False, index=True)
+    sync_targets = Column(JSON)
+    total_files = Column(Integer, default=0)
+    status = Column(String, nullable=False, default="open", index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DocumentSchema(Base):
+    """Contrato versionado para importar documentos sem acoplar tudo a edital."""
+    __tablename__ = "document_schemas"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "name",
+            "version",
+            name="uq_document_schemas_tenant_name_version",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    name = Column(String, nullable=False, index=True)
+    version = Column(String, nullable=False, index=True)
+    title = Column(String)
+    description = Column(Text)
+    required_fields = Column(JSON)
+    item_collection_path = Column(String)
+    item_identity_fields = Column(JSON)
+    business_key_fields = Column(JSON)
+    sync_targets = Column(JSON)
+    export_templates = Column(JSON)
+    is_active = Column(Boolean, default=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class AnalysisItem(Base):
@@ -153,6 +256,7 @@ class AnalysisItem(Base):
     lote_grupo = Column(String)
     garantia = Column(String)
     prazo_entrega = Column(String, index=True)
+    caracteristicas_tecnicas = Column(Text)
     exclusividade_me_epp_item = Column(String)
     risco_associado = Column(Text)
     direcionamento_marca_tipo = Column(String)

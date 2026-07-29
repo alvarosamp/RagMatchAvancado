@@ -7,13 +7,14 @@ import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 const NAV = [
   { path: '/dashboard', badge: 'DB', label: 'Inicio', hint: 'Resumo e proximas acoes' },
   { path: '/upload', badge: 'UP', label: 'Enviar edital', hint: 'PDF ou JSON' },
+  { path: '/radar', badge: 'RD', label: 'Radar IA', hint: 'Oportunidades recomendadas' },
   { path: '/crm', badge: 'CRM', label: 'CRM comercial', hint: 'Funil, itens e disputa' },
-  { path: '/pncp', badge: 'PN', label: 'Buscar PNCP', hint: 'Novas oportunidades' },
   { path: '/controle', badge: 'CT', label: 'Controle', hint: 'Acompanhar processos' },
   { path: '/relatorios', badge: 'RP', label: 'Relatorios', hint: 'Resumo executivo' },
   { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
   { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
   { path: '/inteligencia/datasheets', badge: 'VS', label: 'Datasheets', hint: 'Gerar TOR e comparar' },
+  { path: '/inteligencia/competitiva', badge: 'CI', label: 'Competitiva', hint: 'Concorrentes e resposta' },
   { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
   { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
 ]
@@ -47,10 +48,12 @@ function renderIcon(badge) {
         </svg>
       );
     case 'PN':
+    case 'RD':
       return (
         <svg {...props} viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          {badge === 'RD' && <path d="M11 7v4l3 2" />}
         </svg>
       );
     case 'CT':
@@ -100,14 +103,25 @@ function renderIcon(badge) {
         </svg>
       );
     case 'VS':
+    case 'CI':
       return (
         <svg {...props} viewBox="0 0 24 24">
-          <path d="M8 3v18" />
-          <path d="M16 3v18" />
-          <path d="M3 8h5" />
-          <path d="M16 8h5" />
-          <path d="M3 16h5" />
-          <path d="M16 16h5" />
+          {badge === 'VS' ? (
+            <>
+              <path d="M8 3v18" />
+              <path d="M16 3v18" />
+              <path d="M3 8h5" />
+              <path d="M16 8h5" />
+              <path d="M3 16h5" />
+              <path d="M16 16h5" />
+            </>
+          ) : (
+            <>
+              <path d="M3 17l6-6 4 4 8-8" />
+              <path d="M14 7h7v7" />
+              <path d="M3 21h18" />
+            </>
+          )}
         </svg>
       );
     case 'USR':

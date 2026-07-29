@@ -22,17 +22,21 @@ def normalize_identifier(value: Any) -> str:
 
 def edital_business_key_from_result(result: dict[str, Any]) -> str | None:
     edital = result.get("edital") or {}
-    n_interno = result.get("n_interno")
-    if _meaningful(n_interno):
-        return f"edital|n-interno|{normalize_identifier(n_interno)}"
-
     parts = [
+        result.get("n_interno"),
         edital.get("numero_pregao"),
+        edital.get("numero_licitacao"),
         edital.get("orgao"),
+        edital.get("cidade"),
+        edital.get("uf"),
+        edital.get("local"),
         edital.get("data_disputa"),
         edital.get("hora_disputa"),
     ]
     meaningful = [normalize_identifier(part) for part in parts if _meaningful(part)]
+    item_signature = _items_signature(result)
+    if item_signature:
+        meaningful.append(item_signature)
     if len(meaningful) < 2:
         return None
     return "edital|meta|" + hashlib.sha1("|".join(meaningful).encode("utf-8", errors="ignore")).hexdigest()[:16]
@@ -86,6 +90,31 @@ def is_unidentified_pdf_text(text: str | None, filename: str | None = None) -> b
 
 def _meaningful(value: Any) -> bool:
     return value is not None and str(value).strip() not in ("", "-", "N/C", "n/c")
+
+
+def _items_signature(result: dict[str, Any]) -> str | None:
+    items = result.get("itens_elegiveis") or result.get("itens") or []
+    if not isinstance(items, list) or not items:
+        return None
+    parts: list[str] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        item_parts = [
+            item.get("lote_grupo") or item.get("lote") or item.get("grupo"),
+            item.get("numero_item_edital") or item.get("numero_item") or item.get("item") or item.get("numero"),
+            item.get("categoria") or item.get("tipo"),
+            item.get("descricao_original") or item.get("descricao") or item.get("descricao_item"),
+            item.get("quantidade") or item.get("qtd"),
+            item.get("preco_unitario") or item.get("valor_unitario") or item.get("preco_minimo"),
+        ]
+        text = "|".join(normalize_identifier(part) for part in item_parts if _meaningful(part))
+        if text:
+            parts.append(text)
+    if not parts:
+        return None
+    raw = "||".join(sorted(parts))
+    return "items:" + hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:16]
 
 
 def _first_match(text: str, patterns: list[str]) -> str | None:

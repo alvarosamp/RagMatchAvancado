@@ -57,10 +57,21 @@ export const authApi = {
 
 export const editaisApi = {
   list:    ()                   => api.get('/editais/'),
-  upload:  (formData)           => api.post('/editais/upload', formData, {
+  upload:  (formData, options = {}) => {
+    if (options.analysisOnly != null && !formData.has('analysis_only')) {
+      formData.append('analysis_only', options.analysisOnly ? 'true' : 'false')
+    }
+    if (options.importBatchId != null && !formData.has('import_batch_id')) {
+      formData.append('import_batch_id', String(options.importBatchId))
+    }
+    if (options.sourcePath && !formData.has('source_path')) {
+      formData.append('source_path', options.sourcePath)
+    }
+    return api.post('/editais/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 60_000,
-  }),
+    })
+  },
   remove:  (id)                 => api.delete(`/editais/${id}`),
   addRequirements: (id, reqs)   => api.post(`/editais/${id}/requirements`, reqs),
   match:   (id)                 => api.post(`/editais/${id}/match`),
@@ -88,6 +99,10 @@ export const crmApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120_000,
     }),
+  decisionIntelligence: (noticeId) =>
+    api.get(`/crm/notices/${noticeId}/decision-intelligence`),
+  runDecisionIntelligence: (noticeId) =>
+    api.post(`/crm/notices/${noticeId}/decision-intelligence/run`, {}, { timeout: 60_000 }),
 }
 
 export const healthApi = {
@@ -128,6 +143,17 @@ export const pncpApi = {
   search:       (params) => api.get('/pncp/search', { params, timeout: 30_000 }),
 
   /**
+   * Pesquisa oportunidades no PNCP e aplica score de prioridade.
+   */
+  radar:        (params) => api.get('/pncp/radar', { params, timeout: 45_000 }),
+
+  refreshRadar: (params = {}) => api.post('/pncp/radar/refresh', null, { params, timeout: 90_000 }),
+
+  decisions:    (params = {}) => api.get('/pncp/opportunities/decisions', { params }),
+
+  decide:       (payload) => api.post('/pncp/opportunities/decision', payload),
+
+  /**
    * Importa um edital do PNCP para o sistema (enfileira job).
    * @param {string} idPncp
    */
@@ -145,8 +171,12 @@ export const analysisApi = {
   list:      (params = {}) => api.get('/analysis/documents', { params }),
   get:       (id)          => api.get(`/analysis/documents/${id}`),
   exportPdf: (id)          => api.get(`/analysis/documents/${id}/export/pdf`, { responseType: 'blob' }),
-  create:    (payload)     => api.post('/analysis/documents', payload, { timeout: 60_000 }),
+  exportReportPdf: (params = {}) => api.get('/analysis/reports/export/pdf', { params, responseType: 'blob' }),
+  create:    (payload)     => api.post('/analysis/documents', payload, { timeout: 180_000 }),
   remove:    (id)          => api.delete(`/analysis/documents/${id}`),
+  batches:   ()            => api.get('/analysis/import-batches'),
+  createBatch: (payload)   => api.post('/analysis/import-batches', payload),
+  removeBatch: (id, payload) => api.delete(`/analysis/import-batches/${id}`, { data: payload }),
   dashboard: (params = {}) => api.get('/analysis/dashboard', { params }),
   editaisListagem: (params = {}) => api.get('/analysis/editais-listagem', { params }),
 }
@@ -170,6 +200,7 @@ export const datasheetsApi = {
     params: { product_a_id: productAId, product_b_id: productBId },
   }),
   gaps: (params = {}) => api.get('/datasheets/gaps', { params }),
+  competitiveIntelligence: (params = {}) => api.get('/datasheets/competitive-intelligence', { params }),
 }
 
 // ── Utilidade para download de blob ──────────────────────────────────────────

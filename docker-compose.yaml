@@ -27,9 +27,14 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: llama3.2:1b
+      OLLAMA_EMBED_MODEL: nomic-embed-text
+      OLLAMA_AUTO_PULL: "1"
+      WATCHFILES_FORCE_POLLING: "true"
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     depends_on:
       db:
         condition: service_healthy

@@ -33,6 +33,13 @@ class MatchScore:
     conflicts: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class TechnicalScore:
+    score: float
+    matched_features: tuple[str, ...] = ()
+    conflicts: tuple[str, ...] = ()
+
+
 def normalize_text(value: str | None) -> str:
     if not value:
         return ""
@@ -173,6 +180,14 @@ def build_match_summary(best_scores: list[dict[str, Any]], total_reference_value
 def try_llm_rerank(*, notice_text: str, candidate_title: str, candidate_text: str) -> dict[str, Any] | None:
     if os.environ.get("CRM_MATCH_USE_LLM", "1") in {"0", "false", "False"}:
         return None
+    if _has_hard_category_conflict(notice_text, candidate_text):
+        return {
+            "score": 0.0,
+            "level": "none",
+            "rationale": "Familia tecnica incompativel entre item do edital e produto do catalogo.",
+            "matched_features": (),
+            "conflicts": ("Familia tecnica incompativel entre item do edital e produto do catalogo.",),
+        }
     try:
         import ollama
 
@@ -201,18 +216,50 @@ Detalhes: {candidate_text}
         if not raw:
             return None
         match = re.search(r"\{.*\}", raw, re.DOTALL)
-        payload = json.loads(match.group(0) if match else raw)
+        payload = _parse_llm_json(match.group(0) if match else raw)
+        if payload is None:
+            logger.warning("[CRM Match] LLM retornou JSON invalido para rerank: %s", raw[:300])
+            return None
         score = float(payload.get("score", 0.0) or 0.0)
+        conflicts = tuple(payload.get("conflicts") or ())
         return {
             "score": max(0.0, min(1.0, score)),
             "level": payload.get("level") or score_to_level(score),
             "rationale": payload.get("rationale"),
             "matched_features": tuple(payload.get("matched_features") or ()),
-            "conflicts": tuple(payload.get("conflicts") or ()),
+            "conflicts": conflicts,
         }
     except Exception as exc:
         logger.warning("[CRM Match] LLM local indisponivel para rerank: %s", exc)
         return None
+
+
+def _parse_llm_json(raw: str) -> dict[str, Any] | None:
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        pass
+    try:
+        parsed = json.loads(re.sub(r",\s*([}\]])", r"\1", raw))
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
+def technical_compatibility_score(notice_text: str | None, candidate_text: str | None) -> TechnicalScore | None:
+    notice = normalize_text(notice_text)
+    candidate = normalize_text(candidate_text)
+    if not notice or not candidate:
+        return None
+    if _has_hard_category_conflict(notice, candidate):
+        return TechnicalScore(0.0, conflicts=("Familia tecnica incompativel entre item do edital e produto do catalogo.",))
+
+    notice_optical = _is_optical_text(notice)
+    candidate_optical = _is_optical_text(candidate)
+    if notice_optical and candidate_optical:
+        return _optical_technical_score(notice, candidate)
+    return None
 
 
 def _numeric_overlap_score(source_tokens: set[str], candidate_tokens: set[str]) -> float:
@@ -222,3 +269,142 @@ def _numeric_overlap_score(source_tokens: set[str], candidate_tokens: set[str]) 
         return 0.0
     overlap = source_numbers & candidate_numbers
     return len(overlap) / max(len(source_numbers), 1)
+
+
+def _optical_technical_score(notice: str, candidate: str) -> TechnicalScore:
+    matched: list[str] = []
+    conflicts: list[str] = []
+    score = 0.45
+    weight = 0.45
+
+    req_speed = _extract_speed_gbps(notice)
+    cand_speed = _extract_speed_gbps(candidate)
+    if req_speed is not None:
+        weight += 0.25
+        if cand_speed is not None and cand_speed + 0.05 >= req_speed:
+            score += 0.25
+            matched.append(f"velocidade {cand_speed:g}Gbps >= {req_speed:g}Gbps")
+        elif cand_speed is not None:
+            conflicts.append(f"velocidade {cand_speed:g}Gbps < {req_speed:g}Gbps")
+
+    req_medium = _extract_optical_medium(notice)
+    cand_medium = _extract_optical_medium(candidate)
+    if req_medium:
+        weight += 0.15
+        if cand_medium == req_medium:
+            score += 0.15
+            matched.append(f"meio {cand_medium}")
+        elif cand_medium:
+            conflicts.append(f"meio {cand_medium} diferente de {req_medium}")
+
+    req_reach = _extract_reach_km(notice)
+    cand_reach = _extract_reach_km(candidate)
+    if req_reach is not None:
+        weight += 0.15
+        if cand_reach is not None and cand_reach + 0.001 >= req_reach:
+            score += 0.15
+            matched.append(f"alcance {cand_reach:g}km >= {req_reach:g}km")
+        elif cand_reach is not None:
+            conflicts.append(f"alcance {cand_reach:g}km < {req_reach:g}km")
+
+    req_form = _extract_optical_form(notice)
+    cand_form = _extract_optical_form(candidate)
+    if req_form:
+        weight += 0.10
+        if cand_form == req_form or (req_form == "sfp+" and cand_form == "sfp"):
+            score += 0.10
+            matched.append(f"formato {cand_form}")
+        elif cand_form:
+            conflicts.append(f"formato {cand_form} diferente de {req_form}")
+
+    normalized_score = score / weight if weight else 0.0
+    if conflicts:
+        normalized_score = min(normalized_score, 0.62)
+    return TechnicalScore(round(max(0.0, min(1.0, normalized_score)), 4), tuple(matched), tuple(conflicts))
+
+
+def _is_optical_text(text: str) -> bool:
+    return any(term in text for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
+
+
+def _extract_speed_gbps(text: str) -> float | None:
+    if match := re.search(r"(\d+)\s+(\d+)\s*(?:g|gb|gbps|gigabit|gigabits|ge)\b", text):
+        return float(f"{match.group(1)}.{match.group(2)}")
+    if match := re.search(r"(\d+(?:[.,]\d+)?)\s*(?:g|gb|gbps|gigabit|gigabits|ge)\b", text):
+        return float(match.group(1).replace(",", "."))
+    if match := re.search(r"(\d+)\s+(\d+)\s*(?:m|mb|mbps)\b", text):
+        return float(f"{match.group(1)}.{match.group(2)}") / 1000.0
+    if match := re.search(r"(\d+(?:[.,]\d+)?)\s*(?:m|mb|mbps)\b", text):
+        return float(match.group(1).replace(",", ".")) / 1000.0
+    if "10gbase" in text:
+        return 10.0
+    if "1000base" in text or "1gbase" in text:
+        return 1.0
+    return None
+
+
+def _extract_reach_km(text: str) -> float | None:
+    values: list[float] = []
+    for whole, decimal, unit in re.findall(r"(\d+)\s+(\d+)\s*(km|m)\b", text):
+        number = float(f"{whole}.{decimal}")
+        values.append(number if unit == "km" else number / 1000.0)
+    for value, unit in re.findall(r"(\d+(?:[.,]\d+)?)\s*(km|m)\b", text):
+        number = float(value.replace(",", "."))
+        values.append(number if unit == "km" else number / 1000.0)
+    return max(values) if values else None
+
+
+def _extract_optical_medium(text: str) -> str | None:
+    if any(term in text for term in ("monomodo", "single mode", "smf", "1310", "1550", "1270", "1330")):
+        return "monomodo"
+    if any(term in text for term in ("multimodo", "multi modo", "multi mode", "mmf", "sr", "850", "om3", "om4")):
+        return "multimodo"
+    if "rj45" in text or "10gbase t" in text or "1000base t" in text:
+        return "rj45"
+    return None
+
+
+def _extract_optical_form(text: str) -> str | None:
+    if "sfp28" in text:
+        return "sfp28"
+    if "sfp+" in text or "sfp plus" in text:
+        return "sfp+"
+    if "sfp" in text:
+        return "sfp"
+    if "qsfp28" in text:
+        return "qsfp28"
+    return None
+
+
+def _has_hard_category_conflict(notice_text: str | None, candidate_text: str | None) -> bool:
+    notice = normalize_text(notice_text)
+    candidate = normalize_text(candidate_text)
+    if not notice or not candidate:
+        return False
+
+    notice_is_ap = any(term in notice for term in ("access point", "wifi", "wi fi", "802 11", "ruckus r650"))
+    candidate_is_optical = any(term in candidate for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
+    if notice_is_ap and candidate_is_optical:
+        return True
+
+    notice_is_optical = any(term in notice for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
+    candidate_is_ap = any(term in candidate for term in ("access point", "wifi", "wi fi", "802 11", "ruckus r650"))
+    if notice_is_optical and candidate_is_ap:
+        return True
+
+    notice_is_switch_device = _is_switch_device_text(notice, candidate_is_optical=False)
+    candidate_is_switch_device = _is_switch_device_text(candidate, candidate_is_optical=candidate_is_optical)
+    if notice_is_switch_device and candidate_is_optical:
+        return True
+    return notice_is_optical and candidate_is_switch_device
+
+
+def _is_switch_device_text(text: str, *, candidate_is_optical: bool) -> bool:
+    if candidate_is_optical:
+        return False
+    has_switch_word = "switch" in text
+    has_switch_features = any(
+        term in text
+        for term in ("portas", "porta rj", "rj45", "vlan", "poe", "layer", "gerenciavel", "nway")
+    )
+    return has_switch_word and has_switch_features

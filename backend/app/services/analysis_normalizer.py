@@ -131,6 +131,7 @@ def normalize_analysis_result(result: dict[str, Any]) -> dict[str, Any]:
         "resumo_itens",
         "criterio",
         "uasg",
+        "numero_licitacao",
         "numero_pregao",
         "cidade",
         "uf",
@@ -146,6 +147,12 @@ def normalize_analysis_result(result: dict[str, Any]) -> dict[str, Any]:
         edital[key] = _text(edital.get(key))
     if not _meaningful(edital.get("resumo_itens")):
         edital["resumo_itens"] = _text(edital.get("resumo_switches"))
+    if not _meaningful(edital.get("numero_licitacao")):
+        edital["numero_licitacao"] = _text(
+            edital.get("numero_licitação")
+            or edital.get("numero_dispensa")
+            or edital.get("numero_cotacao")
+        )
     if not _meaningful(edital.get("valor_total_itens")):
         edital["valor_total_itens"] = _text(edital.get("valor_total_switches"))
     edital["hora_disputa"] = _normalize_time(edital.get("hora_disputa"))
@@ -182,6 +189,12 @@ def _normalize_item(item: Any) -> dict[str, Any]:
         "valor_total_item": ("valor_total_item", "valor_total", "total"),
         "garantia": ("garantia",),
         "prazo_entrega": ("prazo_entrega", "prazo_de_entrega", "entrega"),
+        "caracteristicas_tecnicas": (
+            "caracteristicas_tecnicas",
+            "caracteristicas_técnicas",
+            "especificacao_tecnica",
+            "especificacao_resumida",
+        ),
         "exclusividade_me_epp_item": ("exclusividade_me_epp_item", "exclusividade_item"),
         "risco_associado": ("risco_associado", "risco"),
     }

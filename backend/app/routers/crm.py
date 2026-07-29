@@ -8,11 +8,11 @@ from pathlib import Path
 from urllib.parse import quote
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.crm.lpu_importer import import_lpu_catalog
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
@@ -20,7 +20,9 @@ from app.crm.models import (
     CrmBidAssistLog,
     CrmItemWinnerType,
     CrmNotice,
+    CrmNoticeHistory,
     CrmNoticeProduct,
+    CrmNoticeSession,
     CrmNoticeStage,
 )
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
@@ -38,6 +40,13 @@ from app.services.proposal_generator import (
     build_notice_proposal_docx,
     proposal_filename,
 )
+from app.services.calendar_export import build_ics, session_calendar_payload
+from app.services.email_monitor import email_monitor_configured, run_email_monitor_once
+from app.services.decision_intelligence import (
+    persist_notice_decision_intelligence,
+    serialize_decision_intelligence,
+)
+from app.services.crm_notice_sync import sync_notice_relationships
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
@@ -193,6 +202,77 @@ def crm_summary(
     return summarize_crm(notices)
 
 
+@router.post("/notices/{notice_id}/advance")
+def crm_advance_notice(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ),
+            selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_products),
+            selectinload(CrmNotice.notice_sessions),
+        )
+        .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
+        .first()
+    )
+    if not notice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
+
+    previous_stage = notice.stage.value if hasattr(notice.stage, "value") else str(notice.stage)
+    next_stage = _next_notice_stage(previous_stage)
+    if next_stage == previous_stage:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Edital ja esta na ultima etapa.")
+
+    notice.stage = CrmNoticeStage(next_stage)
+    notice.owner_id = current_user.id
+    sync_notice_relationships(db, notice, created_by=current_user.id)
+    session = _ensure_notice_calendar_event(db, notice, current_user.id)
+    db.add(
+        CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=notice.id,
+            user_id=current_user.id,
+            action=f"Avancado para {next_stage}",
+            details={
+                "from": previous_stage,
+                "to": next_stage,
+                "advanced_by": current_user.id,
+                "calendar_session_id": session.id if session else None,
+            },
+        )
+    )
+    db.commit()
+    return {
+        "ok": True,
+        "notice_id": notice.id,
+        "stage": next_stage,
+        "advanced_by": current_user.id,
+        "calendar_session_id": session.id if session else None,
+        "google_calendar_url": session_calendar_payload(session, notice)["google_calendar_url"] if session else None,
+        "ics_url": f"/api/crm/notices/{notice.id}/calendar.ics" if session else None,
+    }
+
+
+@router.post("/email-monitor/run")
+def crm_run_email_monitor(
+    limit: int | None = Body(default=None, embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    return run_email_monitor_once(db, limit=limit)
+
+
+@router.get("/email-monitor/status")
+def crm_email_monitor_status(
+    current_user: User = Depends(get_current_user),
+):
+    return {"configured": email_monitor_configured()}
+
+
 @router.post("/notices/{notice_id}/proposal")
 def crm_generate_notice_proposal(
     notice_id: str,
@@ -250,6 +330,192 @@ def crm_generate_notice_proposal(
             "Content-Disposition": f"attachment; filename*=UTF-8''{encoded}",
         },
     )
+
+
+@router.get("/notices/{notice_id}/proposal.docx")
+def crm_download_notice_proposal(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return crm_generate_notice_proposal(
+        notice_id=notice_id,
+        payload={},
+        db=db,
+        current_user=current_user,
+    )
+
+
+def _next_notice_stage(current: str) -> str:
+    order = [
+        CrmNoticeStage.TRIAGE.value,
+        CrmNoticeStage.DOCUMENTATION.value,
+        CrmNoticeStage.ANALYSIS.value,
+        CrmNoticeStage.AUCTION.value,
+        CrmNoticeStage.RESULT.value,
+    ]
+    try:
+        index = order.index(current)
+    except ValueError:
+        return CrmNoticeStage.DOCUMENTATION.value
+    return order[min(index + 1, len(order) - 1)]
+
+
+def _ensure_notice_calendar_event(db: Session, notice: CrmNotice, user_id: int) -> CrmNoticeSession | None:
+    if not notice.auction_date:
+        return None
+    session = next((item for item in notice.notice_sessions if item.sequence == 1), None)
+    if session is None:
+        session = CrmNoticeSession(
+            tenant_id=notice.tenant_id,
+            notice_id=notice.id,
+            sequence=1,
+            scheduled_at=notice.auction_date,
+            created_by=user_id,
+        )
+        db.add(session)
+        notice.notice_sessions.append(session)
+    else:
+        session.scheduled_at = notice.auction_date
+    session.outcome_summary = _notice_calendar_title(notice)
+    session.notes = _notice_calendar_description(notice)
+    return session
+
+
+def _notice_calendar_title(notice: CrmNotice) -> str:
+    organ = notice.organ.name if notice.organ else None
+    return " ".join(
+        part
+        for part in [
+            notice.tor_id or notice.number,
+            "Pregao",
+            f"- {organ}" if organ else None,
+        ]
+        if part
+    )
+
+
+def _notice_calendar_description(notice: CrmNotice) -> str:
+    products = list(notice.notice_products or [])
+    total_value = sum(
+        float(product.reference_total_price)
+        if product.reference_total_price is not None
+        else float(product.reference_price or 0) * float(product.quantity or 0)
+        for product in products
+    )
+    parts = [
+        f"Cidade/UF: {_value(notice.municipality_name)}/{_value(notice.state)}",
+        f"Local: {_value(notice.portal.name if notice.portal else None)}",
+        f"Tipo de Licitacao: {_value(notice.modality)}",
+        f"Criterio: {_value(notice.bi_criterion)}",
+        f"UASG: {_value(notice.uasg)}",
+        f"Numero do pregao: {_value(getattr(notice, 'bid_number', None) or notice.number)}",
+        f"Exclusividade ME/EPP: {_value(notice.bi_exclusivity)}",
+        f"Intervalo de lances: {_value(notice.bi_interval)}",
+        f"Validade da proposta: {_value(notice.proposal_validity)}",
+        f"Momento da entrega da Habilitacao: {_value(notice.document_delivery_moment)}",
+        "",
+        f"Resumo dos itens: {_value(notice.bi_item_summary)}",
+        f"Valor total estimado dos itens: {_money(total_value) if total_value else _value(notice.estimated_value)}",
+        "",
+        f"Risco identificado: {_value(notice.bi_risk_identified)}",
+    ]
+    for index, product in enumerate(products, start=1):
+        parts.extend(
+            [
+                "",
+                f"Item {index}: {_value(product.category)}",
+                f"Lote: {_value(product.lot)}",
+                f"Numero no edital: {_value(product.item_number)}",
+                _value(product.description),
+                f"Quantidade: {_value(product.quantity)}",
+                f"Preco: {_money(product.reference_price)}",
+                f"Garantia: {_value(product.warranty)}",
+                f"Prazo de entrega: {_value(product.delivery_deadline)}",
+                f"Exclusividade ME/EPP: {_value(product.exclusive_epp_label)}",
+                f"Direcionamento de marca: {'Sim' if product.brand_direction_exists else 'Nao'}",
+                f"Marca/modelo: {_value(product.brand_direction_model or product.product_code)}",
+                f"Justificativa: {_value(product.brand_direction_justification)}",
+            ]
+        )
+    return "\n".join(parts)
+
+
+def _value(value: Any) -> str:
+    if value is None or value == "":
+        return "N/C"
+    return str(value)
+
+
+def _money(value: Any) -> str:
+    if value is None or value == "":
+        return "N/C"
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return "R$ " + f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+@router.get("/notices/{notice_id}/calendar")
+def crm_notice_calendar_payload(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notice, session = _get_notice_calendar_session(db, notice_id, current_user)
+    payload = session_calendar_payload(session, notice)
+    return {
+        "notice_id": notice.id,
+        "session_id": session.id,
+        "title": payload["title"],
+        "starts_at": payload["starts_at"].isoformat() if payload["starts_at"] else None,
+        "description": payload["description"],
+        "google_calendar_url": payload["google_calendar_url"],
+        "ics_url": f"/api/crm/notices/{notice.id}/calendar.ics",
+    }
+
+
+@router.get("/notices/{notice_id}/calendar.ics")
+def crm_notice_calendar_ics(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notice, session = _get_notice_calendar_session(db, notice_id, current_user)
+    payload = session_calendar_payload(session, notice)
+    if not payload["starts_at"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Edital sem data de agenda.")
+    content = build_ics(
+        uid=f"tor-crm-{notice.id}-{session.id}",
+        title=payload["title"],
+        starts_at=payload["starts_at"],
+        description=payload["description"],
+    )
+    return Response(
+        content=content,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="edital_{notice.number or notice.id}.ics"'},
+    )
+
+
+def _get_notice_calendar_session(db: Session, notice_id: str, current_user: User) -> tuple[CrmNotice, CrmNoticeSession]:
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ),
+            selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_sessions),
+        )
+        .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
+        .first()
+    )
+    if not notice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
+    session = next((item for item in notice.notice_sessions if item.sequence == 1), None)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento de agenda nao encontrado para este edital.")
+    return notice, session
 
 
 @router.get("/notices/{notice_id}/bid-room")
@@ -327,8 +593,29 @@ def crm_notice_bid_room(
                 "unit": product.unit,
                 "warranty": product.warranty,
                 "delivery_deadline": product.delivery_deadline,
+                "category": product.category,
+                "technical_characteristics": product.technical_characteristics,
+                "risk_associated": product.risk_associated,
+                "brand_direction_exists": product.brand_direction_exists,
+                "brand_direction_model": product.brand_direction_model,
+                "brand_direction_type": product.brand_direction_type,
+                "brand_direction_justification": product.brand_direction_justification,
                 "exclusive_epp_label": product.exclusive_epp_label,
                 "bi_features": product.bi_features,
+                "bi_feature_quantidade_portas": product.bi_feature_quantidade_portas,
+                "bi_feature_portas_acesso": product.bi_feature_portas_acesso,
+                "bi_feature_gerenciamento": product.bi_feature_gerenciamento,
+                "bi_feature_alimentacao_poe": product.bi_feature_alimentacao_poe,
+                "bi_feature_uplinks": product.bi_feature_uplinks,
+                "bi_feature_camada": product.bi_feature_camada,
+                "bi_feature_tecnologia_wifi": product.bi_feature_tecnologia_wifi,
+                "bi_feature_alimentacao": product.bi_feature_alimentacao,
+                "bi_feature_ambiente": product.bi_feature_ambiente,
+                "bi_feature_formato": product.bi_feature_formato,
+                "bi_feature_velocidade": product.bi_feature_velocidade,
+                "bi_feature_tipo_meio": product.bi_feature_tipo_meio,
+                "bi_feature_alcance": product.bi_feature_alcance,
+                "raw_payload": product.raw_payload,
                 "reference_price": product.reference_price,
                 "reference_total_price": product.reference_total_price,
                 "minimum_viable_bid": minimum,
@@ -500,6 +787,51 @@ def crm_run_notice_matches(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/notices/{notice_id}/decision-intelligence")
+def crm_notice_decision_intelligence(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notice = (
+        db.query(CrmNotice)
+        .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
+        .first()
+    )
+    if not notice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
+    return {"data": serialize_decision_intelligence(notice)}
+
+
+@router.post("/notices/{notice_id}/decision-intelligence/run")
+def crm_run_notice_decision_intelligence(
+    notice_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    notice = (
+        db.query(CrmNotice)
+        .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
+        .first()
+    )
+    if not notice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
+
+    edital = None
+    if notice.analysis_document_id:
+        edital = None
+    try:
+        payload = persist_notice_decision_intelligence(
+            db,
+            notice_id=notice_id,
+            edital=edital,
+            user_id=current_user.id,
+        )
+        return {"data": payload}
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post("/notices/{notice_id}/matches/run-job")

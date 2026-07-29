@@ -254,6 +254,7 @@ def get_editais_listagem(
                         "categoria": item.categoria,
                         "description": item.description,
                         "caracteristicas_bi": item.caracteristicas_bi,
+                        "caracteristicas_tecnicas": item.caracteristicas_tecnicas,
                         "quantity": item.quantity,
                         "unit_value": item.unit_value,
                         "prazo_entrega": item.prazo_entrega,

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { analysisApi, editaisApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
@@ -7,7 +7,7 @@ import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
 
 const MAX_PDF_MB = 50
-const JSON_CONCURRENCY = 4
+const JSON_CONCURRENCY = 1
 
 function isPdfFile(file) {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
@@ -15,6 +15,46 @@ function isPdfFile(file) {
 
 function isJsonFile(file) {
   return file.name.toLowerCase().endsWith('.json')
+}
+
+function fileFromEntry(entry) {
+  return new Promise((resolve, reject) => {
+    entry.file(resolve, reject)
+  })
+}
+
+function readDirectoryEntries(reader) {
+  return new Promise((resolve, reject) => {
+    reader.readEntries(resolve, reject)
+  })
+}
+
+async function collectFilesFromEntry(entry) {
+  if (!entry) return []
+  if (entry.isFile) {
+    const file = await fileFromEntry(entry)
+    return [file]
+  }
+  if (!entry.isDirectory) return []
+  const reader = entry.createReader()
+  const files = []
+  while (true) {
+    const entries = await readDirectoryEntries(reader)
+    if (!entries.length) break
+    const nested = await Promise.all(entries.map(collectFilesFromEntry))
+    files.push(...nested.flat())
+  }
+  return files
+}
+
+async function filesFromDropEvent(event) {
+  const items = Array.from(event.dataTransfer?.items || [])
+  const entries = items
+    .map((item) => (typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry() : null))
+    .filter(Boolean)
+  if (!entries.length) return Array.from(event.dataTransfer?.files || [])
+  const nested = await Promise.all(entries.map(collectFilesFromEntry))
+  return nested.flat()
 }
 
 function validatePdf(file) {
@@ -37,6 +77,33 @@ function readJsonFile(file) {
     reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
     reader.readAsText(file)
   })
+}
+
+function meaningful(value) {
+  return value != null && !['', '-', 'N/C', 'n/c'].includes(String(value).trim())
+}
+
+function normalizeImportedJsonPayload(value) {
+  if (Array.isArray(value)) {
+    if (value.length === 1) return normalizeImportedJsonPayload(value[0])
+    return value
+  }
+  if (!value || typeof value !== 'object') return value
+  if (value.schema_version || value.edital || value.itens_elegiveis || value.itens) return value
+  if (value.json) return normalizeImportedJsonPayload(value.json)
+  if (value.data) return normalizeImportedJsonPayload(value.data)
+  if (value.body) return normalizeImportedJsonPayload(value.body)
+  return value
+}
+
+function jsonBusinessKey(payload, fileName) {
+  const edital = payload?.edital || {}
+  if (meaningful(payload?.n_interno)) return `n:${String(payload.n_interno).trim().toLowerCase()}`
+  const parts = [edital.numero_pregao, edital.orgao, edital.data_disputa, edital.hora_disputa]
+    .filter(meaningful)
+    .map((part) => String(part).trim().toLowerCase())
+  if (parts.length >= 2) return `meta:${parts.join('|')}`
+  return `file:${fileName}`
 }
 
 async function runWithConcurrency(tasks, limit, onEach) {
@@ -66,10 +133,55 @@ export default function Upload() {
   const [jsonDoneCount, setJsonDoneCount] = useState(0)
 
   const [dragging, setDragging] = useState(false)
+  const [analysisOnly, setAnalysisOnly] = useState(false)
+  const [batches, setBatches] = useState([])
+  const [batchLoading, setBatchLoading] = useState(false)
 
   const inputRef = useRef(null)
+  const folderInputRef = useRef(null)
   const navigate = useNavigate()
   const { toast } = useToast()
+
+  useEffect(() => {
+    loadBatches()
+  }, [])
+
+  const loadBatches = async () => {
+    setBatchLoading(true)
+    try {
+      const response = await analysisApi.batches()
+      setBatches(response.data || [])
+    } catch {
+      // A lista de lotes e util, mas nao deve bloquear o upload.
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  const selectedFiles = [...pdfFiles, ...jsonFiles]
+  const inferBatchSourcePath = (files) => {
+    const firstRelative = files.find((file) => file.webkitRelativePath)?.webkitRelativePath
+    if (!firstRelative) return null
+    return firstRelative.split('/')[0] || null
+  }
+
+  const createBatchForSelection = async () => {
+    if (!selectedFiles.length) return null
+    const sourcePath = inferBatchSourcePath(selectedFiles)
+    const label = sourcePath
+      ? `Historico ${sourcePath}`
+      : `Importacao ${new Date().toLocaleString('pt-BR')}`
+    const response = await analysisApi.createBatch({
+      label,
+      source_path: sourcePath,
+      source_mode: sourcePath ? 'folder' : 'upload',
+      analysis_only: analysisOnly,
+      sync_targets: analysisOnly ? [] : ['crm'],
+      total_files: selectedFiles.length,
+    })
+    setBatches((current) => [response.data, ...current])
+    return response.data
+  }
 
   const clearAll = () => {
     setPdfFiles([])
@@ -79,17 +191,19 @@ export default function Upload() {
     setPdfResults([])
     setJobs([])
     setError(null)
+    setAnalysisOnly(false)
     if (inputRef.current) inputRef.current.value = ''
+    if (folderInputRef.current) folderInputRef.current.value = ''
   }
 
-  const applyFiles = (fileList) => {
+  const applyFiles = (fileList, options = {}) => {
     const all = Array.from(fileList || [])
     const jsons = all.filter(isJsonFile)
     const pdfs = all.filter(isPdfFile)
 
     if (jsons.length || pdfs.length) {
       const unsupported = all.filter((file) => !isJsonFile(file) && !isPdfFile(file))
-      if (unsupported.length) {
+      if (unsupported.length && !options.ignoreUnsupported) {
         setError(`Arquivo nao suportado: ${unsupported[0].name}. Envie apenas PDF ou JSON.`)
         return
       }
@@ -105,6 +219,7 @@ export default function Upload() {
       setPdfFiles(pdfs)
       setPdfResults([])
       setError(null)
+      if (options.analysisOnlyDefault != null) setAnalysisOnly(options.analysisOnlyDefault)
       return
     }
     setError('Envie um PDF (.pdf) ou arquivo(s) de analise (.json).')
@@ -115,14 +230,20 @@ export default function Upload() {
     setDragging(true)
   }
   const onDragLeave = () => setDragging(false)
-  const onDrop = (e) => {
+  const onDrop = async (e) => {
     e.preventDefault()
     setDragging(false)
-    applyFiles(e.dataTransfer.files)
+    try {
+      const droppedFiles = await filesFromDropEvent(e)
+      applyFiles(droppedFiles, { ignoreUnsupported: true })
+    } catch {
+      setError('Nao foi possivel ler a pasta arrastada. Use o botao de selecionar pasta.')
+    }
   }
   const onFileChange = (e) => applyFiles(e.target.files)
+  const onFolderChange = (e) => applyFiles(e.target.files, { analysisOnlyDefault: true, ignoreUnsupported: true })
 
-  const handlePdfSubmit = async () => {
+  const handlePdfSubmit = async (batch = null) => {
     const err = pdfFiles.length ? pdfFiles.map(validatePdf).find(Boolean) : 'Nenhum arquivo selecionado.'
     if (err) {
       setError(err)
@@ -139,7 +260,11 @@ export default function Upload() {
         const formData = new FormData()
         formData.append('file', file)
         try {
-          const res = await editaisApi.upload(formData)
+          const res = await editaisApi.upload(formData, {
+            analysisOnly,
+            importBatchId: batch?.id,
+            sourcePath: file.webkitRelativePath || file.name,
+          })
           if (res.data?.duplicate) {
             outcomes.push({ name: file.name, status: 'duplicate', editalId: res.data.edital_id, message: res.data.message })
             continue
@@ -199,22 +324,37 @@ export default function Upload() {
     toast({ type: 'error', title: 'Erro no processamento', message: msg })
   }
 
-  const processJsonFiles = async () => {
+  const processJsonFiles = async (batch = null) => {
     if (!jsonFiles.length) return []
     setJsonProcessing(true)
     setJsonDoneCount(0)
     const outcomes = new Array(jsonFiles.length)
+    const seenKeys = new Map()
 
     const tasks = jsonFiles.map((file) => async () => {
       try {
-        const parsed = await readJsonFile(file)
-        if (!parsed.schema_version) {
+        const parsed = normalizeImportedJsonPayload(await readJsonFile(file))
+        if (!parsed.schema_version && !parsed.edital && !parsed.itens_elegiveis && !parsed.itens) {
           return { name: file.name, status: 'error', message: 'Arquivo fora do modelo de importacao.' }
         }
+        const businessKey = jsonBusinessKey(parsed, file.name)
+        const previousFile = seenKeys.get(businessKey)
+        if (previousFile) {
+          return {
+            name: file.name,
+            status: 'duplicate',
+            message: `Mesmo edital ja estava no lote (${previousFile}).`,
+          }
+        }
+        seenKeys.set(businessKey, file.name)
         const response = await analysisApi.create({
           source_kind: 'edital',
           source_name: file.name,
+          source_path: file.webkitRelativePath || file.name,
           result: parsed,
+          sync_targets: analysisOnly ? [] : ['crm'],
+          import_batch_id: batch?.id,
+          analysis_only: analysisOnly,
         })
         return {
           name: file.name,
@@ -253,8 +393,44 @@ export default function Upload() {
   }
 
   const processSelectedFiles = async () => {
-    if (pdfFiles.length) await handlePdfSubmit()
-    if (jsonFiles.length) await processJsonFiles()
+    let batch = null
+    try {
+      batch = await createBatchForSelection()
+    } catch (err) {
+      toast({ type: 'error', title: 'Erro ao criar lote', message: err.response?.data?.detail || 'Nao foi possivel criar o lote de importacao.' })
+      return
+    }
+    if (pdfFiles.length) await handlePdfSubmit(batch)
+    if (jsonFiles.length) await processJsonFiles(batch)
+    loadBatches()
+  }
+
+  const removeBatch = async (batch, scope) => {
+    const label = batch.label || `lote #${batch.id}`
+    let confirmText = null
+    if (scope === 'all') {
+      confirmText = window.prompt(`Apagar BI + CRM do lote "${label}"? Digite APAGAR para confirmar.`)
+      if (confirmText !== 'APAGAR') return
+    } else if (!window.confirm(`Apagar do BI/sistema o lote "${label}"? O CRM nao sera afetado.`)) {
+      return
+    }
+
+    try {
+      const response = await analysisApi.removeBatch(batch.id, {
+        scope,
+        confirm: confirmText,
+      })
+      const data = response.data || {}
+      toast({
+        type: 'success',
+        title: 'Lote apagado',
+        message: `${data.analysis_documents_deleted || 0} analise(s), ${data.legacy_editais_deleted || 0} PDF(s)`
+          + `${scope === 'all' ? `, ${data.crm_notices_deleted || 0} CRM` : ''}.`,
+      })
+      loadBatches()
+    } catch (err) {
+      toast({ type: 'error', title: 'Erro ao apagar lote', message: err.response?.data?.detail || 'Nao foi possivel apagar o lote.' })
+    }
   }
 
   if (jobs.length > 0) {
@@ -354,6 +530,24 @@ export default function Upload() {
         </Card>
 
         <Card className="space-y-6 p-6">
+          <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-950 dark:text-white">Modo de importacao</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Para arquivos historicos, deixe marcado: o JSON entra no BI sem CRM e o PDF fica identificado como somente analise.
+              </p>
+            </div>
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={analysisOnly}
+                onChange={(event) => setAnalysisOnly(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand"
+              />
+              Somente analise, nao sincronizar CRM
+            </label>
+          </div>
+
           <div
             className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-colors ${
               dragging
@@ -372,6 +566,16 @@ export default function Upload() {
               multiple
               className="hidden"
               onChange={onFileChange}
+            />
+            <input
+              ref={folderInputRef}
+              type="file"
+              accept="application/pdf,.pdf,.json"
+              multiple
+              webkitdirectory=""
+              directory=""
+              className="hidden"
+              onChange={onFolderChange}
             />
 
             {hasSelection ? (
@@ -422,6 +626,16 @@ export default function Upload() {
                 <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
                   PDF: um ou varios arquivos, max. {MAX_PDF_MB} MB cada - JSON: um ou varios arquivos de analise
                 </p>
+                <button
+                  type="button"
+                  className="mt-4 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    folderInputRef.current?.click()
+                  }}
+                >
+                  Selecionar pasta de historico
+                </button>
               </div>
             )}
           </div>
@@ -438,7 +652,7 @@ export default function Upload() {
               <span className="mt-0.5 flex-shrink-0 text-xs text-slate-500 dark:text-slate-400">Dica</span>
               <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                 PDF: acompanhe cada job em tempo real e acesse o edital assim que terminar o OCR. JSON: o edital, os
-                itens e os documentos sao sincronizados automaticamente no CRM na mesma importacao.
+                itens e os documentos vao para o CRM somente quando "Somente analise" estiver desmarcado.
               </p>
             </div>
           )}
@@ -473,6 +687,85 @@ export default function Upload() {
                 <>Processar arquivos</>
               )}
             </button>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">Lotes importados</h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Apague uma importacao inteira do BI ou remova tambem os registros vinculados ao CRM.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={loadBatches}
+              disabled={batchLoading}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              {batchLoading ? 'Atualizando...' : 'Atualizar'}
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Lote</th>
+                  <th className="px-5 py-3 font-semibold">Modo</th>
+                  <th className="px-5 py-3 text-right font-semibold">BI</th>
+                  <th className="px-5 py-3 text-right font-semibold">PDF</th>
+                  <th className="px-5 py-3 text-right font-semibold">CRM</th>
+                  <th className="px-5 py-3 text-right font-semibold">Acoes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                {batches.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                      Nenhum lote registrado ainda.
+                    </td>
+                  </tr>
+                ) : (
+                  batches.map((batch) => (
+                    <tr key={batch.id}>
+                      <td className="px-5 py-4">
+                        <p className="text-sm font-semibold text-slate-950 dark:text-white">{batch.label}</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {batch.source_path || 'Upload avulso'} - {batch.total_files || 0} arquivo(s)
+                        </p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <Badge tone={batch.analysis_only ? 'amber' : 'emerald'}>
+                          {batch.analysis_only ? 'Somente BI' : 'BI + CRM'}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{batch.analysis_documents || 0}</td>
+                      <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{batch.legacy_editais || 0}</td>
+                      <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{batch.crm_notices || 0}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => removeBatch(batch, 'bi')}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            Apagar BI
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeBatch(batch, 'all')}
+                            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                          >
+                            BI + CRM
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </Card>
 

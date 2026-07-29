@@ -20,7 +20,7 @@ import os
 import re
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -67,6 +67,9 @@ class EditalResponse(BaseModel):
 @router.post("/upload", response_model=JobCreatedResponse, status_code=202)
 async def upload_edital(
     file:             UploadFile      = File(..., description="PDF do edital"),
+    analysis_only:    bool            = Form(False, description="Processa o PDF sem avancar integracoes comerciais."),
+    import_batch_id:  int | None      = Form(None),
+    source_path:      str | None      = Form(None),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
@@ -110,6 +113,9 @@ async def upload_edital(
         user_id          = current_user.id,
         db               = db,
         source_hash      = source_hash,
+        analysis_only    = analysis_only,
+        import_batch_id  = import_batch_id,
+        source_path      = source_path,
     )
 
     return JobCreatedResponse(

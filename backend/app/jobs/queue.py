@@ -80,6 +80,10 @@ class JobQueue:
         user_id:          int,
         db:               Session,
         source_hash:      str | None = None,
+        analysis_only:    bool = False,
+        import_batch_id:  int | None = None,
+        source_path:      str | None = None,
+        crm_notice_id:    str | None = None,
     ) -> str:
         """
         Cria um job de upload+processamento de edital.
@@ -123,6 +127,10 @@ class JobQueue:
                 "filename": filename,
                 "tenant_id": tenant_id,
                 "source_hash": source_hash,
+                "analysis_only": analysis_only,
+                "import_batch_id": import_batch_id,
+                "source_path": source_path,
+                "crm_notice_id": crm_notice_id,
             },
         )
         db.add(job)
@@ -139,6 +147,10 @@ class JobQueue:
             filename  = filename,
             tenant_id = tenant_id,
             source_hash = source_hash,
+            analysis_only = analysis_only,
+            import_batch_id = import_batch_id,
+            source_path = source_path,
+            crm_notice_id = crm_notice_id,
         )
 
         return job_id
@@ -253,6 +265,10 @@ def _executar_job_upload(
     filename:  str,
     tenant_id: str,
     source_hash: str | None = None,
+    analysis_only: bool = False,
+    import_batch_id: int | None = None,
+    source_path: str | None = None,
+    crm_notice_id: str | None = None,
 ) -> None:
     """
     Handler do job de upload — roda em background thread.
@@ -308,6 +324,12 @@ def _executar_job_upload(
             .first()
         )
         if duplicate is not None:
+            decision_payload = _try_generate_decision_intelligence(
+                db,
+                crm_notice_id=crm_notice_id,
+                edital=duplicate,
+                user_id=None,
+            )
             try:
                 os.remove(pdf_path)
             except OSError:
@@ -321,6 +343,10 @@ def _executar_job_upload(
                     "edital_id": duplicate.id,
                     "filename": filename,
                     "duplicate": True,
+                    "analysis_only": analysis_only,
+                    "import_batch_id": import_batch_id,
+                    "crm_notice_id": crm_notice_id,
+                    "decision_intelligence": decision_payload,
                     "message": "Documento ja cadastrado. Este arquivo nao foi reprocessado.",
                 },
             )
@@ -334,6 +360,9 @@ def _executar_job_upload(
             status = "done",
             full_text = parsed_doc.full_text,
             tenant_id = tenant_id,
+            import_batch_id = import_batch_id,
+            source_path = source_path,
+            analysis_only = analysis_only,
         )
         db.add(edital)
         db.flush()  # gera edital.id
@@ -359,6 +388,12 @@ def _executar_job_upload(
         # ── Etapa 4: Commit + cleanup ─────────────────────────────────────────
         db.commit()
         db.refresh(edital)
+        decision_payload = _try_generate_decision_intelligence(
+            db,
+            crm_notice_id=crm_notice_id,
+            edital=edital,
+            user_id=None,
+        )
 
         # Remove PDF temporário (já processado, não precisa mais)
         try:
@@ -376,6 +411,10 @@ def _executar_job_upload(
                 "edital_id": edital.id,
                 "filename":  filename,
                 "n_chunks":  saved,
+                "analysis_only": analysis_only,
+                "import_batch_id": import_batch_id,
+                "crm_notice_id": crm_notice_id,
+                "decision_intelligence": decision_payload,
             },
         )
         logger.info(f"[Worker] Job concluído | job={job_id[:8]}... | edital={edital.id}")
@@ -599,6 +638,33 @@ def _executar_job_crm_notice_match(
 # =============================================================================
 # Helper interno
 # =============================================================================
+
+def _try_generate_decision_intelligence(
+    db: Session,
+    *,
+    crm_notice_id: str | None,
+    edital,
+    user_id: int | None,
+) -> dict | None:
+    if not crm_notice_id:
+        return None
+    try:
+        from app.services.decision_intelligence import persist_notice_decision_intelligence
+
+        return persist_notice_decision_intelligence(
+            db,
+            notice_id=crm_notice_id,
+            edital=edital,
+            user_id=user_id,
+        )
+    except Exception as exc:
+        logger.warning(
+            "[Worker] Falha ao gerar parecer IA | notice=%s | erro=%s",
+            crm_notice_id,
+            exc,
+            exc_info=True,
+        )
+        return {"error": str(exc)}
 
 def _update_job(
     db:            Session,

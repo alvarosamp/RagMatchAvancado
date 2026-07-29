@@ -18,7 +18,7 @@ def test_build_source_hash_changes_when_content_changes():
 class TestBuildBusinessKey:
     def test_usa_n_interno_quando_presente(self):
         result = {"n_interno": "PE-12-2026", "edital": {"numero_pregao": "99/2026"}}
-        assert build_business_key(result, "arquivo.json") == "analysis-json|PE-12-2026"
+        assert build_business_key(result, "arquivo.json") == "edital|n-interno|pe-12-2026"
 
     def test_mesmo_n_interno_gera_mesma_chave_mesmo_com_conteudo_diferente(self):
         result_a = {"n_interno": "PE-12-2026", "itens_elegiveis": [{"a": 1}]}
@@ -29,7 +29,7 @@ class TestBuildBusinessKey:
         result = {"edital": {"numero_pregao": "12/2026", "orgao": "Prefeitura X", "data_disputa": "10/10/2026"}}
         key = build_business_key(result, "arquivo.json")
         assert key is not None
-        assert key.startswith("analysis-json|")
+        assert key.startswith("edital|meta|")
 
     def test_pregao_orgao_iguais_geram_mesma_chave_independente_do_filename(self):
         result_a = {"edital": {"numero_pregao": "12/2026", "orgao": "Prefeitura X", "data_disputa": "10/10/2026"}}
@@ -46,6 +46,6 @@ class TestBuildBusinessKey:
         assert build_business_key({"edital": {}}, None) is None
 
     def test_n_interno_vazio_cai_no_fallback(self):
-        result = {"n_interno": "", "edital": {"numero_pregao": "12/2026"}}
+        result = {"n_interno": "", "edital": {"numero_pregao": "12/2026", "orgao": "Prefeitura X"}}
         key = build_business_key(result, None)
         assert key is not None and "12/2026" not in key  # vira hash, nao texto puro

@@ -103,6 +103,7 @@ def _normalize_extracted_text(text: str) -> str:
         return ""
 
     t = text.replace("\r\n", "\n").replace("\r", "\n")
+    t = _collapse_spaced_ocr_text(t)
 
     # Colagens recorrentes (ex.: "150\n\nKGPESO" ou "KGPESO")
     t = re.sub(r"(?i)\bKG(?=PESO\b)", "KG\n\n", t)
@@ -114,6 +115,36 @@ def _normalize_extracted_text(text: str) -> str:
     # Colapsa excesso de linhas em branco
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t
+
+
+def _collapse_spaced_ocr_text(text: str) -> str:
+    """Corrige PDFs que extraem palavras como 'T r a n s c e p t o r'."""
+    if not text:
+        return ""
+
+    tokens = re.findall(r"\S+", text[:4000])
+    if not tokens:
+        return text
+    single_char_tokens = sum(1 for token in tokens if len(token) == 1)
+    if single_char_tokens / len(tokens) < 0.55:
+        return text
+
+    normalized_lines: list[str] = []
+    for line in text.split("\n"):
+        parts = re.split(r"(\s{2,})", line)
+        collapsed: list[str] = []
+        for part in parts:
+            if not part or part.isspace():
+                if part:
+                    collapsed.append(" ")
+                continue
+            part_tokens = re.findall(r"\S+", part)
+            if part_tokens and sum(1 for token in part_tokens if len(token) == 1) / len(part_tokens) >= 0.7:
+                collapsed.append(re.sub(r"(?<=\S)\s(?=\S)", "", part))
+            else:
+                collapsed.append(part)
+        normalized_lines.append(re.sub(r"[ \t]{2,}", " ", "".join(collapsed)).strip())
+    return "\n".join(normalized_lines)
 
 
 # ──────────────────────────────────────────

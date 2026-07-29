@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { analysisApi } from '../api/client'
+import { analysisApi, downloadBlob } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 import { formatNumber, formatMoney, compactDescription } from '../components/ui/format'
 import StatCard from '../components/ui/StatCard'
@@ -88,6 +88,7 @@ export default function AnalysisDashboard() {
   const [error, setError] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [exporting, setExporting] = useState(false)
   const intervalRef = useRef(null)
 
   const fetchAll = useCallback(async (showSpinner) => {
@@ -120,6 +121,18 @@ export default function AnalysisDashboard() {
 
   const categoryRows = useMemo(() => categories.slice(0, 3), [categories])
   const recentRows = useMemo(() => editais.slice(0, 12), [editais])
+
+  const exportReport = async () => {
+    setExporting(true)
+    try {
+      const response = await analysisApi.exportReportPdf({ period })
+      downloadBlob(response.data, `bi_editais_${period}.pdf`)
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel exportar o relatorio.' })
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const handleDelete = async (edital, event) => {
     event.stopPropagation()
@@ -176,6 +189,14 @@ export default function AnalysisDashboard() {
               className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Atualizar
+            </button>
+            <button
+              type="button"
+              onClick={exportReport}
+              disabled={exporting}
+              className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              {exporting ? 'Exportando...' : 'Exportar relatorio'}
             </button>
             <button
               type="button"

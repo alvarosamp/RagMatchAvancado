@@ -45,6 +45,12 @@ def persist_analysis_document(
     source_name: str | None,
     full_text: str | None,
     result: dict[str, Any],
+    source_path: str | None = None,
+    import_batch_id: int | None = None,
+    analysis_only: bool = False,
+    schema_name: str | None = None,
+    schema_version: str | None = None,
+    business_key: str | None = None,
     tokens_used: int = 0,
     processing_ms: int | None = None,
     status: str = "done",
@@ -63,22 +69,11 @@ def persist_analysis_document(
     if source_kind == "edital":
         result = normalize_analysis_result(result)
 
-    business_key = build_business_key(result, source_name) if source_kind == "edital" else None
-    if business_key:
-        existing = (
-            db.query(AnalysisDocument)
-            .filter(
-                AnalysisDocument.tenant_id == tenant_id,
-                AnalysisDocument.source_kind == source_kind,
-                AnalysisDocument.business_key == business_key,
-            )
-            .first()
-        )
-        if existing is not None:
-            return existing, True
-
+    business_key = business_key or (
+        build_business_key(result, source_name) if source_kind == "edital" else None
+    )
     result_signature = json.dumps(result, sort_keys=True, ensure_ascii=False)
-    source_hash = build_source_hash(source_kind, full_text or result_signature, source_name or "")
+    source_hash = build_source_hash(source_kind, full_text or result_signature)
     document = (
         db.query(AnalysisDocument)
         .filter(
@@ -88,10 +83,27 @@ def persist_analysis_document(
         )
         .first()
     )
+    if document is not None:
+        return document, True
+
+    if business_key:
+        document = (
+            db.query(AnalysisDocument)
+            .filter(
+                AnalysisDocument.tenant_id == tenant_id,
+                AnalysisDocument.source_kind == source_kind,
+                AnalysisDocument.business_key == business_key,
+            )
+            .first()
+        )
+
     if document is None:
         document = AnalysisDocument(
             tenant_id=tenant_id,
+            import_batch_id=import_batch_id,
             source_kind=source_kind,
+            schema_name=schema_name or source_kind,
+            schema_version=schema_version,
             source_hash=source_hash,
             business_key=business_key,
         )
@@ -99,8 +111,13 @@ def persist_analysis_document(
         db.flush()
     else:
         document.business_key = business_key or document.business_key
+        document.schema_name = schema_name or document.schema_name or source_kind
+        document.schema_version = schema_version or document.schema_version
+        document.import_batch_id = import_batch_id or document.import_batch_id
 
     document.source_name = source_name
+    document.source_path = source_path
+    document.analysis_only = analysis_only
     document.full_text = full_text
     document.result = result
     document.tokens_used = tokens_used or int(result.get("tokens_usados") or 0)
@@ -148,6 +165,7 @@ def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> Anal
         lote_grupo=item.get("lote_grupo"),
         garantia=item.get("garantia"),
         prazo_entrega=item.get("prazo_entrega"),
+        caracteristicas_tecnicas=item.get("caracteristicas_tecnicas"),
         exclusividade_me_epp_item=item.get("exclusividade_me_epp_item"),
         risco_associado=item.get("risco_associado"),
         direcionamento_marca_tipo=direcionamento_marca.get("tipo"),

@@ -23,6 +23,8 @@ def init_db(db: Session) -> dict:
         _ensure_crm_schema_updates()
         _ensure_analysis_items_schema_updates()
         _ensure_products_schema_updates()
+        _ensure_opportunity_decisions_schema_updates()
+        _ensure_pncp_radar_items_schema_updates()
         _ensure_editais_schema_updates()
         _ensure_analysis_documents_schema_updates()
         logger.info("Tabelas do portal e do CRM criadas com sucesso.")
@@ -43,6 +45,7 @@ def _ensure_crm_schema_updates() -> None:
         "crm_notices",
         {
             "tor_id": "VARCHAR",
+            "bid_number": "VARCHAR",
             "municipality_name": "VARCHAR",
             "proposal_link": "TEXT",
             "supplier_proposal_link": "TEXT",
@@ -55,8 +58,21 @@ def _ensure_crm_schema_updates() -> None:
             "analysis_status": "VARCHAR",
             "analysis_mode": "VARCHAR",
             "analysis_confidence": "VARCHAR",
+            "decision_recommendation": "VARCHAR",
+            "decision_score": "INTEGER",
+            "decision_risk_score": "INTEGER",
+            "decision_intelligence": "JSON",
+            "bi_item_summary": "TEXT",
+            "bi_criterion": "VARCHAR",
+            "bi_interval": "VARCHAR",
+            "bi_exclusivity": "VARCHAR",
+            "bi_risk_identified": "VARCHAR",
+            "bi_risk_operational": "TEXT",
+            "bi_risk_documental": "TEXT",
             "sales_status": "VARCHAR",
             "import_key": "VARCHAR",
+            "import_batch_id": "INTEGER",
+            "analysis_document_id": "INTEGER",
         },
     )
     _ensure_columns(
@@ -69,9 +85,38 @@ def _ensure_crm_schema_updates() -> None:
             "exclusive_epp_label": "VARCHAR",
             "warranty": "VARCHAR",
             "delivery_deadline": "VARCHAR",
+            "category": "VARCHAR",
+            "technical_characteristics": "TEXT",
+            "risk_associated": "TEXT",
+            "brand_direction_exists": "BOOLEAN",
+            "brand_direction_model": "VARCHAR",
+            "brand_direction_type": "VARCHAR",
+            "brand_direction_justification": "TEXT",
             "bi_features": "JSON",
+            "bi_feature_quantidade_portas": "VARCHAR",
+            "bi_feature_portas_acesso": "VARCHAR",
+            "bi_feature_gerenciamento": "VARCHAR",
+            "bi_feature_alimentacao_poe": "VARCHAR",
+            "bi_feature_uplinks": "VARCHAR",
+            "bi_feature_camada": "VARCHAR",
+            "bi_feature_tecnologia_wifi": "VARCHAR",
+            "bi_feature_alimentacao": "VARCHAR",
+            "bi_feature_ambiente": "VARCHAR",
+            "bi_feature_formato": "VARCHAR",
+            "bi_feature_velocidade": "VARCHAR",
+            "bi_feature_tipo_meio": "VARCHAR",
+            "bi_feature_alcance": "VARCHAR",
+            "raw_payload": "JSON",
             "cost": "DOUBLE PRECISION",
             "reference_total_price": "DOUBLE PRECISION",
+        },
+    )
+    _ensure_columns(
+        inspector,
+        "crm_notice_documents",
+        {
+            "source_url": "TEXT",
+            "source_kind": "VARCHAR",
         },
     )
     _ensure_columns(
@@ -86,6 +131,8 @@ def _ensure_crm_schema_updates() -> None:
         [
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_tor_id ON crm_notices (tenant_id, tor_id)",
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_municipality ON crm_notices (tenant_id, municipality_name)",
+            "CREATE INDEX IF NOT EXISTS ix_crm_notices_import_batch_id ON crm_notices (import_batch_id)",
+            "CREATE INDEX IF NOT EXISTS ix_crm_notices_analysis_document_id ON crm_notices (analysis_document_id)",
         ]
     )
 
@@ -100,6 +147,7 @@ def _ensure_analysis_items_schema_updates() -> None:
             "lote_grupo": "VARCHAR",
             "garantia": "VARCHAR",
             "prazo_entrega": "VARCHAR",
+            "caracteristicas_tecnicas": "TEXT",
             "exclusividade_me_epp_item": "VARCHAR",
             "risco_associado": "TEXT",
             "direcionamento_marca_tipo": "VARCHAR",
@@ -135,6 +183,61 @@ def _ensure_products_schema_updates() -> None:
     )
 
 
+def _ensure_opportunity_decisions_schema_updates() -> None:
+    inspector = inspect(engine)
+    if "opportunity_decisions" not in inspector.get_table_names():
+        return
+    _ensure_columns(
+        inspector,
+        "opportunity_decisions",
+        {
+            "score": "INTEGER",
+            "priority": "VARCHAR",
+            "reason": "TEXT",
+            "notice_snapshot": "JSON",
+            "crm_notice_id": "VARCHAR",
+            "import_job_id": "VARCHAR",
+            "pncp_files_count": "INTEGER DEFAULT 0",
+            "import_error": "TEXT",
+            "updated_at": "TIMESTAMP",
+        },
+    )
+    _ensure_indexes(
+        [
+            "CREATE INDEX IF NOT EXISTS ix_opportunity_decisions_tenant_id ON opportunity_decisions (tenant_id)",
+            "CREATE INDEX IF NOT EXISTS ix_opportunity_decisions_id_pncp ON opportunity_decisions (id_pncp)",
+            "CREATE INDEX IF NOT EXISTS ix_opportunity_decisions_decision ON opportunity_decisions (decision)",
+            "CREATE INDEX IF NOT EXISTS ix_opportunity_decisions_crm_notice_id ON opportunity_decisions (crm_notice_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_opportunity_decisions_tenant_id_pncp ON opportunity_decisions (tenant_id, id_pncp)",
+        ]
+    )
+
+
+def _ensure_pncp_radar_items_schema_updates() -> None:
+    inspector = inspect(engine)
+    if "pncp_radar_items" not in inspector.get_table_names():
+        return
+    _ensure_columns(
+        inspector,
+        "pncp_radar_items",
+        {
+            "id_pncp": "VARCHAR",
+            "notice": "JSON",
+            "search_terms": "VARCHAR",
+            "status": "VARCHAR DEFAULT 'active'",
+            "first_seen_at": "TIMESTAMP",
+            "last_seen_at": "TIMESTAMP",
+        },
+    )
+    _ensure_indexes(
+        [
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_pncp_radar_items_id_pncp ON pncp_radar_items (id_pncp)",
+            "CREATE INDEX IF NOT EXISTS ix_pncp_radar_items_status ON pncp_radar_items (status)",
+            "CREATE INDEX IF NOT EXISTS ix_pncp_radar_items_last_seen_at ON pncp_radar_items (last_seen_at)",
+        ]
+    )
+
+
 def _ensure_editais_schema_updates() -> None:
     inspector = inspect(engine)
     _ensure_columns(
@@ -144,6 +247,9 @@ def _ensure_editais_schema_updates() -> None:
             "source_hash": "VARCHAR",
             "business_key": "VARCHAR",
             "status": "VARCHAR DEFAULT 'done'",
+            "import_batch_id": "INTEGER",
+            "source_path": "VARCHAR",
+            "analysis_only": "BOOLEAN DEFAULT FALSE",
         },
     )
     _ensure_indexes(
@@ -151,6 +257,8 @@ def _ensure_editais_schema_updates() -> None:
             "CREATE INDEX IF NOT EXISTS ix_editais_source_hash ON editais (source_hash)",
             "CREATE INDEX IF NOT EXISTS ix_editais_business_key ON editais (business_key)",
             "CREATE INDEX IF NOT EXISTS ix_editais_status ON editais (status)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_import_batch_id ON editais (import_batch_id)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_analysis_only ON editais (analysis_only)",
         ]
     )
 
@@ -161,12 +269,23 @@ def _ensure_analysis_documents_schema_updates() -> None:
         inspector,
         "analysis_documents",
         {
+            "schema_name": "VARCHAR",
+            "schema_version": "VARCHAR",
+            "import_batch_id": "INTEGER",
             "business_key": "VARCHAR",
+            "source_path": "VARCHAR",
+            "analysis_only": "BOOLEAN DEFAULT FALSE",
+            "crm_notice_id": "VARCHAR",
         },
     )
     _ensure_indexes(
         [
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_schema_name ON analysis_documents (schema_name)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_schema_version ON analysis_documents (schema_version)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_import_batch_id ON analysis_documents (import_batch_id)",
             "CREATE INDEX IF NOT EXISTS ix_analysis_documents_business_key ON analysis_documents (business_key)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_analysis_only ON analysis_documents (analysis_only)",
+            "CREATE INDEX IF NOT EXISTS ix_analysis_documents_crm_notice_id ON analysis_documents (crm_notice_id)",
         ]
     )
 

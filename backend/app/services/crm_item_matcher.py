@@ -21,8 +21,10 @@ from app.services.crm_match_scoring import (
     build_match_summary,
     combine_scores,
     cosine_similarity,
+    _has_hard_category_conflict,
     lexical_similarity,
     normalize_text,
+    technical_compatibility_score,
     try_llm_rerank,
 )
 
@@ -293,9 +295,14 @@ def _rank_candidates(
                 candidate_text=_catalog_product_text(candidate["catalog"]),
             )
 
+        technical = technical_compatibility_score(notice_text, _catalog_product_text(candidate["catalog"]))
+        semantic_score = candidate.get("semantic_score")
+        if technical is not None:
+            semantic_score = max(semantic_score or 0.0, technical.score)
+
         score = combine_scores(
             candidate["lexical_score"],
-            candidate.get("semantic_score"),
+            semantic_score,
             llm_payload.get("score") if llm_payload else None,
         )
         if llm_payload:
@@ -309,6 +316,30 @@ def _rank_candidates(
                 rationale=llm_payload.get("rationale"),
                 matched_features=tuple(llm_payload.get("matched_features") or ()),
                 conflicts=tuple(llm_payload.get("conflicts") or ()),
+            )
+        if _has_hard_category_conflict(notice_text, _catalog_product_text(candidate["catalog"])):
+            score = MatchScore(
+                lexical_score=score.lexical_score,
+                semantic_score=score.semantic_score,
+                llm_score=score.llm_score,
+                overall_score=min(score.overall_score, 0.25),
+                level="none",
+                source_method=score.source_method,
+                rationale=score.rationale or "Familia tecnica incompativel entre item do edital e produto do catalogo.",
+                matched_features=score.matched_features,
+                conflicts=(*score.conflicts, "Familia tecnica incompativel entre item do edital e produto do catalogo."),
+            )
+        elif technical is not None and (technical.matched_features or technical.conflicts):
+            score = MatchScore(
+                lexical_score=score.lexical_score,
+                semantic_score=score.semantic_score,
+                llm_score=score.llm_score,
+                overall_score=score.overall_score,
+                level=score.level,
+                source_method=score.source_method,
+                rationale=score.rationale,
+                matched_features=(*score.matched_features, *technical.matched_features),
+                conflicts=(*score.conflicts, *technical.conflicts),
             )
         ranked.append({
             "catalog": candidate["catalog"],

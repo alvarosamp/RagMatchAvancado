@@ -22,6 +22,8 @@ import AnaliseAta     from './pages/AnaliseAta'
 import AnaliseJson    from './pages/AnaliseJson'
 import AnalysisDashboard from './pages/AnalysisDashboard'
 import PncpSearch     from './pages/PncpSearch'
+import OpportunityRadar from './pages/OpportunityRadar'
+import CompetitiveIntelligence from './pages/CompetitiveIntelligence'
 import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
 import DatasheetCompare from './pages/DatasheetCompare'
@@ -62,6 +64,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/relatorios"             element={<PrivateRoute><Reports       /></PrivateRoute>} />
             <Route path="/chat"                   element={<PrivateRoute><Chatbot       /></PrivateRoute>} />
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
+            <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
@@ -72,6 +75,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/analise/upload"          element={<Navigate to="/upload" replace />} />
             <Route path="/analise/dashboard"       element={<PrivateRoute><AnalysisDashboard /></PrivateRoute>} />
             <Route path="/inteligencia/datasheets" element={<PrivateRoute><DatasheetCompare /></PrivateRoute>} />
+            <Route path="/inteligencia/competitiva" element={<PrivateRoute><CompetitiveIntelligence /></PrivateRoute>} />
 
             <Route path="/usuarios" element={
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>

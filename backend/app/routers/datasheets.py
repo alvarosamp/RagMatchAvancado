@@ -29,6 +29,7 @@ from app.db.models import Product
 from app.db.session import get_db
 from app.logs.config import logger
 from app.services.attribute_parsers import compare_product_specs
+from app.services.competitive_intelligence import build_competitive_intelligence
 from app.services.datasheet_extractor import extract_specs_from_pdf
 from app.services.tor_datasheet_generator import (
     build_tor_datasheet_preview,
@@ -225,6 +226,16 @@ def competitive_gaps(
         "own_count": len(own_products),
         "competitor_count": len(competitor_products),
     }
+
+
+@router.get("/competitive-intelligence")
+def competitive_intelligence(
+    category: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return build_competitive_intelligence(db, category=category, limit=limit)
 
 
 def _serialize_product(product: Product) -> dict:

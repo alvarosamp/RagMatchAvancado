@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "total_pairs": 1,
+    "decisions": {
+      "nao_match": 1
+    },
+    "expected_by_category": {
+      "negativo": 1
+    },
+    "hard_conflicts": 1,
+    "good_extractions": 1,
+    "avg_final_score": 0.25
+  },
+  "rows": [
+    {
+      "pdf_path": "D:\\TOR\\ARQUIVOS PRONTOS PARA SITE-20260727T014743Z-1-001\\ARQUIVOS PRONTOS PARA SITE\\SFP1G315510KM REV00.pdf",
+      "json_path": "D:\\TOR\\Analisados\\AnalisadosAtualizado\\dia21\\2026_07_21_10_Lauro de Freitas_BA.json",
+      "item_number": "1",
+      "edital_orgao": "SENAI - Serviço Nacional de Aprendizagem Industrial - Departamento Regional da Bahia",
+      "edital_resumo": "5x Access Point Wi-Fi 6",
+      "item_category": "access_point",
+      "item_description": "ACCESS POINT INDOOR RUCKUS R650 COM FONTE PoE+ AT, Wi-Fi 6 IEEE 802.11ax, dual-band 2,4 GHz e 5 GHz, MIMO 4x4, 2 interfaces 10/100/1000 Mbps RJ-45, gerenciamento centralizado, Zona BR e injetor PoE+ incluso",
+      "datasheet_model": "SFP1G315510KM",
+      "datasheet_category": "transceiver",
+      "datasheet_specs": "{\"Alcance\": \"10 km\", \"Comprimento de onda\": \"Tx 1310 nm / Rx 1550 nm\", \"Formato\": \"SFP\", \"Power Requirement / TensÃ£o de Entrada\": \"3,3 V\", \"Tipo de meio\": \"Fibra monomodo\", \"Velocidade\": \"1,25 Gbps\"}",
+      "ocr_chars": 6243,
+      "lexical_score": 0.1292,
+      "semantic_score": 0.8187,
+      "llm_score": null,
+      "raw_overall_score": 0.5084,
+      "final_score": 0.25,
+      "final_level": "none",
+      "decision": "nao_match",
+      "expected_by_category": "negativo",
+      "hard_conflict": true,
+      "rationale": "",
+      "conflicts": "Familia tecnica incompativel entre item do edital e produto do catalogo.",
+      "extraction_quality": "boa"
+    }
+  ]
+}

@@ -15,7 +15,9 @@ from app.routers.ops        import router as ops_router
 from app.routers.reports    import router as reports_router
 from app.routers.analysis   import router as analysis_router
 from app.routers.analysis_dashboard import router as analysis_dashboard_router
+from app.routers.documents  import router as documents_router
 from app.routers.datasheets import router as datasheets_router
+from app.routers.pncp       import router as pncp_router
 from app.auth.router        import router as auth_router
 from app.jobs.router        import router as jobs_router
 from app.logs.config import logger
@@ -34,8 +36,10 @@ app.include_router(ops_router)
 app.include_router(reports_router)
 app.include_router(analysis_router)
 app.include_router(analysis_dashboard_router)
+app.include_router(documents_router)
 app.include_router(switches_router)
 app.include_router(editais_router)
+app.include_router(pncp_router)
 app.include_router(export_router)
 app.include_router(analytics_router)   # ← NOVO: /analytics/*
 app.include_router(datasheets_router)
@@ -68,8 +72,11 @@ def on_startup():
         try:
             import time
             import ollama as _ollama
-            _host  = os.getenv("OLLAMA_HOST",  "http://localhost:11434")
-            _model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+            _host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+            _models = [
+                os.getenv("OLLAMA_MODEL", "llama3.2:1b"),
+                os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
+            ]
             _auto_pull = os.getenv("OLLAMA_AUTO_PULL", "0").lower() in {
                 "1",
                 "true",
@@ -85,8 +92,10 @@ def on_startup():
                 except Exception:
                     time.sleep(5)
             available = [m.model for m in _client.list().models]
-            if not any(m.startswith(_model.split(":")[0]) and _model in m or m == _model
-                       for m in available):
+            for _model in dict.fromkeys(model for model in _models if model):
+                if any(candidate == _model or candidate.startswith(f"{_model}:") for candidate in available):
+                    logger.info("[Startup] Modelo Ollama '%s' ja disponivel.", _model)
+                    continue
                 logger.info("[Startup] Modelo Ollama '%s' não encontrado — iniciando pull...", _model)
                 if not _auto_pull:
                     logger.warning(
@@ -94,12 +103,25 @@ def on_startup():
                         "Use OLLAMA_AUTO_PULL=1 ou o servico ollama-setup.",
                         _model,
                     )
-                    return
+                    continue
                 _client.pull(_model)
                 logger.info("[Startup] Pull do modelo '%s' concluído.", _model)
-            else:
                 logger.info("[Startup] Modelo Ollama '%s' já disponível.", _model)
         except Exception as exc:
             logger.warning("[Startup] Falha ao garantir modelo Ollama (não crítico): %s", exc)
 
     threading.Thread(target=_warmup, daemon=True).start()
+
+    try:
+        from app.services.pncp_radar_cache import start_daily_radar_refresh
+
+        start_daily_radar_refresh()
+    except Exception as exc:
+        logger.warning("[Startup] Falha ao iniciar rotina diaria do Radar PNCP: %s", exc)
+
+    try:
+        from app.services.email_monitor import start_email_monitor_loop
+
+        start_email_monitor_loop()
+    except Exception as exc:
+        logger.warning("[Startup] Falha ao iniciar monitoramento de email: %s", exc)
