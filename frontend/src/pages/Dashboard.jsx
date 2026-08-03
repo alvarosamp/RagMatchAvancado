@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
+import { useMarket } from '../contexts/MarketContext'
 import { useToast } from '../contexts/ToastContext'
 
 function formatDate(value) {
@@ -19,6 +20,35 @@ async function readCrmSync() {
   } catch { return null }
 }
 
+const SUITE_STEPS = [
+  { key: 'radar', title: 'Radar de oportunidades', description: 'Encontre editais aderentes antes de importar para analise.', path: '/radar', cta: 'Buscar' },
+  { key: 'alerts', title: 'Alertas inteligentes', description: 'Acompanhe prazos, filas, atrasos e proximas sessoes.', path: '/controle', cta: 'Acompanhar' },
+  { key: 'analysis', title: 'Analise IA do edital', description: 'Extraia requisitos, itens, riscos e perguntas do edital.', path: '/upload', cta: 'Analisar' },
+  { key: 'matching', title: 'Matching tecnico', description: 'Compare requisitos com catalogo, datasheets e gaps.', path: '/inteligencia/datasheets', cta: 'Comparar' },
+  { key: 'documents', title: 'Proposta e documentos', description: 'Transforme analises em relatorios e exportacoes.', path: '/relatorios', cta: 'Gerar' },
+  { key: 'crm', title: 'CRM e pipeline', description: 'Controle decisao, responsaveis, disputa e resultado.', path: '/crm', cta: 'Abrir' },
+]
+
+function stepState(key, { nEditais, totalRequirements, jobs, crm }) {
+  if (key === 'radar') return { label: 'Disponivel', tone: 'blue' }
+  if (key === 'alerts') {
+    const pending = (jobs?.active_count ?? 0) + (jobs?.stale_count ?? 0) + (crm?.upcoming_auctions_count ?? 0)
+    return pending > 0 ? { label: `${pending} alertas`, tone: 'amber' } : { label: 'Sem pendencias', tone: 'emerald' }
+  }
+  if (key === 'analysis') return nEditais > 0 ? { label: `${nEditais} editais`, tone: 'emerald' } : { label: 'Importar edital', tone: 'slate' }
+  if (key === 'matching') return totalRequirements > 0 ? { label: `${totalRequirements} requisitos`, tone: 'emerald' } : { label: 'Aguardando analise', tone: 'slate' }
+  if (key === 'documents') return nEditais > 0 ? { label: 'Pronto para exportar', tone: 'blue' } : { label: 'Sem dados', tone: 'slate' }
+  if (key === 'crm') return (crm?.active_pipeline ?? 0) > 0 ? { label: `${crm.active_pipeline} ativos`, tone: 'emerald' } : { label: 'Criar pipeline', tone: 'slate' }
+  return { label: 'Disponivel', tone: 'slate' }
+}
+
+function stateClass(tone) {
+  if (tone === 'emerald') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+  if (tone === 'amber') return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+  if (tone === 'blue') return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
+  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+}
+
 export default function Dashboard() {
   const [editais,     setEditais]     = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -28,6 +58,7 @@ export default function Dashboard() {
   const [opsSummary,  setOpsSummary]  = useState(null)
   const [crmSync,     setCrmSync]     = useState(null)
   const { user, isEditor } = useAuth()
+  const market = useMarket()
   const { toast, confirm } = useToast()
   const navigate           = useNavigate()
 
@@ -39,7 +70,8 @@ export default function Dashboard() {
         editaisApi.list(), opsApi.summary(), readCrmSync(),
       ])
       if (!active) return
-      setEditais(eRes.status === 'fulfilled' ? eRes.value.data || [] : [])
+      const editalRows = eRes.status === 'fulfilled' && Array.isArray(eRes.value.data) ? eRes.value.data : []
+      setEditais(editalRows)
       if (oRes.status === 'fulfilled') { setOpsSummary(oRes.value.data); setApiOnline(true) }
       else { setOpsSummary(null); setApiOnline(false) }
       setCrmSync(cRes.status === 'fulfilled' ? cRes.value : null)
@@ -54,7 +86,7 @@ export default function Dashboard() {
     setExporting(`${id}-${tipo}`)
     try {
       const r = await { xlsx: exportApi.xlsx, csv: exportApi.csv }[tipo](id)
-      downloadBlob(r.data, `edital_${id}_resultado.${tipo}`)
+      downloadBlob(r.data, `${market.labels.source_document}_${id}_resultado.${tipo}`)
       toast({ type: 'success', message: `${tipo.toUpperCase()} gerado.` })
     } catch (err) {
       toast({ type: 'error', message: err.response?.data?.detail || `Erro ao exportar ${tipo.toUpperCase()}.` })
@@ -65,14 +97,14 @@ export default function Dashboard() {
     e.stopPropagation()
     const ok = await confirm(
       `Apagar "${edital.filename}"? O PDF, chunks, requisitos e resultados vinculados serao removidos.`,
-      { title: 'Apagar edital?' },
+      { title: market.labels.delete_source_document_title },
     )
     if (!ok) return
     setDeleting(edital.id)
     try {
       await editaisApi.remove(edital.id)
       setEditais((rows) => rows.filter((row) => row.id !== edital.id))
-      toast({ type: 'success', message: 'Edital apagado.' })
+      toast({ type: 'success', message: market.labels.delete_source_document_success })
     } catch (err) {
       toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao apagar edital.' })
     } finally {
@@ -112,7 +144,7 @@ export default function Dashboard() {
           )}
           {isEditor && (
             <button onClick={() => navigate('/upload')} className="btn-primary">
-              Enviar edital
+              {market.labels.upload_source_document}
             </button>
           )}
         </div>
@@ -121,7 +153,7 @@ export default function Dashboard() {
       {/* ── Números ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
-          { label: 'Editais',    value: nEditais,                         action: () => navigate('/upload') },
+          { label: market.labels.source_document_plural_title, value: nEditais, action: () => navigate('/upload') },
           { label: 'Chunks',     value: totalChunks.toLocaleString('pt-BR') },
           { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
           { label: 'CRM ativos', value: crm?.active_pipeline ?? '—',      action: () => navigate('/crm') },
@@ -139,6 +171,43 @@ export default function Dashboard() {
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
           </button>
         ))}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Suite de licitacoes</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Os 6 modulos principais para o usuario nao precisar assinar ferramentas separadas.
+            </p>
+          </div>
+          <button type="button" onClick={() => navigate('/suite')} className="btn-ghost">
+            Ver suite completa
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {SUITE_STEPS.map((step) => {
+            const status = stepState(step.key, { nEditais, totalRequirements, jobs, crm })
+            return (
+              <button
+                key={step.key}
+                type="button"
+                onClick={() => navigate(step.path)}
+                className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-blue-200 hover:bg-white dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800 dark:hover:bg-slate-800"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-950 dark:text-white">{step.title}</p>
+                  <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold ${stateClass(status.tone)}`}>
+                    {status.label}
+                  </span>
+                </div>
+                <p className="mt-2 min-h-[40px] text-xs leading-5 text-slate-500 dark:text-slate-400">{step.description}</p>
+                <p className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-300">{step.cta}</p>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ── Sinais operacionais ────────────────────────────────────────── */}
@@ -227,7 +296,7 @@ export default function Dashboard() {
       {/* ── Editais ───────────────────────────────────────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Editais</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">{market.labels.source_document_plural_title}</p>
           {crmSync && (
             <p className="text-xs text-slate-400 dark:text-slate-500">
               CRM em {formatDate(crmSync.builtAt)}
@@ -241,10 +310,10 @@ export default function Dashboard() {
           </div>
         ) : editais.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 py-12 text-center">
-            <p className="text-sm text-slate-400 dark:text-slate-400">Nenhum edital enviado ainda.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-400">{market.labels.empty_source_documents}</p>
             {isEditor && (
               <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
-                Enviar primeiro edital
+                {market.labels.send_first_source_document}
               </button>
             )}
           </div>

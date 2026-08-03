@@ -1,0 +1,121 @@
+from copy import deepcopy
+
+
+DEFAULT_PROFILE = "public_procurement"
+
+
+MARKET_PROFILES = {
+    "public_procurement": {
+        "id": "public_procurement",
+        "name": "Licitacoes",
+        "app": {
+            "product_name": "Tor Gestao",
+            "tagline": "Portal de licitacoes",
+            "description": "Gestao comercial de editais, itens e disputa.",
+            "footer_primary": "Tor Tecnologias | Portal operacional de licitacoes.",
+            "footer_secondary": "Captar, analisar, disputar e acompanhar em um lugar.",
+        },
+        "labels": {
+            "source_document": "edital",
+            "source_document_plural": "editais",
+            "source_document_title": "Edital",
+            "source_document_plural_title": "Editais",
+            "upload_source_document": "Enviar edital",
+            "empty_source_documents": "Nenhum edital enviado ainda.",
+            "send_first_source_document": "Enviar primeiro edital",
+            "delete_source_document_title": "Apagar edital?",
+            "delete_source_document_success": "Edital apagado.",
+            "ask_source_document": "Perguntar ao edital",
+            "bi_source_documents": "BI Editais",
+        },
+        "nav": {
+            "dashboard": {"label": "Inicio", "hint": "Resumo e proximas acoes"},
+            "suite": {"label": "Suite", "hint": "Os 6 modulos principais"},
+            "pncp_monitor": {"label": "PNCP 24/7", "hint": "Filtros, historico e alertas"},
+            "upload": {"label": "Enviar edital", "hint": "PDF ou JSON"},
+            "radar": {"label": "Radar IA", "hint": "Oportunidades recomendadas"},
+            "proposal_studio": {"label": "Propostas", "hint": "DOCX, PDF e declaracoes"},
+            "compliance": {"label": "Habilitacao", "hint": "Checklist juridico"},
+            "pricing": {"label": "Precificacao", "hint": "Preco, margem e historico"},
+            "auction_monitor": {"label": "Pregao", "hint": "Sessao e chat"},
+            "crm": {"label": "CRM comercial", "hint": "Funil, itens e disputa"},
+            "post_award": {"label": "Pos-vitoria", "hint": "Contrato e entrega"},
+            "controle": {"label": "Controle", "hint": "Acompanhar processos"},
+            "reports": {"label": "Relatorios", "hint": "Resumo executivo"},
+            "analytics": {"label": "Indicadores", "hint": "Resultado e desempenho"},
+            "analysis_dashboard": {"label": "BI Editais", "hint": "Painel de itens e categorias"},
+            "datasheets": {"label": "Datasheets", "hint": "Gerar TOR e comparar"},
+            "competitive": {"label": "Competitiva", "hint": "Concorrentes e resposta"},
+            "jobs": {"label": "Fila", "hint": "Processamentos"},
+            "onboarding_plans": {"label": "Onboarding", "hint": "Ativacao e planos"},
+            "subscription": {"label": "Assinatura", "hint": "Planos e permissao"},
+            "integrations": {"label": "Integracoes", "hint": "WhatsApp, email e portais"},
+            "settings": {"label": "Ajustes", "hint": "Preferencias"},
+            "users": {"label": "Usuarios", "hint": "Acessos do time"},
+        },
+        "features": {
+            "pncp": True,
+            "procurement_crm": True,
+            "datasheets": True,
+        },
+    },
+    "generic_matching": {
+        "id": "generic_matching",
+        "name": "Matching documental",
+        "app": {
+            "product_name": "Match Intelligence",
+            "tagline": "Plataforma de matching documental",
+            "description": "Analise documentos, catalogue ofertas e encontre compatibilidades com IA.",
+            "footer_primary": "Match Intelligence | Plataforma operacional multi-mercado.",
+            "footer_secondary": "Captar, analisar, comparar e acompanhar em um lugar.",
+        },
+        "labels": {
+            "source_document": "documento",
+            "source_document_plural": "documentos",
+            "source_document_title": "Documento",
+            "source_document_plural_title": "Documentos",
+            "upload_source_document": "Enviar documento",
+            "empty_source_documents": "Nenhum documento enviado ainda.",
+            "send_first_source_document": "Enviar primeiro documento",
+            "delete_source_document_title": "Apagar documento?",
+            "delete_source_document_success": "Documento apagado.",
+            "ask_source_document": "Perguntar ao documento",
+            "bi_source_documents": "BI Documentos",
+        },
+        "nav": {
+            "dashboard": {"label": "Inicio", "hint": "Resumo e proximas acoes"},
+            "suite": {"label": "Suite", "hint": "Os 6 modulos principais"},
+            "pncp_monitor": {"label": "Monitoramento", "hint": "Filtros, historico e alertas"},
+            "upload": {"label": "Enviar documento", "hint": "PDF ou JSON"},
+            "radar": {"label": "Radar IA", "hint": "Oportunidades recomendadas"},
+            "proposal_studio": {"label": "Propostas", "hint": "Documentos e exportacoes"},
+            "compliance": {"label": "Checklist", "hint": "Pendencias e riscos"},
+            "pricing": {"label": "Precificacao", "hint": "Preco, margem e historico"},
+            "auction_monitor": {"label": "Disputa", "hint": "Sessao e mensagens"},
+            "crm": {"label": "CRM comercial", "hint": "Funil, itens e decisao"},
+            "post_award": {"label": "Pos-vitoria", "hint": "Contrato e entrega"},
+            "controle": {"label": "Controle", "hint": "Acompanhar processos"},
+            "reports": {"label": "Relatorios", "hint": "Resumo executivo"},
+            "analytics": {"label": "Indicadores", "hint": "Resultado e desempenho"},
+            "analysis_dashboard": {"label": "BI Documentos", "hint": "Painel de itens e categorias"},
+            "datasheets": {"label": "Catalogo tecnico", "hint": "Comparar atributos"},
+            "competitive": {"label": "Inteligencia", "hint": "Concorrentes e resposta"},
+            "jobs": {"label": "Fila", "hint": "Processamentos"},
+            "onboarding_plans": {"label": "Onboarding", "hint": "Ativacao e planos"},
+            "subscription": {"label": "Assinatura", "hint": "Planos e permissao"},
+            "integrations": {"label": "Integracoes", "hint": "Canais e sistemas"},
+            "settings": {"label": "Ajustes", "hint": "Preferencias"},
+            "users": {"label": "Usuarios", "hint": "Acessos do time"},
+        },
+        "features": {
+            "pncp": False,
+            "procurement_crm": False,
+            "datasheets": True,
+        },
+    },
+}
+
+
+def get_market_profile(profile_id: str | None = None) -> dict:
+    profile = MARKET_PROFILES.get(profile_id or DEFAULT_PROFILE) or MARKET_PROFILES[DEFAULT_PROFILE]
+    return deepcopy(profile)

@@ -217,8 +217,8 @@ export default function Controle() {
         editaisApi.list(),
         jobsApi.list(),
       ])
-      setEditais(eRes.data || [])
-      setJobs(jRes.data || [])
+      setEditais(Array.isArray(eRes.data) ? eRes.data : [])
+      setJobs(Array.isArray(jRes.data) ? jRes.data : [])
     } catch {
       // silent refresh fail
     } finally {

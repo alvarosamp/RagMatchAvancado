@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useMarket } from '../contexts/MarketContext'
 import torLogo from '../images/Tor.jpeg'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
@@ -11,6 +12,7 @@ export default function Login() {
   const [theme, setTheme] = useState(() => readStoredTheme('light'))
   const [form, setForm] = useState({ email: '', password: '' })
   const { login } = useAuth()
+  const market = useMarket()
   const navigate = useNavigate()
 
   const isLight = theme === 'light'
@@ -43,20 +45,20 @@ export default function Login() {
       <div className="grid min-h-screen lg:grid-cols-[0.95fr_1.05fr]">
         <section className="hidden border-r border-blue-100 bg-[#edf3fa] px-12 py-10 lg:flex lg:flex-col lg:justify-between dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-3">
-            <img src={torLogo} alt="Tor Tecnologias" className="h-11 w-11 rounded-lg object-cover" />
+            <img src={torLogo} alt={market.app.product_name} className="h-11 w-11 rounded-lg object-cover" />
             <div>
-              <p className="text-base font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
+              <p className="text-base font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
             </div>
           </div>
 
           <div className="max-w-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Business Intelligence</p>
             <h1 className="mt-4 text-5xl font-bold leading-tight tracking-tight text-slate-950 dark:text-white">
-              Gestao comercial de editais, itens e disputa.
+              {market.app.description}
             </h1>
             <p className="mt-5 max-w-md text-base leading-7 text-slate-600 dark:text-slate-300">
-              Acompanhe oportunidades, analises de edital, CRM e pos-disputa em uma experiencia operacional e direta.
+              {market.app.footer_secondary}
             </p>
 
             <div className="mt-10 grid max-w-lg grid-cols-3 gap-3">
@@ -74,17 +76,17 @@ export default function Login() {
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {new Date().getFullYear()} Tor Tecnologias
+            {new Date().getFullYear()} {market.app.product_name}
           </p>
         </section>
 
         <section className="flex items-center justify-center px-6 py-10">
           <div className="w-full max-w-[420px]">
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-lg object-cover" />
+              <img src={torLogo} alt={market.app.product_name} className="h-10 w-10 rounded-lg object-cover" />
               <div>
-                <p className="font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
+                <p className="font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
               </div>
             </div>
 

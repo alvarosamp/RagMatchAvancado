@@ -1,26 +1,37 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useMarket } from '../contexts/MarketContext'
 import torLogo from '../images/Tor.jpeg'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
 const NAV = [
-  { path: '/dashboard', badge: 'DB', label: 'Inicio', hint: 'Resumo e proximas acoes' },
-  { path: '/upload', badge: 'UP', label: 'Enviar edital', hint: 'PDF ou JSON' },
-  { path: '/radar', badge: 'RD', label: 'Radar IA', hint: 'Oportunidades recomendadas' },
-  { path: '/crm', badge: 'CRM', label: 'CRM comercial', hint: 'Funil, itens e disputa' },
-  { path: '/controle', badge: 'CT', label: 'Controle', hint: 'Acompanhar processos' },
-  { path: '/relatorios', badge: 'RP', label: 'Relatorios', hint: 'Resumo executivo' },
-  { path: '/analytics', badge: 'AN', label: 'Indicadores', hint: 'Resultado e desempenho' },
-  { path: '/analise/dashboard', badge: 'BI', label: 'BI Editais', hint: 'Painel de itens e categorias' },
-  { path: '/inteligencia/datasheets', badge: 'VS', label: 'Datasheets', hint: 'Gerar TOR e comparar' },
-  { path: '/inteligencia/competitiva', badge: 'CI', label: 'Competitiva', hint: 'Concorrentes e resposta' },
-  { path: '/jobs', badge: 'JB', label: 'Fila', hint: 'Processamentos' },
-  { path: '/configuracoes', badge: 'CFG', label: 'Ajustes', hint: 'Preferencias' },
+  { key: 'dashboard', path: '/dashboard', badge: 'DB' },
+  { key: 'suite', path: '/suite', badge: 'ST' },
+  { key: 'pncp_monitor', path: '/monitoramento-pncp', badge: '24' },
+  { key: 'upload', path: '/upload', badge: 'UP' },
+  { key: 'radar', path: '/radar', badge: 'RD' },
+  { key: 'proposal_studio', path: '/propostas', badge: 'DC' },
+  { key: 'compliance', path: '/habilitacao', badge: 'CK' },
+  { key: 'pricing', path: '/precificacao', badge: 'PR' },
+  { key: 'auction_monitor', path: '/monitor-pregao', badge: 'PG' },
+  { key: 'crm', path: '/crm', badge: 'CRM' },
+  { key: 'post_award', path: '/pos-vitoria', badge: 'PV' },
+  { key: 'controle', path: '/controle', badge: 'CT' },
+  { key: 'reports', path: '/relatorios', badge: 'RP' },
+  { key: 'analytics', path: '/analytics', badge: 'AN' },
+  { key: 'analysis_dashboard', path: '/analise/dashboard', badge: 'BI' },
+  { key: 'datasheets', path: '/inteligencia/datasheets', badge: 'VS' },
+  { key: 'competitive', path: '/inteligencia/competitiva', badge: 'CI' },
+  { key: 'jobs', path: '/jobs', badge: 'JB' },
+  { key: 'onboarding_plans', path: '/onboarding-planos', badge: 'ON' },
+  { key: 'subscription', path: '/assinatura', badge: 'SB' },
+  { key: 'integrations', path: '/integracoes', badge: 'IN' },
+  { key: 'settings', path: '/configuracoes', badge: 'CFG' },
 ]
 
 const NAV_ADMIN = [
-  { path: '/usuarios', badge: 'USR', label: 'Usuarios', hint: 'Acessos do time' },
+  { key: 'users', path: '/usuarios', badge: 'USR' },
 ]
 
 function isActive(pathname, path) {
@@ -49,11 +60,86 @@ function renderIcon(badge) {
       );
     case 'PN':
     case 'RD':
+    case '24':
       return (
         <svg {...props} viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          {badge === 'RD' && <path d="M11 7v4l3 2" />}
+          {(badge === 'RD' || badge === '24') && <path d="M11 7v4l3 2" />}
+        </svg>
+      );
+    case 'DC':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M8 13h8" />
+          <path d="M8 17h6" />
+        </svg>
+      );
+    case 'CK':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M9 11l3 3L22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+      );
+    case 'PR':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M12 1v22" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      );
+    case 'PG':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M14 9V5a3 3 0 0 0-6 0v4" />
+          <rect x="4" y="9" width="16" height="12" rx="2" />
+          <path d="M9 15h6" />
+        </svg>
+      );
+    case 'PV':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M20 6L9 17l-5-5" />
+          <path d="M4 21h16" />
+        </svg>
+      );
+    case 'ON':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M12 2v20" />
+          <path d="M5 9h14" />
+          <path d="M7 4h10" />
+          <path d="M7 20h10" />
+        </svg>
+      );
+    case 'IN':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      );
+    case 'SB':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M3 10h18" />
+          <path d="M7 15h4" />
+          <path d="M15 15h2" />
+        </svg>
+      );
+    case 'ST':
+      return (
+        <svg {...props} viewBox="0 0 24 24">
+          <path d="M4 5h16" />
+          <path d="M4 12h16" />
+          <path d="M4 19h16" />
+          <circle cx="7" cy="5" r="1" />
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="17" cy="19" r="1" />
         </svg>
       );
     case 'CT':
@@ -170,11 +256,16 @@ function NavItem({ item, pathname }) {
 
 export default function Layout({ children }) {
   const { user, logout, isAdmin } = useAuth()
+  const market = useMarket()
   const location = useLocation()
   const [theme, setTheme] = useState(() => readStoredTheme())
   const isLight = theme === 'light'
 
-  const items = isAdmin ? [...NAV, ...NAV_ADMIN] : NAV
+  const items = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).map((item) => ({
+    ...item,
+    label: market.nav?.[item.key]?.label || item.key,
+    hint: market.nav?.[item.key]?.hint || '',
+  }))
 
   useEffect(() => {
     persistTheme(theme)
@@ -194,8 +285,8 @@ export default function Layout({ children }) {
               className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
             />
             <div className="leading-tight">
-              <p className="text-base font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
+              <p className="text-base font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
             </div>
           </div>
 
@@ -234,8 +325,8 @@ export default function Layout({ children }) {
             <div className="flex items-center gap-3">
               <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-lg object-cover" />
               <div>
-                <p className="text-sm font-semibold text-slate-950 dark:text-white">Tor Tecnologias</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Portal de licitacoes</p>
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
               </div>
             </div>
             <button
@@ -278,8 +369,8 @@ export default function Layout({ children }) {
 
         <footer className="border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 md:px-6 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
           <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-            <p>Tor Tecnologias | Portal operacional de licitacoes.</p>
-            <p>Captar, analisar, disputar e acompanhar em um lugar.</p>
+            <p>{market.app.footer_primary}</p>
+            <p>{market.app.footer_secondary}</p>
           </div>
         </footer>
       </div>

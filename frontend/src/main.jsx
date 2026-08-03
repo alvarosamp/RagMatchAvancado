@@ -3,12 +3,16 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider }         from './contexts/ToastContext'
+import { MarketProvider }        from './contexts/MarketContext'
 
 import './index.css'
 
 import Login          from './pages/Login'
 import InternalRegister from './pages/InternalRegister'
 import Dashboard      from './pages/Dashboard'
+import Suite          from './pages/Suite'
+import ProcurementExpansion from './pages/ProcurementExpansion'
+import Assinatura    from './pages/Assinatura'
 import Upload         from './pages/Upload'
 import EditalDetail   from './pages/EditalDetail'
 import EditalChat     from './pages/EditalChat'
@@ -52,12 +56,23 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <AuthProvider>
-          <Routes>
+        <MarketProvider>
+          <AuthProvider>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
             <Route path="/dashboard"              element={<PrivateRoute><Dashboard     /></PrivateRoute>} />
+            <Route path="/suite"                  element={<PrivateRoute><Suite         /></PrivateRoute>} />
+            <Route path="/assinatura"             element={<PrivateRoute><Assinatura    /></PrivateRoute>} />
+            <Route path="/monitoramento-pncp"     element={<PrivateRoute><ProcurementExpansion moduleId="pncp_monitor" /></PrivateRoute>} />
+            <Route path="/propostas"              element={<PrivateRoute><ProcurementExpansion moduleId="proposal_studio" /></PrivateRoute>} />
+            <Route path="/habilitacao"            element={<PrivateRoute><ProcurementExpansion moduleId="compliance_checklist" /></PrivateRoute>} />
+            <Route path="/precificacao"           element={<PrivateRoute><ProcurementExpansion moduleId="pricing" /></PrivateRoute>} />
+            <Route path="/monitor-pregao"         element={<PrivateRoute><ProcurementExpansion moduleId="auction_monitor" /></PrivateRoute>} />
+            <Route path="/pos-vitoria"            element={<PrivateRoute><ProcurementExpansion moduleId="post_award" /></PrivateRoute>} />
+            <Route path="/onboarding-planos"      element={<PrivateRoute><ProcurementExpansion moduleId="onboarding_plans" /></PrivateRoute>} />
+            <Route path="/integracoes"            element={<PrivateRoute><ProcurementExpansion moduleId="integrations" /></PrivateRoute>} />
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />
             <Route path="/jobs"                   element={<PrivateRoute><Jobs          /></PrivateRoute>} />
             <Route path="/analytics"              element={<PrivateRoute><Analytics     /></PrivateRoute>} />
@@ -83,8 +98,9 @@ createRoot(document.getElementById('root')).render(
 
             <Route path="/"  element={<Navigate to="/dashboard" replace />} />
             <Route path="*"  element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </AuthProvider>
+            </Routes>
+          </AuthProvider>
+        </MarketProvider>
       </ToastProvider>
     </BrowserRouter>
   </StrictMode>

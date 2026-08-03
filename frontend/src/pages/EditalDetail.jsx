@@ -4,9 +4,10 @@
  * Resultados de matching + acesso ao chat RAG do edital.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { editaisApi, exportApi, downloadBlob } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
 const STATUS_CFG = {
@@ -15,14 +16,133 @@ const STATUS_CFG = {
   verificar:  { label: 'Verificar',   cls: 'badge-verificar', dot: 'bg-yellow-warn' },
 }
 
+const LOCK_TTL_MS = 45_000
+const LOCK_HEARTBEAT_MS = 12_000
+
+function getTabId() {
+  const current = sessionStorage.getItem('edital_detail_tab_id')
+  if (current) return current
+  const next = `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  sessionStorage.setItem('edital_detail_tab_id', next)
+  return next
+}
+
+function isLockActive(lock) {
+  return lock && Date.now() - Number(lock.updatedAt || 0) < LOCK_TTL_MS
+}
+
+function readLock(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null')
+  } catch {
+    return null
+  }
+}
+
+function writeLock(key, lock) {
+  localStorage.setItem(key, JSON.stringify(lock))
+}
+
+function useEditalLock(editalId, user) {
+  const [tabId] = useState(() => getTabId())
+  const [state, setState] = useState({ active: false, owned_by_me: false, blocked: false, lock: null })
+  const lockKey = useMemo(() => `tor_edital_lock_${editalId}`, [editalId])
+  const ownerName = user?.full_name || user?.email || 'Usuario'
+  const ownerRole = user?.role || 'viewer'
+
+  const makeLock = useCallback(() => ({
+    editalId,
+    tabId,
+    ownerName,
+    ownerRole,
+    updatedAt: Date.now(),
+  }), [editalId, ownerName, ownerRole, tabId])
+
+  const refresh = useCallback(() => {
+    return editaisApi.heartbeatLock(editalId, tabId)
+      .then((res) => setState(res.data))
+      .catch(() => {
+        const current = readLock(lockKey)
+        if (!isLockActive(current) || current?.tabId === tabId) {
+          const next = makeLock()
+          writeLock(lockKey, next)
+          setState({ active: true, owned_by_me: true, blocked: false, lock: { ...next, owner_name: next.ownerName } })
+          return
+        }
+        setState({ active: true, owned_by_me: false, blocked: true, lock: { ...current, owner_name: current.ownerName } })
+      })
+  }, [editalId, lockKey, makeLock, tabId])
+
+  useEffect(() => {
+    refresh()
+    const interval = setInterval(refresh, LOCK_HEARTBEAT_MS)
+    const onStorage = (event) => {
+      if (event.key !== lockKey) return
+      const current = readLock(lockKey)
+      if (!isLockActive(current)) {
+        setState({ active: false, owned_by_me: false, blocked: false, lock: null })
+      } else {
+        setState({
+          active: true,
+          owned_by_me: current?.tabId === tabId,
+          blocked: current?.tabId !== tabId,
+          lock: { ...current, owner_name: current.ownerName },
+        })
+      }
+    }
+    window.addEventListener('storage', onStorage)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', onStorage)
+      editaisApi.releaseLock(editalId, tabId).catch(() => {})
+      const current = readLock(lockKey)
+      if (current?.tabId === tabId) localStorage.removeItem(lockKey)
+    }
+  }, [editalId, lockKey, refresh, tabId])
+
+  return {
+    lock: state.lock,
+    ownedByMe: state.owned_by_me,
+    blocked: state.blocked,
+    claim: refresh,
+  }
+}
+
+function CollaborationTag({ lockState }) {
+  const { lock, ownedByMe, blocked, claim } = lockState
+  if (blocked) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-semibold">Documento em uso por {lock?.owner_name || lock?.ownerName || 'outro usuario'}</p>
+            <p className="mt-1 text-xs">As acoes principais foram bloqueadas para evitar duas pessoas trabalhando no mesmo edital.</p>
+          </div>
+          <button type="button" onClick={claim} className="btn-ghost">Verificar novamente</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+      <span className="font-semibold">{ownedByMe ? 'Voce esta neste edital' : 'Edital livre'}</span>
+      <span className="ml-2 text-xs">Monitoramento ativo para evitar conflito de trabalho.</span>
+    </div>
+  )
+}
+
 export default function EditalDetail() {
   const { id }                    = useParams()
   const navigate                  = useNavigate()
+  const { user }                  = useAuth()
   const { toast }                 = useToast()
   const [results,   setResults]   = useState([])
   const [loading,   setLoading]   = useState(true)
   const [selected,  setSelected]  = useState(null)
   const [exporting, setExporting] = useState(null)
+  const lockState                 = useEditalLock(id, user)
 
   useEffect(() => {
     editaisApi.results(id)
@@ -45,6 +165,10 @@ export default function EditalDetail() {
   }, [id])
 
   const handleExport = async (tipo) => {
+    if (lockState.blocked) {
+      toast({ type: 'error', message: 'Este edital esta em uso por outro usuario.' })
+      return
+    }
     setExporting(tipo)
     try {
       const fn  = { xlsx: exportApi.xlsx, pdf: exportApi.pdf, csv: exportApi.csv }[tipo]
@@ -100,8 +224,9 @@ export default function EditalDetail() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Análise LLM */}
           <button
+            disabled={lockState.blocked}
             onClick={() => navigate(`/editais/${id}/analise-llm`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber/30 bg-amber/10 hover:border-amber/60 text-amber font-body text-sm transition-all duration-200"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber/30 bg-amber/10 hover:border-amber/60 text-amber font-body text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span>🤖</span>
             Análise LLM
@@ -109,18 +234,26 @@ export default function EditalDetail() {
 
           {/* Chat RAG — destaque */}
           <button
+            disabled={lockState.blocked}
             onClick={() => navigate(`/editais/${id}/chat`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600/20 to-amber/20 border border-red-600/30 hover:border-red-600/60 text-red-400 font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-red-600/10"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600/20 to-amber/20 border border-red-600/30 hover:border-red-600/60 text-red-400 font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-red-600/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span>💬</span>
             Perguntar ao edital
+          </button>
+
+          <button
+            onClick={() => navigate('/assinatura')}
+            className="btn-ghost text-xs px-3 py-2"
+          >
+            Assinatura
           </button>
 
           {/* Exportar */}
           {[['xlsx','XLS ↓'], ['csv','CSV ↓']].map(([tipo, label]) => (
             <button
               key={tipo}
-              disabled={!!exporting}
+              disabled={!!exporting || lockState.blocked}
               onClick={() => handleExport(tipo)}
               className="btn-ghost text-xs px-3 py-2 disabled:opacity-40"
             >
@@ -128,6 +261,10 @@ export default function EditalDetail() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="mb-6">
+        <CollaborationTag lockState={lockState} />
       </div>
 
       <div className="grid grid-cols-12 gap-6">
@@ -148,12 +285,13 @@ export default function EditalDetail() {
               return (
                 <button
                   key={p.product}
+                  disabled={lockState.blocked}
                   onClick={() => setSelected(p.product)}
                   className={`w-full text-left card py-3.5 px-4 transition-all duration-200
                     ${isSelected
                       ? 'border-red-600/50 bg-red-600/5 shadow-sm shadow-red-600/10'
                       : 'hover:border-slate-700/80 hover:bg-slate-hover'
-                    }`}
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   <div className="flex items-center gap-3">
                     <span className={`font-display font-bold text-lg w-6 flex-shrink-0 ${i === 0 ? 'text-amber' : 'text-gray-600'}`}>

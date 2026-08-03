@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     postgres_password: str | None = Field(default=None, validation_alias="POSTGRES_PASSWORD")
     postgres_host: str | None = Field(default=None, validation_alias="POSTGRES_HOST")
     postgres_port: str | None = Field(default=None, validation_alias="POSTGRES_PORT")
+    market_profile: str = Field(default="public_procurement", validation_alias="MARKET_PROFILE")
 
     @property
     def sqlalchemy_database_url(self) -> str:

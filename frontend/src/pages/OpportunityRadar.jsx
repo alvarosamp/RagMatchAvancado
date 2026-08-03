@@ -34,6 +34,8 @@ const INTELLIGENCE_LABELS = {
   nao_disputar: 'Nao disputar',
 }
 
+const LIGHTWEIGHT_DECISIONS = new Set(['descartar', 'falso_positivo', 'fora_segmento'])
+
 function formatCurrency(value) {
   const number = Number(value)
   if (!Number.isFinite(number) || number <= 0) return '-'
@@ -411,30 +413,55 @@ export default function OpportunityRadar() {
   const handleDecision = async (item, decision) => {
     const idPncp = item.id_pncp || item.numero_controle
     if (!idPncp) return
+    const previousItems = items
+    const optimisticDecision = {
+      id_pncp: idPncp,
+      decision,
+      score: item.opportunity?.score,
+      priority: item.opportunity?.priority,
+      updated_at: new Date().toISOString(),
+    }
+    const hideAfterDecision = LIGHTWEIGHT_DECISIONS.has(decision)
     setDeciding(idPncp)
+    setItems((current) => hideAfterDecision
+      ? current.filter((row) => (row.id_pncp || row.numero_controle) !== idPncp)
+      : current.map((row) => {
+          const rowId = row.id_pncp || row.numero_controle
+          return rowId === idPncp ? { ...row, decision: optimisticDecision } : row
+        }))
     try {
       const response = await pncpApi.decide({
         id_pncp: idPncp,
         decision,
         score: item.opportunity?.score,
         priority: item.opportunity?.priority,
-        notice: {
-          id_pncp: idPncp,
-          objeto: item.objeto,
-          modalidade: item.modalidade,
-          orgao_entidade: item.orgao_entidade,
-          unidade_orgao: item.unidade_orgao,
-          valor_total_estimado: item.valor_total_estimado,
-          data_publicacao_pncp: item.data_publicacao_pncp,
-          data_encerramento_proposta: item.data_encerramento_proposta,
-          radar_items: item.radar_items,
-          engineering_summary: item.engineering_summary,
-        },
+        notice: LIGHTWEIGHT_DECISIONS.has(decision)
+          ? {
+              id_pncp: idPncp,
+              objeto: item.objeto,
+              modalidade: item.modalidade,
+              orgao_entidade: item.orgao_entidade,
+              unidade_orgao: item.unidade_orgao,
+            }
+          : {
+              id_pncp: idPncp,
+              objeto: item.objeto,
+              modalidade: item.modalidade,
+              orgao_entidade: item.orgao_entidade,
+              unidade_orgao: item.unidade_orgao,
+              valor_total_estimado: item.valor_total_estimado,
+              data_publicacao_pncp: item.data_publicacao_pncp,
+              data_encerramento_proposta: item.data_encerramento_proposta,
+              radar_items: item.radar_items,
+              engineering_summary: item.engineering_summary,
+            },
       })
-      setItems((current) => current.map((row) => {
-        const rowId = row.id_pncp || row.numero_controle
-        return rowId === idPncp ? { ...row, decision: response.data } : row
-      }))
+      if (!hideAfterDecision) {
+        setItems((current) => current.map((row) => {
+          const rowId = row.id_pncp || row.numero_controle
+          return rowId === idPncp ? { ...row, decision: response.data } : row
+        }))
+      }
       toast({
         type: 'success',
         message: decision === 'disputar'
@@ -442,6 +469,7 @@ export default function OpportunityRadar() {
           : `Decisao salva: ${DECISION_LABELS[decision] || decision}.`,
       })
     } catch (err) {
+      setItems(previousItems)
       toast({
         type: 'error',
         title: 'Erro ao salvar decisao',

@@ -76,6 +76,9 @@ export const editaisApi = {
   addRequirements: (id, reqs)   => api.post(`/editais/${id}/requirements`, reqs),
   match:   (id)                 => api.post(`/editais/${id}/match`),
   results: (id)                 => api.get(`/editais/${id}/results`),
+  lock:    (id)                 => api.get(`/editais/${id}/lock`),
+  heartbeatLock: (id, tabId)    => api.post(`/editais/${id}/lock`, { tab_id: tabId }),
+  releaseLock:   (id, tabId)    => api.delete(`/editais/${id}/lock`, { data: { tab_id: tabId } }),
 }
 
 export const jobsApi = {
@@ -103,6 +106,10 @@ export const crmApi = {
     api.get(`/crm/notices/${noticeId}/decision-intelligence`),
   runDecisionIntelligence: (noticeId) =>
     api.post(`/crm/notices/${noticeId}/decision-intelligence/run`, {}, { timeout: 60_000 }),
+}
+
+export const marketApi = {
+  profile: () => api.get('/market/profile'),
 }
 
 export const healthApi = {

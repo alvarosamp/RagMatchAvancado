@@ -65,6 +65,7 @@ ALLOWED_DECISIONS = {
     "falso_positivo",
     "fora_segmento",
 }
+LIGHTWEIGHT_DECISIONS = {"descartar", "falso_positivo", "fora_segmento"}
 
 
 @router.get("/search")
@@ -289,7 +290,7 @@ def save_opportunity_decision(
     row.reason = payload.reason
     row.score = payload.score
     row.priority = payload.priority
-    row.notice_snapshot = payload.notice
+    row.notice_snapshot = _compact_notice_snapshot(payload.notice) if decision in LIGHTWEIGHT_DECISIONS else payload.notice
     row.created_by = current_user.id
     if decision == "disputar":
         crm_notice = send_opportunity_to_crm(
@@ -395,6 +396,22 @@ def _choose_pdf_file(files: list[dict[str, Any]]) -> dict[str, Any] | None:
         if any(term in text for term in preferred_terms):
             return item
     return pdfs[0]
+
+
+def _compact_notice_snapshot(notice: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not notice:
+        return None
+    return {
+        key: notice.get(key)
+        for key in (
+            "id_pncp",
+            "objeto",
+            "modalidade",
+            "orgao_entidade",
+            "unidade_orgao",
+        )
+        if notice.get(key) is not None
+    }
 
 
 def _try_import_pncp_documents(
