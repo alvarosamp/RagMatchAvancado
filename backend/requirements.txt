@@ -3,6 +3,9 @@ fastapi
 uvicorn
 python-multipart
 typing_extensions>=4.12.2
+dramatiq[redis]>=1.17.0
+alembic>=1.13.0
+boto3>=1.34.0
 
 # ── Banco ─────────────────────────────────────────────────────────────────────
 sqlalchemy

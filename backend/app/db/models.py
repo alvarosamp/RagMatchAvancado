@@ -98,6 +98,7 @@ class Edital(Base):
     tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
     import_batch_id = Column(Integer, ForeignKey("import_batches.id", ondelete="SET NULL"), index=True)
     source_path  = Column(String)
+    storage_key  = Column(String, index=True)
     analysis_only = Column(Boolean, default=False, index=True)
 
     tenant       = relationship("Tenant", back_populates="editais")

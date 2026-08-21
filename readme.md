@@ -376,6 +376,22 @@ OLLAMA_HOST=http://ollama:11434
 MLFLOW_TRACKING_URI=http://mlflow:5000
 ```
 
+### Armazenamento de PDFs e exports (MinIO/S3)
+
+Em produção, o Compose sobe o MinIO automaticamente e os PDFs de editais e
+exports XLSX/PDF/CSV passam a ser guardados no volume persistente `minio_data`.
+Defina credenciais fortes no `.env` do servidor antes de subir a stack:
+
+```env
+MINIO_ROOT_USER=troque-por-um-usuario
+MINIO_ROOT_PASSWORD=troque-por-uma-senha-longa
+S3_BUCKET=edital-matcher
+```
+
+O MinIO fica acessível apenas para os containers. Para usar AWS S3, Cloudflare
+R2 ou outro serviço compatível no futuro, basta trocar `S3_ENDPOINT_URL`,
+`S3_ACCESS_KEY` e `S3_SECRET_KEY` sem alterar o código.
+
 ---
 
 ## Roadmap
@@ -386,7 +402,8 @@ MLFLOW_TRACKING_URI=http://mlflow:5000
 ✅  Catálogo de produtos (data/Produtos/all_devices.json)
 ✅  Exportação XLSX / PDF / CSV
 ✅  Autenticação JWT com multi-tenant
-✅  Jobs assíncronos com polling
+✅  Jobs assíncronos com Redis + worker dedicado e polling
+✅  Recuperação automática de jobs interrompidos e retry com backoff
 ✅  MLOps Layer (MLflow + Evidently)
 
 ⬜  Orquestração externa de jobs
@@ -400,6 +417,13 @@ MLFLOW_TRACKING_URI=http://mlflow:5000
 ⬜  Hardening de produção
     → secrets manager, rate limit e row-level security
 ```
+
+## Migração de servidor e backups
+
+O projeto inclui scripts para gerar e validar um pacote de migração completo:
+dump PostgreSQL, arquivos, objetos MinIO, XLSX de auditoria e manifesto com
+hashes. Consulte [docs/migracao_servidor.md](docs/migracao_servidor.md) antes
+de trocar de provedor ou desligar um servidor.
 
 ---
 

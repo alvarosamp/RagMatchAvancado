@@ -1,14 +1,8 @@
 # CONCEITO: Como funciona a fila de jobs?
 #
-# Hoje usamos BackgroundTasks do FastAPI:
-#   - Zero infra extra (não precisa de Redis, RabbitMQ, etc.)
-#   - Roda no mesmo processo da API, em thread separada
-#   - Perfeito para desenvolvimento e cargas moderadas
-#
-# Quando escalar (futuro):
-#   - Trocar por Celery + Redis: workers independentes, retry avançado
-#   - Ou ativar Prefect: já está preparado no pipeline_worker.py
-#   - A interface (JobQueue) não muda — só a implementação interna
+# Os jobs sao persistidos no PostgreSQL e enviados ao worker via Redis/Dramatiq.
+# A API apenas cria o registro e publica a mensagem; OCR, embeddings e LLM nao
+# concorrem mais com os requests HTTP.
 #
 # FLUXO:
 #   1. POST /editais/upload chega
@@ -27,7 +21,7 @@
 
 import uuid
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy import select
@@ -41,6 +35,146 @@ from app.logs.config import logger
 class JobCancelledError(Exception):
     """Raised when a running job is cancelled externally."""
     pass
+
+
+def _claim_job(db: Session, job_id: str) -> bool:
+    """Atomically claim a pending job so duplicate broker messages are harmless."""
+    job = db.get(Job, job_id)
+    if job is None or job.status != JobStatus.PENDING:
+        return False
+
+    payload = dict(job.payload or {})
+    payload["attempts"] = int(payload.get("attempts", 0)) + 1
+    job.payload = payload
+    job.status = JobStatus.RUNNING
+    job.progress = 0.05
+    job.started_at = datetime.now(timezone.utc)
+    job.finished_at = None
+    job.error_message = None
+    db.commit()
+    return True
+
+
+def _enqueue_job(db: Session, job: Job, *, delay_ms: int = 0) -> None:
+    """Persist the delivery metadata and publish a job to the Redis broker."""
+    payload = dict(job.payload or {})
+    payload["last_enqueued_at"] = datetime.now(timezone.utc).isoformat()
+    job.payload = payload
+    db.commit()
+
+    from app.jobs.tasks import process_crm_notice_match, process_matching, process_upload
+
+    if job.job_type == JobType.UPLOAD_EDITAL:
+        actor = process_upload
+        args = (
+            job.id, payload.get("pdf_path"), payload["filename"], payload["tenant_id"],
+            payload.get("source_hash"), bool(payload.get("analysis_only", False)),
+            payload.get("import_batch_id"), payload.get("source_path"), payload.get("crm_notice_id"),
+            payload.get("object_key"),
+        )
+    elif job.job_type == JobType.RUN_MATCHING:
+        actor = process_matching
+        args = (job.id, payload["edital_id"], payload["tenant_id"])
+    elif job.job_type == JobType.CRM_NOTICE_MATCH:
+        actor = process_crm_notice_match
+        args = (job.id, payload["notice_id"], payload["tenant_id"], job.user_id)
+    else:
+        raise ValueError(f"Tipo de job sem dispatcher: {job.job_type}")
+
+    if delay_ms:
+        actor.send_with_options(args=args, delay=delay_ms)
+    else:
+        actor.send(*args)
+
+
+def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
+    """Retry transient failures with backoff, preserving the visible job record."""
+    job = db.get(Job, job_id)
+    if job is None:
+        return True
+
+    payload = dict(job.payload or {})
+    attempts = int(payload.get("attempts", 1))
+    max_attempts = max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3")))
+    if attempts >= max_attempts:
+        _update_job(
+            db, job_id, status=JobStatus.FAILED,
+            finished_at=datetime.now(timezone.utc), error_message=str(error),
+        )
+        return True
+
+    delay_ms = min(300_000, 30_000 * (2 ** max(0, attempts - 1)))
+    job.status = JobStatus.PENDING
+    job.progress = 0.0
+    job.started_at = None
+    job.error_message = f"Tentativa {attempts}/{max_attempts} falhou: {error}"
+    db.commit()
+    logger.warning("[Worker] Reenfileirando job=%s em %ss", job_id[:8], delay_ms // 1000)
+    _enqueue_job(db, job, delay_ms=delay_ms)
+    return False
+
+
+def recover_interrupted_jobs(db: Session) -> dict[str, int]:
+    """Requeue pending work and recover work left running after a worker crash."""
+    now = datetime.now(timezone.utc)
+    pending_after = max(30, int(os.getenv("JOB_PENDING_REQUEUE_SECONDS", "60")))
+    stale_after = max(300, int(os.getenv("JOB_STALE_TIMEOUT_SECONDS", "7200")))
+    max_attempts = max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3")))
+    summary = {"pending_requeued": 0, "stale_requeued": 0, "stale_failed": 0}
+
+    jobs = db.query(Job).filter(Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING])).all()
+    for job in jobs:
+        payload = dict(job.payload or {})
+        attempts = int(payload.get("attempts", 0))
+        if job.status == JobStatus.PENDING:
+            last_enqueued = _parse_timestamp(payload.get("last_enqueued_at")) or job.created_at
+            if last_enqueued and _as_utc(last_enqueued) <= now - timedelta(seconds=pending_after):
+                _enqueue_job(db, job)
+                summary["pending_requeued"] += 1
+        elif job.started_at and _as_utc(job.started_at) <= now - timedelta(seconds=stale_after):
+            if attempts >= max_attempts:
+                _update_job(
+                    db, job.id, status=JobStatus.FAILED, finished_at=now,
+                    error_message="Job interrompido: excedeu o limite de tentativas de recuperacao.",
+                )
+                summary["stale_failed"] += 1
+            else:
+                job.status = JobStatus.PENDING
+                job.progress = 0.0
+                job.started_at = None
+                job.error_message = "Job recuperado apos interrupcao do worker."
+                db.commit()
+                _enqueue_job(db, job)
+                summary["stale_requeued"] += 1
+    return summary
+
+
+def _parse_timestamp(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+def _remove_local_upload(pdf_path: str | None) -> None:
+    if not pdf_path:
+        return
+    try:
+        os.remove(pdf_path)
+    except OSError:
+        pass
+
+
+def _remove_object_upload(object_key: str | None) -> None:
+    if object_key:
+        from app.services.object_storage import delete
+        delete(object_key)
 
 
 def _is_cancelled(db: Session, job_id: str) -> bool:
@@ -105,14 +239,19 @@ class JobQueue:
         # Salva o PDF em arquivo temporário persistente
         # (não podemos usar NamedTemporaryFile com delete=True porque
         # o background task roda depois que o request termina)
-        tmp_dir = "/data/tmp_uploads"
-        os.makedirs(tmp_dir, exist_ok=True)
-
         job_id   = str(uuid.uuid4())
-        pdf_path = os.path.join(tmp_dir, f"{job_id}.pdf")
+        object_key = None
+        pdf_path = None
+        from app.services.object_storage import object_storage_enabled, put_upload
 
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
+        if object_storage_enabled():
+            object_key = put_upload(tenant_id, job_id, filename, pdf_bytes)
+        else:
+            tmp_dir = "/data/tmp_uploads"
+            os.makedirs(tmp_dir, exist_ok=True)
+            pdf_path = os.path.join(tmp_dir, f"{job_id}.pdf")
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_bytes)
 
         # Cria o Job no banco com status PENDING
         job = Job(
@@ -131,6 +270,7 @@ class JobQueue:
                 "import_batch_id": import_batch_id,
                 "source_path": source_path,
                 "crm_notice_id": crm_notice_id,
+                "object_key": object_key,
             },
         )
         db.add(job)
@@ -138,20 +278,7 @@ class JobQueue:
 
         logger.info(f"[JobQueue] Job criado | id={job_id[:8]}... | arquivo={filename} | tenant={tenant_id}")
 
-        # Agenda execução em background
-        # O FastAPI vai chamar essa função DEPOIS de retornar a resposta HTTP
-        background_tasks.add_task(
-            _executar_job_upload,
-            job_id    = job_id,
-            pdf_path  = pdf_path,
-            filename  = filename,
-            tenant_id = tenant_id,
-            source_hash = source_hash,
-            analysis_only = analysis_only,
-            import_batch_id = import_batch_id,
-            source_path = source_path,
-            crm_notice_id = crm_notice_id,
-        )
+        _enqueue_job(db, job)
 
         return job_id
 
@@ -194,12 +321,7 @@ class JobQueue:
 
         logger.info(f"[JobQueue] Job matching criado | id={job_id[:8]}... | edital={edital_id}")
 
-        background_tasks.add_task(
-            _executar_job_matching,
-            job_id    = job_id,
-            edital_id = edital_id,
-            tenant_id = tenant_id,
-        )
+        _enqueue_job(db, job)
 
         return job_id
 
@@ -238,13 +360,7 @@ class JobQueue:
 
         logger.info(f"[JobQueue] Job CRM match criado | id={job_id[:8]}... | notice={notice_id}")
 
-        background_tasks.add_task(
-            _executar_job_crm_notice_match,
-            job_id=job_id,
-            notice_id=notice_id,
-            tenant_id=tenant_id,
-            user_id=user_id,
-        )
+        _enqueue_job(db, job)
 
         return job_id
 
@@ -261,7 +377,7 @@ class JobQueue:
 
 def _executar_job_upload(
     job_id:    str,
-    pdf_path:  str,
+    pdf_path:  str | None,
     filename:  str,
     tenant_id: str,
     source_hash: str | None = None,
@@ -269,6 +385,7 @@ def _executar_job_upload(
     import_batch_id: int | None = None,
     source_path: str | None = None,
     crm_notice_id: str | None = None,
+    object_key: str | None = None,
 ) -> None:
     """
     Handler do job de upload — roda em background thread.
@@ -285,8 +402,8 @@ def _executar_job_upload(
 
     try:
         # ── Marca como RUNNING ────────────────────────────────────────────────
-        _update_job(db, job_id, status=JobStatus.RUNNING, progress=0.05,
-                    started_at=datetime.now(timezone.utc))
+        if not _claim_job(db, job_id):
+            return
         logger.info(f"[Worker] Iniciando upload | job={job_id[:8]}... | arquivo={filename}")
 
         # ── Etapa 1: OCR + Parse (Docling) ────────────────────────────────────
@@ -294,8 +411,14 @@ def _executar_job_upload(
         from app.pipeline.docling_parser import parse_pdf
         _update_job(db, job_id, progress=0.10)
 
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
+        if object_key:
+            from app.services.object_storage import get_bytes
+            pdf_bytes = get_bytes(object_key)
+        elif pdf_path:
+            with open(pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+        else:
+            raise ValueError("Job de upload sem origem de arquivo.")
 
         parsed_doc = parse_pdf(pdf_bytes, filename=filename)
         _update_job(db, job_id, progress=0.40)
@@ -330,10 +453,8 @@ def _executar_job_upload(
                 edital=duplicate,
                 user_id=None,
             )
-            try:
-                os.remove(pdf_path)
-            except OSError:
-                pass
+            _remove_local_upload(pdf_path)
+            _remove_object_upload(object_key)
             _update_job(
                 db, job_id,
                 status      = JobStatus.DONE,
@@ -362,6 +483,7 @@ def _executar_job_upload(
             tenant_id = tenant_id,
             import_batch_id = import_batch_id,
             source_path = source_path,
+            storage_key = object_key,
             analysis_only = analysis_only,
         )
         db.add(edital)
@@ -397,7 +519,7 @@ def _executar_job_upload(
 
         # Remove PDF temporário (já processado, não precisa mais)
         try:
-            os.remove(pdf_path)
+            _remove_local_upload(pdf_path)
         except OSError:
             pass  # não crítico
 
@@ -421,23 +543,14 @@ def _executar_job_upload(
 
     except JobCancelledError:
         logger.info(f"[Worker] Job cancelado pelo usuário | job={job_id[:8]}...")
-        try:
-            os.remove(pdf_path)
-        except OSError:
-            pass
+        _remove_local_upload(pdf_path)
+        _remove_object_upload(object_key)
 
     except Exception as e:
         logger.error(f"[Worker] Job falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
-        try:
-            os.remove(pdf_path)
-        except OSError:
-            pass
-        _update_job(
-            db, job_id,
-            status        = JobStatus.FAILED,
-            finished_at   = datetime.now(timezone.utc),
-            error_message = str(e),
-        )
+        if _retry_or_fail(db, job_id, e):
+            _remove_local_upload(pdf_path)
+            _remove_object_upload(object_key)
 
     finally:
         db.close()
@@ -459,8 +572,8 @@ def _executar_job_matching(
     db = SessionLocal()
 
     try:
-        _update_job(db, job_id, status=JobStatus.RUNNING, progress=0.05,
-                    started_at=datetime.now(timezone.utc))
+        if not _claim_job(db, job_id):
+            return
         logger.info(f"[Worker] Iniciando matching | job={job_id[:8]}... | edital={edital_id}")
 
         # ── Carrega dados ─────────────────────────────────────────────────────
@@ -521,12 +634,7 @@ def _executar_job_matching(
 
     except Exception as e:
         logger.error(f"[Worker] Job matching falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
-        _update_job(
-            db, job_id,
-            status        = JobStatus.FAILED,
-            finished_at   = datetime.now(timezone.utc),
-            error_message = str(e),
-        )
+        _retry_or_fail(db, job_id, e)
 
     finally:
         db.close()
@@ -549,13 +657,8 @@ def _executar_job_crm_notice_match(
     db = SessionLocal()
 
     try:
-        _update_job(
-            db,
-            job_id,
-            status=JobStatus.RUNNING,
-            progress=0.05,
-            started_at=datetime.now(timezone.utc),
-        )
+        if not _claim_job(db, job_id):
+            return
         logger.info(f"[Worker] Iniciando CRM match | job={job_id[:8]}... | notice={notice_id}")
 
         if _is_cancelled(db, job_id):
@@ -623,13 +726,7 @@ def _executar_job_crm_notice_match(
 
     except Exception as e:
         logger.error(f"[Worker] Job CRM match falhou | job={job_id[:8]}... | erro={e}", exc_info=True)
-        _update_job(
-            db,
-            job_id,
-            status=JobStatus.FAILED,
-            finished_at=datetime.now(timezone.utc),
-            error_message=str(e),
-        )
+        _retry_or_fail(db, job_id, e)
 
     finally:
         db.close()

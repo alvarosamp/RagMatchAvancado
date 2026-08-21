@@ -16,6 +16,7 @@ services:
       retries: 5
 
   api:
+    build: ./backend
     image: alvarocareli/ragmatch-api:latest
     restart: unless-stopped
     volumes:
@@ -25,6 +26,12 @@ services:
       - "8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
       AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
       DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
       CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
@@ -49,7 +56,97 @@ services:
         condition: service_healthy
       mlflow:
         condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  worker:
+    build: ./backend
+    image: alvarocareli/ragmatch-api:latest
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /documents
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --processes 1 --threads ${WORKER_THREADS:-2}
+
+  scheduler:
+    image: alvarocareli/ragmatch-api:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
+      PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
+      EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
+      EMAIL_MONITOR_IMAP_HOST: ${EMAIL_MONITOR_IMAP_HOST:-}
+      EMAIL_MONITOR_IMAP_USER: ${EMAIL_MONITOR_IMAP_USER:-}
+      EMAIL_MONITOR_IMAP_PASSWORD: ${EMAIL_MONITOR_IMAP_PASSWORD:-}
+      JOB_RECOVERY_INTERVAL_SECONDS: ${JOB_RECOVERY_INTERVAL_SECONDS:-60}
+      JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
+      JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m app.scheduler
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+    command: server /data
+    volumes:
+      - minio_data:/data
+
+  migrate:
+    build: ./backend
+    image: alvarocareli/ragmatch-api:latest
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
 
   frontend:
     image: alvarocareli/ragmatch-frontend:latest
@@ -82,3 +179,5 @@ services:
 volumes:
   postgres_data:
   mlflow_data:
+  redis_data:
+  minio_data:

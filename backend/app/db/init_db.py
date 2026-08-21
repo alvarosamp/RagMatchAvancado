@@ -268,6 +268,7 @@ def _ensure_editais_schema_updates() -> None:
             "status": "VARCHAR DEFAULT 'done'",
             "import_batch_id": "INTEGER",
             "source_path": "VARCHAR",
+            "storage_key": "VARCHAR",
             "analysis_only": "BOOLEAN DEFAULT FALSE",
         },
     )
@@ -277,6 +278,7 @@ def _ensure_editais_schema_updates() -> None:
             "CREATE INDEX IF NOT EXISTS ix_editais_business_key ON editais (business_key)",
             "CREATE INDEX IF NOT EXISTS ix_editais_status ON editais (status)",
             "CREATE INDEX IF NOT EXISTS ix_editais_import_batch_id ON editais (import_batch_id)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_storage_key ON editais (storage_key)",
             "CREATE INDEX IF NOT EXISTS ix_editais_analysis_only ON editais (analysis_only)",
         ]
     )

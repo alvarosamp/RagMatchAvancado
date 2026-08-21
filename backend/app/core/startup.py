@@ -15,8 +15,6 @@ def register_startup_tasks(app) -> None:
     def on_startup():
         _init_database()
         _start_warmup_thread()
-        _start_daily_radar_refresh()
-        _start_email_monitor_loop()
 
 
 def _init_database() -> None:
@@ -94,21 +92,3 @@ def _ensure_ollama_models() -> None:
             logger.info("[Startup] Pull do modelo '%s' concluido.", model)
     except Exception as exc:
         logger.warning("[Startup] Falha ao garantir modelo Ollama (nao critico): %s", exc)
-
-
-def _start_daily_radar_refresh() -> None:
-    try:
-        from app.services.pncp_radar_cache import start_daily_radar_refresh
-
-        start_daily_radar_refresh()
-    except Exception as exc:
-        logger.warning("[Startup] Falha ao iniciar rotina diaria do Radar PNCP: %s", exc)
-
-
-def _start_email_monitor_loop() -> None:
-    try:
-        from app.services.email_monitor import start_email_monitor_loop
-
-        start_email_monitor_loop()
-    except Exception as exc:
-        logger.warning("[Startup] Falha ao iniciar monitoramento de email: %s", exc)
