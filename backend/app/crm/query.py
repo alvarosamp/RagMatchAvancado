@@ -321,7 +321,7 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data[column.name] = _json_value(value)
 
     if isinstance(row, CrmCatalogProduct):
-        data["min_price"] = row.min_price
+        data["min_price"] = row.min_price if row.min_price is not None else row.computed_min_price
     elif isinstance(row, CrmNotice):
         data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None
         data["portals"] = serialize_related(row.portal, ("id", "name", "url")) if row.portal else None
@@ -357,6 +357,8 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data["tor_id"] = data["number"]
     elif isinstance(row, CrmNoticeProduct):
         data["catalog_products"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        if row.catalog_product and not data.get("catalog_lpu_version"):
+            data["catalog_lpu_version"] = getattr(row.catalog_product, "lpu_version", None)
         if data.get("reference_total_price") is None and data.get("reference_price") is not None and data.get("quantity") not in (None, 0):
             data["reference_total_price"] = round(float(data["reference_price"]) * float(data["quantity"]), 4)
         if data.get("reference_price") is None and data.get("reference_total_price") is not None and data.get("quantity") not in (None, 0):

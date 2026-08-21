@@ -39,18 +39,22 @@ def build_notice_proposal_docx(
     company: dict[str, Any] | None = None,
     options: dict[str, Any] | None = None,
 ) -> bytes:
-    """Generate a commercial proposal DOCX for items won by our company."""
+    """Generate a commercial proposal DOCX.
+
+    Items won by our company are preferred. If no item result exists yet, the
+    proposal is generated as a commercial preview with active linked items.
+    """
     company_data = {**DEFAULT_COMPANY, **(company or {})}
     options = options or {}
-    won_items = _collect_won_items(notice)
+    won_items = _collect_won_items(notice) or _collect_preview_items(notice)
     if not won_items:
-        raise ValueError("Nao ha itens ganhos para gerar proposta.")
+        raise ValueError("Nao ha itens vinculados para gerar proposta.")
 
     document = Document(str(TEMPLATE_PATH))
     _remove_images(document)
     _fill_header_table(document.tables[0], notice, company_data, options)
     _fill_items_table(document.tables[1], won_items)
-    _replace_common_text(document, notice, company_data, options)
+    _replace_common_text(document, notice, company_data, options, won_items)
 
     output = BytesIO()
     document.save(output)
@@ -74,6 +78,8 @@ def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
             continue
         product = products_by_id.get(result.notice_product_id) or result.notice_product
         if product is None:
+            continue
+        if getattr(product, "selected_for_dispute", True) is False:
             continue
         quantity = _number(getattr(result, "winning_quantity", None), getattr(product, "quantity", 1))
         unit_price = _number(
@@ -102,6 +108,46 @@ def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
                 "unit_price": unit_price,
                 "brand_model": " / ".join(part for part in [brand, model] if part) or "A DEFINIR",
                 "total": quantity * unit_price,
+                "delivery_deadline": getattr(product, "delivery_deadline", None),
+                "warranty": getattr(product, "warranty", None),
+            }
+        )
+    return sorted(items, key=lambda item: _sort_key(item["item"]))
+
+
+def _collect_preview_items(notice: Any) -> list[dict[str, Any]]:
+    inactive_result_ids = {
+        getattr(result, "notice_product_id", None)
+        for result in getattr(notice, "notice_item_results", []) or []
+        if getattr(getattr(result, "winner_type", None), "value", getattr(result, "winner_type", None)) != "us"
+    }
+    items: list[dict[str, Any]] = []
+    for product in getattr(notice, "notice_products", []) or []:
+        if getattr(product, "id", None) in inactive_result_ids:
+            continue
+        if getattr(product, "selected_for_dispute", True) is False:
+            continue
+        catalog = getattr(product, "catalog_product", None)
+        unit_price = _number(
+            getattr(product, "unit_price", None),
+            getattr(catalog, "min_price", None),
+            getattr(product, "reference_price", None),
+            0,
+        )
+        quantity = _number(getattr(product, "quantity", None), 1)
+        brand = getattr(catalog, "brand", None) or ""
+        model = getattr(catalog, "model", None) or ""
+        items.append(
+            {
+                "item": getattr(product, "item_number", None) or str(len(items) + 1),
+                "description": getattr(product, "description", None) or getattr(catalog, "name", None) or "Produto",
+                "unit": getattr(product, "unit", None) or getattr(catalog, "unit", None) or "UN",
+                "quantity": quantity,
+                "unit_price": unit_price,
+                "brand_model": " / ".join(part for part in [brand, model] if part) or "A DEFINIR",
+                "total": quantity * unit_price,
+                "delivery_deadline": getattr(product, "delivery_deadline", None),
+                "warranty": getattr(product, "warranty", None),
             }
         )
     return sorted(items, key=lambda item: _sort_key(item["item"]))
@@ -118,12 +164,13 @@ def _fill_header_table(
     organ_name = getattr(organ, "name", None) or getattr(notice, "municipality_name", None) or "ORGAO"
     process_number = (
         options.get("process_number")
+        or getattr(notice, "bid_number", None)
         or getattr(notice, "number", None)
         or getattr(notice, "tor_id", None)
         or ""
     )
     modality = options.get("auction_number") or getattr(notice, "modality", None) or "PREGAO ELETRONICO"
-    judgment = options.get("judgment_type") or "MENOR PRECO"
+    judgment = options.get("judgment_type") or getattr(notice, "bi_criterion", None) or "conforme edital"
     portal_name = getattr(portal, "name", None)
     if portal_name:
         organ_name = f"{organ_name}\nPORTAL: {portal_name}"
@@ -200,24 +247,32 @@ def _replace_common_text(
     notice: Any,
     company: dict[str, Any],
     options: dict[str, Any],
+    won_items: list[dict[str, Any]],
 ) -> None:
     current_city = options.get("proposal_city") or "Santa Rita do Sapucai"
     current_date = options.get("proposal_date") or _date_pt_br(datetime.now())
+    delivery_term = options.get("delivery_term") or _delivery_term_from_items(won_items)
+    validity_term = _proposal_validity_term(notice, options)
+    warranty_term = options.get("warranty") or _term_from_items(
+        won_items,
+        "warranty",
+        singular_fallback="conforme garantia prevista no edital",
+        multiple_fallback="conforme garantias previstas no edital por item",
+    )
     replacements = {
         "O prazo de validade da proposta": (
-            f"O prazo de validade da proposta e de "
-            f"{options.get('validity_days', 90)} dias."
+            f"O prazo de validade da proposta e de {validity_term}."
         ),
         "Nome do banco indicado para o pagamento": (
             f"Nome do banco indicado para o pagamento: {company['banco']}."
         ),
         "Prazo de entrega/execu": (
             f"Prazo de entrega/execucao: "
-            f"{options.get('delivery_term', '05 (cinco) dias uteis')}, "
+            f"{delivery_term}, "
             "contados do recebimento da Solicitacao de Fornecimento/Ordem de Servicos."
         ),
         "Prazo de Garantia": (
-            f"Prazo de Garantia: {options.get('warranty', '12 meses')}, "
+            f"Prazo de Garantia: {warranty_term}, "
             "contra defeito de fabricacao, contados a partir da data da entrega."
         ),
         "Santa Rita do Sapuca": f"{current_city}, {current_date}.",
@@ -231,6 +286,48 @@ def _replace_common_text(
             if needle in text:
                 _set_paragraph_text(paragraph, replacement)
                 break
+
+
+def _delivery_term_from_items(items: list[dict[str, Any]]) -> str:
+    return _term_from_items(
+        items,
+        "delivery_deadline",
+        singular_fallback="conforme prazo de entrega previsto no edital",
+        multiple_fallback="conforme prazos de entrega previstos no edital por item",
+    )
+
+
+def _term_from_items(
+    items: list[dict[str, Any]],
+    key: str,
+    *,
+    singular_fallback: str,
+    multiple_fallback: str,
+) -> str:
+    deadlines: list[str] = []
+    for item in items:
+        value = str(item.get(key) or "").strip()
+        if value and value not in deadlines:
+            deadlines.append(value)
+
+    if not deadlines:
+        return singular_fallback
+    if len(deadlines) == 1:
+        return deadlines[0]
+
+    return multiple_fallback
+
+
+def _proposal_validity_term(notice: Any, options: dict[str, Any]) -> str:
+    explicit_days = options.get("validity_days")
+    if explicit_days:
+        return f"{explicit_days} dias"
+
+    validity = str(getattr(notice, "proposal_validity", None) or "").strip()
+    if validity:
+        return validity
+
+    return "conforme prazo de validade previsto no edital"
 
 
 def _remove_images(document: Document) -> None:

@@ -1,0 +1,582 @@
+[
+  {
+    "id": "f1971c9e-e1bf-49a9-88d2-4ff8708c0acd",
+    "tenant_id": 62,
+    "portal": "COMPRAS_GOV",
+    "process_number": "392701-63/2025",
+    "entity": "UASG 392701",
+    "dispute_at": null,
+    "mode": "assistido",
+    "status": "watching",
+    "created_at": "2026-08-07T13:11:21.970876+00:00",
+    "updated_at": "2026-08-07T13:19:49.677101+00:00",
+    "lots": [
+      {
+        "id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+        "number": "Grupo unico",
+        "description": "15x CX6200M + 2x CX8100 + 2x CX6300M + 2x CX6200F - fornecimento e implantacao",
+        "quantity": 1.0,
+        "unit_cost": 10000.0,
+        "current_best_bid": 940000.0,
+        "decrement": 30000.0,
+        "minimum_margin_percent": 0.0,
+        "maximum_total_bid": null,
+        "status": "monitoring",
+        "last_recommended_bid": 910000.0,
+        "last_confirmed_bid": 940000.0
+      }
+    ],
+    "events": [
+      {
+        "id": "a54ab388-e4d7-40ac-b99c-6dd901b105c9",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:19:49.672193+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 910000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.9,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "5c600823-a818-4c7e-9564-47d85f80bd6b",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:19:49.205605+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 910000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.9,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "b6f0fef7-3839-4979-acff-58978aa1957b",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 940,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:19:47.541000+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 940000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "ffda1dd3-d2cb-46fe-baf7-d53be477d50f",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 970,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:19:34.171182+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 970000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "c3af94cb-f6e6-4844-869a-205734a9e7c3",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:18:36.096833+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 970000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.97,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "08dc8fb9-89cf-403e-aae1-50ad314a1dd0",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 970,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:18:17.821658+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 970000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "04d7b8db-faf3-464c-a24d-119511da4bea",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:22.711604+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 970000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.97,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "f0980e5d-84b4-479d-85a3-4a3d78e00409",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 850,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:21.250922+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 850000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "e8f8e3d4-78ac-40b9-a165-bbe64d1576ae",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 880,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:17.917253+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 880000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "10b7ec76-cb6a-4da4-80fe-c693ffa9cad4",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 910,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:16.479172+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 910000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "a955aab7-ebcc-4a7c-b1a0-adb3fc652a67",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 940,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:15.633562+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 940000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "e230ed98-dd68-4c1a-ab35-52e3ca3d83bb",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 970,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:14.391332+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 970000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "5e024d78-299e-4a81-87e3-2949fc782c4a",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:12.733506+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 970000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.97,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "bc556acd-57c3-47f5-827d-d8274406ba08",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:10.399413+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 970000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.97,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "8ea94a7c-412a-44dd-9495-175e3b3c40bb",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 10,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:17:00.945072+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 10000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "c8ccbd07-22fc-41c7-9202-56c215937614",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:15.003570+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "36a1b543-1fc7-4976-81e7-85dabe88c8be",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:14.802680+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "92b687ad-d6ee-418b-a83f-7b5cf06bfd36",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:14.596426+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "7aaee3b1-9ee9-4adf-91c3-3ec93db764e1",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:14.069126+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "02f3e358-d9eb-47f2-afab-f70648e86208",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:13.133205+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "fa44b635-45b8-4b46-ad34-a20e44975968",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 10,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:07.711171+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 10000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "da58d55a-fb23-48fa-988d-c2a6147ac433",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:06.910941+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "af8ae46b-dfcf-40cd-b4c4-2a66bb2b5fc3",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:06.187905+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "9cbeb8bb-6bf7-46b6-9103-587b70b6910a",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:16:05.105992+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "58f74cf6-160d-4372-8112-28656ad8d9b6",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:15:49.877081+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 69999.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 85.71,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "a51d6909-6baf-495c-991d-744fb6716deb",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:15:42.271526+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 69999.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 85.71,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "6ac681c4-e205-427a-b7b4-b2953a72b9a8",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 879,999.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:15:39.207468+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 879999.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "d856658b-d052-4269-b041-e8b4bfa48605",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 909,999.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:57.250242+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 909999.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "54e3fd3e-c220-402a-8906-47671cb586a0",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 939,999.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:56.537641+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 939999.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "415ccafc-ad8d-4678-ada0-05ec8896321d",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 969,999.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:50.929341+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 969999.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "7fca31ec-38b3-4098-bcbf-75c34272bcf3",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:48.191048+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 969999.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 98.97,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "faead9bd-4bf7-4c5f-87ba-3b17db6a8513",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:21.037018+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": null,
+            "can_bid": false,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": null,
+            "reason": "Menor lance atual ja esta abaixo do piso de margem configurado."
+          }
+        }
+      },
+      {
+        "id": "6d829ffc-5165-4a61-8939-f170405d9e1c",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:19.905429+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": null,
+            "can_bid": false,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": null,
+            "reason": "Menor lance atual ja esta abaixo do piso de margem configurado."
+          }
+        }
+      },
+      {
+        "id": "d08cdd73-8477-4c66-ad74-ca467cc4c8fe",
+        "type": "bid_confirmed",
+        "message": "Lance de R$ 10,000.00 registrado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:14:12.155191+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "bid_value": 10000.0,
+          "source": "manual"
+        }
+      },
+      {
+        "id": "b631b71b-fb78-4df5-9b15-2eb41d01defd",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:13:35.113778+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "25844017-0cab-4c8b-ba56-42ee157e8a0d",
+        "type": "market_update",
+        "message": "Menor lance atualizado no lote Grupo unico.",
+        "created_at": "2026-08-07T13:12:59.217133+00:00",
+        "payload": {
+          "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+          "recommendation": {
+            "lot_id": "a602378a-c4f5-45e8-9487-c8f0a7b20254",
+            "suggested_bid": 10000.0,
+            "can_bid": true,
+            "floor_bid": 10000.0,
+            "cost_total": 10000.0,
+            "estimated_margin_percent": 0.0,
+            "reason": "Sugestao calculada pelo menor lance atual, decremento e margem minima."
+          }
+        }
+      },
+      {
+        "id": "4d8e2a92-457d-45a3-91ab-d3e7204f4984",
+        "type": "session_created",
+        "message": "Sessao de lances criada para acompanhamento auditavel.",
+        "created_at": "2026-08-07T13:11:21.970876+00:00",
+        "payload": {}
+      }
+    ]
+  }
+]

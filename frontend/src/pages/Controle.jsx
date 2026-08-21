@@ -10,6 +10,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { editaisApi, jobsApi } from '../api/client'
 
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+
 // ── Utilitários ──────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
@@ -480,13 +482,15 @@ export default function Controle() {
                         >
                           Ver
                         </button>
-                        <button
-                          onClick={() => navigate(`/editais/${row.id}/chat`)}
-                          className="text-xs font-mono text-gray-500 hover:text-white transition-colors
-                                     px-2 py-1 rounded hover:bg-slate-hover"
-                        >
-                          Chat
-                        </button>
+                        {AI_FEATURES_ENABLED && (
+                          <button
+                            onClick={() => navigate(`/editais/${row.id}/chat`)}
+                            className="text-xs font-mono text-gray-500 hover:text-white transition-colors
+                                       px-2 py-1 rounded hover:bg-slate-hover"
+                          >
+                            Chat
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

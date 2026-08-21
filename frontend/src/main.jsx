@@ -28,12 +28,14 @@ import AnalysisDashboard from './pages/AnalysisDashboard'
 import PncpSearch     from './pages/PncpSearch'
 import OpportunityRadar from './pages/OpportunityRadar'
 import CompetitiveIntelligence from './pages/CompetitiveIntelligence'
+import BidRobot       from './pages/BidRobot'
 import Configuracoes  from './pages/Configuracoes'
 import CrmHub         from './pages/CrmHub'
 import DatasheetCompare from './pages/DatasheetCompare'
 import Layout         from './components/Layout'
 
 const INTERNAL_REGISTER_PATH = import.meta.env.VITE_INTERNAL_REGISTER_PATH || '/cadastro-tor-gestao-interna'
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
 function PrivateRoute({ children, withLayout = true }) {
   const { user, loading } = useAuth()
@@ -70,27 +72,28 @@ createRoot(document.getElementById('root')).render(
             <Route path="/habilitacao"            element={<PrivateRoute><ProcurementExpansion moduleId="compliance_checklist" /></PrivateRoute>} />
             <Route path="/precificacao"           element={<PrivateRoute><ProcurementExpansion moduleId="pricing" /></PrivateRoute>} />
             <Route path="/monitor-pregao"         element={<PrivateRoute><ProcurementExpansion moduleId="auction_monitor" /></PrivateRoute>} />
+            <Route path="/robo-lances"            element={<PrivateRoute><BidRobot /></PrivateRoute>} />
             <Route path="/pos-vitoria"            element={<PrivateRoute><ProcurementExpansion moduleId="post_award" /></PrivateRoute>} />
             <Route path="/onboarding-planos"      element={<PrivateRoute><ProcurementExpansion moduleId="onboarding_plans" /></PrivateRoute>} />
             <Route path="/integracoes"            element={<PrivateRoute><ProcurementExpansion moduleId="integrations" /></PrivateRoute>} />
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />
-            <Route path="/jobs"                   element={<PrivateRoute><Jobs          /></PrivateRoute>} />
+            <Route path="/jobs"                   element={AI_FEATURES_ENABLED ? <PrivateRoute><Jobs /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
             <Route path="/analytics"              element={<PrivateRoute><Analytics     /></PrivateRoute>} />
             <Route path="/relatorios"             element={<PrivateRoute><Reports       /></PrivateRoute>} />
-            <Route path="/chat"                   element={<PrivateRoute><Chatbot       /></PrivateRoute>} />
+            <Route path="/chat"                   element={AI_FEATURES_ENABLED ? <PrivateRoute><Chatbot /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
-            <Route path="/editais/:id/chat"       element={<PrivateRoute><EditalChat    /></PrivateRoute>} />
-            <Route path="/editais/:id/analise-llm" element={<PrivateRoute><AnaliseAta   /></PrivateRoute>} />
+            <Route path="/editais/:id/chat"       element={AI_FEATURES_ENABLED ? <PrivateRoute><EditalChat /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
+            <Route path="/editais/:id/analise-llm" element={AI_FEATURES_ENABLED ? <PrivateRoute><AnaliseAta /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
             <Route path="/analise/documentos/:id"  element={<PrivateRoute><AnaliseJson  /></PrivateRoute>} />
             <Route path="/analise/upload"          element={<Navigate to="/upload" replace />} />
-            <Route path="/analise/dashboard"       element={<PrivateRoute><AnalysisDashboard /></PrivateRoute>} />
-            <Route path="/inteligencia/datasheets" element={<PrivateRoute><DatasheetCompare /></PrivateRoute>} />
-            <Route path="/inteligencia/competitiva" element={<PrivateRoute><CompetitiveIntelligence /></PrivateRoute>} />
+            <Route path="/analise/dashboard"       element={AI_FEATURES_ENABLED ? <PrivateRoute><AnalysisDashboard /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
+            <Route path="/inteligencia/datasheets" element={AI_FEATURES_ENABLED ? <PrivateRoute><DatasheetCompare /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
+            <Route path="/inteligencia/competitiva" element={AI_FEATURES_ENABLED ? <PrivateRoute><CompetitiveIntelligence /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
 
             <Route path="/usuarios" element={
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>

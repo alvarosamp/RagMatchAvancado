@@ -91,6 +91,11 @@ class UserCreate(BaseModel):
         """Validação de senha (alinhada com a política central do projeto)."""
         return assert_valid_password(v)
 
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, v: str) -> str:
+        return str(v).strip().lower()
+
     @field_validator("role")
     @classmethod
     def role_valido(cls, v: str) -> str:
@@ -126,6 +131,11 @@ class LoginRequest(BaseModel):
     """
     email:    EmailStr
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, v: str) -> str:
+        return str(v).strip().lower()
 
 
 class TokenResponse(BaseModel):
@@ -176,6 +186,11 @@ class RegisterRequest(BaseModel):
         if not re.match(r'^[a-z0-9\-]+$', v):
             raise ValueError("tenant_slug deve conter apenas letras minúsculas, números e hífens")
         return v
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, v: str) -> str:
+        return str(v).strip().lower()
 
     @field_validator("password")
     @classmethod

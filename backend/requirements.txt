@@ -41,6 +41,13 @@ passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.0
 
 #Api gpt
-openai 
+openai
 
 python-dotenv
+
+# ── Robo de lances (BLL/BNC) ──────────────────────────────────────────────────
+# Automacao de navegador sobre a sessao autenticada do proprio usuario, no mesmo
+# padrao usado por robos comerciais e pelo projeto open-source LanceBot. NAO
+# suportado para Compras.gov.br (bloqueio anti-bot do Serpro desde 2011) -- ver
+# app/services/portal_automation.py.
+playwright

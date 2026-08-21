@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlencode
+from zoneinfo import ZoneInfo
+
+
+LOCAL_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 
 def build_google_calendar_url(*, title: str, starts_at: datetime, description: str | None = None) -> str:
@@ -67,7 +71,7 @@ def _default_title(notice: Any) -> str:
 
 def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
+        return value.replace(tzinfo=LOCAL_TIMEZONE).astimezone(timezone.utc)
     return value.astimezone(timezone.utc)
 
 

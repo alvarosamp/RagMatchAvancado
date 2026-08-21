@@ -27,6 +27,7 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.db.models import Product
 from app.db.session import get_db
+from app.core.features import require_ai_enabled
 from app.logs.config import logger
 from app.services.attribute_parsers import compare_product_specs
 from app.services.competitive_intelligence import build_competitive_intelligence
@@ -44,6 +45,7 @@ async def extract_datasheet(
     file: UploadFile = File(..., description="PDF do datasheet (nosso ou de concorrente)"),
     current_user: User = Depends(require_role("admin", "editor")),
 ):
+    require_ai_enabled()
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF sao aceitos.")
 
@@ -66,6 +68,7 @@ async def preview_tor_datasheet(
     category: str | None = Form(default=None),
     current_user: User = Depends(require_role("admin", "editor")),
 ):
+    require_ai_enabled()
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF sao aceitos.")
 

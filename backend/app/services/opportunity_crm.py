@@ -85,7 +85,7 @@ def send_opportunity_to_crm(
             stage=CrmNoticeStage.TRIAGE,
             sales_status="radar_disputar",
             analysis_status="Aguardando analise tecnica",
-            analysis_mode="Radar IA",
+            analysis_mode="Radar",
             analysis_confidence=priority,
             bi_item_summary=title[:1000],
             particularities=_build_notes(score=score, priority=priority),
@@ -100,7 +100,7 @@ def send_opportunity_to_crm(
             db,
             notice=notice,
             current_user=current_user,
-            action="Criada pelo Radar IA",
+            action="Criada pelo Radar",
             details={"id_pncp": id_pncp, "score": score, "priority": priority},
         )
     else:
@@ -113,14 +113,14 @@ def send_opportunity_to_crm(
         notice.stage = CrmNoticeStage.TRIAGE
         notice.sales_status = "radar_disputar"
         notice.analysis_status = notice.analysis_status or "Aguardando analise tecnica"
-        notice.analysis_mode = notice.analysis_mode or "Radar IA"
+        notice.analysis_mode = notice.analysis_mode or "Radar"
         notice.analysis_confidence = priority or notice.analysis_confidence
         _ensure_initial_documents(db, notice=notice, current_user=current_user)
         _add_history(
             db,
             notice=notice,
             current_user=current_user,
-            action="Atualizada pelo Radar IA",
+            action="Atualizada pelo Radar",
             details={"id_pncp": id_pncp, "score": score, "priority": priority},
         )
 
@@ -139,7 +139,7 @@ def sync_pncp_files_to_crm(
             db,
             notice=notice,
             current_user=current_user,
-            action="Radar IA nao encontrou anexos PNCP",
+            action="Radar nao encontrou anexos PNCP",
             details={"files": 0},
         )
         return 0
@@ -250,7 +250,7 @@ def sync_radar_items_to_crm(
             db,
             notice=notice,
             current_user=current_user,
-            action="Itens PNCP adicionados pelo Radar IA",
+            action="Itens PNCP adicionados pelo Radar",
             details={"items": created_or_updated},
         )
     return created_or_updated
@@ -401,7 +401,7 @@ def _tor_id(id_pncp: str) -> str:
 
 
 def _build_notes(*, score: int | None, priority: str | None) -> str:
-    parts = ["Origem: Radar IA"]
+    parts = ["Origem: Radar"]
     if score is not None:
         parts.append(f"Score inicial: {score}")
     if priority:

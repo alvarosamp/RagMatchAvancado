@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
+import { documentsApi, downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
 import { useToast } from '../contexts/ToastContext'
+
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -22,12 +24,15 @@ async function readCrmSync() {
 
 const SUITE_STEPS = [
   { key: 'radar', title: 'Radar de oportunidades', description: 'Encontre editais aderentes antes de importar para analise.', path: '/radar', cta: 'Buscar' },
-  { key: 'alerts', title: 'Alertas inteligentes', description: 'Acompanhe prazos, filas, atrasos e proximas sessoes.', path: '/controle', cta: 'Acompanhar' },
+  { key: 'alerts', title: 'Alertas operacionais', description: 'Acompanhe prazos, filas, atrasos e proximas sessoes.', path: '/controle', cta: 'Acompanhar' },
   { key: 'analysis', title: 'Analise IA do edital', description: 'Extraia requisitos, itens, riscos e perguntas do edital.', path: '/upload', cta: 'Analisar' },
   { key: 'matching', title: 'Matching tecnico', description: 'Compare requisitos com catalogo, datasheets e gaps.', path: '/inteligencia/datasheets', cta: 'Comparar' },
   { key: 'documents', title: 'Proposta e documentos', description: 'Transforme analises em relatorios e exportacoes.', path: '/relatorios', cta: 'Gerar' },
   { key: 'crm', title: 'CRM e pipeline', description: 'Controle decisao, responsaveis, disputa e resultado.', path: '/crm', cta: 'Abrir' },
 ]
+const VISIBLE_SUITE_STEPS = AI_FEATURES_ENABLED
+  ? SUITE_STEPS
+  : SUITE_STEPS.filter((step) => !['analysis', 'matching'].includes(step.key))
 
 function stepState(key, { nEditais, totalRequirements, jobs, crm }) {
   if (key === 'radar') return { label: 'Disponivel', tone: 'blue' }
@@ -57,6 +62,7 @@ export default function Dashboard() {
   const [apiOnline,   setApiOnline]   = useState(null)
   const [opsSummary,  setOpsSummary]  = useState(null)
   const [crmSync,     setCrmSync]     = useState(null)
+  const [signatureAlert, setSignatureAlert] = useState(null)
   const { user, isEditor } = useAuth()
   const market = useMarket()
   const { toast, confirm } = useToast()
@@ -69,12 +75,14 @@ export default function Dashboard() {
       const [eRes, oRes, cRes] = await Promise.allSettled([
         editaisApi.list(), opsApi.summary(), readCrmSync(),
       ])
+      const sRes = await documentsApi.signatureAlert().catch(() => null)
       if (!active) return
       const editalRows = eRes.status === 'fulfilled' && Array.isArray(eRes.value.data) ? eRes.value.data : []
       setEditais(editalRows)
       if (oRes.status === 'fulfilled') { setOpsSummary(oRes.value.data); setApiOnline(true) }
       else { setOpsSummary(null); setApiOnline(false) }
       setCrmSync(cRes.status === 'fulfilled' ? cRes.value : null)
+      setSignatureAlert(sRes?.data || null)
       setLoading(false)
     }
     load()
@@ -173,6 +181,24 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {signatureAlert?.count > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate(signatureAlert.request?.id ? `/assinatura?request=${signatureAlert.request.id}` : '/assinatura')}
+          className="w-full rounded-lg border border-amber-200 bg-amber-50 p-4 text-left transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-950/60"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Voce tem {signatureAlert.count} documento(s) aguardando assinatura</p>
+              <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                {signatureAlert.request?.document?.title || 'Abra a seção de documentos para continuar o processo.'}
+              </p>
+            </div>
+            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Leve-me</span>
+          </div>
+        </button>
+      )}
+
       <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -187,7 +213,7 @@ export default function Dashboard() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {SUITE_STEPS.map((step) => {
+          {VISIBLE_SUITE_STEPS.map((step) => {
             const status = stepState(step.key, { nEditais, totalRequirements, jobs, crm })
             return (
               <button
@@ -338,14 +364,18 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                    Chat
-                  </button>
-                  <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                    Análise
-                  </button>
+                  {AI_FEATURES_ENABLED && (
+                    <>
+                      <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        Chat
+                      </button>
+                      <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        Análise
+                      </button>
+                    </>
+                  )}
                   {['xlsx','csv'].map(tipo => (
                     <button key={tipo} onClick={e => handleExport(e, edital.id, tipo)}
                       disabled={Boolean(exporting)}

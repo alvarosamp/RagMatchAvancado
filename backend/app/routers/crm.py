@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from io import BytesIO
+import csv
+from io import BytesIO, StringIO
 from pathlib import Path
 from urllib.parse import quote
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
@@ -30,8 +31,12 @@ from app.db.session import get_db
 from app.jobs.models import Job, JobStatus, JobType
 from app.jobs.queue import JobQueue
 from app.services.crm_item_matcher import (
+    build_attached_products_llm_report,
+    build_match_ground_truth_report,
     confirm_notice_item_match,
+    flatten_attached_products_report_items,
     get_notice_item_match_payload,
+    mark_notice_product_ground_truth,
     reject_notice_item_match,
     run_notice_item_match,
 )
@@ -75,10 +80,56 @@ def _raise_match_paused() -> None:
 
 
 def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
+    if product.unit_price is not None:
+        return float(product.unit_price or 0.0)
     catalog = product.catalog_product
     if catalog is not None:
         return float(getattr(catalog, "min_price", None) or catalog.cost or 0.0)
-    return float(product.unit_price or product.cost or 0.0)
+    return float(product.cost or 0.0)
+
+
+def _normalize_portal_name(value: str | None) -> str:
+    import unicodedata
+
+    normalized = unicodedata.normalize("NFD", value or "")
+    return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn").lower()
+
+
+def _portal_bid_mode(portal_name: str | None) -> dict[str, str | None]:
+    normalized = _normalize_portal_name(portal_name)
+    if "bnc" in normalized or "bolsa nacional" in normalized:
+        return {
+            "key": "bnc",
+            "label": "BNC",
+            "mode": "manual_seguro",
+            "message": "Portal identificado como BNC. Calcule/copiei o lance aqui e confirme no ambiente autenticado.",
+        }
+    if "bll" in normalized or "bolsa de licit" in normalized:
+        return {
+            "key": "bll",
+            "label": "BLL",
+            "mode": "manual_seguro",
+            "message": "Portal identificado como BLL. Calcule/copiei o lance aqui e confirme no ambiente autenticado.",
+        }
+    return {
+        "key": None,
+        "label": portal_name,
+        "mode": "manual_seguro",
+        "message": "Portal nao identificado como BLL/BNC. Revise o cadastro do processo antes da disputa.",
+    }
+
+
+def _notice_bid_decrement(notice: CrmNotice) -> float:
+    import re
+
+    interval = _normalize_portal_name(getattr(notice, "bi_interval", None))
+    match = re.search(r"(\d+(?:[\.,]\d+)?)", interval)
+    if not match:
+        return DEFAULT_BID_DECREMENT
+    try:
+        return max(float(match.group(1).replace(",", ".")), 0.01)
+    except ValueError:
+        return DEFAULT_BID_DECREMENT
 
 
 def _suggest_bid(
@@ -147,6 +198,7 @@ async def crm_import_sales_processes(
 @router.post("/imports/lpu")
 async def crm_import_lpu_catalog(
     file: UploadFile = File(..., description="Planilha XLSX de LPU/catalogo"),
+    drive_url: str = Form(..., description="Link do Drive da LPU"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -174,6 +226,7 @@ async def crm_import_lpu_catalog(
             db=db,
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
+            lpu_drive_url=drive_url,
         )
         db.expire_all()
         return {"ok": True, "summary": summary}
@@ -230,7 +283,6 @@ def crm_advance_notice(
     notice.stage = CrmNoticeStage(next_stage)
     notice.owner_id = current_user.id
     sync_notice_relationships(db, notice, created_by=current_user.id)
-    session = _ensure_notice_calendar_event(db, notice, current_user.id)
     db.add(
         CrmNoticeHistory(
             tenant_id=current_user.tenant_id,
@@ -241,7 +293,6 @@ def crm_advance_notice(
                 "from": previous_stage,
                 "to": next_stage,
                 "advanced_by": current_user.id,
-                "calendar_session_id": session.id if session else None,
             },
         )
     )
@@ -251,9 +302,6 @@ def crm_advance_notice(
         "notice_id": notice.id,
         "stage": next_stage,
         "advanced_by": current_user.id,
-        "calendar_session_id": session.id if session else None,
-        "google_calendar_url": session_calendar_payload(session, notice)["google_calendar_url"] if session else None,
-        "ics_url": f"/api/crm/notices/{notice.id}/calendar.ics" if session else None,
     }
 
 
@@ -347,17 +395,19 @@ def crm_download_notice_proposal(
 
 
 def _next_notice_stage(current: str) -> str:
+    if current == CrmNoticeStage.RESULT.value:
+        return current
     order = [
         CrmNoticeStage.TRIAGE.value,
-        CrmNoticeStage.DOCUMENTATION.value,
         CrmNoticeStage.ANALYSIS.value,
+        CrmNoticeStage.DOCUMENTATION.value,
+        CrmNoticeStage.PROPOSAL.value,
         CrmNoticeStage.AUCTION.value,
-        CrmNoticeStage.RESULT.value,
     ]
     try:
         index = order.index(current)
     except ValueError:
-        return CrmNoticeStage.DOCUMENTATION.value
+        return CrmNoticeStage.ANALYSIS.value
     return order[min(index + 1, len(order) - 1)]
 
 
@@ -404,6 +454,7 @@ def _notice_calendar_description(notice: CrmNotice) -> str:
         for product in products
     )
     parts = [
+        f"Numero interno: {_value(notice.tor_id or notice.number)}",
         f"Cidade/UF: {_value(notice.municipality_name)}/{_value(notice.state)}",
         f"Local: {_value(notice.portal.name if notice.portal else None)}",
         f"Tipo de Licitacao: {_value(notice.modality)}",
@@ -416,17 +467,19 @@ def _notice_calendar_description(notice: CrmNotice) -> str:
         f"Momento da entrega da Habilitacao: {_value(notice.document_delivery_moment)}",
         "",
         f"Resumo dos itens: {_value(notice.bi_item_summary)}",
-        f"Valor total estimado dos itens: {_money(total_value) if total_value else _value(notice.estimated_value)}",
+        f"Valor total estimado dos itens: {_money(total_value or notice.estimated_value)}",
         "",
         f"Risco identificado: {_value(notice.bi_risk_identified)}",
     ]
     for index, product in enumerate(products, start=1):
+        item_number = _value(product.item_number or index)
+        item_title = _value(product.category or product.description)
         parts.extend(
             [
                 "",
-                f"Item {index}: {_value(product.category)}",
+                f"Item {item_number}: {item_title}",
                 f"Lote: {_value(product.lot)}",
-                f"Numero no edital: {_value(product.item_number)}",
+                f"Numero no edital: {item_number}",
                 _value(product.description),
                 f"Quantidade: {_value(product.quantity)}",
                 f"Preco: {_money(product.reference_price)}",
@@ -506,6 +559,7 @@ def _get_notice_calendar_session(db: Session, notice_id: str, current_user: User
             selectinload(CrmNotice.organ),
             selectinload(CrmNotice.portal),
             selectinload(CrmNotice.notice_sessions),
+            selectinload(CrmNotice.notice_products),
         )
         .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
         .first()
@@ -514,7 +568,20 @@ def _get_notice_calendar_session(db: Session, notice_id: str, current_user: User
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
     session = next((item for item in notice.notice_sessions if item.sequence == 1), None)
     if session is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evento de agenda nao encontrado para este edital.")
+        session = _ensure_notice_calendar_event(db, notice, current_user.id)
+        if session is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Defina a data do pregao antes de abrir o agendamento.")
+        db.add(
+            CrmNoticeHistory(
+                tenant_id=current_user.tenant_id,
+                notice_id=notice.id,
+                user_id=current_user.id,
+                action="Agendamento aberto",
+                details={"calendar_session_id": session.id},
+            )
+        )
+        db.commit()
+        db.refresh(session)
     return notice, session
 
 
@@ -547,6 +614,9 @@ def crm_notice_bid_room(
             detail="Edital CRM nao encontrado.",
         )
 
+    portal_name = notice.portal.name if notice.portal else None
+    portal_bid_mode = _portal_bid_mode(portal_name)
+    decrement = _notice_bid_decrement(notice)
     result_by_product = {
         result.notice_product_id: result
         for result in notice.notice_item_results
@@ -561,6 +631,8 @@ def crm_notice_bid_room(
 
     items = []
     for product in notice.notice_products:
+        if getattr(product, "selected_for_dispute", True) is False:
+            continue
         result = result_by_product.get(product.id)
         if result and result.winner_type == CrmItemWinnerType.CANCELLED:
             continue
@@ -581,6 +653,7 @@ def crm_notice_bid_room(
             current_best_bid=current_best_bid,
             reference_price=reference_price,
             minimum_viable_bid=minimum,
+            decrement=decrement,
         )
         catalog = product.catalog_product
         items.append(
@@ -659,6 +732,9 @@ def crm_notice_bid_room(
             "municipality_name": notice.municipality_name,
             "organ": notice.organ.name if notice.organ else None,
             "portal": notice.portal.name if notice.portal else None,
+            "portal_bid": portal_bid_mode,
+            "bid_decrement": decrement,
+            "bid_interval": notice.bi_interval,
             "auction_date": notice.auction_date.isoformat()
             if notice.auction_date
             else None,
@@ -936,10 +1012,101 @@ def crm_match_jobs(
         ]
     }
 
+
+@router.get("/matches/ground-truth/report")
+def crm_match_ground_truth_report(
+    notice_id: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    include_unmarked: bool = Query(default=False),
+    limit: int = Query(default=500, ge=1, le=2000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    return build_match_ground_truth_report(
+        db,
+        current_user,
+        notice_id=notice_id,
+        source=source,
+        limit=limit,
+        include_unmarked=include_unmarked,
+    )
+
+
+@router.get("/matches/attached-products/report")
+def crm_attached_products_report(
+    notice_id: str | None = Query(default=None),
+    limit: int = Query(default=1000, ge=1, le=5000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    return build_attached_products_llm_report(
+        db,
+        current_user,
+        notice_id=notice_id,
+        limit=limit,
+    )
+
+
+@router.get("/matches/attached-products/report.csv")
+def crm_attached_products_report_csv(
+    notice_id: str | None = Query(default=None),
+    limit: int = Query(default=5000, ge=1, le=20000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    report = build_attached_products_llm_report(
+        db,
+        current_user,
+        notice_id=notice_id,
+        limit=limit,
+    )
+    rows = flatten_attached_products_report_items(report)
+    output = StringIO()
+    fieldnames = list(rows[0].keys()) if rows else [
+        "notice_id",
+        "notice_number",
+        "notice_product_id",
+        "item_description",
+        "catalog_product_id",
+        "catalog_name",
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    filename = "attached-products-report.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/notice-products/{notice_product_id}/ground-truth")
+def crm_mark_notice_product_ground_truth(
+    notice_product_id: str,
+    payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    catalog_product_id = payload.get("catalog_product_id")
+    if not catalog_product_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="catalog_product_id obrigatorio.")
+    try:
+        return mark_notice_product_ground_truth(
+            db,
+            current_user,
+            notice_product_id,
+            catalog_product_id,
+            source=payload.get("source") or "manual_confirmed",
+            notes=payload.get("notes"),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
 @router.post("/matches/run-batch")
 def crm_run_match_batch(
     background_tasks: BackgroundTasks,
-    stage: str = Body(..., embed=True, description="Etapa do edital: triage|analysis|documentation|auction|result"),
+    stage: str = Body(..., embed=True, description="Etapa do edital: triage|analysis|documentation|proposal|auction"),
     limit: int = Body(default=50, embed=True, ge=1, le=500),
     use_llm: bool = Body(default=True, embed=True),
     db: Session = Depends(get_db),

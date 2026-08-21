@@ -19,25 +19,23 @@ const api = axios.create({
   baseURL: '/api',            // proxy Vite → http://localhost:8000 em dev
   timeout: 30_000,            // 30s timeout
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 
 // ── Interceptor de REQUEST — injeta JWT ──────────────────────────────────────
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
-
 // ── Interceptor de RESPONSE — trata 401 ─────────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expirado ou inválido → limpa storage e redireciona para login
+      const currentPath = window.location.pathname
+      const requestPath = error.config?.url || ''
+
+      // Login e checagem inicial podem receber 401 sem forcar reload da pagina.
       clearPortalSessionStorage()
-      window.location.href = '/login'
+      if (currentPath !== '/login' && !requestPath.includes('/auth/login')) {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
@@ -50,6 +48,7 @@ export default api
 export const authApi = {
   register: (data)  => api.post('/auth/register', data),
   login:    (data)  => api.post('/auth/login', data),
+  logout:   ()      => api.post('/auth/logout'),
   me:       ()      => api.get('/auth/me'),
   createUser: (data) => api.post('/auth/users', data),
   listUsers:  ()    => api.get('/auth/users'),
@@ -96,12 +95,37 @@ export const reportsApi = {
   executive: () => api.get('/reports/executive'),
 }
 
+export const documentsApi = {
+  listSigners: () => api.get('/documents/signers'),
+  listFiles: (params = {}) => api.get('/documents/files', { params }),
+  uploadFile: (formData) => api.post('/documents/files', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
+  }),
+  uploadVersion: (documentId, formData) => api.post(`/documents/files/${documentId}/versions`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
+  }),
+  attachFile: (documentId, payload) => api.post(`/documents/files/${documentId}/attach`, payload),
+  requestSignature: (documentId, payload) => api.post(`/documents/files/${documentId}/signature-requests`, payload),
+  listSignatureRequests: (params = {}) => api.get('/documents/signature-requests', { params }),
+  signatureAlert: () => api.get('/documents/signature-alert'),
+  dismissSignatureAlert: (requestId) => api.post(`/documents/signature-requests/${requestId}/dismiss`),
+  uploadSigned: (requestId, formData) => api.post(`/documents/signature-requests/${requestId}/signed`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120_000,
+  }),
+  downloadFile: (documentId) => api.get(`/documents/files/${documentId}/download`, { responseType: 'blob' }),
+}
+
 export const crmApi = {
   importSalesProcesses: (formData) =>
     api.post('/crm/imports/sales-processes', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120_000,
     }),
+  attachedProductsReport: (params = {}) =>
+    api.get('/crm/matches/attached-products/report', { params }),
   decisionIntelligence: (noticeId) =>
     api.get(`/crm/notices/${noticeId}/decision-intelligence`),
   runDecisionIntelligence: (noticeId) =>
@@ -110,6 +134,31 @@ export const crmApi = {
 
 export const marketApi = {
   profile: () => api.get('/market/profile'),
+}
+
+export const bidRobotApi = {
+  listSessions: () => api.get('/bid-robot/sessions'),
+  createSession: (payload) => api.post('/bid-robot/sessions', payload),
+  getSession: (sessionId) => api.get(`/bid-robot/sessions/${sessionId}`),
+  updateMarketBid: (sessionId, lotId, currentBestBid) =>
+    api.post(`/bid-robot/sessions/${sessionId}/lots/${lotId}/market-bid`, {
+      current_best_bid: currentBestBid,
+    }),
+  confirmBid: (sessionId, lotId, bidValue, source = 'manual') =>
+    api.post(`/bid-robot/sessions/${sessionId}/lots/${lotId}/confirm`, {
+      bid_value: bidValue,
+      source,
+    }),
+  autoBid: (sessionId, lotId, dryRun = false) =>
+    api.post(`/bid-robot/sessions/${sessionId}/lots/${lotId}/auto-bid`, {
+      dry_run: dryRun,
+    }),
+  addChatMessage: (sessionId, message) =>
+    api.post(`/bid-robot/sessions/${sessionId}/chat`, { message }),
+  syncPortal: (sessionId, lotId, portalSessionUrl) =>
+    api.post(`/bid-robot/sessions/${sessionId}/lots/${lotId}/sync-portal`, {
+      portal_session_url: portalSessionUrl,
+    }),
 }
 
 export const healthApi = {

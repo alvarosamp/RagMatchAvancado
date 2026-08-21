@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useMarket } from '../contexts/MarketContext'
 
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+
 const MODULES = [
   {
     number: '01',
@@ -12,7 +14,7 @@ const MODULES = [
   },
   {
     number: '02',
-    title: 'Alertas inteligentes',
+    title: 'Alertas operacionais',
     description: 'Central de prazos, mudancas, sessoes e oportunidades que exigem acao do time.',
     path: '/controle',
     cta: 'Ver controle',
@@ -52,10 +54,13 @@ const MODULES = [
     checks: ['Kanban', 'Responsaveis', 'Historico comercial'],
   },
 ]
+const VISIBLE_MODULES = AI_FEATURES_ENABLED
+  ? MODULES
+  : MODULES.filter((module) => !['03', '04'].includes(module.number))
 
 const DIFFERENTIATORS = [
-  'Uma assinatura para captacao, analise, proposta e acompanhamento.',
-  'Diferencial central em compatibilidade edital x catalogo, nao apenas resumo generico.',
+  'Uma assinatura para captacao, proposta e acompanhamento.',
+  'Fluxo centralizado para organizar oportunidades, documentos e disputa.',
   'Fluxo desenhado para decidir rapido se vale participar e quais produtos ofertar.',
 ]
 
@@ -137,7 +142,7 @@ export default function Suite() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {MODULES.map((module) => <ModuleCard key={module.number} module={module} />)}
+        {VISIBLE_MODULES.map((module) => <ModuleCard key={module.number} module={module} />)}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">

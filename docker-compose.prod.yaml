@@ -20,17 +20,30 @@ services:
     restart: unless-stopped
     volumes:
       - ./data:/data
-    ports:
-      - "8000:8000"
+      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+    expose:
+      - "8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: llama3.2:1b
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REGISTER_ENABLED: ${REGISTER_ENABLED:-0}
+      APP_ENV: ${APP_ENV:-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-access_token}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-1}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      AUTH_TOKEN_IN_BODY: ${AUTH_TOKEN_IN_BODY:-0}
+      MAX_PDF_UPLOAD_BYTES: ${MAX_PDF_UPLOAD_BYTES:-52428800}
+      MAX_DOCUMENT_UPLOAD_BYTES: ${MAX_DOCUMENT_UPLOAD_BYTES:-52428800}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TOR_DOCUMENTS_ROOT: /documents
     depends_on:
       db:
         condition: service_healthy
@@ -46,33 +59,11 @@ services:
     depends_on:
       - api
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  ollama-setup:
-    image: ollama/ollama:latest
-    depends_on:
-      - ollama
-    restart: "no"
-    entrypoint: >
-      /bin/sh -c "
-        sleep 10 &&
-        ollama pull nomic-embed-text &&
-        ollama pull llama3.2:1b
-      "
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-
   mlflow:
     image: alvarocareli/ragmatch-mlflow:latest
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
@@ -90,5 +81,4 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:
   mlflow_data:

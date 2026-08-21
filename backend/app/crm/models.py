@@ -32,6 +32,7 @@ class CrmNoticeStage(str, enum.Enum):
     TRIAGE = "triage"
     ANALYSIS = "analysis"
     DOCUMENTATION = "documentation"
+    PROPOSAL = "proposal"
     AUCTION = "auction"
     RESULT = "result"
 
@@ -181,14 +182,18 @@ class CrmCatalogProduct(Base):
     category = Column(String)
     brand = Column(String)
     model = Column(String)
+    manufacturer_part_number = Column(String)
     specification = Column(Text)
     sku = Column(String)
     keywords = Column(Text)
     unit = Column(String)
     cost = Column(Float, nullable=False, default=0.0)
+    min_price = Column(Float)
     tax_percent = Column(Float, nullable=False, default=0.0)
     margin_percent = Column(Float, nullable=False, default=0.0)
     notes = Column(Text)
+    lpu_version = Column(String)
+    lpu_drive_url = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -198,7 +203,7 @@ class CrmCatalogProduct(Base):
     notice_product_matches = relationship("CrmNoticeProductMatch", back_populates="catalog_product", cascade="all, delete-orphan")
 
     @property
-    def min_price(self) -> float:
+    def computed_min_price(self) -> float:
         return round((self.cost or 0.0) * (1 + (self.tax_percent or 0.0) / 100) * (1 + (self.margin_percent or 0.0) / 100), 4)
 
 
@@ -343,9 +348,16 @@ class CrmNoticeProduct(Base):
     unit_price = Column(Float)
     reference_price = Column(Float)
     reference_total_price = Column(Float)
+    selected_for_dispute = Column(Boolean, nullable=False, default=True)
     notes = Column(Text)
     sort_order = Column(Integer, nullable=False, default=0)
     catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="SET NULL"), index=True)
+    catalog_match_source = Column(String)
+    catalog_match_confirmed_by = Column(Integer, ForeignKey("users.id"))
+    catalog_match_confirmed_at = Column(DateTime)
+    catalog_match_model_version = Column(String)
+    catalog_match_notes = Column(Text)
+    catalog_lpu_version = Column(String)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     notice = relationship("CrmNotice", back_populates="notice_products")
@@ -374,6 +386,7 @@ class CrmNoticeDocument(Base):
     notes = Column(Text)
     source_url = Column(Text)
     source_kind = Column(String)
+    attached_document_file_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
     is_specific = Column(Boolean, nullable=False, default=False)
     sort_order = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

@@ -12,7 +12,9 @@
 #
 # =============================================================================
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -34,6 +36,44 @@ from app.auth.dependencies import get_current_user, require_role
 from app.logs.config import logger
 
 router = APIRouter(prefix="/auth", tags=["autenticação"])
+AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
+COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").lower()
+
+
+def _register_enabled() -> bool:
+    return os.getenv("REGISTER_ENABLED", "1").lower() in {"1", "true", "yes", "sim"}
+
+
+def _token_body_enabled() -> bool:
+    default = "0" if os.getenv("APP_ENV", "development").lower() in {"prod", "production"} else "1"
+    return os.getenv("AUTH_TOKEN_IN_BODY", default).lower() in {"1", "true", "yes", "sim"}
+
+
+def _cookie_secure() -> bool:
+    default = "1" if os.getenv("APP_ENV", "development").lower() in {"prod", "production"} else "0"
+    return os.getenv("AUTH_COOKIE_SECURE", default).lower() in {"1", "true", "yes", "sim"}
+
+
+def _set_auth_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+        httponly=True,
+        secure=_cookie_secure(),
+        samesite=COOKIE_SAMESITE,  # type: ignore[arg-type]
+    )
+
+
+def _clear_auth_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        path="/",
+        secure=_cookie_secure(),
+        samesite=COOKIE_SAMESITE,  # type: ignore[arg-type]
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -41,7 +81,7 @@ router = APIRouter(prefix="/auth", tags=["autenticação"])
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: RegisterRequest, response: Response, db: Session = Depends(get_db)):
     """
     Registra uma nova empresa (tenant) e cria o usuário administrador.
 
@@ -64,6 +104,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             "full_name": "João Silva"
         }
     """
+    if not _register_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cadastro publico desativado neste ambiente.",
+        )
+
     # Verifica se o slug já está em uso
     tenant_existente = db.query(Tenant).filter(Tenant.slug == payload.tenant_slug).first()
     if tenant_existente:
@@ -110,9 +156,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         user_id     = user.id,
         role        = user.role,
     )
+    _set_auth_cookie(response, token)
 
     return TokenResponse(
-        access_token = token,
+        access_token = token if _token_body_enabled() else "",
         expires_in   = ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         tenant_slug  = tenant.slug,
         role         = user.role,
@@ -124,7 +171,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
     """
     Autentica o usuário e retorna um JWT.
 
@@ -182,9 +229,10 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         user_id     = user.id,
         role        = user.role,
     )
+    _set_auth_cookie(response, token)
 
     return TokenResponse(
-        access_token = token,
+        access_token = token if _token_body_enabled() else "",
         expires_in   = ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         tenant_slug  = user.tenant.slug,
         role         = user.role,
@@ -194,6 +242,12 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /auth/me — dados do usuário atual
 # ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/logout")
+def logout(response: Response):
+    _clear_auth_cookie(response)
+    return {"message": "Sessao encerrada."}
+
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):

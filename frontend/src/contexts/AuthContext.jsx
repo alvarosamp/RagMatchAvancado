@@ -23,9 +23,6 @@ export function AuthProvider({ children }) {
 
   // Ao montar, verifica se há token salvo e carrega o usuário
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (!token) { setLoading(false); return }
-
     authApi.me()
       .then(res => setUser(res.data))
       .catch(() => clearPortalSessionStorage())
@@ -34,9 +31,9 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const res = await authApi.login({ email, password })
-    const { access_token, tenant_slug, role } = res.data
+    const { tenant_slug, role } = res.data
 
-    localStorage.setItem('access_token', access_token)
+    localStorage.removeItem('access_token')
     localStorage.setItem('tenant_slug',  tenant_slug)
     localStorage.setItem('user_role',    role)
 
@@ -48,9 +45,9 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const res = await authApi.register(payload)
-    const { access_token, tenant_slug, role } = res.data
+    const { tenant_slug, role } = res.data
 
-    localStorage.setItem('access_token', access_token)
+    localStorage.removeItem('access_token')
     localStorage.setItem('tenant_slug',  tenant_slug)
     localStorage.setItem('user_role',    role)
 
@@ -59,7 +56,8 @@ export function AuthProvider({ children }) {
     return meRes.data
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await authApi.logout().catch(() => null)
     clearPortalSessionStorage()
     setUser(null)
     window.location.href = '/login'

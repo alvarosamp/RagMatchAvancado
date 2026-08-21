@@ -20,7 +20,7 @@ import os
 import re
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -30,6 +30,7 @@ from app.auth.models import User
 from app.auth.dependencies import get_current_user, require_role
 from app.jobs.queue import JobQueue
 from app.logs.config import logger
+from app.core.features import require_ai_enabled
 from app.services.edital_analysis import (
     build_analysis_payload,
     extract_items_from_edital_text,
@@ -40,6 +41,8 @@ from app.services.document_identity import content_hash
 
 router = APIRouter(prefix="/editais", tags=["editais"])
 _queue = JobQueue()
+MAX_PDF_UPLOAD_BYTES = int(os.getenv("MAX_PDF_UPLOAD_BYTES", str(50 * 1024 * 1024)))
+PDF_MAGIC = b"%PDF-"
 
 
 class JobCreatedResponse(BaseModel):
@@ -74,15 +77,19 @@ async def upload_edital(
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
 ):
+    require_ai_enabled()
     """
     Recebe o PDF e cria job assíncrono (OCR → Chunk → Embed).
     Retorna imediatamente com job_id (HTTP 202 Accepted).
     Acompanhe em: GET /jobs/{job_id}
     """
-    if not file.filename.lower().endswith(".pdf"):
+    filename = file.filename or ""
+    if not filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
-    pdf_bytes = await file.read()
+    pdf_bytes = await _read_upload_with_limit(file, MAX_PDF_UPLOAD_BYTES)
+    if not pdf_bytes.startswith(PDF_MAGIC):
+        raise HTTPException(status_code=400, detail="Arquivo invalido: o conteudo nao parece ser um PDF.")
     tenant_id = current_user.tenant.slug
     source_hash = content_hash(pdf_bytes)
 
@@ -122,6 +129,23 @@ async def upload_edital(
         job_id  = job_id,
         message = f"PDF '{file.filename}' recebido. Acompanhe em GET /jobs/{job_id}",
     )
+
+
+async def _read_upload_with_limit(file: UploadFile, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"Arquivo excede o limite de {max_bytes // (1024 * 1024)} MB.",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 # ── Requisitos (síncrono — rápido) ───────────────────────────────────────────
@@ -164,6 +188,7 @@ def match_edital(
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
 ):
+    require_ai_enabled()
     """
     Cria job assíncrono de matching (RAG + Heurísticas + LLM).
     Retorna imediatamente com job_id (HTTP 202 Accepted).
@@ -448,6 +473,7 @@ def chat_edital(
     current_user: User    = Depends(get_current_user),
     db:           Session = Depends(get_db),
 ):
+    require_ai_enabled()
     """
     Mini-RAG: responde perguntas sobre um edital específico.
 
