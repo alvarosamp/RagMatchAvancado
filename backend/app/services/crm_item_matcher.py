@@ -431,20 +431,31 @@ def build_attached_products_llm_report(
     notices = {item["notice"]["id"] for item in items if item.get("notice", {}).get("id")}
     confirmed = sum(1 for item in items if item["attachment"]["source"])
     with_match_suggestion = sum(1 for item in items if item["match_evidence"]["attached_match"] is not None)
+    discarded = sum(1 for item in items if item["notice"].get("is_discarded"))
+    training_labels = defaultdict(int)
+    for item in items:
+        training_labels[item["training"]["label"]] += 1
 
     return {
         "report_type": "crm_attached_products_llm_context",
         "summary": {
             "attached_items": len(items),
             "notices_count": len(notices),
+            "discarded_notices_included": len({item["notice"]["id"] for item in items if item["notice"].get("is_discarded")}),
+            "discarded_items_included": discarded,
             "confirmed_or_sourced_items": confirmed,
             "items_with_match_evidence": with_match_suggestion,
+            "training_labels": dict(training_labels),
             "limit": limit,
         },
         "llm_task": {
             "objective": (
                 "Avaliar se cada produto do catalogo anexado ao item do edital atende a descricao, "
                 "caracteristicas tecnicas, quantidades, prazos e restricoes comerciais do edital."
+            ),
+            "coverage": (
+                "Inclui editais ativos, encerrados, ganhos, perdidos e descartados que possuam "
+                "um produto do catalogo vinculado. O resultado comercial do edital nao define o rotulo de match."
             ),
             "expected_output": [
                 "veredito por item: atende, atende com ressalvas ou nao atende",
@@ -473,6 +484,7 @@ def flatten_attached_products_report_items(report: dict[str, Any]) -> list[dict[
         catalog = item.get("attached_catalog_product") or {}
         attachment = item.get("attachment") or {}
         evidence = item.get("match_evidence") or {}
+        training = item.get("training") or {}
         rows.append({
             "notice_id": notice.get("id"),
             "notice_number": notice.get("number"),
@@ -484,6 +496,9 @@ def flatten_attached_products_report_items(report: dict[str, Any]) -> list[dict[
             "municipality_name": notice.get("municipality_name"),
             "state": notice.get("state"),
             "stage": notice.get("stage"),
+            "notice_outcome": notice.get("outcome"),
+            "notice_outcome_reason": notice.get("outcome_reason"),
+            "notice_is_discarded": notice.get("is_discarded"),
             "notice_product_id": notice_product.get("id"),
             "item_number": notice_product.get("item_number"),
             "lot": notice_product.get("lot"),
@@ -506,6 +521,9 @@ def flatten_attached_products_report_items(report: dict[str, Any]) -> list[dict[
             "attachment_source": attachment.get("source"),
             "attachment_confirmed_at": attachment.get("confirmed_at"),
             "attachment_model_version": attachment.get("model_version"),
+            "training_label": training.get("label"),
+            "training_use": training.get("recommended_use"),
+            "training_review_required": training.get("review_required"),
             "attached_product_rank": evidence.get("attached_product_rank"),
             "attached_product_score": evidence.get("attached_product_score"),
             "suggestions_count": evidence.get("suggestions_count"),
@@ -777,6 +795,8 @@ def _attached_products_llm_row(product: CrmNoticeProduct) -> dict[str, Any]:
     best_match = matches[0] if matches else None
     notice = product.notice
     catalog = product.catalog_product
+    training = _training_metadata(product.catalog_match_source)
+    outcome = _enum_value(notice.outcome) if notice else None
     return {
         "notice": {
             "id": notice.id if notice else None,
@@ -792,6 +812,9 @@ def _attached_products_llm_row(product: CrmNoticeProduct) -> dict[str, Any]:
             "auction_date": notice.auction_date.isoformat() if notice and notice.auction_date else None,
             "estimated_value": notice.estimated_value if notice else None,
             "stage": notice.stage.value if notice and notice.stage else None,
+            "outcome": outcome,
+            "outcome_reason": notice.outcome_reason if notice else None,
+            "is_discarded": outcome == "not_pursued",
             "decision_recommendation": notice.decision_recommendation if notice else None,
             "decision_score": notice.decision_score if notice else None,
             "bi_item_summary": notice.bi_item_summary if notice else None,
@@ -834,6 +857,7 @@ def _attached_products_llm_row(product: CrmNoticeProduct) -> dict[str, Any]:
             "lpu_version": product.catalog_lpu_version,
             "notes": product.catalog_match_notes,
         },
+        "training": training,
         "match_evidence": {
             "attached_match": _serialize_match(attached_match) if attached_match else None,
             "best_match": _serialize_match(best_match) if best_match else None,
@@ -842,6 +866,31 @@ def _attached_products_llm_row(product: CrmNoticeProduct) -> dict[str, Any]:
             "suggestions_count": len(matches),
         },
     }
+
+
+def _training_metadata(source: str | None) -> dict[str, Any]:
+    """Classifica a confianca do vinculo sem excluir editais por resultado."""
+    if source in {"manual_confirmed", "match_confirmed"}:
+        return {
+            "label": "positive_confirmed",
+            "recommended_use": "train_positive",
+            "review_required": False,
+        }
+    if source == "manual_kit":
+        return {
+            "label": "positive_kit_review",
+            "recommended_use": "review_before_training",
+            "review_required": True,
+        }
+    return {
+        "label": "unverified_link",
+        "recommended_use": "review_before_training",
+        "review_required": True,
+    }
+
+
+def _enum_value(value: Any) -> Any:
+    return value.value if hasattr(value, "value") else value
 
 
 def _serialize_catalog_product_for_llm(product: CrmCatalogProduct | None) -> dict[str, Any] | None:

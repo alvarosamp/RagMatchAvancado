@@ -1,0 +1,46 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{url}
+
+\title{Constraint-Guided Extraction of Structured Items from Public Procurement Award Minutes}
+\author{\IEEEauthorblockN{Anonymous Author}
+\IEEEauthorblockA{AI Engineering Practice\\
+Replace with author name, affiliation, city, country, and email before submission}}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Award minutes and procurement records contain valuable market and supplier information, yet their PDFs frequently mix tables, headers, footers, scans, and page breaks. This paper presents a constraint-guided extraction pipeline implemented for Brazilian procurement minutes. The pipeline uses layout-aware document conversion, normalization before semantic extraction, chunked LLM calls with JSON output, and post-processing constraints for lot--item relations and duplicate removal. A page-break repair mechanism reconnects an item identifier at the end of one page to an orphaned description at the beginning of the next. The paper contributes a practical decomposition of failure modes and a benchmark protocol for validating item-level extraction. The description is based on the implemented pipeline and intentionally does not report unsupported accuracy numbers.
+\end{abstract}
+\begin{IEEEkeywords}
+document intelligence, information extraction, public procurement, layout-aware parsing, large language models
+\end{IEEEkeywords}
+
+\section{Introduction}
+Public procurement award minutes are a rich but difficult source of structured information: item number, product description, quantity, unit, price, supplier, lot, and contract metadata. Manual transcription is slow and poorly scalable. Conventional OCR produces text but can lose the structural relation required to answer which lot an item belongs to.
+
+This paper studies an implemented extraction pipeline for Portuguese procurement minutes. The design treats LLM extraction as one stage of a constrained document-processing workflow, not as a direct replacement for parsing. Layout-aware conversion, normalization, local repairs, schema validation, and deduplication provide the structure around the model. This is especially important when a table row crosses a page boundary.
+
+\section{Pipeline}
+The pipeline begins with PDF conversion and layout-aware text extraction using Docling~\cite{deep2025docling}. The parser logs page-level chunk counts, omits repeated labels such as page headers and footers, normalizes marker placement, and records timing diagnostics. These controls help detect silent losses before a language model is called.
+
+Normalized text is split into bounded chunks and submitted to an LLM with a JSON-oriented schema. Chunk results are merged into a single document record with document metadata and a list of procurement items. A model can provide semantic normalization and interpret varied textual formats, but it is not trusted as the sole authority for identifiers or sequence constraints. This design follows the view that document understanding requires both textual and layout information~\cite{xu2020layoutlm, xu2022layoutlmv3}.
+
+\section{Constraint-Guided Repairs}
+The most concrete failure handled by the implementation is a table row divided by pagination. A first page may end with an item label, unit, and brand, while the next page begins with an unnumbered description. The pre-LLM repair scans for this pattern and injects the unresolved identifier before the orphaned description. The extraction prompt separately instructs the model to infer sequence only when document context supports it.
+
+After extraction, the pipeline removes lot-header pseudo-items, infers lot-to-item mappings from document context, appends the inferred lot to item observations, and deduplicates entries by normalized description. These steps are explicit rules because they concern document consistency. The final output is JSON and can be exported to a consolidated tabular representation with document metadata repeated per item for downstream analysis.
+
+\section{Experimental Design}
+A defensible evaluation should sample minutes across native PDFs, scanned PDFs, short single-page records, multi-page tables, and issuing organizations. Each document must receive a human gold record with item boundaries and normalized fields. Evaluation should measure document-level metadata exact match; item-level precision, recall, and F1 after bipartite item matching; field-level exact and normalized match; duplicate rate; and page-break recovery recall.
+
+Ablations should compare raw OCR plus LLM, layout-aware conversion plus LLM, the pipeline without page-break repair, and the complete workflow. The error taxonomy should distinguish conversion loss, row-split loss, item-number hallucination, lot assignment error, header contamination, and duplicate generation.
+
+\section{Conclusion}
+Constraint-guided extraction combines layout-aware conversion, schema-constrained LLM extraction, page-break repair, lot inference, and deduplication. The architecture provides a reproducible response to common document failures while preserving a path to empirical measurement. The next research step is a labeled benchmark of procurement minutes and a comparison with document-information-extraction baselines.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

@@ -1,0 +1,46 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{url}
+
+\title{Operationalizing Trustworthy Procurement AI: MLOps, Uncertainty Controls, and Auditability in a Multi-Tenant Platform}
+\author{\IEEEauthorblockN{Anonymous Author}
+\IEEEauthorblockA{AI Engineering Practice\\
+Replace with author name, affiliation, city, country, and email before submission}}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+AI systems used in procurement must be maintained as decision-support services rather than delivered as isolated models. This paper presents the operational design of a multi-tenant procurement intelligence platform that integrates document ingestion, hybrid technical matching, asynchronous jobs, experiment tracking, distribution-based quality checks, and score-drift monitoring. The paper focuses on controls implemented or directly supported by the system architecture: run-level traceability through MLflow, explicit REVIEW outcomes for uncertain cases, non-blocking observability, score-distribution alerts, and per-tenant access control. We distinguish operational signals from ground-truth model quality. The contribution is a deployment blueprint and validation plan for responsible operation, not a claim that proxy health metrics establish accuracy.
+\end{abstract}
+\begin{IEEEkeywords}
+MLOps, trustworthy AI, procurement intelligence, drift monitoring, auditability, multi-tenant systems
+\end{IEEEkeywords}
+
+\section{Introduction}
+Machine-learning projects often fail after initial deployment because model code, data pipelines, monitoring, and operational responsibility are disconnected~\cite{sculley2015debt}. Procurement intelligence sharpens this problem: a matching score may influence a decision to pursue a tender, but its quality depends on changing catalogs, source documents, embedding models, prompts, and thresholds. A deployment needs observability and escalation paths as much as it needs a model.
+
+This paper presents the operational architecture of an implemented procurement platform. The platform exposes asynchronous PDF processing and matching through a REST API, isolates tenant data with authentication and role-based access control, records matching batches as MLflow runs, and monitors score distributions over time. The emphasis is on making uncertainty and changes visible to operators rather than implying that an automated score alone is trustworthy.
+
+\section{Platform Architecture}
+The service architecture comprises a React client, a FastAPI application, PostgreSQL with pgvector, local embedding and language-model services, asynchronous workers, and MLflow. A user uploads a tender PDF, receives a job identifier, and can inspect progress and results without tying long-running document processing to an HTTP request. Exports preserve rankings, item-level scores, and explanations for offline review.
+
+The matching engine treats MLOps as a non-critical dependency: observability failures are caught and logged so that a temporary tracking outage does not make the core processing service fail. This graceful-degradation choice improves availability, but it carries an operational obligation: runs that could not be logged should be flagged for later reconciliation.
+
+\section{Traceability and Uncertainty}
+After a matching batch, the platform logs model identity, execution time, score statistics, class proportions, and artifacts through MLflow~\cite{zaharia2018mlflow}. The evaluator produces distribution summaries including mean, median, minimum, maximum, standard deviation, and the percentage of results in the REVIEW interval. It can flag an unusually high mean, low variance, or excessive uncertainty. A drift monitor stores score histories and compares recent windows.
+
+These indicators are useful operational signals, not accuracy evidence. A concentrated distribution could arise from a model issue, a homogeneous tender, or catalog bias. Likewise, absence of observed score drift does not prove stable correctness. Trustworthy operation requires a labeled audit sample and reviewer decisions linked to each recommendation.
+
+\section{Risk Controls and Validation}
+The proposed control model has four layers: access controls separate tenants; data controls retain upload provenance, parsed text, and exported decisions; model controls capture prompt and model configuration and prevent critical physical contradictions from being masked by a high semantic score; operational controls track latency, failures, distribution alerts, and drift. The NIST AI RMF~\cite{nist2023airmf} provides a useful framing to govern, map, measure, and manage these risks.
+
+A release gate should combine software, data, and model evidence. Software checks include unit tests for critical-failure propagation, missing evidence, authorization boundaries, and export integrity. Data checks include schema validity, duplicate rates, document conversion coverage, and catalog freshness. Model checks require a continuously refreshed adjudicated set with class-balanced macro-F1, critical-failure recall, calibration, evidence citation accuracy, and reviewer override rate.
+
+\section{Conclusion}
+Responsible procurement AI is an operational property. The described platform combines traceability, uncertainty labels, drift-oriented monitoring, and tenant isolation with a hybrid matching engine. Its MLOps signals improve inspectability, but empirical quality must be demonstrated with labeled data and human review. The blueprint supports a transition from a prototype matcher to an accountable decision-support service.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}
