@@ -472,14 +472,16 @@ def _notice_calendar_description(notice: CrmNotice) -> str:
         f"Risco identificado: {_value(notice.bi_risk_identified)}",
     ]
     for index, product in enumerate(products, start=1):
-        item_number = _value(product.item_number or index)
+        raw = product.raw_payload if isinstance(product.raw_payload, dict) else {}
+        item_number = _value(product.item_number or raw.get("numero_item") or raw.get("numero_item_edital") or index)
+        edital_item_number = _value(raw.get("numero_item_edital") or raw.get("numero_item") or product.item_number or index)
         item_title = _value(product.category or product.description)
         parts.extend(
             [
                 "",
                 f"Item {item_number}: {item_title}",
                 f"Lote: {_value(product.lot)}",
-                f"Numero no edital: {item_number}",
+                f"Numero no edital: {edital_item_number}",
                 _value(product.description),
                 f"Quantidade: {_value(product.quantity)}",
                 f"Preco: {_money(product.reference_price)}",
@@ -566,22 +568,22 @@ def _get_notice_calendar_session(db: Session, notice_id: str, current_user: User
     )
     if not notice:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
-    session = next((item for item in notice.notice_sessions if item.sequence == 1), None)
+    session = _ensure_notice_calendar_event(db, notice, current_user.id)
     if session is None:
-        session = _ensure_notice_calendar_event(db, notice, current_user.id)
-        if session is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Defina a data do pregao antes de abrir o agendamento.")
-        db.add(
-            CrmNoticeHistory(
-                tenant_id=current_user.tenant_id,
-                notice_id=notice.id,
-                user_id=current_user.id,
-                action="Agendamento aberto",
-                details={"calendar_session_id": session.id},
-            )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Defina a data do pregao antes de abrir o agendamento.")
+    # Regera titulo e resumo a cada exportacao: editais antigos tambem passam a
+    # usar o padrao corporativo completo quando enviados para a agenda.
+    db.add(
+        CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=notice.id,
+            user_id=current_user.id,
+            action="Resumo de agenda atualizado",
+            details={"calendar_session_id": session.id},
         )
-        db.commit()
-        db.refresh(session)
+    )
+    db.commit()
+    db.refresh(session)
     return notice, session
 
 

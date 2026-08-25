@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.models import Tenant, User
 from app.crm.models import CrmNotice
+from app.crm.models import CrmNoticeDocument
 from app.db.models import (
     DocumentFile,
     DocumentSignatureRequest,
@@ -189,6 +190,38 @@ def get_tenant_signature_request(db: Session, tenant_id: int, request_id: str) -
     if request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitacao nao encontrada.")
     return request
+
+
+def delete_document_file(db: Session, *, tenant_id: int, document_id: str) -> None:
+    """Remove um arquivo da biblioteca e seus vinculos sem deixar referencias quebradas."""
+    document = get_tenant_document_file(db, tenant_id, document_id)
+
+    # Um arquivo pode estar marcado em um item do checklist ou ser o resultado
+    # de uma assinatura. Os dois vinculos devem ser desfeitos antes da exclusao.
+    db.query(CrmNoticeDocument).filter(
+        CrmNoticeDocument.tenant_id == tenant_id,
+        CrmNoticeDocument.attached_document_file_id == document.id,
+    ).update({CrmNoticeDocument.attached_document_file_id: None}, synchronize_session=False)
+    db.query(DocumentSignatureRequest).filter(
+        DocumentSignatureRequest.tenant_id == tenant_id,
+        DocumentSignatureRequest.signed_document_id == document.id,
+    ).update({DocumentSignatureRequest.signed_document_id: None}, synchronize_session=False)
+    db.query(DocumentFile).filter(
+        DocumentFile.tenant_id == tenant_id,
+        DocumentFile.parent_document_id == document.id,
+    ).update({DocumentFile.parent_document_id: None}, synchronize_session=False)
+
+    path = Path(document.storage_path)
+    db.delete(document)
+    db.flush()
+    # A exclusao fisica e feita somente depois de o banco aceitar a operacao.
+    # O caminho vem do registro persistido, nunca de entrada do usuario.
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        # O registro nao deve reaparecer caso um antivirus/lock temporario impeça
+        # a limpeza do arquivo; a proxima manutencao podera removê-lo.
+        pass
 
 
 def serialize_document_file(document: DocumentFile) -> dict:

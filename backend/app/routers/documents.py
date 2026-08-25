@@ -18,6 +18,7 @@ from app.db.session import get_db
 from app.services.document_files import (
     attach_document_to_targets,
     complete_signature_request,
+    delete_document_file,
     create_signature_request,
     get_tenant_document_file,
     get_tenant_signature_request,
@@ -232,6 +233,16 @@ def update_document_file(
     db.commit()
     db.refresh(document)
     return serialize_document_file(document)
+
+
+@router.delete("/files/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    document_id: str,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    delete_document_file(db, tenant_id=current_user.tenant_id, document_id=document_id)
+    db.commit()
 
 
 @router.get("/files/{document_id}/download")
