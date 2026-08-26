@@ -58,6 +58,7 @@ class AttachDocumentRequest(BaseModel):
 class SignatureRequestPayload(BaseModel):
     signer_id: int
     message: str | None = None
+    archive_signed_result: bool = True
 
 
 class UpdateDocumentFileRequest(BaseModel):
@@ -197,6 +198,7 @@ async def upload_document_file(
     catalog_product_id: str | None = Form(default=None),
     notes: str | None = Form(default=None),
     expires_at: datetime | None = Form(default=None),
+    is_repository_signed_archive: bool = Form(default=False),
     current_user: User = Depends(require_role("admin", "editor")),
     db: Session = Depends(get_db),
 ):
@@ -216,6 +218,7 @@ async def upload_document_file(
             catalog_product_id=catalog_product_id,
             notes=notes,
             expires_at=expires_at,
+            is_repository_signed_archive=is_repository_signed_archive,
         )
         if crm_notice_id or edital_id is not None:
             attach_document_to_targets(
@@ -375,6 +378,7 @@ def request_document_signature(
         requester_id=current_user.id,
         signer_id=payload.signer_id,
         message=payload.message,
+        archive_signed_result=payload.archive_signed_result,
     )
     db.commit()
     db.refresh(request)

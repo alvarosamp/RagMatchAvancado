@@ -42,6 +42,7 @@ def store_document_file(
     notes: str | None = None,
     expires_at: datetime | None = None,
     status_value: str = "active",
+    is_repository_signed_archive: bool = False,
 ) -> DocumentFile:
     safe_name = _safe_filename(original_filename)
     parent = _get_parent_document(db, tenant_id, parent_document_id)
@@ -78,6 +79,7 @@ def store_document_file(
         size_bytes=size_bytes,
         category=(category or None),
         status=status_value,
+        is_repository_signed_archive=is_repository_signed_archive,
         version=version,
         parent_document_id=parent_root_id,
         catalog_product_id=catalog_product_id or (parent.catalog_product_id if parent else None),
@@ -119,6 +121,7 @@ def create_signature_request(
     requester_id: int,
     signer_id: int,
     message: str | None = None,
+    archive_signed_result: bool = True,
 ) -> DocumentSignatureRequest:
     document = get_tenant_document_file(db, tenant_id, document_id)
     signer = db.query(User).filter(User.id == signer_id, User.tenant_id == tenant_id).first()
@@ -142,6 +145,7 @@ def create_signature_request(
         requester_id=requester_id,
         signer_id=signer_id,
         message=message,
+        archive_signed_result=archive_signed_result,
     )
     document.status = "signature_pending"
     db.add(request)
@@ -182,6 +186,12 @@ def complete_signature_request(
         status_value="signed_result",
     )
     request.signed_document_id = signed.id
+    signed.is_repository_signed_archive = bool(request.archive_signed_result)
+    if not request.archive_signed_result:
+        db.query(CrmNoticeDocument).filter(
+            CrmNoticeDocument.tenant_id == tenant_id,
+            CrmNoticeDocument.attached_document_file_id == request.document_id,
+        ).update({CrmNoticeDocument.attached_document_file_id: signed.id}, synchronize_session=False)
     request.status = DocumentSignatureStatus.SIGNED
     request.document.status = "signed"
     request.requester_notification_dismissed = False
@@ -255,6 +265,7 @@ def serialize_document_file(document: DocumentFile) -> dict:
         "version": document.version,
         "parent_document_id": document.parent_document_id,
         "catalog_product_id": document.catalog_product_id,
+        "is_repository_signed_archive": bool(getattr(document, "is_repository_signed_archive", False)),
         "crm_notice_id": document.crm_notice_id,
         "edital_id": document.edital_id,
         "uploaded_by": document.uploaded_by,
@@ -273,6 +284,7 @@ def serialize_signature_request(request: DocumentSignatureRequest) -> dict:
         "id": request.id,
         "status": request.status.value if hasattr(request.status, "value") else request.status,
         "message": request.message,
+        "archive_signed_result": bool(request.archive_signed_result),
         "requester_id": request.requester_id,
         "signer_id": request.signer_id,
         "signer_notification_dismissed": request.signer_notification_dismissed,
