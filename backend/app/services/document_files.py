@@ -11,8 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.models import Tenant, User
-from app.crm.models import CrmNotice
-from app.crm.models import CrmNoticeDocument
+from app.crm.models import CrmCatalogProduct, CrmNotice, CrmNoticeDocument, CrmNoticeProductDatasheet
 from app.db.models import (
     DocumentFile,
     DocumentSignatureRequest,
@@ -39,17 +38,21 @@ def store_document_file(
     crm_notice_id: str | None = None,
     edital_id: int | None = None,
     parent_document_id: str | None = None,
+    catalog_product_id: str | None = None,
     notes: str | None = None,
     expires_at: datetime | None = None,
     status_value: str = "active",
 ) -> DocumentFile:
     safe_name = _safe_filename(original_filename)
     parent = _get_parent_document(db, tenant_id, parent_document_id)
+    parent_root_id = _version_root_id(db, tenant_id, parent.id) if parent else None
+    if catalog_product_id:
+        _get_tenant_catalog_product(db, tenant_id, catalog_product_id)
     if crm_notice_id:
         _get_tenant_notice(db, tenant_id, crm_notice_id)
     if edital_id is not None:
         _get_tenant_edital(db, tenant_id, edital_id)
-    version = _next_version(db, tenant_id, parent.id if parent else None)
+    version = _next_version(db, tenant_id, parent_root_id)
     document_id = str(uuid.uuid4())
     stored_filename = f"{document_id}_{safe_name}"
     tenant_dir = DOCUMENT_LIBRARY_ROOT / f"tenant_{tenant_id}"
@@ -76,7 +79,8 @@ def store_document_file(
         category=(category or None),
         status=status_value,
         version=version,
-        parent_document_id=parent.id if parent else None,
+        parent_document_id=parent_root_id,
+        catalog_product_id=catalog_product_id or (parent.catalog_product_id if parent else None),
         crm_notice_id=crm_notice_id or None,
         edital_id=edital_id,
         uploaded_by=user_id,
@@ -84,6 +88,9 @@ def store_document_file(
         expires_at=expires_at,
     )
     db.add(document)
+    db.flush()
+    if document.catalog_product_id:
+        sync_catalog_datasheet_links(db, tenant_id=tenant_id, catalog_product_id=document.catalog_product_id, document=document)
     return document
 
 
@@ -117,6 +124,17 @@ def create_signature_request(
     signer = db.query(User).filter(User.id == signer_id, User.tenant_id == tenant_id).first()
     if signer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assinante nao encontrado.")
+    existing = (
+        db.query(DocumentSignatureRequest)
+        .filter(
+            DocumentSignatureRequest.tenant_id == tenant_id,
+            DocumentSignatureRequest.document_id == document.id,
+            DocumentSignatureRequest.status == DocumentSignatureStatus.PENDING,
+        )
+        .first()
+    )
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Este documento ja possui uma assinatura pendente.")
     request = DocumentSignatureRequest(
         id=str(uuid.uuid4()),
         tenant_id=tenant_id,
@@ -166,6 +184,7 @@ def complete_signature_request(
     request.signed_document_id = signed.id
     request.status = DocumentSignatureStatus.SIGNED
     request.document.status = "signed"
+    request.requester_notification_dismissed = False
     request.signed_at = datetime.utcnow()
     return request
 
@@ -235,6 +254,7 @@ def serialize_document_file(document: DocumentFile) -> dict:
         "status": document.status,
         "version": document.version,
         "parent_document_id": document.parent_document_id,
+        "catalog_product_id": document.catalog_product_id,
         "crm_notice_id": document.crm_notice_id,
         "edital_id": document.edital_id,
         "uploaded_by": document.uploaded_by,
@@ -256,6 +276,7 @@ def serialize_signature_request(request: DocumentSignatureRequest) -> dict:
         "requester_id": request.requester_id,
         "signer_id": request.signer_id,
         "signer_notification_dismissed": request.signer_notification_dismissed,
+        "requester_notification_dismissed": request.requester_notification_dismissed,
         "created_at": request.created_at,
         "updated_at": request.updated_at,
         "signed_at": request.signed_at,
@@ -295,11 +316,12 @@ def _get_parent_document(db: Session, tenant_id: int, parent_document_id: str | 
 def _next_version(db: Session, tenant_id: int, parent_document_id: str | None) -> int:
     if not parent_document_id:
         return 1
+    root_id = _version_root_id(db, tenant_id, parent_document_id)
     latest = (
         db.query(DocumentFile)
         .filter(
             DocumentFile.tenant_id == tenant_id,
-            DocumentFile.parent_document_id == parent_document_id,
+            (DocumentFile.id == root_id) | (DocumentFile.parent_document_id == root_id),
         )
         .order_by(DocumentFile.version.desc())
         .first()
@@ -307,11 +329,49 @@ def _next_version(db: Session, tenant_id: int, parent_document_id: str | None) -
     return int((latest.version if latest else 1) or 1) + 1
 
 
+def _version_root_id(db: Session, tenant_id: int, document_id: str) -> str:
+    current = get_tenant_document_file(db, tenant_id, document_id)
+    seen: set[str] = set()
+    while current.parent_document_id and current.parent_document_id not in seen:
+        seen.add(current.id)
+        current = get_tenant_document_file(db, tenant_id, current.parent_document_id)
+    return current.id
+
+
+def get_current_catalog_datasheet(db: Session, *, tenant_id: int, catalog_product_id: str) -> DocumentFile | None:
+    return (
+        db.query(DocumentFile)
+        .filter(DocumentFile.tenant_id == tenant_id, DocumentFile.catalog_product_id == catalog_product_id, DocumentFile.status != "signed_result")
+        .order_by(DocumentFile.version.desc(), DocumentFile.updated_at.desc(), DocumentFile.created_at.desc())
+        .first()
+    )
+
+
+def sync_catalog_datasheet_links(db: Session, *, tenant_id: int, catalog_product_id: str, document: DocumentFile | None = None) -> int:
+    current = document or get_current_catalog_datasheet(db, tenant_id=tenant_id, catalog_product_id=catalog_product_id)
+    if current is None:
+        return 0
+    return db.query(CrmNoticeProductDatasheet).filter(
+        CrmNoticeProductDatasheet.tenant_id == tenant_id,
+        CrmNoticeProductDatasheet.catalog_product_id == catalog_product_id,
+    ).update({CrmNoticeProductDatasheet.document_file_id: current.id}, synchronize_session=False)
+
+
 def _get_tenant_notice(db: Session, tenant_id: int, notice_id: str) -> CrmNotice:
     notice = db.query(CrmNotice).filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == tenant_id).first()
     if notice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
     return notice
+
+
+def _get_tenant_catalog_product(db: Session, tenant_id: int, catalog_product_id: str) -> CrmCatalogProduct:
+    product = db.query(CrmCatalogProduct).filter(
+        CrmCatalogProduct.id == catalog_product_id,
+        CrmCatalogProduct.tenant_id == tenant_id,
+    ).first()
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto de catalogo nao encontrado.")
+    return product
 
 
 def _get_tenant_edital(db: Session, tenant_id: int, edital_id: int) -> Edital:

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Any
+from zipfile import ZIP_DEFLATED, ZipFile
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, selectinload
 
@@ -13,6 +15,7 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
+from app.crm.models import CrmNoticeProductDatasheet
 from app.db.models import AnalysisDocument, DocumentFile, DocumentSignatureRequest, DocumentSignatureStatus
 from app.db.session import get_db
 from app.services.document_files import (
@@ -104,13 +107,56 @@ def list_document_files(
 ):
     query = db.query(DocumentFile).filter(DocumentFile.tenant_id == current_user.tenant_id)
     if crm_notice_id:
-        query = query.filter(DocumentFile.crm_notice_id == crm_notice_id)
+        linked_ids = db.query(CrmNoticeProductDatasheet.document_file_id).filter(
+            CrmNoticeProductDatasheet.tenant_id == current_user.tenant_id,
+            CrmNoticeProductDatasheet.notice_id == crm_notice_id,
+            CrmNoticeProductDatasheet.document_file_id.is_not(None),
+        )
+        query = query.filter((DocumentFile.crm_notice_id == crm_notice_id) | DocumentFile.id.in_(linked_ids))
     if edital_id is not None:
         query = query.filter(DocumentFile.edital_id == edital_id)
     if status_filter:
         query = query.filter(DocumentFile.status == status_filter)
     rows = query.order_by(DocumentFile.updated_at.desc(), DocumentFile.created_at.desc()).limit(200).all()
     return [serialize_document_file(row) for row in rows]
+
+
+@router.get("/files/notice/{notice_id}/download-all")
+def download_all_notice_files(
+    notice_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Gera o ZIP apenas em memoria, incluindo os datasheets vinculados aos itens."""
+    linked_ids = db.query(CrmNoticeProductDatasheet.document_file_id).filter(
+        CrmNoticeProductDatasheet.tenant_id == current_user.tenant_id,
+        CrmNoticeProductDatasheet.notice_id == notice_id,
+        CrmNoticeProductDatasheet.document_file_id.is_not(None),
+    )
+    documents = db.query(DocumentFile).filter(
+        DocumentFile.tenant_id == current_user.tenant_id,
+        (DocumentFile.crm_notice_id == notice_id) | DocumentFile.id.in_(linked_ids),
+    ).order_by(DocumentFile.title.asc(), DocumentFile.version.desc()).all()
+    if not documents:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nao ha arquivos vinculados a este edital.")
+
+    archive = BytesIO()
+    used_names: set[str] = set()
+    with ZipFile(archive, "w", compression=ZIP_DEFLATED) as zip_file:
+        for document in documents:
+            path = Path(document.storage_path)
+            if not path.is_file():
+                continue
+            name = _zip_entry_name(document.original_filename, document.id, used_names)
+            zip_file.write(path, arcname=name)
+    if not used_names:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Os arquivos vinculados nao estao mais disponiveis.")
+    archive.seek(0)
+    return StreamingResponse(
+        archive,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="documentacao_{notice_id}.zip"'},
+    )
 
 
 @router.post("/files")
@@ -121,6 +167,7 @@ async def upload_document_file(
     crm_notice_id: str | None = Form(default=None),
     edital_id: int | None = Form(default=None),
     parent_document_id: str | None = Form(default=None),
+    catalog_product_id: str | None = Form(default=None),
     notes: str | None = Form(default=None),
     expires_at: datetime | None = Form(default=None),
     current_user: User = Depends(require_role("admin", "editor")),
@@ -139,6 +186,7 @@ async def upload_document_file(
             crm_notice_id=crm_notice_id,
             edital_id=edital_id,
             parent_document_id=parent_document_id,
+            catalog_product_id=catalog_product_id,
             notes=notes,
             expires_at=expires_at,
         )
@@ -180,6 +228,7 @@ async def upload_document_version(
             crm_notice_id=parent.crm_notice_id,
             edital_id=parent.edital_id,
             parent_document_id=parent.id,
+            catalog_product_id=parent.catalog_product_id,
             notes=notes,
             expires_at=parent.expires_at,
         )
@@ -208,6 +257,18 @@ def attach_document_file(
     db.commit()
     db.refresh(document)
     return serialize_document_file(document)
+
+
+def _zip_entry_name(original_filename: str, document_id: str, used_names: set[str]) -> str:
+    safe = Path(original_filename).name or f"documento_{document_id}"
+    candidate = safe
+    index = 2
+    while candidate.lower() in used_names:
+        suffix = Path(safe).suffix
+        candidate = f"{Path(safe).stem} ({index}){suffix}"
+        index += 1
+    used_names.add(candidate.lower())
+    return candidate
 
 
 @router.patch("/files/{document_id}")
@@ -325,7 +386,7 @@ def signature_alert(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = (
+    pending_query = (
         db.query(DocumentSignatureRequest)
         .options(selectinload(DocumentSignatureRequest.document))
         .filter(
@@ -334,15 +395,37 @@ def signature_alert(
             DocumentSignatureRequest.status == DocumentSignatureStatus.PENDING,
         )
     )
-    count = query.count()
-    first = (
-        query.filter(DocumentSignatureRequest.signer_notification_dismissed.is_(False))
+    pending_count = pending_query.count()
+    pending = (
+        pending_query.filter(DocumentSignatureRequest.signer_notification_dismissed.is_(False))
         .order_by(DocumentSignatureRequest.created_at.asc())
         .first()
     )
+    if pending is not None:
+        return {"count": pending_count, "kind": "signature_requested", "request": serialize_signature_request(pending)}
+
+    signed_query = (
+        db.query(DocumentSignatureRequest)
+        .options(
+            selectinload(DocumentSignatureRequest.document),
+            selectinload(DocumentSignatureRequest.signed_document),
+        )
+        .filter(
+            DocumentSignatureRequest.tenant_id == current_user.tenant_id,
+            DocumentSignatureRequest.requester_id == current_user.id,
+            DocumentSignatureRequest.status == DocumentSignatureStatus.SIGNED,
+        )
+    )
+    signed_count = signed_query.count()
+    signed = (
+        signed_query.filter(DocumentSignatureRequest.requester_notification_dismissed.is_(False))
+        .order_by(DocumentSignatureRequest.signed_at.desc(), DocumentSignatureRequest.updated_at.desc())
+        .first()
+    )
     return {
-        "count": count,
-        "request": serialize_signature_request(first) if first else None,
+        "count": signed_count,
+        "kind": "signed_document" if signed is not None else None,
+        "request": serialize_signature_request(signed) if signed else None,
     }
 
 
@@ -353,9 +436,12 @@ def dismiss_signature_notification(
     db: Session = Depends(get_db),
 ):
     request = get_tenant_signature_request(db, current_user.tenant_id, request_id)
-    if request.signer_id != current_user.id:
+    if request.signer_id == current_user.id and request.status == DocumentSignatureStatus.PENDING:
+        request.signer_notification_dismissed = True
+    elif request.requester_id == current_user.id and request.status == DocumentSignatureStatus.SIGNED:
+        request.requester_notification_dismissed = True
+    else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aviso pertence a outro usuario.")
-    request.signer_notification_dismissed = True
     db.commit()
     return {"ok": True}
 

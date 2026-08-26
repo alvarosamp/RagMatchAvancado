@@ -80,6 +80,16 @@ def _ensure_crm_schema_updates() -> None:
         "document_files",
         {
             "expires_at": "TIMESTAMP",
+            "catalog_product_id": "VARCHAR(36)",
+        },
+    )
+    _ensure_columns(
+        inspector,
+        "document_signature_requests",
+        {
+            "signed_document_id": "VARCHAR(36)",
+            "signer_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "requester_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
         },
     )
     _ensure_columns(
@@ -144,6 +154,10 @@ def _ensure_crm_schema_updates() -> None:
             "manufacturer_part_number": "VARCHAR",
             "lpu_version": "VARCHAR",
             "lpu_drive_url": "TEXT",
+            "supplier_name": "VARCHAR",
+            "datasheet_url": "TEXT",
+            "certificate_url": "TEXT",
+            "equivalent_skus": "TEXT",
         },
     )
     _ensure_indexes(

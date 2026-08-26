@@ -191,6 +191,10 @@ class CrmCatalogProduct(Base):
     min_price = Column(Float)
     tax_percent = Column(Float, nullable=False, default=0.0)
     margin_percent = Column(Float, nullable=False, default=0.0)
+    supplier_name = Column(String)
+    datasheet_url = Column(Text)
+    certificate_url = Column(Text)
+    equivalent_skus = Column(Text)
     notes = Column(Text)
     lpu_version = Column(String)
     lpu_drive_url = Column(Text)
@@ -370,6 +374,27 @@ class CrmNoticeProduct(Base):
         cascade="all, delete-orphan",
         order_by="CrmNoticeProductMatch.match_rank",
     )
+    datasheet_links = relationship("CrmNoticeProductDatasheet", back_populates="notice_product", cascade="all, delete-orphan")
+
+
+class CrmNoticeProductDatasheet(Base):
+    """Versao vigente do datasheet incluida na documentacao de um item."""
+    __tablename__ = "crm_notice_product_datasheets"
+    __table_args__ = (
+        UniqueConstraint("notice_product_id", name="uq_crm_notice_product_datasheets_notice_product"),
+        Index("ix_crm_notice_product_datasheets_notice", "tenant_id", "notice_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
+    notice_product_id = Column(String(36), ForeignKey("crm_notice_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_file_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    notice_product = relationship("CrmNoticeProduct", back_populates="datasheet_links")
 
 
 class CrmNoticeDocument(Base):

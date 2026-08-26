@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import csv
+from datetime import datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from urllib.parse import quote
@@ -19,10 +20,12 @@ from app.crm.lpu_importer import import_lpu_catalog
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
 from app.crm.models import (
     CrmBidAssistLog,
+    CrmCatalogProduct,
     CrmItemWinnerType,
     CrmNotice,
     CrmNoticeHistory,
     CrmNoticeProduct,
+    CrmNoticeProductDatasheet,
     CrmNoticeSession,
     CrmNoticeStage,
 )
@@ -52,10 +55,63 @@ from app.services.decision_intelligence import (
     serialize_decision_intelligence,
 )
 from app.services.crm_notice_sync import sync_notice_relationships
+from app.services.document_files import get_current_catalog_datasheet, serialize_document_file
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
 MATCH_PAUSED_MESSAGE = "Match temporariamente pausado para manutenção."
+
+
+@router.post("/notices/{notice_id}/products/{notice_product_id}/catalog-product")
+def link_catalog_product_and_datasheet(
+    notice_id: str,
+    notice_product_id: str,
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    """Vincula o produto e inclui a revisao vigente do seu datasheet no edital."""
+    catalog_product_id = str(payload.get("catalog_product_id") or "").strip()
+    if not catalog_product_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Informe o produto do catalogo.")
+    notice_product = db.query(CrmNoticeProduct).filter(
+        CrmNoticeProduct.id == notice_product_id,
+        CrmNoticeProduct.notice_id == notice_id,
+        CrmNoticeProduct.tenant_id == current_user.tenant_id,
+    ).first()
+    catalog_product = db.query(CrmCatalogProduct).filter_by(
+        id=catalog_product_id, tenant_id=current_user.tenant_id
+    ).first()
+    if notice_product is None or catalog_product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item ou produto do catalogo nao encontrado.")
+
+    notice_product.catalog_product_id = catalog_product.id
+    notice_product.catalog_match_source = "manual_confirmed"
+    notice_product.catalog_match_confirmed_by = current_user.id
+    notice_product.catalog_match_confirmed_at = datetime.utcnow()
+    current = get_current_catalog_datasheet(db, tenant_id=current_user.tenant_id, catalog_product_id=catalog_product.id)
+    link = db.query(CrmNoticeProductDatasheet).filter(
+        CrmNoticeProductDatasheet.notice_product_id == notice_product.id
+    ).first()
+    if link is None:
+        link = CrmNoticeProductDatasheet(
+            tenant_id=current_user.tenant_id,
+            notice_id=notice_id,
+            notice_product_id=notice_product.id,
+            catalog_product_id=catalog_product.id,
+            document_file_id=current.id if current else None,
+        )
+        db.add(link)
+    else:
+        link.catalog_product_id = catalog_product.id
+        link.document_file_id = current.id if current else None
+    db.commit()
+    return {
+        "notice_product_id": notice_product.id,
+        "catalog_product_id": catalog_product.id,
+        "datasheet": serialize_document_file(current) if current else None,
+        "message": "Datasheet vigente incluido." if current else "Produto vinculado; nenhum datasheet vigente cadastrado.",
+    }
 
 
 def _parse_json_param(raw: str | None, fallback: Any) -> Any:
