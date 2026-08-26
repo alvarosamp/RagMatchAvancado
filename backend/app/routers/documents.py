@@ -15,7 +15,7 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
-from app.crm.models import CrmNoticeProductDatasheet
+from app.crm.models import CrmCatalogProductDatasheet, CrmNoticeProductDatasheet
 from app.db.models import AnalysisDocument, DocumentFile, DocumentSignatureRequest, DocumentSignatureStatus
 from app.db.session import get_db
 from app.services.document_files import (
@@ -137,7 +137,16 @@ def download_all_notice_files(
         DocumentFile.tenant_id == current_user.tenant_id,
         (DocumentFile.crm_notice_id == notice_id) | DocumentFile.id.in_(linked_ids),
     ).order_by(DocumentFile.title.asc(), DocumentFile.version.desc()).all()
-    if not documents:
+    catalog_datasheet_ids = db.query(CrmNoticeProductDatasheet.catalog_datasheet_id).filter(
+        CrmNoticeProductDatasheet.tenant_id == current_user.tenant_id,
+        CrmNoticeProductDatasheet.notice_id == notice_id,
+        CrmNoticeProductDatasheet.catalog_datasheet_id.is_not(None),
+    )
+    catalog_datasheets = db.query(CrmCatalogProductDatasheet).filter(
+        CrmCatalogProductDatasheet.tenant_id == current_user.tenant_id,
+        CrmCatalogProductDatasheet.id.in_(catalog_datasheet_ids),
+    ).all()
+    if not documents and not catalog_datasheets:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nao ha arquivos vinculados a este edital.")
 
     archive = BytesIO()
@@ -149,6 +158,11 @@ def download_all_notice_files(
                 continue
             name = _zip_entry_name(document.original_filename, document.id, used_names)
             zip_file.write(path, arcname=name)
+        for datasheet in catalog_datasheets:
+            path = Path(datasheet.storage_path)
+            if path.is_file():
+                name = _zip_entry_name(datasheet.original_filename, datasheet.id, used_names)
+                zip_file.write(path, arcname=f"datasheets/{name}")
     if not used_names:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Os arquivos vinculados nao estao mais disponiveis.")
     archive.seek(0)

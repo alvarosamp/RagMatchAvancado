@@ -11,7 +11,7 @@ from urllib.parse import quote
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user, require_role
@@ -21,6 +21,9 @@ from app.crm.sales_process_importer import build_import_context_for_user, run_im
 from app.crm.models import (
     CrmBidAssistLog,
     CrmCatalogProduct,
+    CrmCatalogProductDatasheet,
+    CrmChecklistStatus,
+    CrmNoticeDocument,
     CrmItemWinnerType,
     CrmNotice,
     CrmNoticeHistory,
@@ -55,11 +58,34 @@ from app.services.decision_intelligence import (
     serialize_decision_intelligence,
 )
 from app.services.crm_notice_sync import sync_notice_relationships
-from app.services.document_files import get_current_catalog_datasheet, serialize_document_file
+from app.services.catalog_datasheets import current_catalog_datasheet, serialize as serialize_catalog_datasheet, store_catalog_datasheet
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
 MATCH_PAUSED_MESSAGE = "Match temporariamente pausado para manutenção."
+
+
+@router.get("/catalog-products/{product_id}/datasheets")
+def list_catalog_datasheets(product_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return [serialize_catalog_datasheet(row) for row in db.query(CrmCatalogProductDatasheet).filter(CrmCatalogProductDatasheet.tenant_id == current_user.tenant_id, CrmCatalogProductDatasheet.catalog_product_id == product_id).order_by(CrmCatalogProductDatasheet.version.desc()).all()]
+
+
+@router.post("/catalog-products/{product_id}/datasheets")
+async def upload_catalog_datasheet(product_id: str, file: UploadFile = File(...), current_user: User = Depends(require_role("admin", "editor")), db: Session = Depends(get_db)):
+    try:
+        row = store_catalog_datasheet(db, tenant_id=current_user.tenant_id, user_id=current_user.id, product_id=product_id, fileobj=file.file, filename=file.filename or "datasheet", content_type=file.content_type)
+        db.commit()
+        return serialize_catalog_datasheet(row)
+    finally:
+        await file.close()
+
+
+@router.get("/catalog-datasheets/{datasheet_id}/download")
+def download_catalog_datasheet(datasheet_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.query(CrmCatalogProductDatasheet).filter(CrmCatalogProductDatasheet.id == datasheet_id, CrmCatalogProductDatasheet.tenant_id == current_user.tenant_id).first()
+    if not row or not Path(row.storage_path).is_file():
+        raise HTTPException(status_code=404, detail="Datasheet nao encontrado.")
+    return FileResponse(row.storage_path, media_type=row.content_type or "application/octet-stream", filename=row.original_filename)
 
 
 @router.post("/notices/{notice_id}/products/{notice_product_id}/catalog-product")
@@ -89,7 +115,7 @@ def link_catalog_product_and_datasheet(
     notice_product.catalog_match_source = "manual_confirmed"
     notice_product.catalog_match_confirmed_by = current_user.id
     notice_product.catalog_match_confirmed_at = datetime.utcnow()
-    current = get_current_catalog_datasheet(db, tenant_id=current_user.tenant_id, catalog_product_id=catalog_product.id)
+    current = current_catalog_datasheet(db, tenant_id=current_user.tenant_id, product_id=catalog_product.id)
     link = db.query(CrmNoticeProductDatasheet).filter(
         CrmNoticeProductDatasheet.notice_product_id == notice_product.id
     ).first()
@@ -99,17 +125,27 @@ def link_catalog_product_and_datasheet(
             notice_id=notice_id,
             notice_product_id=notice_product.id,
             catalog_product_id=catalog_product.id,
-            document_file_id=current.id if current else None,
+            catalog_datasheet_id=current.id if current else None,
         )
         db.add(link)
     else:
         link.catalog_product_id = catalog_product.id
-        link.document_file_id = current.id if current else None
+        link.catalog_datasheet_id = current.id if current else None
+    document = db.get(CrmNoticeDocument, link.notice_document_id) if link.notice_document_id else None
+    if document is None:
+        document = CrmNoticeDocument(tenant_id=current_user.tenant_id, notice_id=notice_id, name=f"Datasheet — {catalog_product.name}", category="Datasheets de produtos", is_required=False, is_specific=True, sort_order=9990)
+        db.add(document)
+        db.flush()
+        link.notice_document_id = document.id
+    document.source_kind = "catalog_datasheet"
+    document.source_url = f"/api/crm/catalog-datasheets/{current.id}/download" if current else None
+    document.notes = f"Produto do catalogo: {catalog_product.name}." if current else f"Produto do catalogo: {catalog_product.name}. Nenhum datasheet cadastrado."
+    document.status = CrmChecklistStatus.READY if current else CrmChecklistStatus.PENDING
     db.commit()
     return {
         "notice_product_id": notice_product.id,
         "catalog_product_id": catalog_product.id,
-        "datasheet": serialize_document_file(current) if current else None,
+        "datasheet": serialize_catalog_datasheet(current) if current else None,
         "message": "Datasheet vigente incluido." if current else "Produto vinculado; nenhum datasheet vigente cadastrado.",
     }
 

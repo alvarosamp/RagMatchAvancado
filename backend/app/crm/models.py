@@ -205,6 +205,7 @@ class CrmCatalogProduct(Base):
 
     notice_products = relationship("CrmNoticeProduct", back_populates="catalog_product")
     notice_product_matches = relationship("CrmNoticeProductMatch", back_populates="catalog_product", cascade="all, delete-orphan")
+    datasheets = relationship("CrmCatalogProductDatasheet", back_populates="catalog_product", cascade="all, delete-orphan")
 
     @property
     def computed_min_price(self) -> float:
@@ -390,11 +391,34 @@ class CrmNoticeProductDatasheet(Base):
     notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
     notice_product_id = Column(String(36), ForeignKey("crm_notice_products.id", ondelete="CASCADE"), nullable=False, index=True)
     catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    catalog_datasheet_id = Column(String(36), ForeignKey("crm_catalog_product_datasheets.id", ondelete="SET NULL"), index=True)
+    notice_document_id = Column(String(36), ForeignKey("crm_notice_documents.id", ondelete="SET NULL"), index=True)
     document_file_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     notice_product = relationship("CrmNoticeProduct", back_populates="datasheet_links")
+
+
+class CrmCatalogProductDatasheet(Base):
+    """Anexo privado do catalogo; deliberadamente fora da biblioteca documental."""
+    __tablename__ = "crm_catalog_product_datasheets"
+    __table_args__ = (Index("ix_crm_catalog_product_datasheets_product_version", "tenant_id", "catalog_product_id", "version"),)
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="CASCADE"), nullable=False, index=True)
+    original_filename = Column(String, nullable=False)
+    stored_filename = Column(String, nullable=False)
+    storage_path = Column(Text, nullable=False)
+    content_type = Column(String)
+    size_bytes = Column(Integer, nullable=False, default=0)
+    version = Column(Integer, nullable=False, default=1)
+    parent_datasheet_id = Column(String(36), ForeignKey("crm_catalog_product_datasheets.id", ondelete="SET NULL"), index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    catalog_product = relationship("CrmCatalogProduct", back_populates="datasheets")
 
 
 class CrmNoticeDocument(Base):
