@@ -15,7 +15,7 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
-from app.crm.models import CrmCatalogProductDatasheet, CrmNoticeProductDatasheet
+from app.crm.models import CrmCatalogProductDatasheet, CrmNotice, CrmNoticeDocument, CrmNoticeProductDatasheet
 from app.db.models import AnalysisDocument, DocumentFile, DocumentSignatureRequest, DocumentSignatureStatus
 from app.db.session import get_db
 from app.services.document_files import (
@@ -128,14 +128,27 @@ def download_all_notice_files(
     db: Session = Depends(get_db),
 ):
     """Gera o ZIP apenas em memoria, incluindo os datasheets vinculados aos itens."""
+    notice = db.query(CrmNotice).filter(
+        CrmNotice.id == notice_id,
+        CrmNotice.tenant_id == current_user.tenant_id,
+    ).first()
+    if notice is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital nao encontrado.")
     linked_ids = db.query(CrmNoticeProductDatasheet.document_file_id).filter(
         CrmNoticeProductDatasheet.tenant_id == current_user.tenant_id,
         CrmNoticeProductDatasheet.notice_id == notice_id,
         CrmNoticeProductDatasheet.document_file_id.is_not(None),
     )
+    checklist_file_ids = db.query(CrmNoticeDocument.attached_document_file_id).filter(
+        CrmNoticeDocument.tenant_id == current_user.tenant_id,
+        CrmNoticeDocument.notice_id == notice_id,
+        CrmNoticeDocument.attached_document_file_id.is_not(None),
+    )
     documents = db.query(DocumentFile).filter(
         DocumentFile.tenant_id == current_user.tenant_id,
-        (DocumentFile.crm_notice_id == notice_id) | DocumentFile.id.in_(linked_ids),
+        (DocumentFile.crm_notice_id == notice_id)
+        | DocumentFile.id.in_(linked_ids)
+        | DocumentFile.id.in_(checklist_file_ids),
     ).order_by(DocumentFile.title.asc(), DocumentFile.version.desc()).all()
     catalog_datasheet_ids = db.query(CrmNoticeProductDatasheet.catalog_datasheet_id).filter(
         CrmNoticeProductDatasheet.tenant_id == current_user.tenant_id,
@@ -169,7 +182,7 @@ def download_all_notice_files(
     return StreamingResponse(
         archive,
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="documentacao_{notice_id}.zip"'},
+        headers={"Content-Disposition": f'attachment; filename="{_notice_zip_filename(notice)}"'},
     )
 
 
@@ -283,6 +296,17 @@ def _zip_entry_name(original_filename: str, document_id: str, used_names: set[st
         index += 1
     used_names.add(candidate.lower())
     return candidate
+
+
+def _notice_zip_filename(notice: CrmNotice) -> str:
+    """Nome legível e seguro para os sistemas de arquivo do usuário."""
+    import re
+    import unicodedata
+
+    title = str(notice.title or notice.tor_id or notice.number or "edital").strip()
+    normalized = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("ascii")
+    safe = re.sub(r"[^A-Za-z0-9._ -]+", "_", normalized).strip(" ._")[:150]
+    return f"{safe or 'edital'}.zip"
 
 
 @router.patch("/files/{document_id}")
