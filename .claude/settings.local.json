@@ -8,7 +8,27 @@
       "Bash(grep -n \"^\\\\.env$\\\\|^\\\\.env\" .gitignore)",
       "Bash(powershell.exe -NoProfile -Command \"Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue | Stop-Process -Force\")",
       "Bash(powershell.exe -NoProfile -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
-      "Bash(docker volume *)"
+      "Bash(docker volume *)",
+      "Bash(.venv/Scripts/python.exe -c \"import fastapi; print\\('ok'\\)\")",
+      "Bash(curl -s http://127.0.0.1:8000/health)",
+      "Bash(curl -s -m 5 http://127.0.0.1:8000/health)",
+      "Bash(curl -s -m 5 http://127.0.0.1:8001/health)",
+      "Bash(curl -s -m 5 -w \"\\\\nSTATUS:%{http_code}\\\\n\" http://127.0.0.1:8001/health)",
+      "Bash(curl -s -m 5 -w \"\\\\nSTATUS:%{http_code}\\\\n\" http://127.0.0.1:8001/docs -o /dev/null)",
+      "Bash(curl -s -m 8 -X POST http://127.0.0.1:8001/auth/register -H 'Content-Type: application/json' -d '{\"tenant_slug\":\"teste-bidrobot\",\"tenant_name\":\"Teste Bid Robot\",\"email\":\"teste.bidrobot@local.dev\",\"password\":\"teste12345\",\"full_name\":\"Teste Robo\"}')",
+      "Bash(curl -s -m 8 -X POST http://127.0.0.1:8001/auth/register -H 'Content-Type: application/json' -d '{\"tenant_slug\":\"teste-bidrobot\",\"tenant_name\":\"Teste Bid Robot\",\"email\":\"teste.bidrobot@local.dev\",\"password\":\"Teste123!@#\",\"full_name\":\"Teste Robo\"}')",
+      "Bash(curl -s -m 8 -X POST http://127.0.0.1:8001/bid-robot/sessions -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0ZS5iaWRyb2JvdEBsb2NhbC5kZXYiLCJ0ZW5hbnRfc2x1ZyI6InRlc3RlLWJpZHJvYm90Iiwicm9sZSI6ImFkbWluIiwidXNlcl9pZCI6NjAsImV4cCI6MTc4NjExMTg3MH0.6oRNqy6npxs8pfO0F-SwieB3xnEXIZ1QX3-nDHRa4TA' -d '{ *)",
+      "Bash(curl -s http://127.0.0.1:3000/index.html)",
+      "WebSearch",
+      "WebFetch(domain:www.wavecode.com.br)",
+      "WebFetch(domain:effecti.com.br)",
+      "WebFetch(domain:www.lancefacil.com)",
+      "WebFetch(domain:www.licitei.com.br)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.serpro.gov.br)",
+      "WebFetch(domain:bll.org.br)",
+      "Bash(curl -sL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36' -o 'C:\\\\Users\\\\vish8\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-vish8-OneDrive-Documentos-RagMatchAvan-ado\\\\f7862a97-cd8b-4f44-93ac-cb11434cb643\\\\scratchpad/Regulamento-BLL-2024.pdf' https://bll.org.br/wp-content/uploads/2023/07/Regulamento-BLL-2024.pdf)",
+      "Bash(curl -sL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36' -o 'C:\\\\Users\\\\vish8\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-vish8-OneDrive-Documentos-RagMatchAvan-ado\\\\f7862a97-cd8b-4f44-93ac-cb11434cb643\\\\scratchpad/Regulamento-BNC-2026.pdf' https://bnc.org.br/wp-content/uploads/2026/07/Regulamento-BNC-2026.pdf)"
     ]
   }
 }

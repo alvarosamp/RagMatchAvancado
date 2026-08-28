@@ -77,6 +77,25 @@ def _ensure_crm_schema_updates() -> None:
     )
     _ensure_columns(
         inspector,
+        "document_files",
+        {
+            "expires_at": "TIMESTAMP",
+            "catalog_product_id": "VARCHAR(36)",
+            "is_repository_signed_archive": "BOOLEAN NOT NULL DEFAULT FALSE",
+        },
+    )
+    _ensure_columns(
+        inspector,
+        "document_signature_requests",
+        {
+            "signed_document_id": "VARCHAR(36)",
+            "signer_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "requester_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "archive_signed_result": "BOOLEAN NOT NULL DEFAULT TRUE",
+        },
+    )
+    _ensure_columns(
+        inspector,
         "crm_notice_products",
         {
             "lot": "VARCHAR",
@@ -109,6 +128,13 @@ def _ensure_crm_schema_updates() -> None:
             "raw_payload": "JSON",
             "cost": "DOUBLE PRECISION",
             "reference_total_price": "DOUBLE PRECISION",
+            "selected_for_dispute": "BOOLEAN NOT NULL DEFAULT TRUE",
+            "catalog_match_source": "VARCHAR",
+            "catalog_match_confirmed_by": "INTEGER",
+            "catalog_match_confirmed_at": "TIMESTAMP",
+            "catalog_match_model_version": "VARCHAR",
+            "catalog_match_notes": "TEXT",
+            "catalog_lpu_version": "VARCHAR",
         },
     )
     _ensure_columns(
@@ -117,6 +143,7 @@ def _ensure_crm_schema_updates() -> None:
         {
             "source_url": "TEXT",
             "source_kind": "VARCHAR",
+            "attached_document_file_id": "VARCHAR(36)",
         },
     )
     _ensure_columns(
@@ -125,6 +152,14 @@ def _ensure_crm_schema_updates() -> None:
         {
             "keywords": "TEXT",
             "category": "VARCHAR",
+            "min_price": "DOUBLE PRECISION",
+            "manufacturer_part_number": "VARCHAR",
+            "lpu_version": "VARCHAR",
+            "lpu_drive_url": "TEXT",
+            "supplier_name": "VARCHAR",
+            "datasheet_url": "TEXT",
+            "certificate_url": "TEXT",
+            "equivalent_skus": "TEXT",
         },
     )
     _ensure_indexes(
@@ -249,6 +284,7 @@ def _ensure_editais_schema_updates() -> None:
             "status": "VARCHAR DEFAULT 'done'",
             "import_batch_id": "INTEGER",
             "source_path": "VARCHAR",
+            "storage_key": "VARCHAR",
             "analysis_only": "BOOLEAN DEFAULT FALSE",
         },
     )
@@ -258,6 +294,7 @@ def _ensure_editais_schema_updates() -> None:
             "CREATE INDEX IF NOT EXISTS ix_editais_business_key ON editais (business_key)",
             "CREATE INDEX IF NOT EXISTS ix_editais_status ON editais (status)",
             "CREATE INDEX IF NOT EXISTS ix_editais_import_batch_id ON editais (import_batch_id)",
+            "CREATE INDEX IF NOT EXISTS ix_editais_storage_key ON editais (storage_key)",
             "CREATE INDEX IF NOT EXISTS ix_editais_analysis_only ON editais (analysis_only)",
         ]
     )

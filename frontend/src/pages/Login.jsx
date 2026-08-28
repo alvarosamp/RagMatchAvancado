@@ -31,7 +31,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(form.email, form.password)
+      await login(form.email.trim().toLowerCase(), form.password)
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail || 'Credenciais invalidas.')

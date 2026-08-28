@@ -98,6 +98,7 @@ class Edital(Base):
     tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
     import_batch_id = Column(Integer, ForeignKey("import_batches.id", ondelete="SET NULL"), index=True)
     source_path  = Column(String)
+    storage_key  = Column(String, index=True)
     analysis_only = Column(Boolean, default=False, index=True)
 
     tenant       = relationship("Tenant", back_populates="editais")
@@ -267,6 +268,75 @@ class AnalysisItem(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     analysis = relationship("AnalysisDocument", back_populates="items")
+
+
+class DocumentFile(Base):
+    """Arquivo operacional armazenado na biblioteca de documentos do tenant."""
+    __tablename__ = "document_files"
+
+    id = Column(String(36), primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    stored_filename = Column(String, nullable=False)
+    storage_path = Column(Text, nullable=False)
+    content_type = Column(String)
+    size_bytes = Column(Integer, nullable=False, default=0)
+    category = Column(String)
+    status = Column(String, nullable=False, default="active", index=True)
+    version = Column(Integer, nullable=False, default=1)
+    parent_document_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
+    catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="SET NULL"), index=True)
+    is_repository_signed_archive = Column(Boolean, nullable=False, default=False, index=True)
+    crm_notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="SET NULL"), index=True)
+    edital_id = Column(Integer, ForeignKey("editais.id", ondelete="SET NULL"), index=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    notes = Column(Text)
+    expires_at = Column(DateTime)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    parent = relationship("DocumentFile", remote_side=[id], back_populates="versions")
+    versions = relationship("DocumentFile", back_populates="parent")
+    signature_requests = relationship(
+        "DocumentSignatureRequest",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        foreign_keys="DocumentSignatureRequest.document_id",
+    )
+
+
+class DocumentSignatureStatus(str, enum.Enum):
+    PENDING = "pending"
+    SIGNED = "signed"
+    CANCELLED = "cancelled"
+
+
+class DocumentSignatureRequest(Base):
+    """Solicitacao de assinatura de documento entre usuarios do mesmo tenant."""
+    __tablename__ = "document_signature_requests"
+
+    id = Column(String(36), primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    document_id = Column(String(36), ForeignKey("document_files.id", ondelete="CASCADE"), nullable=False, index=True)
+    requester_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    signer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    status = Column(Enum(DocumentSignatureStatus), nullable=False, default=DocumentSignatureStatus.PENDING, index=True)
+    message = Column(Text)
+    archive_signed_result = Column(Boolean, nullable=False, default=True)
+    signed_document_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
+    signer_notification_dismissed = Column(Boolean, nullable=False, default=False)
+    requester_notification_dismissed = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    signed_at = Column(DateTime)
+
+    document = relationship(
+        "DocumentFile",
+        back_populates="signature_requests",
+        foreign_keys=[document_id],
+    )
+    signed_document = relationship("DocumentFile", foreign_keys=[signed_document_id])
 
 
 # ──────────────────────────────────────────

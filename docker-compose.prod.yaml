@@ -15,28 +15,188 @@ services:
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+      DB_NAME: ${POSTGRES_DB:-edital_matcher}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-edital_matcher}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     image: alvarocareli/ragmatch-api:latest
     restart: unless-stopped
     volumes:
       - ./data:/data
-    ports:
-      - "8000:8000"
+      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+    expose:
+      - "8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: llama3.2:1b
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REGISTER_ENABLED: ${REGISTER_ENABLED:-0}
+      APP_ENV: ${APP_ENV:-production}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-access_token}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-1}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      AUTH_TOKEN_IN_BODY: ${AUTH_TOKEN_IN_BODY:-0}
+      MAX_PDF_UPLOAD_BYTES: ${MAX_PDF_UPLOAD_BYTES:-52428800}
+      MAX_DOCUMENT_UPLOAD_BYTES: ${MAX_DOCUMENT_UPLOAD_BYTES:-52428800}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TOR_DOCUMENTS_ROOT: /documents
     depends_on:
       db:
         condition: service_healthy
       mlflow:
         condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  worker:
+    image: alvarocareli/ragmatch-api:latest
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /documents
+    depends_on:
+      db:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues edital-processing,matching --processes 1 --threads ${WORKER_THREADS:-2}
+
+  worker-ai:
+    image: alvarocareli/ragmatch-api:latest
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /documents
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues ai-inference --processes ${AI_WORKER_PROCESSES:-1} --threads ${AI_WORKER_THREADS:-1}
+
+  scheduler:
+    image: alvarocareli/ragmatch-api:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
+      PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
+      EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
+      EMAIL_MONITOR_IMAP_HOST: ${EMAIL_MONITOR_IMAP_HOST:-}
+      EMAIL_MONITOR_IMAP_USER: ${EMAIL_MONITOR_IMAP_USER:-}
+      EMAIL_MONITOR_IMAP_PASSWORD: ${EMAIL_MONITOR_IMAP_PASSWORD:-}
+      JOB_RECOVERY_INTERVAL_SECONDS: ${JOB_RECOVERY_INTERVAL_SECONDS:-60}
+      JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
+      JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m app.scheduler
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+    command: server /data
+    volumes:
+      - minio_data:/data
+
+  migrate:
+    image: alvarocareli/ragmatch-api:latest
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
 
   frontend:
     image: alvarocareli/ragmatch-frontend:latest
@@ -46,33 +206,11 @@ services:
     depends_on:
       - api
 
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
-  ollama-setup:
-    image: ollama/ollama:latest
-    depends_on:
-      - ollama
-    restart: "no"
-    entrypoint: >
-      /bin/sh -c "
-        sleep 10 &&
-        ollama pull nomic-embed-text &&
-        ollama pull llama3.2:1b
-      "
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-
   mlflow:
     image: alvarocareli/ragmatch-mlflow:latest
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
@@ -90,5 +228,6 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:
   mlflow_data:
+  redis_data:
+  minio_data:

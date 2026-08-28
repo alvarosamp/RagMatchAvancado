@@ -15,7 +15,8 @@ const NAV = [
   { key: 'compliance', path: '/habilitacao', badge: 'CK' },
   { key: 'pricing', path: '/precificacao', badge: 'PR' },
   { key: 'auction_monitor', path: '/monitor-pregao', badge: 'PG' },
-  { key: 'crm', path: '/crm', badge: 'CRM' },
+  { key: 'bid_robot', path: '/robo-lances', badge: 'LB' },
+  { key: 'crm', path: '/crm/', badge: 'CRM' },
   { key: 'post_award', path: '/pos-vitoria', badge: 'PV' },
   { key: 'controle', path: '/controle', badge: 'CT' },
   { key: 'reports', path: '/relatorios', badge: 'RP' },
@@ -32,6 +33,21 @@ const NAV = [
 
 const NAV_ADMIN = [
   { key: 'users', path: '/usuarios', badge: 'USR' },
+]
+
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+const AI_NAV_KEYS = new Set(['analysis_dashboard', 'datasheets', 'competitive', 'jobs'])
+
+const NAV_STRUCTURE = [
+  { type: 'item', key: 'dashboard' },
+  { type: 'group', title: 'Oportunidades', keys: ['pncp_monitor', 'radar'] },
+  { type: 'item', key: 'upload' },
+  { type: 'item', key: 'crm' },
+  { type: 'group', title: 'Analise', keys: ['analysis_dashboard', 'datasheets', 'competitive'] },
+  { type: 'group', title: 'Proposta', keys: ['proposal_studio', 'compliance', 'pricing', 'subscription'] },
+  { type: 'group', title: 'Disputa', keys: ['auction_monitor', 'bid_robot', 'controle'] },
+  { type: 'group', title: 'Comercial', keys: ['post_award', 'reports', 'analytics'] },
+  { type: 'group', title: 'Sistema', keys: ['suite', 'jobs', 'onboarding_plans', 'integrations', 'settings'] },
 ]
 
 function isActive(pathname, path) {
@@ -92,11 +108,22 @@ function renderIcon(badge) {
         </svg>
       );
     case 'PG':
+    case 'LB':
       return (
         <svg {...props} viewBox="0 0 24 24">
-          <path d="M14 9V5a3 3 0 0 0-6 0v4" />
-          <rect x="4" y="9" width="16" height="12" rx="2" />
-          <path d="M9 15h6" />
+          {badge === 'PG' ? (
+            <>
+              <path d="M14 9V5a3 3 0 0 0-6 0v4" />
+              <rect x="4" y="9" width="16" height="12" rx="2" />
+              <path d="M9 15h6" />
+            </>
+          ) : (
+            <>
+              <path d="M12 3v18" />
+              <path d="M7 8h7.5a2.5 2.5 0 0 1 0 5H9.5a2.5 2.5 0 0 0 0 5H17" />
+              <path d="M4 21h16" />
+            </>
+          )}
         </svg>
       );
     case 'PV':
@@ -226,16 +253,13 @@ function renderIcon(badge) {
 
 function NavItem({ item, pathname }) {
   const active = isActive(pathname, item.path)
-
-  return (
-    <Link
-      to={item.path}
-      className={`group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
-        active
-          ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-white'
-          : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white'
-      }`}
-    >
+  const className = `group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
+    active
+      ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-white'
+      : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white'
+  }`
+  const content = (
+    <>
       <div
         className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg border transition-colors ${
           active
@@ -250,7 +274,46 @@ function NavItem({ item, pathname }) {
         <p className="truncate text-xs text-slate-400 dark:text-slate-500">{item.hint}</p>
       </div>
       {active && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-brand dark:bg-brand-light" />}
+    </>
+  )
+
+  if (item.key === 'crm') {
+    return (
+      <a href={item.path} className={className}>
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={item.path} className={className}>
+      {content}
     </Link>
+  )
+}
+
+function NavGroup({ group, itemsByKey, pathname }) {
+  const groupItems = group.keys.map((key) => itemsByKey.get(key)).filter(Boolean)
+  if (groupItems.length === 0) return null
+
+  const active = groupItems.some((item) => isActive(pathname, item.path))
+
+  return (
+    <details className="group/nav rounded-lg" open={active}>
+      <summary className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+        active
+          ? 'bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
+          : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+      }`}>
+        <span>{group.title}</span>
+        <span className="text-sm transition-transform group-open/nav:rotate-90">›</span>
+      </summary>
+      <div className="mt-2 space-y-2 pl-2">
+        {groupItems.map((item) => (
+          <NavItem key={item.path} item={item} pathname={pathname} />
+        ))}
+      </div>
+    </details>
   )
 }
 
@@ -261,11 +324,18 @@ export default function Layout({ children }) {
   const [theme, setTheme] = useState(() => readStoredTheme())
   const isLight = theme === 'light'
 
-  const items = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).map((item) => ({
+  const baseItems = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).filter(
+    (item) => AI_FEATURES_ENABLED || !AI_NAV_KEYS.has(item.key)
+  )
+  const items = baseItems.map((item) => ({
     ...item,
     label: market.nav?.[item.key]?.label || item.key,
     hint: market.nav?.[item.key]?.hint || '',
   }))
+  const itemsByKey = new Map(items.map((item) => [item.key, item]))
+  const navStructure = isAdmin
+    ? [...NAV_STRUCTURE, { type: 'group', title: 'Admin', keys: ['users'] }]
+    : NAV_STRUCTURE
 
   useEffect(() => {
     persistTheme(theme)
@@ -297,10 +367,14 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-5">
-          {items.map((item) => (
-            <NavItem key={item.path} item={item} pathname={location.pathname} />
-          ))}
+        <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-5">
+          {navStructure.map((entry) => {
+            if (entry.type === 'item') {
+              const item = itemsByKey.get(entry.key)
+              return item ? <NavItem key={item.path} item={item} pathname={location.pathname} /> : null
+            }
+            return <NavGroup key={entry.title} group={entry} itemsByKey={itemsByKey} pathname={location.pathname} />
+          })}
         </nav>
 
         <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
@@ -347,15 +421,23 @@ export default function Layout({ children }) {
             <div className="flex gap-2">
               {items.map((item) => {
                 const active = isActive(location.pathname, item.path)
+                const className = `whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
+                  active
+                    ? 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
+                    : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                }`
+                if (item.key === 'crm') {
+                  return (
+                    <a key={item.path} href={item.path} className={className}>
+                      {item.label}
+                    </a>
+                  )
+                }
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
-                      active
-                        ? 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
-                        : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                    }`}
+                    className={className}
                   >
                     {item.label}
                   </Link>

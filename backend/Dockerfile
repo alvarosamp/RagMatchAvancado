@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libsm6 \
     tesseract-ocr \
+    postgresql-client \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +28,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Docling usa Transformers/Torchvision em tempo de import. Reinstalar pelo índice
 # CPU evita misturar wheels incompatíveis puxadas por dependências transitivas.
+COPY alembic.ini ./
+COPY alembic ./alembic
 COPY app ./app
+COPY scripts ./scripts
 
 EXPOSE 8000
 

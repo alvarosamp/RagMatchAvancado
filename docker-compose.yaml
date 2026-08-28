@@ -16,31 +16,187 @@ services:
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: edital_matcher
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U postgres -d edital_matcher"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build: ./backend
     volumes:
       - ./backend:/app
       - ./data:/data
+      - D:/TOR/Documentos:/tor-documentos
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: edital-matcher
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: llama3.2:1b
       OLLAMA_EMBED_MODEL: nomic-embed-text
       OLLAMA_AUTO_PULL: "1"
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-1}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
       WATCHFILES_FORCE_POLLING: "true"
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      CSRF_TRUSTED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TOR_DOCUMENTS_ROOT: /tor-documentos
     depends_on:
       db:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
       mlflow:
         condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+      - D:/TOR/Documentos:/tor-documentos
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: edital-matcher
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:1b
+      OLLAMA_EMBED_MODEL: nomic-embed-text
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /tor-documentos
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues edital-processing,matching --processes 1 --threads 2
+
+  worker-ai:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+      - D:/TOR/Documentos:/tor-documentos
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: edital-matcher
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:1b
+      OLLAMA_EMBED_MODEL: nomic-embed-text
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-1}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /tor-documentos
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      ollama:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues ai-inference --processes 1 --threads ${AI_WORKER_THREADS:-1}
+
+  scheduler:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
+      PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
+      EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
+      EMAIL_MONITOR_IMAP_HOST: ${EMAIL_MONITOR_IMAP_HOST:-}
+      EMAIL_MONITOR_IMAP_USER: ${EMAIL_MONITOR_IMAP_USER:-}
+      EMAIL_MONITOR_IMAP_PASSWORD: ${EMAIL_MONITOR_IMAP_PASSWORD:-}
+      JOB_RECOVERY_INTERVAL_SECONDS: ${JOB_RECOVERY_INTERVAL_SECONDS:-60}
+      JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
+      JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m app.scheduler
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data
+    volumes:
+      - minio_data:/data
+
+  migrate:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
 
   frontend:
     build:
@@ -103,3 +259,5 @@ volumes:
   postgres_data:
   ollama_data:
   mlflow_data:
+  redis_data:
+  minio_data:

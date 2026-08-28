@@ -18,6 +18,7 @@ const STATUS_CFG = {
 
 const LOCK_TTL_MS = 45_000
 const LOCK_HEARTBEAT_MS = 12_000
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
 function getTabId() {
   const current = sessionStorage.getItem('edital_detail_tab_id')
@@ -222,25 +223,25 @@ export default function EditalDetail() {
 
         {/* Ações do header */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Análise LLM */}
-          <button
-            disabled={lockState.blocked}
-            onClick={() => navigate(`/editais/${id}/analise-llm`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber/30 bg-amber/10 hover:border-amber/60 text-amber font-body text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span>🤖</span>
-            Análise LLM
-          </button>
+          {AI_FEATURES_ENABLED && (
+            <>
+              <button
+                disabled={lockState.blocked}
+                onClick={() => navigate(`/editais/${id}/analise-llm`)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber/30 bg-amber/10 hover:border-amber/60 text-amber font-body text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Análise
+              </button>
 
-          {/* Chat RAG — destaque */}
-          <button
-            disabled={lockState.blocked}
-            onClick={() => navigate(`/editais/${id}/chat`)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600/20 to-amber/20 border border-red-600/30 hover:border-red-600/60 text-red-400 font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-red-600/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span>💬</span>
-            Perguntar ao edital
-          </button>
+              <button
+                disabled={lockState.blocked}
+                onClick={() => navigate(`/editais/${id}/chat`)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600/20 to-amber/20 border border-red-600/30 hover:border-red-600/60 text-red-400 font-body text-sm transition-all duration-200 hover:shadow-lg hover:shadow-red-600/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Perguntar ao edital
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => navigate('/assinatura')}

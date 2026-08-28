@@ -18,6 +18,7 @@ from app.db.session import get_db
 from app.db.models import Edital
 from app.services.export_service import export_xlsx, export_pdf, export_csv
 from app.logs.config import logger
+from app.services.object_storage import object_storage_enabled, put_export
 
 router = APIRouter(prefix="/editais", tags=["exportação"])
 
@@ -108,8 +109,10 @@ def download_xlsx(edital_id: int, db: Session = Depends(get_db)):
     filename = f"matching_edital_{edital_id}.xlsx"
 
     logger.info(f"[Export] XLSX solicitado — edital {edital_id}")
+    content = export_xlsx(data)
+    _archive_export(db, edital_id, filename, content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     return Response(
-        content     = export_xlsx(data),
+        content     = content,
         media_type  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers     = {"Content-Disposition": f'attachment; filename="{filename}"'},
     )
@@ -125,8 +128,10 @@ def download_pdf(edital_id: int, db: Session = Depends(get_db)):
     filename = f"relatorio_edital_{edital_id}.pdf"
 
     logger.info(f"[Export] PDF solicitado — edital {edital_id}")
+    content = export_pdf(data)
+    _archive_export(db, edital_id, filename, content, "application/pdf")
     return Response(
-        content     = export_pdf(data),
+        content     = content,
         media_type  = "application/pdf",
         headers     = {"Content-Disposition": f'attachment; filename="{filename}"'},
     )
@@ -142,8 +147,24 @@ def download_csv(edital_id: int, db: Session = Depends(get_db)):
     filename = f"matching_edital_{edital_id}.csv"
 
     logger.info(f"[Export] CSV solicitado — edital {edital_id}")
+    content = export_csv(data)
+    _archive_export(db, edital_id, filename, content, "text/csv; charset=utf-8")
     return Response(
-        content     = export_csv(data),
+        content     = content,
         media_type  = "text/csv; charset=utf-8",
         headers     = {"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+def _archive_export(db: Session, edital_id: int, filename: str, content: bytes, content_type: str) -> None:
+    if not object_storage_enabled():
+        return
+    edital = db.get(Edital, edital_id)
+    if edital is None:
+        return
+    try:
+        key = put_export(edital.tenant_id, edital_id, filename, content, content_type)
+        logger.info("[Export] Arquivado no object storage: %s", key)
+    except Exception as exc:
+        # The user still receives the export even when archival storage is down.
+        logger.warning("[Export] Falha ao arquivar %s: %s", filename, exc)

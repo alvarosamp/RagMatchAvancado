@@ -31,7 +31,7 @@ O Edital Matcher analisa PDFs de editais de licitação, extrai os requisitos t�
 
 | Camada | Tecnologia | Função |
 |--------|-----------|--------|
-| **API** | FastAPI 0.5.0 | Gateway REST, routers, auth e jobs |
+| **API** | FastAPI | Gateway REST, routers, auth e jobs |
 | **Banco** | PostgreSQL 16 + pgvector | Dados relacionais + busca vetorial |
 | **OCR/Parser** | Docling | Extração de texto estruturado de PDFs |
 | **Embeddings** | Ollama `nomic-embed-text` (768d) | Vetorização de chunks |
@@ -85,18 +85,18 @@ Score Final
 
 ---
 
-## Integracao CRM (Bid Buddy)
+## Integração CRM (Bid Buddy)
 
-O projeto agora pode publicar o CRM do diretÃ³rio `bid-buddy/` dentro do site principal da Tor na rota `/crm/`.
+O projeto pode publicar o CRM do diretório `bid-buddy/` dentro do site principal da Tor na rota `/crm/`.
 
 ### Como funciona
 
-1. O repositÃ³rio `bid-buddy/` continua separado.
+1. O repositório `bid-buddy/` continua separado.
 2. O script `scripts/sync-bid-buddy.mjs` gera um build do CRM com base `/crm/`.
-3. Os arquivos compilados sÃ£o copiados para `frontend/public/crm/`.
+3. Os arquivos compilados são copiados para `frontend/public/crm/`.
 4. O frontend principal incorpora esse build na rota `/crm` e o Nginx faz fallback para `/crm/index.html`.
 
-### Fluxo recomendado de atualizacao
+### Fluxo recomendado de atualização
 
 ```bash
 node ./scripts/sync-bid-buddy.mjs --pull
@@ -106,7 +106,19 @@ npm run build:all
 
 ### Build em container
 
-O `docker-compose.yaml` e o `frontend/Dockerfile` agora constroem o site principal junto com o CRM embarcado, para que a publicaÃ§Ã£o saia pronta no mesmo deploy.
+O `docker-compose.yaml` e o `frontend/Dockerfile` agora constroem o site principal junto com o CRM embarcado, para que a publicação saia pronta no mesmo deploy.
+
+### Operação e desempenho do CRM
+
+- `GET /crm/notices` entrega uma lista paginada e leve para o pipeline, com contadores de documentos e produtos; use `cursor` para carregar a próxima página.
+- O cache dessa lista é isolado por tenant no Redis e é invalidado nas operações de criação, edição e remoção feitas pela API.
+- As inferências de matching do CRM rodam no worker `worker-ai`, separado do processamento regular de editais. O uso de LLM permanece opt-in por `CRM_MATCH_USE_LLM=1`.
+- Datas vindas de clientes com fuso horário são normalizadas para o horário de Brasília antes de serem gravadas no CRM, evitando deslocamento de três horas.
+
+### Health checks
+
+- `GET /health` e `GET /health/live` verificam se a API está em execução.
+- `GET /health/ready` também confirma a conectividade com PostgreSQL e, quando configurado, Redis. Use este endpoint em sondas de readiness do ambiente.
 
 ---
 
@@ -269,6 +281,12 @@ worker.executar_matching_com_tracking(edital_id="42", resultados_matching=result
 
 ### Saúde
 - **GET** `/health` — health check
+- **GET** `/health/live` — liveness probe da API
+- **GET** `/health/ready` — readiness probe (PostgreSQL e Redis)
+
+### CRM
+- **GET** `/crm/notices` — pipeline de avisos paginado e resumido
+- **POST** `/crm/matches/ground-truth/run` — enfileira itens rotulados para calibração do matching (admin/editor)
 
 Swagger: **http://localhost:8000/docs**
 
@@ -289,6 +307,17 @@ cd RagMatchAvancado
 # 3. Suba os serviços
 docker compose up --build
 ```
+
+Para produção, copie `.env.prod.example` para `.env.prod`, defina os segredos e
+suba a composição de produção:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d
+```
+
+A composição usa PgBouncer para as conexões da API e separa o worker de IA do
+worker regular. Ajuste `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`,
+`AI_WORKER_PROCESSES` e `AI_WORKER_THREADS` conforme a capacidade do servidor.
 
 Na primeira vez, o serviço `ollama-setup` baixa os modelos automaticamente (~5 min).
 
@@ -376,6 +405,22 @@ OLLAMA_HOST=http://ollama:11434
 MLFLOW_TRACKING_URI=http://mlflow:5000
 ```
 
+### Armazenamento de PDFs e exports (MinIO/S3)
+
+Em produção, o Compose sobe o MinIO automaticamente e os PDFs de editais e
+exports XLSX/PDF/CSV passam a ser guardados no volume persistente `minio_data`.
+Defina credenciais fortes no `.env` do servidor antes de subir a stack:
+
+```env
+MINIO_ROOT_USER=troque-por-um-usuario
+MINIO_ROOT_PASSWORD=troque-por-uma-senha-longa
+S3_BUCKET=edital-matcher
+```
+
+O MinIO fica acessível apenas para os containers. Para usar AWS S3, Cloudflare
+R2 ou outro serviço compatível no futuro, basta trocar `S3_ENDPOINT_URL`,
+`S3_ACCESS_KEY` e `S3_SECRET_KEY` sem alterar o código.
+
 ---
 
 ## Roadmap
@@ -386,7 +431,8 @@ MLFLOW_TRACKING_URI=http://mlflow:5000
 ✅  Catálogo de produtos (data/Produtos/all_devices.json)
 ✅  Exportação XLSX / PDF / CSV
 ✅  Autenticação JWT com multi-tenant
-✅  Jobs assíncronos com polling
+✅  Jobs assíncronos com Redis + worker dedicado e polling
+✅  Recuperação automática de jobs interrompidos e retry com backoff
 ✅  MLOps Layer (MLflow + Evidently)
 
 ⬜  Orquestração externa de jobs
@@ -400,6 +446,13 @@ MLFLOW_TRACKING_URI=http://mlflow:5000
 ⬜  Hardening de produção
     → secrets manager, rate limit e row-level security
 ```
+
+## Migração de servidor e backups
+
+O projeto inclui scripts para gerar e validar um pacote de migração completo:
+dump PostgreSQL, arquivos, objetos MinIO, XLSX de auditoria e manifesto com
+hashes. Consulte [docs/migracao_servidor.md](docs/migracao_servidor.md) antes
+de trocar de provedor ou desligar um servidor.
 
 ---
 

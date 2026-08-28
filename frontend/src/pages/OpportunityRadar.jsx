@@ -128,7 +128,7 @@ function OpportunityCard({ item, importing, deciding, onImport, onDecision, onOp
         <div className="flex flex-row items-center gap-3 lg:flex-col lg:items-end">
           <div className="text-right">
             <p className={`text-3xl font-bold ${scoreTone(opportunity.score)}`}>{opportunity.score ?? '-'}</p>
-            <p className="text-xs text-slate-400">score IA</p>
+            <p className="text-xs text-slate-400">score</p>
           </div>
           <button
             type="button"
@@ -278,7 +278,7 @@ function OpportunityCard({ item, importing, deciding, onImport, onDecision, onOp
           <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Parecer IA de decisao</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Parecer de decisao</p>
                 <p className="mt-1 text-sm font-semibold text-slate-950 dark:text-white">
                   {INTELLIGENCE_LABELS[intelligence.recommendation] || intelligence.recommendation}
                 </p>
@@ -514,7 +514,7 @@ export default function OpportunityRadar() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Inteligencia comercial</p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">Radar IA de oportunidades</h1>
+          <h1 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">Radar de oportunidades</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
             Puxa diariamente oportunidades de switches, access points, firewall, roteadores e itens de rede no PNCP, cruza com sinais do catalogo e prioriza onde vale gastar tempo de analise.
           </p>

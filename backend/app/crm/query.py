@@ -27,6 +27,7 @@ from app.crm.models import (
     CrmPortal,
     CrmPostAuctionPhase,
 )
+from app.crm.timezone import brasilia_wall_clock
 from app.services.crm_notice_sync import (
     apply_notice_defaults,
     apply_notice_product_defaults,
@@ -321,7 +322,7 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data[column.name] = _json_value(value)
 
     if isinstance(row, CrmCatalogProduct):
-        data["min_price"] = row.min_price
+        data["min_price"] = row.min_price if row.min_price is not None else row.computed_min_price
     elif isinstance(row, CrmNotice):
         data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None
         data["portals"] = serialize_related(row.portal, ("id", "name", "url")) if row.portal else None
@@ -357,6 +358,8 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data["tor_id"] = data["number"]
     elif isinstance(row, CrmNoticeProduct):
         data["catalog_products"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        if row.catalog_product and not data.get("catalog_lpu_version"):
+            data["catalog_lpu_version"] = getattr(row.catalog_product, "lpu_version", None)
         if data.get("reference_total_price") is None and data.get("reference_price") is not None and data.get("quantity") not in (None, 0):
             data["reference_total_price"] = round(float(data["reference_price"]) * float(data["quantity"]), 4)
         if data.get("reference_price") is None and data.get("reference_total_price") is not None and data.get("quantity") not in (None, 0):
@@ -631,7 +634,11 @@ def _cast_column_value(column: Any, value: Any) -> Any:
             return value
         return str(value).lower() in {"1", "true", "yes", "on"}
     if isinstance(column_type, DateTime):
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        # CRM DateTime columns intentionally store the local Brasilia clock
+        # (without tzinfo). Normalize timezone-aware API clients before
+        # persisting so their UTC offset cannot turn into a +3h shift.
+        return brasilia_wall_clock(parsed)
     if isinstance(column_type, Date):
         return date.fromisoformat(str(value)[:10])
     return value

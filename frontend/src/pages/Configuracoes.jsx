@@ -13,6 +13,7 @@ const ROLE_LABELS = {
   editor: { label: 'Editor',        color: 'text-red-400 border-red-600/30 bg-red-600/10'      },
   viewer: { label: 'Visualizador',  color: 'text-gray-400 border-slate-700 bg-slate-800'  },
 }
+const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
 function Section({ title, description, children }) {
   return (
@@ -85,54 +86,55 @@ export default function Configuracoes() {
         </div>
       </Section>
 
-      {/* ── Modelo ─────────────────────────────────────────────────────────── */}
-      <Section title="Modelo" description="Modelo padrao usado no ChatBot">
-        <div className="space-y-3">
-          {[
-            {
-              val:   'gpt',
-              label: 'GPT-4o mini',
-              desc:  'OpenAI · cloud · mais preciso · requer chave de API',
-              badge: 'Recomendado',
-            },
-            {
-              val:   'ollama',
-              label: 'Llama 3 (Local)',
-              desc:  'Ollama · roda localmente · sem custo de API · requer GPU/CPU',
-              badge: null,
-            },
-          ].map(({ val, label, desc, badge }) => (
-            <button
-              key={val}
-              onClick={() => setDefaultModel(val)}
-              className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all ${
-                defaultModel === val
-                  ? 'border-red-600 bg-red-600/10'
-                  : 'border-slate-700 hover:border-red-600/40 hover:bg-slate-hover'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-0.5">
-                <p className="text-sm font-display font-bold text-white">{label}</p>
-                <div className="flex items-center gap-2">
-                  {badge && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-green-match/30 bg-green-match/10 text-green-match">
-                      {badge}
-                    </span>
-                  )}
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    defaultModel === val ? 'border-red-600' : 'border-slate-700'
-                  }`}>
-                    {defaultModel === val && (
-                      <div className="w-2 h-2 rounded-full bg-red-600" />
+      {AI_FEATURES_ENABLED && (
+        <Section title="Modelo" description="Modelo padrao usado no ChatBot">
+          <div className="space-y-3">
+            {[
+              {
+                val:   'gpt',
+                label: 'GPT-4o mini',
+                desc:  'OpenAI · cloud · mais preciso · requer chave de API',
+                badge: 'Recomendado',
+              },
+              {
+                val:   'ollama',
+                label: 'Llama 3 (Local)',
+                desc:  'Ollama · roda localmente · sem custo de API · requer GPU/CPU',
+                badge: null,
+              },
+            ].map(({ val, label, desc, badge }) => (
+              <button
+                key={val}
+                onClick={() => setDefaultModel(val)}
+                className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all ${
+                  defaultModel === val
+                    ? 'border-red-600 bg-red-600/10'
+                    : 'border-slate-700 hover:border-red-600/40 hover:bg-slate-hover'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-sm font-display font-bold text-white">{label}</p>
+                  <div className="flex items-center gap-2">
+                    {badge && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-green-match/30 bg-green-match/10 text-green-match">
+                        {badge}
+                      </span>
                     )}
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      defaultModel === val ? 'border-red-600' : 'border-slate-700'
+                    }`}>
+                      {defaultModel === val && (
+                        <div className="w-2 h-2 rounded-full bg-red-600" />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <p className="text-xs text-gray-500 font-mono">{desc}</p>
-            </button>
-          ))}
-        </div>
-      </Section>
+                <p className="text-xs text-gray-500 font-mono">{desc}</p>
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* ── Interface ──────────────────────────────────────────────────────── */}
       <Section title="Interface" description="Preferências de exibição">
@@ -182,7 +184,7 @@ export default function Configuracoes() {
           <div>
             <p className="font-display font-bold text-white">Plano Pro</p>
             <p className="text-xs text-gray-400 font-mono mt-0.5">
-              Upload ilimitado · ChatBot RAG · Analytics · Análise LLM · PNCP
+              CRM comercial · Analytics · documentos · PNCP
             </p>
           </div>
         </div>

@@ -129,7 +129,7 @@ def persist_notice_decision_intelligence(
     notice.decision_recommendation = payload["recommendation"]
     notice.decision_score = payload["score"]
     notice.decision_risk_score = payload["risk_score"]
-    notice.analysis_status = "Parecer IA gerado"
+    notice.analysis_status = "Parecer gerado"
     notice.analysis_confidence = _confidence_label(payload["confidence"])
     _sync_checklist_from_intelligence(notice, payload)
     db.add(
@@ -137,7 +137,7 @@ def persist_notice_decision_intelligence(
             tenant_id=notice.tenant_id,
             notice_id=notice.id,
             user_id=user_id,
-            action="Parecer IA de decisao gerado",
+            action="Parecer de decisao gerado",
             details={
                 "recommendation": payload["recommendation"],
                 "score": payload["score"],
@@ -304,7 +304,7 @@ def _sync_checklist_from_intelligence(notice: CrmNotice, payload: dict[str, Any]
     docs_by_name: dict[str, CrmNoticeDocument] = {doc.name: doc for doc in notice.notice_documents}
     if docs_by_name.get("Analisar requisitos tecnicos"):
         docs_by_name["Analisar requisitos tecnicos"].status = CrmChecklistStatus.READY
-        docs_by_name["Analisar requisitos tecnicos"].notes = "Parecer IA gerado com requisitos tecnicos preliminares."
+        docs_by_name["Analisar requisitos tecnicos"].notes = "Parecer gerado com requisitos tecnicos preliminares."
     if docs_by_name.get("Validar documentacao de habilitacao"):
         required_docs = [item["name"] for item in payload.get("document_requirements", []) if item.get("required")]
         docs_by_name["Validar documentacao de habilitacao"].status = CrmChecklistStatus.IN_PROGRESS if required_docs else CrmChecklistStatus.PENDING

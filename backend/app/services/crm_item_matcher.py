@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
+from app.core.features import AI_FEATURES_ENABLED, CRM_MATCH_USE_LLM
 from app.crm.models import (
     CrmCatalogProduct,
     CrmNotice,
@@ -33,6 +35,15 @@ SUGGESTIONS_PER_ITEM = 10
 MIN_SUGGESTION_SCORE = 0.32
 
 
+def _auto_pricing_allowed(product: CrmNoticeProduct) -> bool:
+    notice = getattr(product, "notice", None)
+    return not bool(getattr(notice, "post_auction_phase", None))
+
+
+def _remember_lpu_version(product: CrmNoticeProduct, catalog: CrmCatalogProduct) -> None:
+    product.catalog_lpu_version = getattr(catalog, "lpu_version", None)
+
+
 def run_notice_item_match(
     db: Session,
     current_user: User,
@@ -42,6 +53,7 @@ def run_notice_item_match(
     notice_product_id: str | None = None,
     category: str | None = None,
 ) -> dict[str, Any]:
+    use_llm = bool(use_llm and AI_FEATURES_ENABLED and CRM_MATCH_USE_LLM)
     notice = _load_notice(db, current_user, notice_id)
     catalog_products = (
         db.query(CrmCatalogProduct)
@@ -106,9 +118,10 @@ def run_notice_item_match(
                 created_by=current_user.id,
             )
             product.catalog_product_id = reused_catalog.id
-            if product.unit_price is None and reused_catalog.min_price is not None:
+            _remember_lpu_version(product, reused_catalog)
+            if _auto_pricing_allowed(product) and product.unit_price is None and reused_catalog.min_price is not None:
                 product.unit_price = float(reused_catalog.min_price)
-            if product.cost is None and reused_catalog.cost is not None:
+            if _auto_pricing_allowed(product) and product.cost is None and reused_catalog.cost is not None:
                 product.cost = float(reused_catalog.cost)
             db.add(reused_match)
             best_scores.append({
@@ -217,9 +230,15 @@ def confirm_notice_item_match(db: Session, current_user: User, match_id: str) ->
     catalog = match.catalog_product
 
     product.catalog_product_id = catalog.id
-    if product.unit_price is None and catalog.min_price is not None:
+    product.catalog_match_source = "match_confirmed"
+    product.catalog_match_confirmed_by = current_user.id
+    product.catalog_match_confirmed_at = datetime.utcnow()
+    product.catalog_match_model_version = match.source_method
+    product.catalog_match_notes = f"Confirmado a partir da sugestao rank #{match.match_rank}."
+    _remember_lpu_version(product, catalog)
+    if _auto_pricing_allowed(product) and product.unit_price is None and catalog.min_price is not None:
         product.unit_price = float(catalog.min_price)
-    if product.cost is None and catalog.cost is not None:
+    if _auto_pricing_allowed(product) and product.cost is None and catalog.cost is not None:
         product.cost = float(catalog.cost)
 
     db.query(CrmNoticeProductMatch).filter(
@@ -243,6 +262,273 @@ def confirm_notice_item_match(db: Session, current_user: User, match_id: str) ->
     )
     db.commit()
     return get_notice_item_match_payload(db, current_user, match.notice_id)
+
+
+def mark_notice_product_ground_truth(
+    db: Session,
+    current_user: User,
+    notice_product_id: str,
+    catalog_product_id: str,
+    *,
+    source: str = "manual_confirmed",
+    notes: str | None = None,
+) -> dict[str, Any]:
+    product = (
+        db.query(CrmNoticeProduct)
+        .filter(
+            CrmNoticeProduct.id == notice_product_id,
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not product:
+        raise LookupError("Item do edital nao encontrado.")
+    catalog = (
+        db.query(CrmCatalogProduct)
+        .filter(
+            CrmCatalogProduct.id == catalog_product_id,
+            CrmCatalogProduct.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not catalog:
+        raise LookupError("Produto do catalogo nao encontrado.")
+
+    product.catalog_product_id = catalog.id
+    product.catalog_match_source = source
+    product.catalog_match_confirmed_by = current_user.id
+    product.catalog_match_confirmed_at = datetime.utcnow()
+    product.catalog_match_notes = notes
+    _remember_lpu_version(product, catalog)
+    if _auto_pricing_allowed(product) and product.unit_price is None and catalog.min_price is not None:
+        product.unit_price = float(catalog.min_price)
+    if _auto_pricing_allowed(product) and product.cost is None and catalog.cost is not None:
+        product.cost = float(catalog.cost)
+
+    existing_match = (
+        db.query(CrmNoticeProductMatch)
+        .filter(
+            CrmNoticeProductMatch.notice_product_id == product.id,
+            CrmNoticeProductMatch.catalog_product_id == catalog.id,
+        )
+        .first()
+    )
+    if existing_match is not None:
+        existing_match.status = CrmNoticeProductMatchStatus.CONFIRMED
+        product.catalog_match_model_version = existing_match.source_method
+        db.query(CrmNoticeProductMatch).filter(
+            CrmNoticeProductMatch.notice_product_id == product.id,
+            CrmNoticeProductMatch.id != existing_match.id,
+        ).update({CrmNoticeProductMatch.status: CrmNoticeProductMatchStatus.REJECTED}, synchronize_session=False)
+
+    db.add(
+        CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=product.notice_id,
+            user_id=current_user.id,
+            action="Ground truth de match registrado",
+            details={
+                "notice_product_id": product.id,
+                "catalog_product_id": catalog.id,
+                "source": source,
+            },
+        )
+    )
+    db.commit()
+    return get_notice_item_match_payload(db, current_user, product.notice_id)
+
+
+def build_match_ground_truth_report(
+    db: Session,
+    current_user: User,
+    *,
+    notice_id: str | None = None,
+    source: str | None = None,
+    limit: int = 500,
+    include_unmarked: bool = False,
+) -> dict[str, Any]:
+    query = (
+        db.query(CrmNoticeProduct)
+        .options(
+            joinedload(CrmNoticeProduct.notice),
+            joinedload(CrmNoticeProduct.catalog_product),
+            joinedload(CrmNoticeProduct.product_matches).joinedload(CrmNoticeProductMatch.catalog_product),
+        )
+        .filter(
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+            CrmNoticeProduct.catalog_product_id.isnot(None),
+        )
+    )
+    if not include_unmarked:
+        query = query.filter(CrmNoticeProduct.catalog_match_source.isnot(None))
+    if notice_id:
+        query = query.filter(CrmNoticeProduct.notice_id == notice_id)
+    if source:
+        query = query.filter(CrmNoticeProduct.catalog_match_source == source)
+
+    products = query.order_by(CrmNoticeProduct.created_at.desc()).limit(limit).all()
+    rows = [_ground_truth_row(product) for product in products]
+    evaluated = [row for row in rows if row["suggestions_count"] > 0]
+    hidden = [row for row in rows if row["rank"] is None and row["suggestions_count"] > 0]
+
+    total = len(rows)
+    evaluated_total = len(evaluated)
+    top1 = sum(1 for row in evaluated if row["rank"] == 1)
+    top3 = sum(1 for row in evaluated if row["rank"] is not None and row["rank"] <= 3)
+    top5 = sum(1 for row in evaluated if row["rank"] is not None and row["rank"] <= 5)
+    avg_score = _avg(row["ground_truth_score"] for row in evaluated if row["ground_truth_score"] is not None)
+
+    return {
+        "summary": {
+            "ground_truth_items": total,
+            "linked_items_included": total,
+            "include_unmarked": include_unmarked,
+            "evaluated_items": evaluated_total,
+            "without_suggestions": total - evaluated_total,
+            "top1_hits": top1,
+            "top3_hits": top3,
+            "top5_hits": top5,
+            "top1_rate": _rate(top1, evaluated_total),
+            "top3_rate": _rate(top3, evaluated_total),
+            "top5_rate": _rate(top5, evaluated_total),
+            "hidden_errors": len(hidden),
+            "avg_ground_truth_score": avg_score,
+        },
+        "hidden_errors": hidden[:50],
+        "low_confidence_truth": [
+            row for row in evaluated
+            if row["ground_truth_score"] is not None and row["ground_truth_score"] < 0.64
+        ][:50],
+        "items": rows,
+    }
+
+
+def build_attached_products_llm_report(
+    db: Session,
+    current_user: User,
+    *,
+    notice_id: str | None = None,
+    limit: int = 1000,
+) -> dict[str, Any]:
+    query = (
+        db.query(CrmNoticeProduct)
+        .options(
+            joinedload(CrmNoticeProduct.notice).joinedload(CrmNotice.organ),
+            joinedload(CrmNoticeProduct.notice).joinedload(CrmNotice.portal),
+            joinedload(CrmNoticeProduct.catalog_product),
+            joinedload(CrmNoticeProduct.product_matches).joinedload(CrmNoticeProductMatch.catalog_product),
+        )
+        .filter(
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+            CrmNoticeProduct.catalog_product_id.isnot(None),
+        )
+    )
+    if notice_id:
+        query = query.filter(CrmNoticeProduct.notice_id == notice_id)
+
+    products = query.order_by(CrmNoticeProduct.created_at.desc()).limit(limit).all()
+    items = [_attached_products_llm_row(product) for product in products]
+    notices = {item["notice"]["id"] for item in items if item.get("notice", {}).get("id")}
+    confirmed = sum(1 for item in items if item["attachment"]["source"])
+    with_match_suggestion = sum(1 for item in items if item["match_evidence"]["attached_match"] is not None)
+    discarded = sum(1 for item in items if item["notice"].get("is_discarded"))
+    training_labels = defaultdict(int)
+    for item in items:
+        training_labels[item["training"]["label"]] += 1
+
+    return {
+        "report_type": "crm_attached_products_llm_context",
+        "summary": {
+            "attached_items": len(items),
+            "notices_count": len(notices),
+            "discarded_notices_included": len({item["notice"]["id"] for item in items if item["notice"].get("is_discarded")}),
+            "discarded_items_included": discarded,
+            "confirmed_or_sourced_items": confirmed,
+            "items_with_match_evidence": with_match_suggestion,
+            "training_labels": dict(training_labels),
+            "limit": limit,
+        },
+        "llm_task": {
+            "objective": (
+                "Avaliar se cada produto do catalogo anexado ao item do edital atende a descricao, "
+                "caracteristicas tecnicas, quantidades, prazos e restricoes comerciais do edital."
+            ),
+            "coverage": (
+                "Inclui editais ativos, encerrados, ganhos, perdidos e descartados que possuam "
+                "um produto do catalogo vinculado. O resultado comercial do edital nao define o rotulo de match."
+            ),
+            "expected_output": [
+                "veredito por item: atende, atende com ressalvas ou nao atende",
+                "principais evidencias do edital usadas na decisao",
+                "principais evidencias do produto do catalogo usadas na decisao",
+                "gaps, riscos e perguntas que precisam de validacao humana",
+                "resumo executivo por edital",
+            ],
+            "important_fields": [
+                "notice",
+                "notice_product",
+                "attached_catalog_product",
+                "attachment",
+                "match_evidence",
+            ],
+        },
+        "items": items,
+    }
+
+
+def flatten_attached_products_report_items(report: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in report.get("items") or []:
+        notice = item.get("notice") or {}
+        notice_product = item.get("notice_product") or {}
+        catalog = item.get("attached_catalog_product") or {}
+        attachment = item.get("attachment") or {}
+        evidence = item.get("match_evidence") or {}
+        training = item.get("training") or {}
+        rows.append({
+            "notice_id": notice.get("id"),
+            "notice_number": notice.get("number"),
+            "notice_tor_id": notice.get("tor_id"),
+            "notice_bid_number": notice.get("bid_number"),
+            "notice_title": notice.get("title"),
+            "organ": notice.get("organ"),
+            "portal": notice.get("portal"),
+            "municipality_name": notice.get("municipality_name"),
+            "state": notice.get("state"),
+            "stage": notice.get("stage"),
+            "notice_outcome": notice.get("outcome"),
+            "notice_outcome_reason": notice.get("outcome_reason"),
+            "notice_is_discarded": notice.get("is_discarded"),
+            "notice_product_id": notice_product.get("id"),
+            "item_number": notice_product.get("item_number"),
+            "lot": notice_product.get("lot"),
+            "item_description": notice_product.get("description"),
+            "quantity": notice_product.get("quantity"),
+            "unit": notice_product.get("unit"),
+            "item_category": notice_product.get("category"),
+            "technical_characteristics": notice_product.get("technical_characteristics"),
+            "reference_price": notice_product.get("reference_price"),
+            "reference_total_price": notice_product.get("reference_total_price"),
+            "catalog_product_id": catalog.get("id") or attachment.get("catalog_product_id"),
+            "catalog_name": catalog.get("name"),
+            "catalog_brand": catalog.get("brand"),
+            "catalog_model": catalog.get("model"),
+            "catalog_sku": catalog.get("sku"),
+            "catalog_mpn": catalog.get("manufacturer_part_number"),
+            "catalog_category": catalog.get("category"),
+            "catalog_specification": catalog.get("specification"),
+            "catalog_keywords": catalog.get("keywords"),
+            "attachment_source": attachment.get("source"),
+            "attachment_confirmed_at": attachment.get("confirmed_at"),
+            "attachment_model_version": attachment.get("model_version"),
+            "training_label": training.get("label"),
+            "training_use": training.get("recommended_use"),
+            "training_review_required": training.get("review_required"),
+            "attached_product_rank": evidence.get("attached_product_rank"),
+            "attached_product_score": evidence.get("attached_product_score"),
+            "suggestions_count": evidence.get("suggestions_count"),
+        })
+    return rows
 
 
 def reject_notice_item_match(db: Session, current_user: User, match_id: str) -> dict[str, Any]:
@@ -284,7 +570,8 @@ def _rank_candidates(
         reverse=True,
     )[:PRESELECT_LIMIT]
 
-    _attach_semantic_scores(product, lexical_ranked, embedding_cache=embedding_cache)
+    if AI_FEATURES_ENABLED:
+        _attach_semantic_scores(product, lexical_ranked, embedding_cache=embedding_cache)
     ranked: list[dict[str, Any]] = []
     for candidate in lexical_ranked:
         llm_payload = None
@@ -459,6 +746,12 @@ def _serialize_notice_product(product: CrmNoticeProduct) -> dict[str, Any]:
         "reference_price": product.reference_price,
         "reference_total_price": product.reference_total_price,
         "catalog_product_id": product.catalog_product_id,
+        "catalog_match_source": product.catalog_match_source,
+        "catalog_match_confirmed_by": product.catalog_match_confirmed_by,
+        "catalog_match_confirmed_at": product.catalog_match_confirmed_at.isoformat() if product.catalog_match_confirmed_at else None,
+        "catalog_match_model_version": product.catalog_match_model_version,
+        "catalog_match_notes": product.catalog_match_notes,
+        "catalog_lpu_version": product.catalog_lpu_version,
         "catalog_product": {
             "id": product.catalog_product.id,
             "name": product.catalog_product.name,
@@ -468,6 +761,172 @@ def _serialize_notice_product(product: CrmNoticeProduct) -> dict[str, Any]:
             "category": getattr(product.catalog_product, "category", None),
         } if product.catalog_product else None,
     }
+
+
+def _ground_truth_row(product: CrmNoticeProduct) -> dict[str, Any]:
+    matches = sorted(product.product_matches or [], key=lambda item: item.match_rank or 9999)
+    truth_match = next((match for match in matches if match.catalog_product_id == product.catalog_product_id), None)
+    best_match = matches[0] if matches else None
+    return {
+        "notice_id": product.notice_id,
+        "notice_number": product.notice.number if product.notice else None,
+        "notice_title": product.notice.title if product.notice else None,
+        "notice_product_id": product.id,
+        "item_number": product.item_number,
+        "description": product.description,
+        "ground_truth_catalog_product_id": product.catalog_product_id,
+        "ground_truth_catalog_product": _catalog_title(product.catalog_product) if product.catalog_product else None,
+        "source": product.catalog_match_source,
+        "confirmed_at": product.catalog_match_confirmed_at.isoformat() if product.catalog_match_confirmed_at else None,
+        "confirmed_by": product.catalog_match_confirmed_by,
+        "model_version": product.catalog_match_model_version,
+        "rank": truth_match.match_rank if truth_match else None,
+        "ground_truth_score": truth_match.overall_score if truth_match else None,
+        "best_catalog_product_id": best_match.catalog_product_id if best_match else None,
+        "best_catalog_product": _catalog_title(best_match.catalog_product) if best_match and best_match.catalog_product else None,
+        "best_score": best_match.overall_score if best_match else None,
+        "suggestions_count": len(matches),
+    }
+
+
+def _attached_products_llm_row(product: CrmNoticeProduct) -> dict[str, Any]:
+    matches = sorted(product.product_matches or [], key=lambda item: item.match_rank or 9999)
+    attached_match = next((match for match in matches if match.catalog_product_id == product.catalog_product_id), None)
+    best_match = matches[0] if matches else None
+    notice = product.notice
+    catalog = product.catalog_product
+    training = _training_metadata(product.catalog_match_source)
+    outcome = _enum_value(notice.outcome) if notice else None
+    return {
+        "notice": {
+            "id": notice.id if notice else None,
+            "number": notice.number if notice else None,
+            "tor_id": notice.tor_id if notice else None,
+            "bid_number": notice.bid_number if notice else None,
+            "title": notice.title if notice else None,
+            "organ": notice.organ.name if notice and notice.organ else None,
+            "portal": notice.portal.name if notice and notice.portal else None,
+            "municipality_name": notice.municipality_name if notice else None,
+            "state": notice.state if notice else None,
+            "modality": notice.modality if notice else None,
+            "auction_date": notice.auction_date.isoformat() if notice and notice.auction_date else None,
+            "estimated_value": notice.estimated_value if notice else None,
+            "stage": notice.stage.value if notice and notice.stage else None,
+            "outcome": outcome,
+            "outcome_reason": notice.outcome_reason if notice else None,
+            "is_discarded": outcome == "not_pursued",
+            "decision_recommendation": notice.decision_recommendation if notice else None,
+            "decision_score": notice.decision_score if notice else None,
+            "bi_item_summary": notice.bi_item_summary if notice else None,
+            "bi_criterion": notice.bi_criterion if notice else None,
+            "bi_exclusivity": notice.bi_exclusivity if notice else None,
+            "bi_risk_identified": notice.bi_risk_identified if notice else None,
+            "particularities": notice.particularities if notice else None,
+        },
+        "notice_product": {
+            "id": product.id,
+            "item_number": product.item_number,
+            "lot": product.lot,
+            "product_code": product.product_code,
+            "description": product.description,
+            "quantity": product.quantity,
+            "unit": product.unit,
+            "warranty": product.warranty,
+            "delivery_deadline": product.delivery_deadline,
+            "category": product.category,
+            "technical_characteristics": product.technical_characteristics,
+            "risk_associated": product.risk_associated,
+            "reference_price": product.reference_price,
+            "reference_total_price": product.reference_total_price,
+            "brand_direction_exists": product.brand_direction_exists,
+            "brand_direction_model": product.brand_direction_model,
+            "brand_direction_type": product.brand_direction_type,
+            "brand_direction_justification": product.brand_direction_justification,
+            "exclusive_epp_label": product.exclusive_epp_label,
+            "bi_features": product.bi_features,
+            "raw_payload": product.raw_payload,
+            "notes": product.notes,
+        },
+        "attached_catalog_product": _serialize_catalog_product_for_llm(catalog),
+        "attachment": {
+            "catalog_product_id": product.catalog_product_id,
+            "source": product.catalog_match_source,
+            "confirmed_by": product.catalog_match_confirmed_by,
+            "confirmed_at": product.catalog_match_confirmed_at.isoformat() if product.catalog_match_confirmed_at else None,
+            "model_version": product.catalog_match_model_version,
+            "lpu_version": product.catalog_lpu_version,
+            "notes": product.catalog_match_notes,
+        },
+        "training": training,
+        "match_evidence": {
+            "attached_match": _serialize_match(attached_match) if attached_match else None,
+            "best_match": _serialize_match(best_match) if best_match else None,
+            "attached_product_rank": attached_match.match_rank if attached_match else None,
+            "attached_product_score": attached_match.overall_score if attached_match else None,
+            "suggestions_count": len(matches),
+        },
+    }
+
+
+def _training_metadata(source: str | None) -> dict[str, Any]:
+    """Classifica a confianca do vinculo sem excluir editais por resultado."""
+    if source in {"manual_confirmed", "match_confirmed"}:
+        return {
+            "label": "positive_confirmed",
+            "recommended_use": "train_positive",
+            "review_required": False,
+        }
+    if source == "manual_kit":
+        return {
+            "label": "positive_kit_review",
+            "recommended_use": "review_before_training",
+            "review_required": True,
+        }
+    return {
+        "label": "unverified_link",
+        "recommended_use": "review_before_training",
+        "review_required": True,
+    }
+
+
+def _enum_value(value: Any) -> Any:
+    return value.value if hasattr(value, "value") else value
+
+
+def _serialize_catalog_product_for_llm(product: CrmCatalogProduct | None) -> dict[str, Any] | None:
+    if product is None:
+        return None
+    return {
+        "id": product.id,
+        "name": product.name,
+        "description": product.description,
+        "category": product.category,
+        "brand": product.brand,
+        "model": product.model,
+        "manufacturer_part_number": product.manufacturer_part_number,
+        "sku": product.sku,
+        "specification": product.specification,
+        "keywords": product.keywords,
+        "unit": product.unit,
+        "cost": product.cost,
+        "min_price": product.min_price,
+        "computed_min_price": product.computed_min_price,
+        "tax_percent": product.tax_percent,
+        "margin_percent": product.margin_percent,
+        "notes": product.notes,
+        "is_active": product.is_active,
+    }
+
+
+def _rate(numerator: int, denominator: int) -> float:
+    return round(numerator / denominator, 4) if denominator else 0.0
+
+
+def _avg(values: Any) -> float | None:
+    numbers = [float(value) for value in values if value is not None]
+    if not numbers:
+        return None
+    return round(sum(numbers) / len(numbers), 4)
 
 
 def _serialize_match(match: CrmNoticeProductMatch) -> dict[str, Any]:

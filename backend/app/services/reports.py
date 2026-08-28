@@ -17,10 +17,26 @@ def _money(value: float | None) -> float:
 
 def _notice_label(notice: Any) -> str:
     return (
-        getattr(notice, "municipality_name", None)
+        getattr(notice, "title", None)
+        or getattr(notice, "municipality_name", None)
         or getattr(getattr(notice, "organ", None), "name", None)
         or getattr(notice, "number", None)
         or "Edital sem identificacao"
+    )
+
+
+def _notice_summary(notice: Any) -> str:
+    intelligence = getattr(notice, "decision_intelligence", None) or {}
+    if isinstance(intelligence, dict):
+        for key in ("summary", "resumo", "object", "objeto"):
+            value = intelligence.get(key)
+            if value:
+                return str(value)
+    return (
+        getattr(notice, "bi_item_summary", None)
+        or getattr(notice, "particularities", None)
+        or getattr(notice, "title", None)
+        or "Resumo ainda nao informado para esta disputa."
     )
 
 
@@ -128,6 +144,10 @@ def build_executive_report(
                 if notice.auction_date
                 else None,
                 "valor_estimado": _money(notice.estimated_value),
+                "resumo": _notice_summary(notice),
+                "orgao": getattr(getattr(notice, "organ", None), "name", None),
+                "modalidade": notice.modality,
+                "uf": notice.state,
             }
             for notice in upcoming
         ],

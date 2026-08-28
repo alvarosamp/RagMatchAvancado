@@ -47,10 +47,90 @@ function EmptyState({ title, text }) {
   )
 }
 
+function agendaId(notice, index) {
+  return notice.id || `${notice.numero || 'sem-numero'}-${notice.data || index}`
+}
+
+function agendaSummary(notice) {
+  return (
+    notice.resumo
+    || notice.summary
+    || notice.descricao
+    || notice.objeto
+    || notice.titulo
+    || 'Resumo ainda nao informado para esta disputa.'
+  )
+}
+
+function AgendaItem({ notice, expanded, onToggle }) {
+  const summary = agendaSummary(notice)
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="w-full rounded-lg border border-slate-700 bg-ink-50/60 p-4 text-left transition hover:border-red-400/70 hover:bg-ink-50 focus:outline-none focus:ring-2 focus:ring-red-400/70"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-semibold text-white">{notice.titulo}</p>
+          <p className="mt-1 text-sm text-gray-500">
+            {notice.numero || 'Sem numero'} | {STAGE_LABELS[notice.fase] || notice.fase || 'Sem fase'}
+          </p>
+        </div>
+        <p className="shrink-0 text-right text-sm font-semibold text-red-400">{formatDate(notice.data)}</p>
+      </div>
+
+      <p className={`mt-3 text-sm leading-6 text-gray-400 ${expanded ? '' : 'line-clamp-2'}`}>
+        {summary}
+      </p>
+
+      {expanded && (
+        <div className="mt-4 grid gap-3 rounded-lg border border-slate-700/70 bg-black/15 p-3 text-xs text-gray-400 sm:grid-cols-2">
+          <p>
+            <span className="block font-semibold uppercase tracking-[0.18em] text-gray-500">Valor</span>
+            <span className="mt-1 block text-sm font-semibold text-white">{money(notice.valor_estimado)}</span>
+          </p>
+          <p>
+            <span className="block font-semibold uppercase tracking-[0.18em] text-gray-500">Modalidade</span>
+            <span className="mt-1 block text-sm text-gray-300">{notice.modalidade || 'Nao informada'}</span>
+          </p>
+          <p>
+            <span className="block font-semibold uppercase tracking-[0.18em] text-gray-500">Orgao</span>
+            <span className="mt-1 block text-sm text-gray-300">{notice.orgao || notice.titulo || 'Nao informado'}</span>
+          </p>
+          <p>
+            <span className="block font-semibold uppercase tracking-[0.18em] text-gray-500">UF</span>
+            <span className="mt-1 block text-sm text-gray-300">{notice.uf || 'Nao informada'}</span>
+          </p>
+        </div>
+      )}
+
+      <span className="mt-3 inline-flex text-xs font-semibold text-red-400">
+        {expanded ? 'Recolher resumo' : 'Expandir resumo'}
+      </span>
+    </button>
+  )
+}
+
 export default function Reports() {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [expandedAgendaIds, setExpandedAgendaIds] = useState(() => new Set())
+
+  function toggleAgenda(noticeId) {
+    setExpandedAgendaIds((current) => {
+      const next = new Set(current)
+      if (next.has(noticeId)) {
+        next.delete(noticeId)
+      } else {
+        next.add(noticeId)
+      }
+      return next
+    })
+  }
 
   async function load() {
     setLoading(true)
@@ -183,18 +263,17 @@ export default function Reports() {
           <div className="mt-6 space-y-3">
             {(report.proximas_disputas || []).length === 0 ? (
               <EmptyState title="Nada agendado" text="Defina a data da sessao nos editais para aparecerem aqui." />
-            ) : report.proximas_disputas.map((notice) => (
-              <div key={notice.id} className="rounded-lg border border-slate-700 bg-ink-50/60 p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-white">{notice.titulo}</p>
-                    <p className="mt-1 text-sm text-gray-500">{notice.numero || 'Sem numero'} | {STAGE_LABELS[notice.fase] || notice.fase}</p>
-                  </div>
-                  <p className="text-right text-sm font-semibold text-red-400">{formatDate(notice.data)}</p>
-                </div>
-                <p className="mt-3 text-sm text-gray-400">{money(notice.valor_estimado)}</p>
-              </div>
-            ))}
+            ) : report.proximas_disputas.map((notice, index) => {
+              const noticeId = agendaId(notice, index)
+              return (
+                <AgendaItem
+                  key={noticeId}
+                  notice={notice}
+                  expanded={expandedAgendaIds.has(noticeId)}
+                  onToggle={() => toggleAgenda(noticeId)}
+                />
+              )
+            })}
           </div>
         </div>
 

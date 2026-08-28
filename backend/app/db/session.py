@@ -1,10 +1,18 @@
+import os
+
 from sqlalchemy  import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.logs.config import logger 
 
 #Engine = conexao com o banco
-engine = create_engine(settings.sqlalchemy_database_url, pool_pre_ping=True)
+engine = create_engine(
+    settings.sqlalchemy_database_url,
+    pool_pre_ping=True,
+    pool_size=max(1, int(os.getenv("DB_POOL_SIZE", "10"))),
+    max_overflow=max(0, int(os.getenv("DB_MAX_OVERFLOW", "10"))),
+    pool_timeout=max(1, int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "30"))),
+)
 
 #Sessionlocal = classe que cria sessões de banco de dados
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

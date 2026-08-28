@@ -1,0 +1,53 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{url}
+
+\title{Evidence-Grounded Hybrid RAG for Technical Compliance Matching in Public Procurement}
+
+\author{\IEEEauthorblockN{Anonymous Author}
+\IEEEauthorblockA{AI Engineering Practice\\
+Replace with author name, affiliation, city, country, and email before submission}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Technical compliance assessment in public procurement requires comparing heterogeneous product specifications against long, semi-structured tender documents. This paper presents an evidence-grounded hybrid retrieval-augmented generation (RAG) architecture for that task. The system retrieves tender passages with pgvector, applies deterministic attribute comparators, and asks a local language model for a constrained semantic judgment and explanation. A rule-aware aggregation layer assigns different weights to attribute classes, blocks compliance when a critical physical incompatibility is found, and caps positive judgments when catalog evidence is missing. The contribution is an operationally deployable pattern that keeps model reasoning connected to document evidence while preserving domain rules that should not be overridden by a generative model. We report the implemented design and a reproducible evaluation protocol; no unverified performance figures are claimed.
+\end{abstract}
+
+\begin{IEEEkeywords}
+retrieval-augmented generation, public procurement, compliance matching, large language models, explainable AI
+\end{IEEEkeywords}
+
+\section{Introduction}
+Procurement teams must decide whether catalogued products satisfy a tender's technical requirements. The task is difficult because a requirement can be expressed in prose, a table, an annex, or an OCR-impaired page; product catalogs often use different field names and units. A purely lexical approach misses semantic equivalence, whereas an unconstrained large language model (LLM) can overstate compliance. In public procurement, such an error is consequential because a favorable recommendation must be traceable to evidence.
+
+This work describes the design of Edital Matcher, a system for ranking catalog products against extracted tender requirements. The central proposition is that retrieval, deterministic constraints, and LLM reasoning should cooperate rather than compete. The approach builds on RAG~\cite{lewis2020rag}, but adds hard incompatibility gates and an evidence-missing policy. The work is an engineering contribution and an evaluation-ready baseline, rather than a claim of universal procurement accuracy.
+
+\section{System Design}
+The ingestion path converts tender PDFs into structured text and chunks through Docling~\cite{deep2025docling}, stores embeddings in PostgreSQL/pgvector, and exposes processing through an asynchronous API. For each product--requirement pair, the matcher retrieves the four closest tender chunks using a query composed from the attribute name and requested value. The retrieved passages are supplied as evidence to the model alongside the catalog specification.
+
+A deterministic comparator extracts and compares values for fields such as voltage, temperature, PoE budget, port count, speed, and uplinks. Its signal is combined with the LLM score as
+\begin{equation}
+s=0.3s_{rule}+0.7s_{llm}.
+\end{equation}
+The weights are configurable and must be calibrated on labeled data. The current deployment is configurable and uses a local Llama-family model through Ollama; the architecture itself is model agnostic~\cite{dubey2024llama}.
+
+\section{Safety-Oriented Decision Policy}
+The aggregation layer prevents a language model from converting a physical contradiction into a positive recommendation. A critical failure, currently defined for voltage and temperature incompatibility, forces the item score to zero and the product status to \emph{NOT COMPLIANT}. An absent catalog field receives an uncertainty score and the final value is capped below the \emph{COMPLIANT} threshold.
+
+The operational labels are \emph{COMPLIANT} for scores at least 0.75, \emph{REVIEW} for scores from 0.45 to 0.75, and \emph{NOT COMPLIANT} below 0.45. Product-level scores are weighted means of requirement scores. A critical failure propagates to the product-level status even if the mean score is high. The decision record persists required and catalog values, rule and model scores, final score, retrieved context, and explanation for human audit.
+
+\section{Evaluation Protocol}
+The repository includes unit tests for missing-data handling, critical voltage failures, weighted aggregation, and status propagation. These tests validate control-flow invariants, not field accuracy. A publication-grade evaluation should create a stratified, double-annotated corpus of tender requirements and catalog entries across product families. Annotators should label compliant, non-compliant, insufficient evidence, and critical incompatibility.
+
+The primary metrics are macro-F1 over the three decision labels, critical-failure recall, calibration error, evidence sufficiency rate, and reviewer override rate. Comparisons should include lexical retrieval plus rules, RAG plus LLM without gates, rules only, and the full hybrid system. Ablations should remove retrieval, critical gates, and missing-data capping separately. Latency, token usage, and disagreement analysis should also be reported.
+
+\section{Limitations and Conclusion}
+The architecture prefers \emph{REVIEW} when catalog evidence is incomplete and lets domain rules veto generative judgments. It does not eliminate risks from OCR errors, incorrect requirement extraction, ambiguous tender language, catalog staleness, or poorly calibrated weights. A human approval step should therefore be retained for bid decisions. This paper introduced a practical hybrid RAG pattern for accountable technical matching and a protocol for measuring it without fabricating empirical results.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

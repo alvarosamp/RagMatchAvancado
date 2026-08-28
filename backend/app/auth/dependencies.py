@@ -22,7 +22,9 @@ get_current_tenant             → retorna o Tenant do usuário atual
 require_role("admin")          → garante que o usuário tem o role certo
 '''
 
-from fastapi import Depends, HTTPException, status
+import os
+
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
@@ -42,7 +44,8 @@ from app.logs.config import logger
 #   3. Adiciona o cadeado 🔒 na documentação /docs automaticamente
 #
 # tokenUrl = endpoint onde o cliente obtém o token (para o /docs saber onde fazer login)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -50,7 +53,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_current_user(
-    token: str     = Depends(oauth2_scheme),  # extrai o Bearer token
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),  # extrai o Bearer token
     db:    Session = Depends(get_db),         # sessão do banco
 ) -> User:
     """
@@ -78,6 +82,10 @@ def get_current_user(
         detail      = "Token inválido ou expirado. Faça login novamente.",
         headers     = {"WWW-Authenticate": "Bearer"},  # padrão OAuth2
     )
+
+    token = token or request.cookies.get(AUTH_COOKIE_NAME)
+    if not token:
+        raise credentials_exception
 
     try:
         # Valida assinatura e expiração, retorna o payload
@@ -189,7 +197,8 @@ def require_role(*roles: str):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_current_user_optional(
-    token: str     = Depends(oauth2_scheme),
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
     db:    Session = Depends(get_db),
 ) -> User | None:
     """
@@ -200,6 +209,6 @@ def get_current_user_optional(
     para usuários autenticados vs anônimos.
     """
     try:
-        return get_current_user(token=token, db=db)
+        return get_current_user(request=request, token=token, db=db)
     except HTTPException:
         return None
