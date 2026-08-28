@@ -15,17 +15,17 @@ const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 // ── Utilitários ──────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  done:    { label: 'Concluído',    color: 'text-green-match', bg: 'bg-green-match/10 border-green-match/30' },
-  running: { label: 'Processando',  color: 'text-red-400',  bg: 'bg-red-600/10 border-red-600/30'            },
-  pending: { label: 'Aguardando',   color: 'text-amber',       bg: 'bg-amber/10 border-amber/30'            },
-  failed:  { label: 'Erro',         color: 'text-red-fail',    bg: 'bg-red-fail/10 border-red-fail/30'      },
-  unknown: { label: 'Sem info',     color: 'text-gray-500',    bg: 'bg-slate-border/20 border-slate-700' },
+  done:    { label: 'Concluído',   color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800' },
+  running: { label: 'Processando', color: 'text-blue-700 dark:text-blue-300',       bg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'           },
+  pending: { label: 'Aguardando',  color: 'text-amber-700 dark:text-amber-300',     bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800'       },
+  failed:  { label: 'Erro',        color: 'text-red-700 dark:text-red-300',         bg: 'bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800'               },
+  unknown: { label: 'Sem info',    color: 'text-slate-600 dark:text-slate-400',     bg: 'bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700'         },
 }
 
 function StatusBadge({ status }) {
   const cfg = STATUS_CFG[status] || STATUS_CFG.unknown
   return (
-    <span className={`inline-flex items-center text-xs font-mono px-2 py-0.5 rounded border ${cfg.bg} ${cfg.color}`}>
+    <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
       {cfg.label}
     </span>
   )
@@ -33,19 +33,66 @@ function StatusBadge({ status }) {
 
 function ProgressBar({ progress, status }) {
   const pct = status === 'done' ? 100 : (progress || 0)
-  const bar = status === 'done' ? 'bg-green-match' : status === 'failed' ? 'bg-red-fail' : 'bg-red-600'
+  const bar = status === 'done'
+    ? 'bg-emerald-500'
+    : status === 'failed'
+      ? 'bg-red-500'
+      : 'bg-blue-500'
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-slate-border/30 rounded-full overflow-hidden">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
         <div
-          className={`h-full ${bar} rounded-full transition-all duration-500 ${status === 'running' ? 'animate-pulse' : ''}`}
+          className={`h-full rounded-full transition-all duration-500 ${bar} ${status === 'running' ? 'animate-pulse' : ''}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] font-mono text-gray-600 w-8 text-right">{pct}%</span>
+      <span className="w-8 text-right text-[10px] font-mono text-slate-500 dark:text-slate-400">{pct}%</span>
     </div>
   )
 }
+
+function EditalMobileCard({ row, navigate }) {
+  return (
+    <article
+      className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-blue-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-800"
+      onClick={() => navigate(`/editais/${row.id}`)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{row.filename}</p>
+          <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">#{row.id} · {row.chunks} chunks · {row.requirements} req.</p>
+        </div>
+        <StatusBadge status={row.status} />
+      </div>
+      <div className="mt-4">
+        <ProgressBar progress={row.progress} status={row.status} />
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Upload</dt>
+          <dd className="mt-1 font-mono text-slate-600 dark:text-slate-300">{fmt(row.parse_date)}</dd>
+        </div>
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Duração</dt>
+          <dd className="mt-1 font-mono text-slate-600 dark:text-slate-300">{fmtDur(row.job?.duration_seconds)}</dd>
+        </div>
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Início</dt>
+          <dd className="mt-1 font-mono text-slate-600 dark:text-slate-300">{fmt(row.job?.started_at)}</dd>
+        </div>
+        <div>
+          <dt className="text-slate-400 dark:text-slate-500">Fim</dt>
+          <dd className="mt-1 font-mono text-slate-600 dark:text-slate-300">{fmt(row.job?.finished_at)}</dd>
+        </div>
+      </dl>
+      <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3 dark:border-slate-700" onClick={(event) => event.stopPropagation()}>
+        <button onClick={() => navigate(`/editais/${row.id}`)} className="rounded px-2 py-1 text-xs font-medium text-brand hover:bg-blue-50 dark:text-brand-light dark:hover:bg-blue-950/30">Ver edital</button>
+        {AI_FEATURES_ENABLED && <button onClick={() => navigate(`/editais/${row.id}/chat`)} className="rounded px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700">Chat</button>}
+      </div>
+    </article>
+  )
+}
+
 
 function fmt(dt) {
   if (!dt) return '—'
@@ -111,17 +158,22 @@ function ImportPanel({ onClose }) {
   }
 
   return (
-    <div className="card border border-red-600/20 space-y-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-display font-bold text-white text-sm">Importar planilha de editais</p>
-          <p className="text-xs text-gray-500 font-mono mt-0.5">CSV ou Excel com os documentos a acompanhar</p>
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">Importar planilha de editais</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">CSV ou Excel com os documentos a acompanhar</p>
         </div>
         <div className="flex gap-2">
           <button onClick={exportSample} className="btn-ghost text-xs py-1.5 px-3">
             ↓ Modelo CSV
           </button>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors text-lg leading-none px-2">×</button>
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-white"
+          >
+            ×
+          </button>
         </div>
       </div>
 
@@ -130,15 +182,14 @@ function ImportPanel({ onClose }) {
         onDragOver={e => e.preventDefault()}
         onDrop={handleDrop}
         onClick={() => fileRef.current?.click()}
-        className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center
-                   cursor-pointer hover:border-red-600/40 hover:bg-red-600/3 transition-all"
+        className="cursor-pointer rounded-lg border-2 border-dashed border-slate-300 p-8 text-center transition-colors hover:border-brand hover:bg-blue-50/50 dark:border-slate-700 dark:hover:border-brand-light dark:hover:bg-brand/5"
       >
         <div className="text-3xl mb-2">📊</div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
           Arraste seu arquivo ou{' '}
-          <span className="text-red-400 font-medium">clique para selecionar</span>
+          <span className="font-medium text-brand dark:text-brand-light">clique para selecionar</span>
         </p>
-        <p className="text-xs text-gray-600 mt-1">Formatos aceitos: .csv, .xlsx, .xls</p>
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Formatos aceitos: .csv, .xlsx, .xls</p>
         <input
           ref={fileRef}
           type="file"
@@ -149,39 +200,41 @@ function ImportPanel({ onClose }) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-fail font-mono">⚠️ {error}</p>
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/40">
+          <span className="text-sm text-red-700 dark:text-red-300">⚠️ {error}</span>
+        </div>
       )}
 
       {/* Preview da planilha */}
       {rows.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-gray-400 font-mono">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {rows.length} registro{rows.length !== 1 ? 's' : ''} importado{rows.length !== 1 ? 's' : ''}
             </p>
             <button
               onClick={() => { setRows([]); setHeaders([]) }}
-              className="text-xs text-gray-600 hover:text-red-fail font-mono transition-colors"
+              className="text-xs text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
             >
               Limpar
             </button>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-700 max-h-56">
-            <table className="w-full text-xs font-mono">
-              <thead className="bg-ink-100 border-b border-slate-700 sticky top-0">
+          <div className="max-h-56 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
                 <tr>
-                  <th className="px-3 py-2 text-left text-gray-600">#</th>
+                  <th className="px-3 py-2 text-left text-slate-500 dark:text-slate-400">#</th>
                   {headers.map(h => (
-                    <th key={h} className="px-3 py-2 text-left text-gray-500 capitalize whitespace-nowrap">{h}</th>
+                    <th key={h} className="whitespace-nowrap px-3 py-2 text-left capitalize text-slate-500 dark:text-slate-400">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {rows.map((row, i) => (
-                  <tr key={i} className="border-b border-slate-700/20 hover:bg-slate-hover/20">
-                    <td className="px-3 py-2 text-gray-600">{i + 1}</td>
+                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-3 py-2 text-slate-400 dark:text-slate-500">{i + 1}</td>
                     {headers.map(h => (
-                      <td key={h} className="px-3 py-2 text-gray-300 whitespace-nowrap max-w-[200px] truncate">
+                      <td key={h} className="max-w-[200px] truncate whitespace-nowrap px-3 py-2 text-slate-700 dark:text-slate-300">
                         {row[h] || '—'}
                       </td>
                     ))}
@@ -190,7 +243,7 @@ function ImportPanel({ onClose }) {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-gray-600 font-mono mt-2">
+          <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500">
             Os documentos acima são apenas para referência. Para processar, faça upload dos PDFs em Novo Edital.
           </p>
         </div>
@@ -302,34 +355,34 @@ export default function Controle() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 space-y-6 min-h-screen">
+    <div className="min-h-screen space-y-6 p-6 lg:p-8">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display font-black text-2xl text-white">Controle de Editais</h1>
-          <p className="text-sm text-gray-500 font-mono mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Controle de Editais</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Acompanhamento em tempo real do processamento dos documentos
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowImport(v => !v)}
-            className={`btn-ghost text-sm px-4 py-2 flex items-center gap-2 ${showImport ? 'border-red-600/40 text-red-400' : ''}`}
+            className={`btn-ghost flex items-center gap-2 px-4 py-2 text-sm ${showImport ? 'border-brand bg-blue-50 text-brand dark:border-brand-light dark:bg-blue-950/30 dark:text-brand-light' : ''}`}
           >
             <span>↑</span>
             <span>Importar planilha</span>
           </button>
           <button
             onClick={exportCsv}
-            className="btn-ghost text-sm px-4 py-2 flex items-center gap-2"
+            className="btn-ghost flex items-center gap-2 px-4 py-2 text-sm"
           >
             <span>↓</span>
             <span>Exportar CSV</span>
           </button>
           <button
             onClick={() => fetchData(false)}
-            className="btn-ghost text-sm px-3 py-2"
+            className="btn-ghost px-3 py-2 text-sm"
             title="Atualizar agora"
           >
             ↻
@@ -341,23 +394,25 @@ export default function Controle() {
       {showImport && <ImportPanel onClose={() => setShowImport(false)} />}
 
       {/* Cards de status */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[
-          { key: 'all',     label: 'Total',        icon: '▦', accent: 'text-white'       },
-          { key: 'done',    label: 'Concluídos',   icon: '✓', accent: 'text-green-match' },
-          { key: 'running', label: 'Processando',  icon: '⟳', accent: 'text-red-400'  },
-          { key: 'pending', label: 'Aguardando',   icon: '◌', accent: 'text-amber'       },
-          { key: 'failed',  label: 'Com erro',     icon: '✕', accent: 'text-red-fail'    },
+          { key: 'all',     label: 'Total',       icon: '▦', accent: 'text-slate-900 dark:text-white'            },
+          { key: 'done',    label: 'Concluídos',  icon: '✓', accent: 'text-emerald-600 dark:text-emerald-400'    },
+          { key: 'running', label: 'Processando', icon: '⟳', accent: 'text-blue-600 dark:text-blue-400'          },
+          { key: 'pending', label: 'Aguardando',  icon: '◌', accent: 'text-amber-600 dark:text-amber-400'        },
+          { key: 'failed',  label: 'Com erro',    icon: '✕', accent: 'text-red-600 dark:text-red-400'            },
         ].map(({ key, label, icon, accent }) => (
           <button
             key={key}
             onClick={() => setFilterStatus(key)}
-            className={`card p-4 text-left transition-all hover:border-red-600/30 cursor-pointer ${
-              filterStatus === key ? 'border-red-600/40 bg-red-600/5' : ''
+            className={`rounded-lg border p-4 text-left transition-colors ${
+              filterStatus === key
+                ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30'
+                : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600'
             }`}
           >
-            <p className="text-xs text-gray-500 font-mono">{icon} {label}</p>
-            <p className={`text-2xl font-display font-black mt-1 ${accent}`}>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{icon} {label}</p>
+            <p className={`mt-1 text-2xl font-bold ${accent}`}>
               {loading ? '—' : counts[key]}
             </p>
           </button>
@@ -371,42 +426,54 @@ export default function Controle() {
           placeholder="Buscar por nome do arquivo ou ID…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="input flex-1 text-sm py-2"
+          className="input flex-1 py-2 text-sm"
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="btn-ghost text-sm px-3 py-2"
+            className="btn-ghost px-3 py-2 text-sm"
           >
             Limpar
           </button>
         )}
       </div>
 
+      {/* Lista de cartões no mobile */}
+      <section className="space-y-3 md:hidden" aria-label="Editais">
+        {loading ? [...Array(4)].map((_, index) => (
+          <div key={index} className="h-48 animate-pulse rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" />
+        )) : filtered.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-16 text-center dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 text-4xl">📋</div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{search || filterStatus !== 'all' ? 'Nenhum edital encontrado com este filtro.' : 'Nenhum edital processado ainda. Faça upload em Novo Edital.'}</p>
+          </div>
+        ) : filtered.map((row) => <EditalMobileCard key={row.id} row={row} navigate={navigate} />)}
+      </section>
+
       {/* Tabela principal */}
-      <div className="card p-0 overflow-hidden">
+      <div className="hidden overflow-hidden rounded-lg border border-slate-200 bg-white md:block dark:border-slate-700 dark:bg-slate-800">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-ink-100 border-b border-slate-700">
+            <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
               <tr>
                 {[
                   'ID', 'Arquivo', 'Status', 'Progresso',
                   'Data Upload', 'Início', 'Fim', 'Duração', 'Ações'
                 ].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-mono text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <th key={h} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-border/20">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {loading ? (
                 // Skeleton
                 [...Array(5)].map((_, i) => (
                   <tr key={i}>
                     {[...Array(9)].map((_, j) => (
                       <td key={j} className="px-4 py-4">
-                        <div className="h-3 rounded bg-slate-border/30 animate-pulse" style={{ width: `${40 + Math.random() * 40}%` }} />
+                        <div className="h-3 animate-pulse rounded bg-slate-200 dark:bg-slate-700" style={{ width: `${40 + Math.random() * 40}%` }} />
                       </td>
                     ))}
                   </tr>
@@ -415,7 +482,7 @@ export default function Controle() {
                 <tr>
                   <td colSpan={9} className="px-4 py-16 text-center">
                     <div className="text-4xl mb-3">📋</div>
-                    <p className="text-sm text-gray-500 font-body">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {search || filterStatus !== 'all'
                         ? 'Nenhum edital encontrado com este filtro.'
                         : 'Nenhum edital processado ainda. Faça upload em Novo Edital.'}
@@ -426,50 +493,50 @@ export default function Controle() {
                 filtered.map(row => (
                   <tr
                     key={row.id}
-                    className="hover:bg-slate-hover/20 transition-colors cursor-pointer"
+                    className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/50"
                     onClick={() => navigate(`/editais/${row.id}`)}
                   >
                     {/* ID */}
                     <td className="px-4 py-3">
-                      <span className="text-xs font-mono text-gray-500">#{row.id}</span>
+                      <span className="font-mono text-xs text-slate-400 dark:text-slate-500">#{row.id}</span>
                     </td>
 
                     {/* Arquivo */}
-                    <td className="px-4 py-3 max-w-[220px]">
-                      <p className="text-sm text-white font-body truncate">{row.filename}</p>
-                      <p className="text-xs text-gray-600 font-mono mt-0.5">
+                    <td className="max-w-[220px] px-4 py-3">
+                      <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{row.filename}</p>
+                      <p className="mt-0.5 font-mono text-xs text-slate-500 dark:text-slate-400">
                         {row.chunks} chunks · {row.requirements} req.
                       </p>
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-4 py-3">
                       <StatusBadge status={row.status} />
                     </td>
 
                     {/* Progresso */}
-                    <td className="px-4 py-3 min-w-[120px]">
+                    <td className="min-w-[120px] px-4 py-3">
                       <ProgressBar progress={row.progress} status={row.status} />
                     </td>
 
                     {/* Data Upload */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-xs font-mono text-gray-400">{fmt(row.parse_date)}</span>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{fmt(row.parse_date)}</span>
                     </td>
 
                     {/* Início processamento */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-xs font-mono text-gray-400">{fmt(row.job?.started_at)}</span>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{fmt(row.job?.started_at)}</span>
                     </td>
 
                     {/* Fim processamento */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-xs font-mono text-gray-400">{fmt(row.job?.finished_at)}</span>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{fmt(row.job?.finished_at)}</span>
                     </td>
 
                     {/* Duração */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-xs font-mono text-gray-400">{fmtDur(row.job?.duration_seconds)}</span>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{fmtDur(row.job?.duration_seconds)}</span>
                     </td>
 
                     {/* Ações */}
@@ -477,16 +544,14 @@ export default function Controle() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigate(`/editais/${row.id}`)}
-                          className="text-xs font-mono text-red-400 hover:text-white transition-colors
-                                     px-2 py-1 rounded hover:bg-red-600/10"
+                          className="rounded px-2 py-1 text-xs font-medium text-brand transition-colors hover:bg-blue-50 hover:text-brand-dark dark:text-brand-light dark:hover:bg-blue-950/30"
                         >
                           Ver
                         </button>
                         {AI_FEATURES_ENABLED && (
                           <button
                             onClick={() => navigate(`/editais/${row.id}/chat`)}
-                            className="text-xs font-mono text-gray-500 hover:text-white transition-colors
-                                       px-2 py-1 rounded hover:bg-slate-hover"
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
                           >
                             Chat
                           </button>
@@ -502,11 +567,11 @@ export default function Controle() {
 
         {/* Footer da tabela */}
         {!loading && filtered.length > 0 && (
-          <div className="px-4 py-2.5 border-t border-slate-700/30 bg-ink-100 flex items-center justify-between">
-            <p className="text-xs text-gray-600 font-mono">
+          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-700 dark:bg-slate-900">
+            <p className="font-mono text-xs text-slate-500 dark:text-slate-400">
               {filtered.length} registro{filtered.length !== 1 ? 's' : ''} exibido{filtered.length !== 1 ? 's' : ''}
             </p>
-            <p className="text-xs text-gray-600 font-mono">
+            <p className="font-mono text-xs text-slate-400 dark:text-slate-500">
               ↻ Atualização automática a cada 5s
             </p>
           </div>

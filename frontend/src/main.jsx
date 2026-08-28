@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -7,31 +7,32 @@ import { MarketProvider }        from './contexts/MarketContext'
 
 import './index.css'
 
-import Login          from './pages/Login'
-import InternalRegister from './pages/InternalRegister'
-import Dashboard      from './pages/Dashboard'
-import Suite          from './pages/Suite'
-import ProcurementExpansion from './pages/ProcurementExpansion'
-import Assinatura    from './pages/Assinatura'
-import Upload         from './pages/Upload'
-import EditalDetail   from './pages/EditalDetail'
-import EditalChat     from './pages/EditalChat'
-import Jobs           from './pages/Jobs'
-import Usuarios       from './pages/Usuarios'
-import Analytics      from './pages/Analytics'
-import Reports        from './pages/Reports'
-import Chatbot        from './pages/Chatbot'
-import Controle       from './pages/Controle'
-import AnaliseAta     from './pages/AnaliseAta'
-import AnaliseJson    from './pages/AnaliseJson'
-import AnalysisDashboard from './pages/AnalysisDashboard'
-import PncpSearch     from './pages/PncpSearch'
-import OpportunityRadar from './pages/OpportunityRadar'
-import CompetitiveIntelligence from './pages/CompetitiveIntelligence'
-import BidRobot       from './pages/BidRobot'
-import Configuracoes  from './pages/Configuracoes'
-import CrmHub         from './pages/CrmHub'
-import DatasheetCompare from './pages/DatasheetCompare'
+import PageLoader from './components/PageLoader'
+const Login = lazy(() => import('./pages/Login'))
+const InternalRegister = lazy(() => import('./pages/InternalRegister'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Suite = lazy(() => import('./pages/Suite'))
+const ProcurementExpansion = lazy(() => import('./pages/ProcurementExpansion'))
+const Assinatura = lazy(() => import('./pages/Assinatura'))
+const Upload = lazy(() => import('./pages/Upload'))
+const EditalDetail = lazy(() => import('./pages/EditalDetail'))
+const EditalChat = lazy(() => import('./pages/EditalChat'))
+const Jobs = lazy(() => import('./pages/Jobs'))
+const Usuarios = lazy(() => import('./pages/Usuarios'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Chatbot = lazy(() => import('./pages/Chatbot'))
+const Controle = lazy(() => import('./pages/Controle'))
+const AnaliseAta = lazy(() => import('./pages/AnaliseAta'))
+const AnaliseJson = lazy(() => import('./pages/AnaliseJson'))
+const AnalysisDashboard = lazy(() => import('./pages/AnalysisDashboard'))
+const PncpSearch = lazy(() => import('./pages/PncpSearch'))
+const OpportunityRadar = lazy(() => import('./pages/OpportunityRadar'))
+const CompetitiveIntelligence = lazy(() => import('./pages/CompetitiveIntelligence'))
+const BidRobot = lazy(() => import('./pages/BidRobot'))
+const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const CrmHub = lazy(() => import('./pages/CrmHub'))
+const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
 
 const INTERNAL_REGISTER_PATH = import.meta.env.VITE_INTERNAL_REGISTER_PATH || '/cadastro-tor-gestao-interna'
@@ -60,7 +61,8 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <MarketProvider>
           <AuthProvider>
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
             <Route path="/login" element={<Login />} />
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
@@ -101,7 +103,8 @@ createRoot(document.getElementById('root')).render(
 
             <Route path="/"  element={<Navigate to="/dashboard" replace />} />
             <Route path="*"  element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </MarketProvider>
       </ToastProvider>
