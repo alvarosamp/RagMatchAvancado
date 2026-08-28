@@ -28,6 +28,6 @@ def process_matching(job_id: str, edital_id: int, tenant_id: str) -> None:
     _executar_job_matching(job_id, edital_id, tenant_id)
 
 
-@dramatiq.actor(queue_name="matching", max_retries=0, time_limit=60 * 60 * 1000)
+@dramatiq.actor(queue_name="ai-inference", max_retries=0, time_limit=60 * 60 * 1000)
 def process_crm_notice_match(job_id: str, notice_id: str, tenant_id: str, user_id: int) -> None:
     _executar_job_crm_notice_match(job_id, notice_id, tenant_id, user_id)

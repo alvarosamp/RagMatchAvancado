@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
-from app.core.features import AI_FEATURES_ENABLED
+from app.core.features import AI_FEATURES_ENABLED, CRM_MATCH_USE_LLM
 from app.crm.models import (
     CrmCatalogProduct,
     CrmNotice,
@@ -53,7 +53,7 @@ def run_notice_item_match(
     notice_product_id: str | None = None,
     category: str | None = None,
 ) -> dict[str, Any]:
-    use_llm = bool(use_llm and AI_FEATURES_ENABLED)
+    use_llm = bool(use_llm and AI_FEATURES_ENABLED and CRM_MATCH_USE_LLM)
     notice = _load_notice(db, current_user, notice_id)
     catalog_products = (
         db.query(CrmCatalogProduct)

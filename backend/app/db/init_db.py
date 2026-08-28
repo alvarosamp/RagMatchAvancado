@@ -81,6 +81,7 @@ def _ensure_crm_schema_updates() -> None:
         {
             "expires_at": "TIMESTAMP",
             "catalog_product_id": "VARCHAR(36)",
+            "is_repository_signed_archive": "BOOLEAN NOT NULL DEFAULT FALSE",
         },
     )
     _ensure_columns(
@@ -90,6 +91,7 @@ def _ensure_crm_schema_updates() -> None:
             "signed_document_id": "VARCHAR(36)",
             "signer_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
             "requester_notification_dismissed": "BOOLEAN NOT NULL DEFAULT FALSE",
+            "archive_signed_result": "BOOLEAN NOT NULL DEFAULT TRUE",
         },
     )
     _ensure_columns(

@@ -27,6 +27,7 @@ from app.crm.models import (
     CrmPortal,
     CrmPostAuctionPhase,
 )
+from app.crm.timezone import brasilia_wall_clock
 from app.services.crm_notice_sync import (
     apply_notice_defaults,
     apply_notice_product_defaults,
@@ -633,7 +634,11 @@ def _cast_column_value(column: Any, value: Any) -> Any:
             return value
         return str(value).lower() in {"1", "true", "yes", "on"}
     if isinstance(column_type, DateTime):
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        # CRM DateTime columns intentionally store the local Brasilia clock
+        # (without tzinfo). Normalize timezone-aware API clients before
+        # persisting so their UTC offset cannot turn into a +3h shift.
+        return brasilia_wall_clock(parsed)
     if isinstance(column_type, Date):
         return date.fromisoformat(str(value)[:10])
     return value

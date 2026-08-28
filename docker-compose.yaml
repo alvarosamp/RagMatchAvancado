@@ -16,6 +16,27 @@ services:
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: edital_matcher
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U postgres -d edital_matcher"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build: ./backend
     volumes:
@@ -25,7 +46,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:5432/edital_matcher
       REDIS_URL: redis://redis:6379/0
       OBJECT_STORAGE_ENABLED: "1"
       S3_ENDPOINT_URL: http://minio:9000
@@ -36,6 +57,8 @@ services:
       OLLAMA_MODEL: llama3.2:1b
       OLLAMA_EMBED_MODEL: nomic-embed-text
       OLLAMA_AUTO_PULL: "1"
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-1}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
       WATCHFILES_FORCE_POLLING: "true"
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
@@ -46,6 +69,8 @@ services:
       TOR_DOCUMENTS_ROOT: /tor-documentos
     depends_on:
       db:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
       mlflow:
         condition: service_started
@@ -85,7 +110,41 @@ services:
         condition: service_started
       migrate:
         condition: service_completed_successfully
-    command: dramatiq app.jobs.tasks --processes 1 --threads 2
+    command: dramatiq app.jobs.tasks --queues edital-processing,matching --processes 1 --threads 2
+
+  worker-ai:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - ./data:/data
+      - D:/TOR/Documentos:/tor-documentos
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: "1"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: edital-matcher
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:1b
+      OLLAMA_EMBED_MODEL: nomic-embed-text
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-1}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /tor-documentos
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      ollama:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues ai-inference --processes 1 --threads ${AI_WORKER_THREADS:-1}
 
   scheduler:
     build: ./backend

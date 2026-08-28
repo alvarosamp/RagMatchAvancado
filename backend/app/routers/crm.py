@@ -59,10 +59,10 @@ from app.services.decision_intelligence import (
 )
 from app.services.crm_notice_sync import sync_notice_relationships
 from app.services.catalog_datasheets import current_catalog_datasheet, serialize as serialize_catalog_datasheet, store_catalog_datasheet
+from app.services.crm_notice_list import invalidate_notice_list_cache, list_notice_summaries
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
-MATCH_PAUSED_MESSAGE = "Match temporariamente pausado para manutenção."
 
 
 @router.get("/catalog-products/{product_id}/datasheets")
@@ -165,10 +165,31 @@ def _ensure_table(table_name: str) -> None:
 
 
 def _raise_match_paused() -> None:
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=MATCH_PAUSED_MESSAGE,
-    )
+    """Compatibility hook retained for callers from the maintenance period.
+
+    Matching is now dispatched only to the dedicated AI worker, so it no
+    longer blocks requests handled by the CRM API.
+    """
+    return None
+
+
+@router.get("/notices")
+def crm_list_notices(
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    stage: str | None = Query(default=None),
+    include_discarded: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fast, paginated pipeline data; detail relationships are loaded later."""
+    try:
+        return list_notice_summaries(
+            db, current_user, limit=limit, cursor=cursor,
+            stage=stage, include_discarded=include_discarded,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
@@ -1126,6 +1147,64 @@ def crm_match_ground_truth_report(
     )
 
 
+@router.post("/matches/ground-truth/run")
+def crm_run_ground_truth_matches(
+    background_tasks: BackgroundTasks,
+    source: str | None = Body(default=None, embed=True),
+    limit: int = Body(default=200, embed=True, ge=1, le=1000),
+    use_llm: bool = Body(default=False, embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Queue the human-labelled items for reproducible calibration.
+
+    LLM is deliberately opt-in: the first calibration pass evaluates the
+    deterministic + embedding ranker, so scores can be compared run to run.
+    """
+    query = db.query(CrmNoticeProduct).filter(
+        CrmNoticeProduct.tenant_id == current_user.tenant_id,
+        CrmNoticeProduct.catalog_product_id.isnot(None),
+        CrmNoticeProduct.catalog_match_source.isnot(None),
+    )
+    if source:
+        query = query.filter(CrmNoticeProduct.catalog_match_source == source)
+    products = query.order_by(CrmNoticeProduct.catalog_match_confirmed_at.desc()).limit(limit).all()
+
+    active_jobs = (
+        db.query(Job)
+        .filter(
+            Job.tenant_id == current_user.tenant.slug,
+            Job.job_type == JobType.CRM_NOTICE_MATCH,
+            Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING]),
+        )
+        .all()
+    )
+    active_product_ids = {str((job.payload or {}).get("notice_product_id") or "") for job in active_jobs}
+    queue = JobQueue()
+    job_ids: list[str] = []
+    skipped = 0
+    for product in products:
+        if product.id in active_product_ids:
+            skipped += 1
+            continue
+        job_ids.append(queue.criar_job_crm_notice_match(
+            background_tasks=background_tasks,
+            notice_id=product.notice_id,
+            tenant_id=current_user.tenant.slug,
+            user_id=current_user.id,
+            db=db,
+            notice_product_id=product.id,
+            use_llm=use_llm,
+        ))
+    return {
+        "queued_items": len(job_ids),
+        "skipped_active": skipped,
+        "job_ids": job_ids,
+        "report_url": "/crm/matches/ground-truth/report",
+        "message": "Calibracao enfileirada. Consulte o relatorio quando os jobs terminarem.",
+    }
+
+
 @router.get("/matches/attached-products/report")
 def crm_attached_products_report(
     notice_id: str | None = Query(default=None),
@@ -1351,6 +1430,7 @@ def crm_query_insert(
 
     try:
         data = insert_records(db, current_user, table_name, payload.get("values", []))
+        invalidate_notice_list_cache(current_user.tenant_id)
         return {"data": data}
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
@@ -1377,6 +1457,7 @@ def crm_query_update(
             payload.get("values", {}),
             filters=payload.get("filters", []),
         )
+        invalidate_notice_list_cache(current_user.tenant_id)
         return {"data": data}
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
@@ -1398,6 +1479,7 @@ def crm_query_delete(
 
     try:
         deleted = delete_records(db, current_user, table_name, payload.get("filters", []))
+        invalidate_notice_list_cache(current_user.tenant_id)
         return {"deleted": deleted}
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc

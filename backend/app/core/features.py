@@ -10,6 +10,7 @@ def _env_enabled(name: str, default: str = "0") -> bool:
 
 
 AI_FEATURES_ENABLED = _env_enabled("AI_FEATURES_ENABLED", "0")
+CRM_MATCH_USE_LLM = _env_enabled("CRM_MATCH_USE_LLM", "0")
 AI_DISABLED_DETAIL = "Recursos de IA temporariamente desabilitados neste ambiente."
 
 
