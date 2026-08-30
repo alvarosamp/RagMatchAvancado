@@ -251,7 +251,7 @@ function renderIcon(badge) {
   }
 }
 
-function NavItem({ item, pathname }) {
+function NavItem({ item, pathname, onNavigate }) {
   const active = isActive(pathname, item.path)
   const className = `group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
     active
@@ -279,20 +279,20 @@ function NavItem({ item, pathname }) {
 
   if (item.key === 'crm') {
     return (
-      <a href={item.path} className={className}>
+      <a href={item.path} className={className} onClick={onNavigate}>
         {content}
       </a>
     )
   }
 
   return (
-    <Link to={item.path} className={className}>
+    <Link to={item.path} className={className} onClick={onNavigate}>
       {content}
     </Link>
   )
 }
 
-function NavGroup({ group, itemsByKey, pathname }) {
+function NavGroup({ group, itemsByKey, pathname, onNavigate }) {
   const groupItems = group.keys.map((key) => itemsByKey.get(key)).filter(Boolean)
   if (groupItems.length === 0) return null
 
@@ -310,7 +310,7 @@ function NavGroup({ group, itemsByKey, pathname }) {
       </summary>
       <div className="mt-2 space-y-2 pl-2">
         {groupItems.map((item) => (
-          <NavItem key={item.path} item={item} pathname={pathname} />
+          <NavItem key={item.path} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </div>
     </details>
@@ -322,6 +322,7 @@ export default function Layout({ children }) {
   const market = useMarket()
   const location = useLocation()
   const [theme, setTheme] = useState(() => readStoredTheme())
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const isLight = theme === 'light'
 
   const baseItems = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).filter(
@@ -343,6 +344,36 @@ export default function Layout({ children }) {
     document.documentElement.classList.toggle('dark', !isLight)
     document.body.classList.toggle('theme-light', isLight)
   }, [theme, isLight])
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileNavOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mobileNavOpen])
+
+  const renderNavigation = (onNavigate) => (
+    <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-5" aria-label="Navegação principal">
+      {navStructure.map((entry) => {
+        if (entry.type === 'item') {
+          const item = itemsByKey.get(entry.key)
+          return item ? <NavItem key={item.path} item={item} pathname={location.pathname} onNavigate={onNavigate} /> : null
+        }
+        return <NavGroup key={entry.title} group={entry} itemsByKey={itemsByKey} pathname={location.pathname} onNavigate={onNavigate} />
+      })}
+    </nav>
+  )
 
   return (
     <div className="min-h-screen bg-surface text-slate-950 dark:bg-surface-dark dark:text-white md:flex">
@@ -367,15 +398,7 @@ export default function Layout({ children }) {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-5">
-          {navStructure.map((entry) => {
-            if (entry.type === 'item') {
-              const item = itemsByKey.get(entry.key)
-              return item ? <NavItem key={item.path} item={item} pathname={location.pathname} /> : null
-            }
-            return <NavGroup key={entry.title} group={entry} itemsByKey={itemsByKey} pathname={location.pathname} />
-          })}
-        </nav>
+        {renderNavigation()}
 
         <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
           <button
@@ -396,56 +419,51 @@ export default function Layout({ children }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white md:hidden dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-lg object-cover" />
               <div>
                 <p className="text-sm font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
               </div>
             </div>
-            <button
-              onClick={() => setTheme(isLight ? 'dark' : 'light')}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            >
-              {isLight ? 'Escuro' : 'Claro'}
-            </button>
-            <button
-              onClick={logout}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            >
-              Sair
-            </button>
-          </div>
-
-          <div className="overflow-x-auto px-4 pb-3">
-            <div className="flex gap-2">
-              {items.map((item) => {
-                const active = isActive(location.pathname, item.path)
-                const className = `whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
-                  active
-                    ? 'border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
-                    : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                }`
-                if (item.key === 'crm') {
-                  return (
-                    <a key={item.path} href={item.path} className={className}>
-                      {item.label}
-                    </a>
-                  )
-                }
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={className}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              })}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTheme(isLight ? 'dark' : 'light')}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                {isLight ? 'Escuro' : 'Claro'}
+              </button>
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Abrir menu de navegação"
+                aria-expanded={mobileNavOpen}
+                className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-lg text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                ☰
+              </button>
             </div>
           </div>
         </header>
+
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navegação">
+            <button
+              aria-label="Fechar menu"
+              className="absolute inset-0 cursor-default bg-slate-950/40"
+              onClick={() => setMobileNavOpen(false)}
+            />
+            <aside className="relative flex h-full w-[min(20rem,86vw)] flex-col border-r border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-700">
+                <p className="text-sm font-semibold text-slate-950 dark:text-white">Navegação</p>
+                <button onClick={() => setMobileNavOpen(false)} aria-label="Fechar menu" className="grid h-9 w-9 place-items-center rounded-lg text-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">×</button>
+              </div>
+              {renderNavigation(() => setMobileNavOpen(false))}
+              <div className="border-t border-slate-200 p-4 dark:border-slate-700">
+                <button onClick={logout} className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Encerrar sessão</button>
+              </div>
+            </aside>
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto">{children}</main>
 

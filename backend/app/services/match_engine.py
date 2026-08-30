@@ -26,6 +26,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
+from typing import Any
 
 import os
 import ollama
@@ -38,6 +39,7 @@ from app.db.models import MatchingResult, MatchStatus, Product, Requirement
 from app.vector.pgvector_store import search_similar
 from app.logs.config import logger
 from app.services.attribute_parsers import classify_field, compare_attribute, extract_number
+from app.core.ml_config import get_ml_config
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MLOps — carregamento condicional (graceful degradation)
@@ -69,6 +71,7 @@ except Exception as mlops_err:
 
 
 LLM_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")   # deve bater com o modelo puxado no docker-compose.yaml
+_ML_CONFIG = get_ml_config()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +114,7 @@ class MatchDetail:
     required:       str
     found:          str
     rule_score:     float   # 0.0 - 1.0  (score das heurísticas)
-    llm_score:      float   # 0.0 - 1.0  (score do LLM)
+    llm_score:      float | None  # None = inferencia indisponivel; nunca vira score artificial
     final_score:    float   # média ponderada: 30% regras + 70% LLM (ou 0.0 se critical_fail)
     status:         MatchStatus
     reasoning:      str = ""
@@ -139,6 +142,7 @@ def run_matching(
     db: Session,
     product: Product,
     requirements: list[Requirement],
+    requirement_contexts: dict[tuple[Any, ...], str] | None = None,
 ) -> MatchReport:
     """
     Executa o pipeline completo de matching para UM produto.
@@ -171,13 +175,11 @@ def run_matching(
         # ── Camada 1: RAG ─────────────────────────────────────────────────────
         # Busca os 4 chunks do edital mais similares ao requisito atual.
         # Esses trechos fornecem contexto real do edital para o LLM.
-        context_chunks = search_similar(
-            db,
-            query     = f"{req.attribute} {req.raw_value}",
-            edital_id = req.edital_id,
-            top_k     = 4,
-        )
-        context_text = "\n---\n".join(c["text"] for c in context_chunks)
+        cache_key = _requirement_cache_key(req)
+        if requirement_contexts is not None and cache_key in requirement_contexts:
+            context_text = requirement_contexts[cache_key]
+        else:
+            context_text = _search_requirement_context(db, req)
 
         # ── Camada 2: Heurísticas ─────────────────────────────────────────────
         # Score rápido por comparação direta de valores (sem LLM).
@@ -199,10 +201,20 @@ def run_matching(
         if rule_result.critical_fail:
             final_score = 0.0
             reasoning   = f"⛔ Incompatibilidade crítica em '{req.attribute}': {reasoning}".strip()
+        elif llm_score is None:
+            # Ausencia do LLM e um estado operacional, nao uma opiniao 0.5.
+            # Mantemos o sinal deterministico, mas impedimos ATENDE no matcher
+            # legado enquanto a avaliacao profunda estiver indisponivel.
+            final_score = min(round(rule_result.score, 3), _ML_CONFIG.threshold_atende - 0.05)
+            reasoning = f"Avaliacao LLM indisponivel; decisao limitada a VERIFICAR. {reasoning}".strip()
         else:
-            final_score = round(0.3 * rule_result.score + 0.7 * llm_score, 3)
+            final_score = round(
+                _ML_CONFIG.score_weight_heuristic * rule_result.score
+                + _ML_CONFIG.score_weight_llm * llm_score,
+                3,
+            )
             if rule_result.missing_data:
-                final_score = min(final_score, 0.70)  # nunca cruza o threshold de "Atende" (0.75)
+                final_score = min(final_score, _ML_CONFIG.threshold_atende - 0.05)
         status = _score_to_status(final_score)
 
         detail = MatchDetail(
@@ -307,10 +319,19 @@ def match_all_products(
         f"produtos={len(products)} | requisitos={len(requirements)}"
     )
 
+    # O contexto RAG depende do requisito e do edital, nao do produto. Calcula
+    # uma vez por requisito para evitar P x R embeddings/buscas redundantes.
+    requirement_contexts = _build_requirement_contexts(db, requirements)
+
     # ── Executa matching produto a produto ────────────────────────────────────
     reports: list[MatchReport] = []
     for product in products:
-        report = run_matching(db=db, product=product, requirements=requirements)
+        report = run_matching(
+            db=db,
+            product=product,
+            requirements=requirements,
+            requirement_contexts=requirement_contexts,
+        )
         reports.append(report)
 
     # Ordena por score decrescente — melhor candidato no topo
@@ -577,7 +598,7 @@ def _llm_score(
     product: Product,
     req: Requirement,
     context: str,
-) -> tuple[float, str]:
+) -> tuple[float | None, str]:
     """
     Chama o Ollama para avaliar o requisito com raciocínio em linguagem natural.
 
@@ -587,7 +608,7 @@ def _llm_score(
       - Trechos relevantes do edital (contexto RAG)
 
     Retorna (score: float, reasoning: str).
-    Em caso de falha, retorna (0.5, mensagem de erro) — nunca lança exceção.
+    Em caso de falha, retorna (None, mensagem de erro) — nunca inventa score.
     """
     user_msg = f"""
 ## Produto
@@ -620,7 +641,9 @@ Avalie se o produto atende ao requisito e retorne o JSON solicitado.
         match = re.search(r"\{.*\}", raw, re.DOTALL)
         if match:
             data      = json.loads(match.group())
-            score     = max(0.0, min(1.0, float(data.get("score", 0.5))))
+            if "score" not in data:
+                raise ValueError("Resposta do LLM sem campo score")
+            score     = max(0.0, min(1.0, float(data["score"])))
             reasoning = str(data.get("reasoning", ""))
             return score, reasoning
 
@@ -629,8 +652,42 @@ Avalie se o produto atende ao requisito e retorne o JSON solicitado.
     except Exception as e:
         logger.warning(f"[LLM] Erro ao avaliar '{req.attribute}': {e}")
 
-    # Fallback seguro — nunca lança exceção para cima
-    return 0.5, "Não foi possível obter avaliação do LLM."
+    # Degradacao explicita — o caller limita a decisao a VERIFICAR.
+    return None, "Não foi possível obter avaliação do LLM."
+
+
+def _build_requirement_contexts(
+    db: Session,
+    requirements: list[Requirement],
+) -> dict[tuple[Any, ...], str]:
+    contexts: dict[tuple[Any, ...], str] = {}
+    for req in requirements:
+        key = _requirement_cache_key(req)
+        if key not in contexts:
+            contexts[key] = _search_requirement_context(db, req)
+    return contexts
+
+
+def _search_requirement_context(db: Session, req: Requirement) -> str:
+    chunks = search_similar(
+        db,
+        query=f"{req.attribute} {req.raw_value}",
+        edital_id=req.edital_id,
+        top_k=4,
+    )
+    return "\n---\n".join(chunk["text"] for chunk in chunks)
+
+
+def _requirement_cache_key(req: Requirement) -> tuple[Any, ...]:
+    requirement_id = getattr(req, "id", None)
+    if requirement_id is not None:
+        return ("id", requirement_id)
+    return (
+        "content",
+        getattr(req, "edital_id", None),
+        getattr(req, "attribute", None),
+        getattr(req, "raw_value", None),
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -646,9 +703,9 @@ def _score_to_status(score: float) -> MatchStatus:
       >= 0.45 → VERIFICAR
        < 0.45 → NAO_ATENDE
     """
-    if score >= 0.75:
+    if score >= _ML_CONFIG.threshold_atende:
         return MatchStatus.ATENDE
-    elif score >= 0.45:
+    elif score >= _ML_CONFIG.threshold_verificar:
         return MatchStatus.VERIFICAR
     return MatchStatus.NAO_ATENDE
 

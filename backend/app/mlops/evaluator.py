@@ -29,6 +29,8 @@ import statistics
 import logging
 from typing import Optional
 
+from app.core.ml_config import get_ml_config
+
 logger = logging.getLogger(__name__)
 
 class MatchingEvaluator:
@@ -44,6 +46,10 @@ class MatchingEvaluator:
     THRESHOLD_ATENDE    = 0.75   # score >= 0.75 → ATENDE
     THRESHOLD_VERIFICAR = 0.45   # score >= 0.45 → VERIFICAR
                                     # score <  0.45 → NÃO ATENDE
+    def __init__(self) -> None:
+        cfg = get_ml_config()
+        self.THRESHOLD_ATENDE = cfg.threshold_atende
+        self.THRESHOLD_VERIFICAR = cfg.threshold_verificar
     def avaliar_distribuicao(self, resultados: list[dict]) -> dict:
         ''' 
         Analisa como os scores estao distribuidos

@@ -72,6 +72,27 @@
 }
 
 @layer utilities {
+  /* Compatibilidade temporária para módulos ainda não migrados. Os aliases
+     evitam reintroduzir extensões em green/red/slate, preservando as paletas
+     padrão do Tailwind para as telas novas. */
+  .bg-ink-50 { background-color: theme('colors.ink.50'); }
+  .bg-ink-100 { background-color: theme('colors.ink.100'); }
+  .bg-ink-card, .bg-slate-card { background-color: theme('colors.ink.card'); }
+  .bg-ink-border, .bg-slate-border { background-color: theme('colors.ink.border'); }
+  .border-ink-border, .border-slate-border { border-color: theme('colors.ink.border'); }
+  .hover\:bg-ink-hover:hover, .hover\:bg-slate-hover:hover { background-color: theme('colors.ink.hover'); }
+  .bg-brand-match, .bg-green-match { background-color: theme('colors.brand.match'); }
+  .text-brand-match, .text-green-match { color: theme('colors.brand.match'); }
+  .border-brand-match, .border-green-match { border-color: theme('colors.brand.match'); }
+  .bg-brand-match-dim, .bg-green-dim { background-color: theme('colors.brand.match-dim'); }
+  .bg-brand-fail, .bg-red-fail { background-color: theme('colors.brand.fail'); }
+  .text-brand-fail, .text-red-fail { color: theme('colors.brand.fail'); }
+  .border-brand-fail, .border-red-fail { border-color: theme('colors.brand.fail'); }
+  .bg-brand-fail-dim, .bg-red-dim { background-color: theme('colors.brand.fail-dim'); }
+  .bg-brand-warn, .bg-yellow-warn { background-color: theme('colors.brand.warn'); }
+  .text-brand-warn, .text-yellow-warn { color: theme('colors.brand.warn'); }
+  .bg-brand-warn-dim, .bg-yellow-dim { background-color: theme('colors.brand.warn-dim'); }
+
   body.theme-light {
     @apply bg-surface text-stone-900;
   }

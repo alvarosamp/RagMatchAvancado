@@ -287,6 +287,8 @@ worker.executar_matching_com_tracking(edital_id="42", resultados_matching=result
 ### CRM
 - **GET** `/crm/notices` — pipeline de avisos paginado e resumido
 - **POST** `/crm/matches/ground-truth/run` — enfileira itens rotulados para calibração do matching (admin/editor)
+- **POST** `/crm/notice-products/{id}/match-review` — registra o veredito técnico humano do produto vinculado
+- **GET** `/crm/matches/evaluation-dataset` — exporta o dataset versionado e métricas de avaliação do matching
 
 Swagger: **http://localhost:8000/docs**
 
@@ -318,6 +320,9 @@ docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d
 A composição usa PgBouncer para as conexões da API e separa o worker de IA do
 worker regular. Ajuste `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`,
 `AI_WORKER_PROCESSES` e `AI_WORKER_THREADS` conforme a capacidade do servidor.
+Em produção, use uma tag imutável do CI em `IMAGE_TAG` (por exemplo,
+`sha-<commit>`), mantenha a VPS atrás do Traefik e consulte
+[docs/production-vps.md](docs/production-vps.md) antes do primeiro deploy.
 
 Na primeira vez, o serviço `ollama-setup` baixa os modelos automaticamente (~5 min).
 
@@ -394,6 +399,22 @@ Com isso, cada push na `main` passa a publicar e atualizar o ambiente automatica
 | **XLSX** | Aba Resumo (ranking colorido) + Aba Detalhes (produto × requisito × justificativa LLM) |
 | **PDF** | Cabeçalho, tabela de ranking, detalhes dos top 5 produtos |
 | **CSV** | Separador `;`, UTF-8 BOM — `edital_id`, `modelo`, `score_geral`, `status_geral`, `requisito`, `score_item`, `justificativa_llm` |
+
+---
+
+## Avaliação contínua do matching
+
+O CRM transforma vínculos de catálogo confirmados por pessoas em um dataset de
+avaliação versionado. Depois de revisar o produto vinculado como `ATENDE`,
+`VERIFICAR` ou `NAO_ATENDE`, exporte os registros em
+`GET /crm/matches/evaluation-dataset` e acompanhe Recall@K, MRR, NDCG,
+precisão, recall, macro-F1 e taxa de falso aceite.
+
+O matcher mantém o resultado em `VERIFICAR` quando a inferência do LLM não está
+disponível; ele não cria um score artificial. O contexto RAG também é calculado
+uma única vez por requisito em cada execução, reduzindo chamadas repetidas.
+Consulte [docs/crm-match-evaluation-dataset.md](docs/crm-match-evaluation-dataset.md)
+para o formato do dataset, critérios de revisão e execução offline.
 
 ---
 
