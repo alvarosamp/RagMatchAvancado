@@ -43,9 +43,11 @@ from app.services.crm_item_matcher import (
     flatten_attached_products_report_items,
     get_notice_item_match_payload,
     mark_notice_product_ground_truth,
+    mark_notice_product_match_review,
     reject_notice_item_match,
     run_notice_item_match,
 )
+from app.services.match_eval_dataset import build_match_evaluation_dataset
 from app.services.ops_summary import summarize_crm
 from app.services.proposal_generator import (
     build_notice_proposal_docx,
@@ -1147,6 +1149,31 @@ def crm_match_ground_truth_report(
     )
 
 
+@router.get("/matches/evaluation-dataset")
+def crm_match_evaluation_dataset(
+    notice_id: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    include_unmarked: bool = Query(default=False),
+    limit: int = Query(default=500, ge=1, le=5000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Exporta o gold dataset de retrieval usando revisoes humanas do CRM.
+
+    O payload separa technical_input, commercial_context, label e o snapshot
+    das previsoes para impedir que campos posteriores a decisao vazem para o
+    modelo de matching tecnico.
+    """
+    return build_match_evaluation_dataset(
+        db,
+        current_user,
+        notice_id=notice_id,
+        source=source,
+        limit=limit,
+        include_unmarked=include_unmarked,
+    )
+
+
 @router.post("/matches/ground-truth/run")
 def crm_run_ground_truth_matches(
     background_tasks: BackgroundTasks,
@@ -1275,6 +1302,30 @@ def crm_mark_notice_product_ground_truth(
         )
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/notice-products/{notice_product_id}/match-review")
+def crm_mark_notice_product_match_review(
+    notice_product_id: str,
+    payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    try:
+        return mark_notice_product_match_review(
+            db,
+            current_user,
+            notice_product_id,
+            verdict=payload.get("verdict"),
+            confidence=payload.get("confidence"),
+            reason_codes=payload.get("reason_codes"),
+            evidence=payload.get("evidence"),
+            notes=payload.get("notes"),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 @router.post("/matches/run-batch")
 def crm_run_match_batch(

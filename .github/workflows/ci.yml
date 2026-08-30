@@ -270,4 +270,4 @@ jobs:
         run: |
           PORT="${VPS_PORT:-22}"
           ssh -p "$PORT" "${VPS_USER}@${VPS_HOST}" \
-            "cd '${VPS_APP_DIR}' && DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash scripts/deploy-production.sh"
+            "cd '${VPS_APP_DIR}' && DEPLOY_BRANCH='${DEPLOY_BRANCH}' IMAGE_TAG='sha-${GITHUB_SHA}' bash scripts/deploy-production.sh"

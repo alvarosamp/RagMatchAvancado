@@ -363,6 +363,13 @@ class CrmNoticeProduct(Base):
     catalog_match_model_version = Column(String)
     catalog_match_notes = Column(Text)
     catalog_lpu_version = Column(String)
+    match_review_verdict = Column(String)
+    match_review_confidence = Column(Float)
+    match_review_reason_codes = Column(JSON)
+    match_review_evidence = Column(JSON)
+    match_review_notes = Column(Text)
+    match_reviewed_by = Column(Integer, ForeignKey("users.id"))
+    match_reviewed_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     notice = relationship("CrmNotice", back_populates="notice_products")

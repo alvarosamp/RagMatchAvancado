@@ -338,6 +338,68 @@ def mark_notice_product_ground_truth(
     return get_notice_item_match_payload(db, current_user, product.notice_id)
 
 
+def mark_notice_product_match_review(
+    db: Session,
+    current_user: User,
+    notice_product_id: str,
+    *,
+    verdict: str,
+    confidence: float | None = None,
+    reason_codes: list[str] | None = None,
+    evidence: list[dict[str, Any]] | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    normalized_verdict = str(verdict or "").strip().upper().replace(" ", "_")
+    if normalized_verdict not in {"ATENDE", "VERIFICAR", "NAO_ATENDE"}:
+        raise ValueError("verdict deve ser ATENDE, VERIFICAR ou NAO_ATENDE.")
+    if confidence is not None and not 0.0 <= float(confidence) <= 1.0:
+        raise ValueError("confidence deve estar entre 0 e 1.")
+
+    product = (
+        db.query(CrmNoticeProduct)
+        .filter(
+            CrmNoticeProduct.id == notice_product_id,
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if not product:
+        raise LookupError("Item do edital nao encontrado.")
+    if not product.catalog_product_id:
+        raise ValueError("Vincule um produto do catalogo antes de registrar o veredito tecnico.")
+
+    cleaned_reasons = []
+    for value in reason_codes or []:
+        code = str(value or "").strip().lower().replace(" ", "_")[:80]
+        if code and code not in cleaned_reasons:
+            cleaned_reasons.append(code)
+
+    product.match_review_verdict = normalized_verdict
+    product.match_review_confidence = round(float(confidence), 4) if confidence is not None else None
+    product.match_review_reason_codes = cleaned_reasons[:20]
+    product.match_review_evidence = list(evidence or [])[:30]
+    product.match_review_notes = str(notes or "").strip()[:4000] or None
+    product.match_reviewed_by = current_user.id
+    product.match_reviewed_at = datetime.utcnow()
+    db.add(
+        CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=product.notice_id,
+            user_id=current_user.id,
+            action="Veredito tecnico do match registrado",
+            details={
+                "notice_product_id": product.id,
+                "catalog_product_id": product.catalog_product_id,
+                "verdict": normalized_verdict,
+                "confidence": product.match_review_confidence,
+                "reason_codes": product.match_review_reason_codes,
+            },
+        )
+    )
+    db.commit()
+    return get_notice_item_match_payload(db, current_user, product.notice_id)
+
+
 def build_match_ground_truth_report(
     db: Session,
     current_user: User,
@@ -752,6 +814,13 @@ def _serialize_notice_product(product: CrmNoticeProduct) -> dict[str, Any]:
         "catalog_match_model_version": product.catalog_match_model_version,
         "catalog_match_notes": product.catalog_match_notes,
         "catalog_lpu_version": product.catalog_lpu_version,
+        "match_review_verdict": product.match_review_verdict,
+        "match_review_confidence": product.match_review_confidence,
+        "match_review_reason_codes": product.match_review_reason_codes,
+        "match_review_evidence": product.match_review_evidence,
+        "match_review_notes": product.match_review_notes,
+        "match_reviewed_by": product.match_reviewed_by,
+        "match_reviewed_at": product.match_reviewed_at.isoformat() if product.match_reviewed_at else None,
         "catalog_product": {
             "id": product.catalog_product.id,
             "name": product.catalog_product.name,

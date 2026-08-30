@@ -15,6 +15,8 @@ from app.services.match_engine import (
     _aggregate_report,
     _rule_score,
     _score_to_status,
+    _build_requirement_contexts,
+    run_matching,
 )
 
 
@@ -110,3 +112,63 @@ class TestAttributeWeights:
     def test_pesos_criticos_sao_maiores_que_generico(self):
         assert ATTRIBUTE_WEIGHTS["tensao"] > ATTRIBUTE_WEIGHTS["generic"]
         assert ATTRIBUTE_WEIGHTS["temperatura"] > ATTRIBUTE_WEIGHTS["generic"]
+
+
+class _FakeDb:
+    def __init__(self):
+        self.added = []
+        self.commits = 0
+
+    def add(self, value):
+        self.added.append(value)
+
+    def commit(self):
+        self.commits += 1
+
+
+def test_llm_failure_is_explicit_and_cannot_produce_atende(monkeypatch):
+    requirement = SimpleNamespace(
+        id=10,
+        edital_id=3,
+        attribute="Portas RJ45",
+        raw_value="24",
+        parsed_value="24",
+    )
+    product = _product(**{"Portas RJ45": "24"})
+    db = _FakeDb()
+    monkeypatch.setattr(
+        "app.services.match_engine._llm_score",
+        lambda product, req, context: (None, "provider indisponivel"),
+    )
+
+    report = run_matching(
+        db,
+        product,
+        [requirement],
+        requirement_contexts={("id", 10): "contexto cacheado"},
+    )
+
+    assert report.details[0].llm_score is None
+    assert report.details[0].final_score == 0.70
+    assert report.details[0].status == MatchStatus.VERIFICAR
+    assert "LLM indisponivel" in report.details[0].reasoning
+
+
+def test_requirement_contexts_are_retrieved_once_per_unique_requirement(monkeypatch):
+    calls = []
+
+    def fake_search(db, query, edital_id, top_k):
+        calls.append((query, edital_id, top_k))
+        return [{"text": f"contexto {query}"}]
+
+    monkeypatch.setattr("app.services.match_engine.search_similar", fake_search)
+    requirements = [
+        SimpleNamespace(id=1, edital_id=9, attribute="Portas", raw_value="24"),
+        SimpleNamespace(id=1, edital_id=9, attribute="Portas", raw_value="24"),
+        SimpleNamespace(id=2, edital_id=9, attribute="PoE", raw_value="sim"),
+    ]
+
+    contexts = _build_requirement_contexts(object(), requirements)
+
+    assert len(contexts) == 2
+    assert len(calls) == 2
