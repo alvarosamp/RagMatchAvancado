@@ -78,12 +78,14 @@ def list_notice_summaries(
     notice_ids = [notice.id for notice in notices]
     document_counts = _document_counts(db, current_user.tenant_id, notice_ids)
     product_counts = _product_counts(db, current_user.tenant_id, notice_ids)
+    product_summaries = _product_summaries(db, current_user.tenant_id, notice_ids)
     items = [
         _serialize_summary(
             notice,
             document_counts.get(notice.id, {}).get("documents_count"),
             document_counts.get(notice.id, {}).get("pending_documents_count"),
             product_counts.get(notice.id),
+            product_summaries.get(notice.id, []),
         )
         for notice in notices
     ]
@@ -146,6 +148,61 @@ def _product_counts(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[
     return {notice_id: int(total or 0) for notice_id, total in rows}
 
 
+def _product_summaries(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
+    """Return only the first two item previews for each card.
+
+    The pipeline must not hydrate every item relationship, but the cards still
+    need enough information to identify the items and display their alerts.
+    """
+    if not notice_ids:
+        return {}
+    ranked = (
+        db.query(
+            CrmNoticeProduct.id.label("id"),
+            CrmNoticeProduct.notice_id.label("notice_id"),
+            CrmNoticeProduct.item_number.label("item_number"),
+            CrmNoticeProduct.category.label("category"),
+            CrmNoticeProduct.description.label("description"),
+            CrmNoticeProduct.quantity.label("quantity"),
+            CrmNoticeProduct.unit.label("unit"),
+            CrmNoticeProduct.reference_price.label("reference_price"),
+            CrmNoticeProduct.reference_total_price.label("reference_total_price"),
+            CrmNoticeProduct.technical_characteristics.label("technical_characteristics"),
+            CrmNoticeProduct.risk_associated.label("risk_associated"),
+            CrmNoticeProduct.is_exclusive_epp.label("is_exclusive_epp"),
+            CrmNoticeProduct.exclusive_epp_label.label("exclusive_epp_label"),
+            CrmNoticeProduct.brand_direction_exists.label("brand_direction_exists"),
+            CrmNoticeProduct.brand_direction_model.label("brand_direction_model"),
+            CrmNoticeProduct.brand_direction_justification.label("brand_direction_justification"),
+            CrmNoticeProduct.bi_features.label("bi_features"),
+            CrmNoticeProduct.bi_feature_quantidade_portas.label("bi_feature_quantidade_portas"),
+            CrmNoticeProduct.bi_feature_portas_acesso.label("bi_feature_portas_acesso"),
+            CrmNoticeProduct.bi_feature_alimentacao_poe.label("bi_feature_alimentacao_poe"),
+            CrmNoticeProduct.bi_feature_tecnologia_wifi.label("bi_feature_tecnologia_wifi"),
+            CrmNoticeProduct.selected_for_dispute.label("selected_for_dispute"),
+            func.row_number().over(
+                partition_by=CrmNoticeProduct.notice_id,
+                order_by=(CrmNoticeProduct.sort_order.asc(), CrmNoticeProduct.id.asc()),
+            ).label("preview_position"),
+        )
+        .filter(CrmNoticeProduct.tenant_id == tenant_id, CrmNoticeProduct.notice_id.in_(notice_ids))
+        .subquery()
+    )
+    rows = (
+        db.query(*ranked.c)
+        .filter(ranked.c.preview_position <= 2)
+        .order_by(ranked.c.notice_id, ranked.c.preview_position)
+        .all()
+    )
+    result: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        values = dict(row._mapping)
+        values.pop("preview_position", None)
+        notice_id = values.pop("notice_id")
+        result.setdefault(notice_id, []).append(values)
+    return result
+
+
 def invalidate_notice_list_cache(tenant_id: int) -> None:
     """Bump a tenant-local cache version; obsolete keys expire naturally."""
     client = _redis_client()
@@ -157,7 +214,13 @@ def invalidate_notice_list_cache(tenant_id: int) -> None:
         return
 
 
-def _serialize_summary(notice: CrmNotice, documents_count: int | None, pending_documents_count: int | None, products_count: int | None) -> dict[str, Any]:
+def _serialize_summary(
+    notice: CrmNotice,
+    documents_count: int | None,
+    pending_documents_count: int | None,
+    products_count: int | None,
+    notice_products: list[dict[str, Any]],
+) -> dict[str, Any]:
     return {
         "id": notice.id,
         "number": notice.number,
@@ -176,11 +239,15 @@ def _serialize_summary(notice: CrmNotice, documents_count: int | None, pending_d
         "conversion_chance": notice.conversion_chance,
         "post_auction_note": notice.post_auction_note,
         "particularities": notice.particularities,
+        "bi_risk_identified": notice.bi_risk_identified,
+        "bi_risk_operational": notice.bi_risk_operational,
+        "bi_general_risks": notice.bi_general_risks,
         "organs": {"id": notice.organ.id, "name": notice.organ.name, "city": notice.organ.city} if notice.organ else None,
         "portals": {"id": notice.portal.id, "name": notice.portal.name, "url": notice.portal.url} if notice.portal else None,
         "documents_count": int(documents_count or 0),
         "pending_documents_count": int(pending_documents_count or 0),
         "products_count": int(products_count or 0),
+        "notice_products": notice_products,
     }
 
 
@@ -220,7 +287,7 @@ def _cache_key(tenant_id: int, limit: int, cursor: str | None, stage: str | None
             version = int(client.get(f"crm:notice-list:version:{tenant_id}") or 0)
         except Exception:
             pass
-    raw = json.dumps([tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
+    raw = json.dumps(["v2-item-previews", tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
     return "crm:notice-list:" + base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 
