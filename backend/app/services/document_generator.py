@@ -15,7 +15,7 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.table import Table
 from docx.oxml.ns import qn
 
-from app.services.proposal_generator import build_notice_proposal_docx
+from app.services.proposal_generator import DEFAULT_COMPANY, build_notice_proposal_docx
 
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
@@ -71,8 +71,12 @@ def list_templates() -> list[dict[str, Any]]:
 
 def generation_preview(notice: Any, template_id: str, company: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
     template = _template(template_id)
-    fields = _preview_fields(notice, company, options)
-    missing = [field for field in template.required_fields if not _field_value(field, fields)]
+    company_fields = _normalize_company(notice, company, options)
+    fields = _preview_fields(notice, company_fields, options)
+    missing = [
+        field for field in template.required_fields
+        if not field.startswith("company.") and not _field_value(field, fields)
+    ]
     if template_id in {"commercial_proposal", "feasibility_declaration"}:
         for product in getattr(notice, "notice_products", []) or []:
             if getattr(product, "selected_for_dispute", True) is False:
@@ -89,7 +93,7 @@ def generate_document(notice: Any, template_id: str, company: dict[str, Any], op
     if preview["missing_fields"] and not options.get("allow_missing"):
         raise ValueError("Dados pendentes: " + ", ".join(preview["missing_fields"]))
     template = _template(template_id)
-    content = template.generator(notice, company, options)
+    content = template.generator(notice, preview["fields"]["company"], options)
     document = Document(BytesIO(content))
     apply_letterhead(document, Document(str(LETTERHEAD_PATH)))
     output = BytesIO()
@@ -124,6 +128,28 @@ def _preview_fields(notice: Any, company: dict[str, Any], options: dict[str, Any
         "emission_city": options.get("city") or company.get("cidade") or getattr(notice, "municipality_name", None),
         "emission_date": options.get("date") or _today_brasilia(),
     }
+
+
+def _normalize_company(notice: Any, company: dict[str, Any] | None, options: dict[str, Any] | None) -> dict[str, Any]:
+    supplied = company or {}
+    opts = options or {}
+    signer = opts.get("signer") or {}
+    city = opts.get("city") or supplied.get("cidade") or DEFAULT_COMPANY.get("cidade") or DEFAULT_COMPANY.get("cidade_uf") or getattr(notice, "municipality_name", None) or ""
+    defaults = {
+        **DEFAULT_COMPANY,
+        "cidade": city,
+        "nacionalidade": "brasileiro(a)",
+        "estado_civil": "",
+        "funcao_representante": signer.get("role") or "representante legal",
+    }
+    merged = {**defaults, **{key: value for key, value in supplied.items() if value not in (None, "")}}
+    if not merged.get("representante"):
+        merged["representante"] = signer.get("name") or ""
+    if not merged.get("funcao_representante"):
+        merged["funcao_representante"] = signer.get("role") or "representante legal"
+    if not merged.get("cidade"):
+        merged["cidade"] = city
+    return merged
 
 
 def _field_value(path: str, fields: dict[str, Any]) -> Any:

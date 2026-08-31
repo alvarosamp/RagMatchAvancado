@@ -176,6 +176,8 @@ def generate_and_archive_document(
     if signer:
         signer_data = dict(options.get("signer") or {})
         signer_data.setdefault("name", signer.full_name or signer.email)
+        signer_data.setdefault("email", signer.email)
+        signer_data.setdefault("role", signer.role)
         options["signer"] = signer_data
     try:
         content, preview = generate_document(notice, payload.template_id, payload.company, options)
