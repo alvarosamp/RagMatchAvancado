@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from docx import Document
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.oxml import OxmlElement
 from docx.table import Table
 from docx.oxml.ns import qn
 
@@ -20,7 +21,8 @@ from app.services.proposal_generator import DEFAULT_COMPANY, build_notice_propos
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 DOCUMENT_TEMPLATE_ROOT = TEMPLATE_ROOT / "documents"
-LETTERHEAD_PATH = DOCUMENT_TEMPLATE_ROOT / "papel_timbrado.docx"
+LETTERHEAD_BACKGROUND_A4 = DOCUMENT_TEMPLATE_ROOT / "papel_timbrado_fundo_a4.png"
+LETTERHEAD_BACKGROUND_LETTER = DOCUMENT_TEMPLATE_ROOT / "papel_timbrado_fundo_carta.png"
 
 
 def _today_brasilia() -> str:
@@ -37,7 +39,10 @@ class DocumentTemplate:
 
     @property
     def version(self) -> str:
-        return hashlib.sha256(self.template_path.read_bytes()).hexdigest()[:12]
+        digest = hashlib.sha256(self.template_path.read_bytes())
+        digest.update(LETTERHEAD_BACKGROUND_A4.read_bytes())
+        digest.update(LETTERHEAD_BACKGROUND_LETTER.read_bytes())
+        return digest.hexdigest()[:12]
 
 
 def _commercial(notice: Any, company: dict[str, Any], options: dict[str, Any]) -> bytes:
@@ -95,7 +100,7 @@ def generate_document(notice: Any, template_id: str, company: dict[str, Any], op
     template = _template(template_id)
     content = template.generator(notice, preview["fields"]["company"], options)
     document = Document(BytesIO(content))
-    apply_letterhead(document, Document(str(LETTERHEAD_PATH)))
+    apply_letterhead(document)
     output = BytesIO()
     document.save(output)
     validated = output.getvalue()
@@ -243,40 +248,89 @@ def _fill_feasibility_table(table: Table, products: list[Any], options: dict[str
             _set_cell(cell, value)
 
 
-def apply_letterhead(target: Document, letterhead: Document) -> None:
-    source = letterhead.sections[0]
+def apply_letterhead(target: Document, letterhead: Document | None = None) -> None:
+    """Apply one full-page branded background behind the document content.
+
+    ``letterhead`` remains accepted for compatibility with older callers, but
+    the generated documents use the precomposed A4/Letter background assets.
+    """
     for section in target.sections:
-        section.header_distance = source.header_distance
-        section.footer_distance = source.footer_distance
-        section.top_margin = max(section.top_margin, source.top_margin)
-        section.bottom_margin = max(section.bottom_margin, source.bottom_margin)
-        for source_part, target_part in ((source.header.part, section.header.part), (source.footer.part, section.footer.part)):
-            _copy_header_footer(source_part, target_part)
+        section.header.is_linked_to_previous = False
+        section.footer.is_linked_to_previous = False
+        section.header_distance = 0
+        section.footer_distance = 0
+        _clear_header_footer(section.header.part)
+        _clear_header_footer(section.footer.part)
+
+        page_width = int(section.page_width)
+        page_height = int(section.page_height)
+        background_path = (
+            LETTERHEAD_BACKGROUND_A4
+            if page_height / page_width > 1.35
+            else LETTERHEAD_BACKGROUND_LETTER
+        )
+        paragraph = section.header.paragraphs[0]
+        paragraph.paragraph_format.space_before = 0
+        paragraph.paragraph_format.space_after = 0
+        paragraph.paragraph_format.line_spacing = 1
+        shape = paragraph.add_run().add_picture(
+            str(background_path),
+            width=section.page_width,
+            height=section.page_height,
+        )
+        _inline_picture_to_page_background(shape._inline, page_width, page_height)
 
 
-def _copy_header_footer(source_part: Any, target_part: Any) -> None:
-    for child in list(target_part.element):
-        target_part.element.remove(child)
-    for rel_id, rel in list(target_part.rels.items()):
+def _clear_header_footer(part: Any) -> None:
+    for child in list(part.element):
+        part.element.remove(child)
+    part.element.append(OxmlElement("w:p"))
+    for rel_id, rel in list(part.rels.items()):
         if rel.reltype in {RT.IMAGE, RT.HYPERLINK}:
-            target_part.drop_rel(rel_id)
-    for child in source_part.element:
-        clone = deepcopy(child)
-        for node in clone.iter():
-            for attr in (qn("r:embed"), qn("r:link"), qn("r:id")):
-                old_id = node.get(attr)
-                if not old_id or old_id not in source_part.rels:
-                    continue
-                rel = source_part.rels[old_id]
-                if rel.reltype == RT.IMAGE:
-                    image_part = target_part.package.image_parts.get_or_add_image_part(BytesIO(rel.target_part.blob))
-                    new_id = target_part.relate_to(image_part, RT.IMAGE)
-                elif rel.is_external:
-                    new_id = target_part.relate_to(rel.target_ref, rel.reltype, is_external=True)
-                else:
-                    continue
-                node.set(attr, new_id)
-        target_part.element.append(clone)
+            part.drop_rel(rel_id)
+
+
+def _inline_picture_to_page_background(inline: Any, page_width: int, page_height: int) -> None:
+    anchor = OxmlElement("wp:anchor")
+    for name, value in {
+        "distT": "0", "distB": "0", "distL": "0", "distR": "0",
+        "simplePos": "0", "relativeHeight": "0", "behindDoc": "1",
+        "locked": "0", "layoutInCell": "1", "allowOverlap": "1",
+    }.items():
+        anchor.set(name, value)
+
+    simple_position = OxmlElement("wp:simplePos")
+    simple_position.set("x", "0")
+    simple_position.set("y", "0")
+    anchor.append(simple_position)
+    for axis in ("H", "V"):
+        position = OxmlElement(f"wp:position{axis}")
+        position.set("relativeFrom", "page")
+        offset = OxmlElement("wp:posOffset")
+        offset.text = "0"
+        position.append(offset)
+        anchor.append(position)
+
+    extent = OxmlElement("wp:extent")
+    extent.set("cx", str(page_width))
+    extent.set("cy", str(page_height))
+    anchor.append(extent)
+    effect_extent = inline.find(qn("wp:effectExtent"))
+    if effect_extent is not None:
+        anchor.append(deepcopy(effect_extent))
+    anchor.append(OxmlElement("wp:wrapNone"))
+    for tag in ("wp:docPr", "wp:cNvGraphicFramePr", "a:graphic"):
+        element = inline.find(qn(tag))
+        if element is not None:
+            anchor.append(deepcopy(element))
+
+    for element in anchor.iter(qn("a:off")):
+        element.set("x", "0")
+        element.set("y", "0")
+    for element in anchor.iter(qn("a:ext")):
+        element.set("cx", str(page_width))
+        element.set("cy", str(page_height))
+    inline.getparent().replace(inline, anchor)
 
 
 def _validate_docx(content: bytes) -> None:
@@ -284,8 +338,9 @@ def _validate_docx(content: bytes) -> None:
     for index, section in enumerate(reopened.sections, start=1):
         header_images = sum(1 for rel in section.header.part.rels.values() if rel.reltype == RT.IMAGE)
         footer_images = sum(1 for rel in section.footer.part.rels.values() if rel.reltype == RT.IMAGE)
-        if header_images == 0 or footer_images == 0:
-            raise ValueError(f"O papel timbrado perdeu imagens no cabecalho/rodape da secao {index}.")
+        anchors = list(section.header._element.iter(qn("wp:anchor")))
+        if header_images != 1 or footer_images != 0 or len(anchors) != 1 or anchors[0].get("behindDoc") != "1":
+            raise ValueError(f"O fundo do papel timbrado ficou invalido na secao {index}.")
 
 
 def _set_paragraph(paragraph: Any, value: str) -> None:

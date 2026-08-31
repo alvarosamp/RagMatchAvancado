@@ -161,13 +161,13 @@ def test_build_notice_proposal_uses_notice_delivery_deadline(tmp_path):
         cell.text for row in document.tables[0].rows for cell in row.cells
     )
 
-    assert "Prazo de entrega/execucao: 30 (trinta) dias corridos" in proposal_text
-    assert "O prazo de validade da proposta e de 60 (sessenta) dias." in proposal_text
+    assert "Prazo de entrega/execução: 30 (trinta) dias corridos" in proposal_text
+    assert "O prazo de validade da proposta é de 60 (sessenta) dias." in proposal_text
     assert "Prazo de Garantia: 36 (trinta e seis) meses" in proposal_text
     assert "05 (cinco) dias uteis" not in proposal_text
     assert "90 dias" not in proposal_text
     assert "12 meses" not in proposal_text
-    assert "PROCESSO N Pregao Eletronico 456/2026" in header_text
+    assert "PROCESSO Nº Pregao Eletronico 456/2026" in header_text
     assert "Menor preco por item" in header_text
 
 

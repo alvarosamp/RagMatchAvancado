@@ -29,7 +29,7 @@ DEFAULT_COMPANY = {
     "representante": "ALLAN CESAR DE PAIVA BARREIROS",
     "cpf_representante": "052.832.226-59",
     "rg_representante": "MG 10179237",
-    "banco": "BANCO INTER, Agencia: 0001-9, Conta Corrente: 49933223-7",
+    "banco": "BANCO INTER, Agência: 0001-9, Conta Corrente: 49933223-7",
 }
 
 
@@ -48,7 +48,7 @@ def build_notice_proposal_docx(
     options = options or {}
     won_items = _collect_won_items(notice) or _collect_preview_items(notice)
     if not won_items:
-        raise ValueError("Nao ha itens vinculados para gerar proposta.")
+        raise ValueError("Não há itens vinculados para gerar proposta.")
 
     document = Document(str(TEMPLATE_PATH))
     _fill_header_table(document.tables[0], notice, company_data, options)
@@ -82,7 +82,7 @@ def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
             continue
         quantity = _required_number("quantidade", getattr(result, "winning_quantity", None), getattr(product, "quantity", None))
         unit_price = _required_number(
-            "preco comercial",
+            "preço comercial",
             getattr(result, "winning_price", None),
             getattr(product, "unit_price", None),
         )
@@ -126,7 +126,7 @@ def _collect_preview_items(notice: Any) -> list[dict[str, Any]]:
         if getattr(product, "selected_for_dispute", True) is False:
             continue
         catalog = getattr(product, "catalog_product", None)
-        unit_price = _required_number("preco comercial", getattr(product, "unit_price", None))
+        unit_price = _required_number("preço comercial", getattr(product, "unit_price", None))
         quantity = _required_number("quantidade", getattr(product, "quantity", None))
         brand = getattr(catalog, "brand", None) or ""
         model = getattr(catalog, "model", None) or ""
@@ -154,7 +154,7 @@ def _fill_header_table(
 ) -> None:
     organ = getattr(notice, "organ", None)
     portal = getattr(notice, "portal", None)
-    organ_name = getattr(organ, "name", None) or getattr(notice, "municipality_name", None) or "ORGAO"
+    organ_name = getattr(organ, "name", None) or getattr(notice, "municipality_name", None) or "ÓRGÃO"
     process_number = (
         options.get("process_number")
         or getattr(notice, "bid_number", None)
@@ -162,7 +162,7 @@ def _fill_header_table(
         or getattr(notice, "tor_id", None)
         or ""
     )
-    modality = options.get("auction_number") or getattr(notice, "modality", None) or "PREGAO ELETRONICO"
+    modality = options.get("auction_number") or getattr(notice, "modality", None) or "PREGÃO ELETRÔNICO"
     judgment = options.get("judgment_type") or getattr(notice, "bi_criterion", None) or "conforme edital"
     portal_name = getattr(portal, "name", None)
     if portal_name:
@@ -171,15 +171,15 @@ def _fill_header_table(
     rows = [
         [organ_name] * 5,
         [
-            f"PROCESSO N {process_number}",
-            f"PROCESSO N {process_number}",
+            f"PROCESSO Nº {process_number}",
+            f"PROCESSO Nº {process_number}",
             modality,
             modality,
             modality,
         ],
         [""] * 5,
-        [f"RAZAO SOCIAL: {company['razao_social']}"] * 4 + [f"CNPJ/CPF: {company['cnpj']}"],
-        [f"ENDERECO: {company['endereco']}"] * 3 + [f"BAIRRO: {company['bairro']}"] * 2,
+        [f"RAZÃO SOCIAL: {company['razao_social']}"] * 4 + [f"CNPJ/CPF: {company['cnpj']}"],
+        [f"ENDEREÇO: {company['endereco']}"] * 3 + [f"BAIRRO: {company['bairro']}"] * 2,
         [
             f"CIDADE/UF: {company['cidade_uf']}",
             f"CEP: {company['cep']}",
@@ -255,7 +255,7 @@ def _replace_common_text(
     options: dict[str, Any],
     won_items: list[dict[str, Any]],
 ) -> None:
-    current_city = options.get("proposal_city") or "Santa Rita do Sapucai"
+    current_city = options.get("proposal_city") or "Santa Rita do Sapucaí"
     current_date = options.get("proposal_date") or _date_pt_br(datetime.now())
     delivery_term = options.get("delivery_term") or _delivery_term_from_items(won_items)
     validity_term = _proposal_validity_term(notice, options)
@@ -267,15 +267,15 @@ def _replace_common_text(
     )
     replacements = {
         "O prazo de validade da proposta": (
-            f"O prazo de validade da proposta e de {validity_term}."
+            f"O prazo de validade da proposta é de {validity_term}."
         ),
         "Nome do banco indicado para o pagamento": (
             f"Nome do banco indicado para o pagamento: {company['banco']}."
         ),
         "Prazo de entrega/execu": (
-            f"Prazo de entrega/execucao: "
+            f"Prazo de entrega/execução: "
             f"{delivery_term}, "
-            "contados do recebimento da Solicitacao de Fornecimento/Ordem de Servicos."
+            "contados do recebimento da Solicitação de Fornecimento/Ordem de Serviços."
         ),
         "Prazo de Garantia": (
             f"Prazo de Garantia: {warranty_term}, "
@@ -399,8 +399,8 @@ def _int_to_words(number: int) -> str:
         return "zero"
 
     scales = [
-        (1_000_000_000, "bilhao", "bilhoes"),
-        (1_000_000, "milhao", "milhoes"),
+        (1_000_000_000, "bilhão", "bilhões"),
+        (1_000_000, "milhão", "milhões"),
         (1_000, "mil", "mil"),
     ]
     parts: list[str] = []
@@ -429,7 +429,7 @@ def _int_to_words_under_1000(number: int) -> str:
         "",
         "um",
         "dois",
-        "tres",
+        "três",
         "quatro",
         "cinco",
         "seis",
@@ -497,7 +497,7 @@ def _date_pt_br(value: datetime) -> str:
     months = [
         "janeiro",
         "fevereiro",
-        "marco",
+        "março",
         "abril",
         "maio",
         "junho",

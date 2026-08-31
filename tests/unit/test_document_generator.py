@@ -37,13 +37,18 @@ def test_registry_exposes_three_extensible_templates():
 
 
 @pytest.mark.parametrize("template_id", ["commercial_proposal", "unified_declaration", "feasibility_declaration"])
-def test_generated_documents_reopen_and_keep_letterhead_images(template_id):
+def test_generated_documents_use_one_full_page_background_behind_content(template_id):
     notice, company, options = _fixture()
     content, _ = generate_document(notice, template_id, company, options)
     document = Document(BytesIO(content))
     for section in document.sections:
         assert sum(rel.reltype == RT.IMAGE for rel in section.header.part.rels.values()) == 1
-        assert sum(rel.reltype == RT.IMAGE for rel in section.footer.part.rels.values()) == 1
+        assert sum(rel.reltype == RT.IMAGE for rel in section.footer.part.rels.values()) == 0
+        anchors = list(section.header._element.iter("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}anchor"))
+        assert len(anchors) == 1
+        assert anchors[0].get("behindDoc") == "1"
+        assert anchors[0].find("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}positionH").get("relativeFrom") == "page"
+        assert anchors[0].find("{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}positionV").get("relativeFrom") == "page"
 
 
 def test_declarations_replace_examples_and_create_one_item_row():
@@ -65,7 +70,7 @@ def test_declarations_replace_examples_and_create_one_item_row():
 def test_reference_price_is_not_used_as_commercial_price():
     notice, company, _ = _fixture()
     notice.notice_products[0].unit_price = None
-    with pytest.raises(ValueError, match="preco comercial"):
+    with pytest.raises(ValueError, match="preço comercial"):
         build_notice_proposal_docx(notice, company=company)
 
 
