@@ -18,7 +18,14 @@ from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
-from app.crm.models import CrmChecklistStatus, CrmNotice, CrmNoticeDocument, CrmNoticeProduct
+from app.crm.models import (
+    CrmChecklistStatus,
+    CrmNotice,
+    CrmNoticeDocument,
+    CrmNoticeProduct,
+    CrmNoticeStage,
+    CrmPostAuctionPhase,
+)
 
 
 DEFAULT_PAGE_SIZE = 50
@@ -51,7 +58,7 @@ def list_notice_summaries(
     if not include_discarded:
         query = query.filter(CrmNotice.outcome != "not_pursued")
     if stage:
-        query = query.filter(CrmNotice.stage == stage)
+        query = _filter_pipeline_column(query, stage)
     if cursor_values:
         created_at, notice_id = cursor_values
         query = query.filter(
@@ -84,6 +91,28 @@ def list_notice_summaries(
     response = {"items": items, "next_cursor": next_cursor, "has_next": has_next}
     _cache_set(cache_key, response)
     return response
+
+
+def _filter_pipeline_column(query, stage: str):
+    try:
+        post_auction_phase = CrmPostAuctionPhase(stage)
+    except ValueError:
+        post_auction_phase = None
+
+    if post_auction_phase is not None:
+        return query.filter(
+            CrmNotice.stage == CrmNoticeStage.RESULT,
+            CrmNotice.post_auction_phase == post_auction_phase,
+        )
+
+    try:
+        notice_stage = CrmNoticeStage(stage)
+    except ValueError as exc:
+        raise ValueError("Etapa invalida.") from exc
+
+    if notice_stage == CrmNoticeStage.RESULT:
+        return query.filter(CrmNotice.stage == notice_stage, CrmNotice.post_auction_phase.is_(None))
+    return query.filter(CrmNotice.stage == notice_stage)
 
 
 def _document_counts(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[str, dict[str, int]]:

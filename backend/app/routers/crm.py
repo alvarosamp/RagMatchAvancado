@@ -12,6 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import FileResponse, StreamingResponse
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user, require_role
@@ -27,6 +28,8 @@ from app.crm.models import (
     CrmItemWinnerType,
     CrmNotice,
     CrmNoticeHistory,
+    CrmNoticeItemResult,
+    CrmNoticeOutcome,
     CrmNoticeProduct,
     CrmNoticeProductDatasheet,
     CrmNoticeSession,
@@ -350,6 +353,138 @@ def crm_list_notices(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/dashboard-summary")
+def crm_dashboard_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tenant_id = current_user.tenant_id
+    active_outcomes = [CrmNoticeOutcome.PENDING, CrmNoticeOutcome.WON, CrmNoticeOutcome.LOST, CrmNoticeOutcome.DISQUALIFIED]
+
+    stage_counts_rows = (
+        db.query(CrmNotice.stage, func.count(CrmNotice.id))
+        .filter(CrmNotice.tenant_id == tenant_id, CrmNotice.outcome != CrmNoticeOutcome.NOT_PURSUED)
+        .group_by(CrmNotice.stage)
+        .all()
+    )
+    stage_counts = {
+        (stage.value if hasattr(stage, "value") else str(stage)): int(total or 0)
+        for stage, total in stage_counts_rows
+    }
+
+    active_count = (
+        db.query(func.count(CrmNotice.id))
+        .filter(CrmNotice.tenant_id == tenant_id, CrmNotice.outcome == CrmNoticeOutcome.PENDING)
+        .scalar()
+        or 0
+    )
+    pending_docs = (
+        db.query(func.count(CrmNoticeDocument.id))
+        .filter(
+            CrmNoticeDocument.tenant_id == tenant_id,
+            CrmNoticeDocument.status.in_([CrmChecklistStatus.PENDING, CrmChecklistStatus.IN_PROGRESS]),
+        )
+        .scalar()
+        or 0
+    )
+    upcoming_rows = (
+        db.query(CrmNotice)
+        .options(selectinload(CrmNotice.organ), selectinload(CrmNotice.portal))
+        .filter(
+            CrmNotice.tenant_id == tenant_id,
+            CrmNotice.outcome == CrmNoticeOutcome.PENDING,
+            CrmNotice.auction_date.isnot(None),
+            CrmNotice.auction_date >= _local_now(),
+        )
+        .order_by(CrmNotice.auction_date.asc())
+        .limit(5)
+        .all()
+    )
+    won_rows = (
+        db.query(CrmNoticeItemResult, CrmNoticeProduct, CrmNotice)
+        .join(CrmNoticeProduct, CrmNoticeProduct.id == CrmNoticeItemResult.notice_product_id)
+        .join(CrmNotice, CrmNotice.id == CrmNoticeItemResult.notice_id)
+        .options(selectinload(CrmNotice.portal))
+        .filter(
+            CrmNoticeItemResult.tenant_id == tenant_id,
+            CrmNotice.tenant_id == tenant_id,
+            CrmNotice.outcome != CrmNoticeOutcome.NOT_PURSUED,
+            CrmNoticeItemResult.winner_type == CrmItemWinnerType.US,
+            CrmNotice.auction_date.isnot(None),
+        )
+        .all()
+    )
+    product_counts_rows = (
+        db.query(CrmNoticeProduct.notice_id, func.count(CrmNoticeProduct.id))
+        .outerjoin(CrmNoticeItemResult, CrmNoticeItemResult.notice_product_id == CrmNoticeProduct.id)
+        .join(CrmNotice, CrmNotice.id == CrmNoticeProduct.notice_id)
+        .filter(
+            CrmNoticeProduct.tenant_id == tenant_id,
+            CrmNotice.tenant_id == tenant_id,
+            CrmNotice.outcome != CrmNoticeOutcome.NOT_PURSUED,
+            or_(CrmNoticeItemResult.id.is_(None), CrmNoticeItemResult.winner_type != CrmItemWinnerType.CANCELLED),
+        )
+        .group_by(CrmNoticeProduct.notice_id)
+        .all()
+    )
+    won_counts_rows = (
+        db.query(CrmNoticeItemResult.notice_id, func.count(CrmNoticeItemResult.id))
+        .filter(CrmNoticeItemResult.tenant_id == tenant_id, CrmNoticeItemResult.winner_type == CrmItemWinnerType.US)
+        .group_by(CrmNoticeItemResult.notice_id)
+        .all()
+    )
+    product_counts = {notice_id: int(total or 0) for notice_id, total in product_counts_rows}
+    won_counts = {notice_id: int(total or 0) for notice_id, total in won_counts_rows}
+    portal_rows: dict[str, dict[str, Any]] = {}
+    notices_for_portal = (
+        db.query(CrmNotice)
+        .options(selectinload(CrmNotice.portal))
+        .filter(CrmNotice.tenant_id == tenant_id, CrmNotice.outcome != CrmNoticeOutcome.NOT_PURSUED, CrmNotice.auction_date.isnot(None))
+        .all()
+    )
+    for notice in notices_for_portal:
+        portal_name = notice.portal.name if notice.portal else "Sem portal"
+        current = portal_rows.setdefault(portal_name, {"portal": portal_name, "mapped": 0, "won": 0})
+        current["mapped"] += product_counts.get(notice.id, 0)
+        current["won"] += won_counts.get(notice.id, 0)
+
+    won_items = []
+    for result, product, notice in won_rows:
+        quantity = float(result.winning_quantity if result.winning_quantity is not None else product.quantity or 0)
+        price = float(result.winning_price or 0)
+        won_items.append(
+            {
+                "noticeId": notice.id,
+                "auctionDate": notice.auction_date.isoformat() if notice.auction_date else None,
+                "total": quantity * price,
+                "portal": notice.portal.name if notice.portal else "Sem portal",
+            }
+        )
+
+    return {
+        "stage_counts": stage_counts,
+        "active_count": int(active_count),
+        "pending_docs": int(pending_docs),
+        "won_count": len(won_items),
+        "upcoming": [
+            {
+                "id": notice.id,
+                "number": notice.number,
+                "title": notice.title,
+                "stage": notice.stage.value if hasattr(notice.stage, "value") else notice.stage,
+                "auction_date": notice.auction_date.isoformat() if notice.auction_date else None,
+                "outcome": notice.outcome.value if hasattr(notice.outcome, "value") else notice.outcome,
+                "post_auction_phase": notice.post_auction_phase.value if hasattr(notice.post_auction_phase, "value") else notice.post_auction_phase,
+                "organs": {"name": notice.organ.name} if notice.organ else None,
+                "portals": {"name": notice.portal.name} if notice.portal else None,
+            }
+            for notice in upcoming_rows
+        ],
+        "won_items": won_items,
+        "portal_rows": list(portal_rows.values()),
+    }
 
 
 def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
