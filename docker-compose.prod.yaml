@@ -303,13 +303,13 @@ services:
     expose:
       - "5000"
     environment:
-      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      MLFLOW_BACKEND_STORE_URI: sqlite:////mlruns/mlflow.db
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
     volumes:
       - mlflow_data:/mlruns
     command: >
       mlflow server
-        --backend-store-uri postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+        --backend-store-uri sqlite:////mlruns/mlflow.db
         --default-artifact-root /mlruns/artifacts
         --host 0.0.0.0
         --port 5000

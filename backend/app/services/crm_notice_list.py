@@ -43,34 +43,9 @@ def list_notice_summaries(
         return cached
     cursor_values = _decode_cursor(cursor) if cursor else None
 
-    doc_counts = (
-        db.query(
-            CrmNoticeDocument.notice_id.label("notice_id"),
-            func.count(CrmNoticeDocument.id).label("documents_count"),
-            func.coalesce(
-                func.sum(case((CrmNoticeDocument.status != CrmChecklistStatus.READY, 1), else_=0)),
-                0,
-            ).label("pending_documents_count"),
-        )
-        .filter(CrmNoticeDocument.tenant_id == current_user.tenant_id)
-        .group_by(CrmNoticeDocument.notice_id)
-        .subquery()
-    )
-    product_counts = (
-        db.query(
-            CrmNoticeProduct.notice_id.label("notice_id"),
-            func.count(CrmNoticeProduct.id).label("products_count"),
-        )
-        .filter(CrmNoticeProduct.tenant_id == current_user.tenant_id)
-        .group_by(CrmNoticeProduct.notice_id)
-        .subquery()
-    )
-
     query = (
-        db.query(CrmNotice, doc_counts.c.documents_count, doc_counts.c.pending_documents_count, product_counts.c.products_count)
+        db.query(CrmNotice)
         .options(joinedload(CrmNotice.organ), joinedload(CrmNotice.portal))
-        .outerjoin(doc_counts, doc_counts.c.notice_id == CrmNotice.id)
-        .outerjoin(product_counts, product_counts.c.notice_id == CrmNotice.id)
         .filter(CrmNotice.tenant_id == current_user.tenant_id)
     )
     if not include_discarded:
@@ -86,18 +61,60 @@ def list_notice_summaries(
             )
         )
 
-    rows = (
+    notices = (
         query.order_by(CrmNotice.created_at.desc(), CrmNotice.id.desc())
         .limit(limit + 1)
         .all()
     )
-    has_next = len(rows) > limit
-    rows = rows[:limit]
-    items = [_serialize_summary(notice, documents_count, pending_documents_count, products_count) for notice, documents_count, pending_documents_count, products_count in rows]
-    next_cursor = _encode_cursor(rows[-1][0]) if has_next and rows else None
+    has_next = len(notices) > limit
+    notices = notices[:limit]
+    notice_ids = [notice.id for notice in notices]
+    document_counts = _document_counts(db, current_user.tenant_id, notice_ids)
+    product_counts = _product_counts(db, current_user.tenant_id, notice_ids)
+    items = [
+        _serialize_summary(
+            notice,
+            document_counts.get(notice.id, {}).get("documents_count"),
+            document_counts.get(notice.id, {}).get("pending_documents_count"),
+            product_counts.get(notice.id),
+        )
+        for notice in notices
+    ]
+    next_cursor = _encode_cursor(notices[-1]) if has_next and notices else None
     response = {"items": items, "next_cursor": next_cursor, "has_next": has_next}
     _cache_set(cache_key, response)
     return response
+
+
+def _document_counts(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[str, dict[str, int]]:
+    if not notice_ids:
+        return {}
+    rows = (
+        db.query(
+            CrmNoticeDocument.notice_id,
+            func.count(CrmNoticeDocument.id),
+            func.coalesce(func.sum(case((CrmNoticeDocument.status != CrmChecklistStatus.READY, 1), else_=0)), 0),
+        )
+        .filter(CrmNoticeDocument.tenant_id == tenant_id, CrmNoticeDocument.notice_id.in_(notice_ids))
+        .group_by(CrmNoticeDocument.notice_id)
+        .all()
+    )
+    return {
+        notice_id: {"documents_count": int(total or 0), "pending_documents_count": int(pending or 0)}
+        for notice_id, total, pending in rows
+    }
+
+
+def _product_counts(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[str, int]:
+    if not notice_ids:
+        return {}
+    rows = (
+        db.query(CrmNoticeProduct.notice_id, func.count(CrmNoticeProduct.id))
+        .filter(CrmNoticeProduct.tenant_id == tenant_id, CrmNoticeProduct.notice_id.in_(notice_ids))
+        .group_by(CrmNoticeProduct.notice_id)
+        .all()
+    )
+    return {notice_id: int(total or 0) for notice_id, total in rows}
 
 
 def invalidate_notice_list_cache(tenant_id: int) -> None:
