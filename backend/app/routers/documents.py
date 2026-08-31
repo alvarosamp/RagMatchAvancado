@@ -9,13 +9,14 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import case, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user, require_role
-from app.auth.models import User
+from app.auth.models import Tenant, User
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
-from app.crm.models import CrmCatalogProductDatasheet, CrmNotice, CrmNoticeDocument, CrmNoticeProductDatasheet
+from app.crm.models import CrmCatalogProductDatasheet, CrmNotice, CrmNoticeDocument, CrmNoticeHistory, CrmNoticeProduct, CrmNoticeProductDatasheet
 from app.db.models import AnalysisDocument, DocumentFile, DocumentSignatureRequest, DocumentSignatureStatus
 from app.db.session import get_db
 from app.services.document_files import (
@@ -33,6 +34,7 @@ from app.services.document_platform import (
     list_document_schemas,
     store_structured_document,
 )
+from app.services.document_generator import generate_document, generated_filename, generation_preview, list_templates
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -68,6 +70,19 @@ class UpdateDocumentFileRequest(BaseModel):
     expires_at: datetime | None = None
 
 
+class DocumentPreviewRequest(BaseModel):
+    notice_id: str
+    company: dict[str, Any] = Field(default_factory=dict)
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
+class GenerateDocumentRequest(DocumentPreviewRequest):
+    template_id: str
+    signer_id: int | None = None
+    idempotency_key: str | None = None
+    send_for_signature: bool = False
+
+
 @router.get("/schemas")
 def get_document_schemas(
     current_user: User = Depends(get_current_user),
@@ -98,11 +113,107 @@ def list_signature_users(
     ]
 
 
+@router.get("/templates")
+def get_document_templates(current_user: User = Depends(get_current_user)):
+    return list_templates()
+
+
+def _generation_notice(db: Session, current_user: User, notice_id: str) -> CrmNotice:
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ), selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_item_results),
+            selectinload(CrmNotice.notice_products).selectinload(CrmNoticeProduct.catalog_product),
+        )
+        .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id)
+        .first()
+    )
+    if notice is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital nao encontrado.")
+    return notice
+
+
+@router.post("/templates/{template_id}/preview")
+def preview_generated_document(
+    template_id: str,
+    payload: DocumentPreviewRequest,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    notice = _generation_notice(db, current_user, payload.notice_id)
+    try:
+        return generation_preview(notice, template_id, payload.company, payload.options)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/generate")
+def generate_and_archive_document(
+    payload: GenerateDocumentRequest,
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    notice = _generation_notice(db, current_user, payload.notice_id)
+    generation_key = (payload.idempotency_key or "").strip() or None
+    if generation_key:
+        existing = db.query(DocumentFile).filter(
+            DocumentFile.tenant_id == current_user.tenant_id,
+            DocumentFile.generation_key == generation_key,
+        ).first()
+        if existing is not None:
+            return serialize_document_file(existing)
+    signer = None
+    if payload.signer_id is not None:
+        signer = db.query(User).filter(
+            User.id == payload.signer_id, User.tenant_id == current_user.tenant_id, User.is_active.is_(True)
+        ).first()
+        if signer is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assinante nao encontrado.")
+    if payload.send_for_signature and signer is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selecione um assinante.")
+    options = dict(payload.options)
+    if signer:
+        signer_data = dict(options.get("signer") or {})
+        signer_data.setdefault("name", signer.full_name or signer.email)
+        options["signer"] = signer_data
+    try:
+        content, preview = generate_document(notice, payload.template_id, payload.company, options)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    template = preview["template"]
+    document = store_document_file(
+        db, tenant_id=current_user.tenant_id, user_id=current_user.id,
+        fileobj=BytesIO(content), original_filename=generated_filename(notice, payload.template_id),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        title=f"{template['name']} - {notice.number}", category=template["name"], crm_notice_id=notice.id,
+        status_value="generated", template_id=payload.template_id, template_version=template["template_version"],
+        generated_by=current_user.id, signer_id=payload.signer_id,
+        signature_status="pending" if payload.send_for_signature else "not_requested", generation_key=generation_key,
+    )
+    db.add(CrmNoticeHistory(
+        tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action="Documento gerado", details={"document_id": document.id, "template_id": payload.template_id, "signer_id": payload.signer_id},
+    ))
+    if payload.send_for_signature:
+        create_signature_request(
+            db, tenant_id=current_user.tenant_id, document_id=document.id,
+            requester_id=current_user.id, signer_id=signer.id, message="Documento gerado para assinatura.",
+        )
+    db.commit()
+    db.refresh(document)
+    return serialize_document_file(document, uploaded_by_name=current_user.full_name or current_user.email)
+
+
 @router.get("/files")
 def list_document_files(
     crm_notice_id: str | None = Query(default=None),
     edital_id: int | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    search: str | None = Query(default=None, min_length=1, max_length=120),
+    signed: bool | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -118,8 +229,34 @@ def list_document_files(
         query = query.filter(DocumentFile.edital_id == edital_id)
     if status_filter:
         query = query.filter(DocumentFile.status == status_filter)
-    rows = query.order_by(DocumentFile.updated_at.desc(), DocumentFile.created_at.desc()).limit(200).all()
-    return [serialize_document_file(row) for row in rows]
+    if signed is not None:
+        query = query.filter(DocumentFile.is_repository_signed_archive.is_(signed))
+        if signed is False:
+            query = query.filter(DocumentFile.status.notin_(["signed", "signed_result"]))
+    relevance = None
+    if search:
+        term = search.strip()
+        pattern = f"%{term}%"
+        starts_pattern = f"{term}%"
+        query = query.outerjoin(CrmNotice, CrmNotice.id == DocumentFile.crm_notice_id).join(
+            Tenant, Tenant.id == DocumentFile.tenant_id
+        ).filter(or_(
+            DocumentFile.title.ilike(pattern), DocumentFile.original_filename.ilike(pattern),
+            DocumentFile.category.ilike(pattern), CrmNotice.number.ilike(pattern), CrmNotice.title.ilike(pattern),
+            Tenant.name.ilike(pattern),
+        ))
+        relevance = case(
+            (DocumentFile.title.ilike(starts_pattern), 0),
+            (DocumentFile.original_filename.ilike(starts_pattern), 1),
+            (CrmNotice.number.ilike(starts_pattern), 2),
+            else_=3,
+        )
+    ordering = ([relevance.asc()] if relevance is not None else []) + [DocumentFile.updated_at.desc(), DocumentFile.created_at.desc()]
+    rows = query.order_by(*ordering).offset(offset).limit(limit).all()
+    uploader_ids = {row.uploaded_by for row in rows if row.uploaded_by is not None}
+    users = db.query(User).filter(User.tenant_id == current_user.tenant_id, User.id.in_(uploader_ids)).all() if uploader_ids else []
+    user_names = {row.id: row.full_name or row.email for row in users}
+    return [serialize_document_file(row, uploaded_by_name=user_names.get(row.uploaded_by)) for row in rows]
 
 
 @router.get("/files/notice/{notice_id}/download-all")

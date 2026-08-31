@@ -165,6 +165,12 @@ def derive_notice_outcome_from_items(notice: CrmNotice) -> CrmNoticeOutcome | No
     if any(_winner_type(result.winner_type) == CrmItemWinnerType.US for result in results):
         return CrmNoticeOutcome.WON
 
+    winner_types = {_winner_type(result.winner_type) for result in results}
+    if winner_types == {CrmItemWinnerType.CANCELLED}:
+        return CrmNoticeOutcome.CANCELLED
+    if winner_types == {CrmItemWinnerType.DESERT}:
+        return CrmNoticeOutcome.DESERT
+
     product_ids = {item.id for item in notice.notice_products if item.id}
     result_product_ids = {result.notice_product_id for result in results if result.notice_product_id}
     if product_ids and product_ids.issubset(result_product_ids):

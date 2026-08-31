@@ -433,7 +433,7 @@ def upsert_group_products(db, context: ImportContext, notice: CrmNotice, rows: l
             product_code = optional_text(row.get("codigo_do_produto"))
             description = optional_text(row.get("descricao")) or product_code or f"Produto do item {item_number}"
             lot = optional_text(row.get("lote"))
-            quantity = parse_float(row.get("quantidade")) or 1.0
+            quantity = parse_float(row.get("quantidade"))
             cost = parse_float(row.get("custo_unitario_c_ipi")) or parse_float(row.get("custo_unitario_s_ipi"))
             reference_price = parse_float(row.get("preco_minimo_unitario"))
             reference_total = parse_float(row.get("preco_minimo_total"))
@@ -445,11 +445,11 @@ def upsert_group_products(db, context: ImportContext, notice: CrmNotice, rows: l
             product_code = optional_text(row.get("part_number_do_produto"))
             description = optional_text(row.get("descricao_do_produto")) or product_code or f"Produto monitorado {index}"
             lot = None
-            quantity = parse_float(row.get("quantidade")) or 1.0
+            quantity = parse_float(row.get("quantidade"))
             cost = parse_float(row.get("custo"))
             reference_price = parse_float(row.get("preco"))
             reference_total = parse_float(row.get("preco_minimo_total"))
-            unit_price = parse_float(row.get("preco"))
+            unit_price = None
             notes = optional_text(row.get("status"))
             exclusive_epp = None
 
@@ -476,7 +476,8 @@ def upsert_group_products(db, context: ImportContext, notice: CrmNotice, rows: l
         product.is_exclusive_epp = exclusive_epp
         product.quantity = quantity
         product.cost = cost
-        product.unit_price = unit_price
+        if unit_price is not None and product.unit_price is None:
+            product.unit_price = unit_price
         product.reference_price = reference_price
         product.reference_total_price = reference_total
         product.notes = notes
@@ -723,7 +724,7 @@ def iter_analyzed_items(row: dict[str, Any]) -> list[dict[str, Any]]:
             get_value(row, f"número item edital {index}"),
             index,
         )
-        quantity = parse_float(get_value(row, f"quantidade item {index}")) or 1.0
+        quantity = parse_float(get_value(row, f"quantidade item {index}"))
         reference_price = parse_float(get_value(row, f"preço item {index}"))
         reference_total = (
             round(reference_price * quantity, 4)
@@ -784,7 +785,6 @@ def upsert_analyzed_products(
         product.quantity = item["quantity"]
         product.reference_price = item["reference_price"]
         product.reference_total_price = item["reference_total"]
-        product.unit_price = item["reference_price"]
         product.notes = optional_meaningful_text(get_value(row, "risco identificado"))
         product.sort_order = item["sort_order"]
 

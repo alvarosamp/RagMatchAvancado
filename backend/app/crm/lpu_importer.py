@@ -178,8 +178,6 @@ def _row_to_record(
     price = _to_float(_get(values, "preco", "preço", "price"))
     cost = _to_float(_get(values, "custo final", "custo", "preco", "preco final", "preço", "preço final", "price"))
     minimum_price = _to_float_or_none(_get(values, "preco minimo", "preco mínimo", "preço minimo", "preço mínimo"))
-    if minimum_price is None:
-        minimum_price = price
     category = _category_from_sheet(sheet_name)
 
     if category == "switch":
@@ -226,7 +224,7 @@ def _row_to_record(
         "keywords": keywords,
         "unit": "UN",
         "cost": cost,
-        "min_price": minimum_price if minimum_price is not None else cost,
+        "min_price": minimum_price,
         "tax_percent": 0.0,
         "margin_percent": 0.0,
         "notes": notes,
@@ -283,7 +281,7 @@ def _proposal_row_to_record(values: dict[str, Any], sheet_name: str) -> dict[str
         "keywords": keywords,
         "unit": unit[:40],
         "cost": price,
-        "min_price": minimum_price if minimum_price is not None else price,
+        "min_price": minimum_price,
         "tax_percent": 0.0,
         "margin_percent": 0.0,
         "notes": notes,

@@ -51,7 +51,6 @@ def build_notice_proposal_docx(
         raise ValueError("Nao ha itens vinculados para gerar proposta.")
 
     document = Document(str(TEMPLATE_PATH))
-    _remove_images(document)
     _fill_header_table(document.tables[0], notice, company_data, options)
     _fill_items_table(document.tables[1], won_items)
     _replace_common_text(document, notice, company_data, options, won_items)
@@ -81,12 +80,11 @@ def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
             continue
         if getattr(product, "selected_for_dispute", True) is False:
             continue
-        quantity = _number(getattr(result, "winning_quantity", None), getattr(product, "quantity", 1))
-        unit_price = _number(
+        quantity = _required_number("quantidade", getattr(result, "winning_quantity", None), getattr(product, "quantity", None))
+        unit_price = _required_number(
+            "preco comercial",
             getattr(result, "winning_price", None),
             getattr(product, "unit_price", None),
-            getattr(product, "reference_price", None),
-            0,
         )
         catalog = getattr(product, "catalog_product", None)
         brand = (
@@ -128,13 +126,8 @@ def _collect_preview_items(notice: Any) -> list[dict[str, Any]]:
         if getattr(product, "selected_for_dispute", True) is False:
             continue
         catalog = getattr(product, "catalog_product", None)
-        unit_price = _number(
-            getattr(product, "unit_price", None),
-            getattr(catalog, "min_price", None),
-            getattr(product, "reference_price", None),
-            0,
-        )
-        quantity = _number(getattr(product, "quantity", None), 1)
+        unit_price = _required_number("preco comercial", getattr(product, "unit_price", None))
+        quantity = _required_number("quantidade", getattr(product, "quantity", None))
         brand = getattr(catalog, "brand", None) or ""
         model = getattr(catalog, "model", None) or ""
         items.append(
@@ -184,7 +177,7 @@ def _fill_header_table(
             modality,
             modality,
         ],
-        ["TIPO DE JULGAMENTO:", "TIPO DE JULGAMENTO:", judgment, judgment, judgment],
+        [""] * 5,
         [f"RAZAO SOCIAL: {company['razao_social']}"] * 4 + [f"CNPJ/CPF: {company['cnpj']}"],
         [f"ENDERECO: {company['endereco']}"] * 3 + [f"BAIRRO: {company['bairro']}"] * 2,
         [
@@ -200,8 +193,21 @@ def _fill_header_table(
     for row_index, row_values in enumerate(rows):
         if row_index >= len(table.rows):
             break
+        if row_index == 2:
+            _set_judgment_row(table.rows[row_index], judgment)
+            continue
         for cell, value in zip(table.rows[row_index].cells, row_values):
             _set_cell_text_preserving_style(cell, value)
+
+
+def _set_judgment_row(row: _Row, judgment: Any) -> None:
+    cells = row.cells
+    if not cells:
+        return
+    target = cells[0]
+    if len(cells) > 1:
+        target = target.merge(cells[-1])
+    _set_cell_text_preserving_style(target, f"TIPO DE JULGAMENTO: {judgment}")
 
 
 def _fill_items_table(table: Table, items: list[dict[str, Any]]) -> None:
@@ -330,27 +336,6 @@ def _proposal_validity_term(notice: Any, options: dict[str, Any]) -> str:
     return "conforme prazo de validade previsto no edital"
 
 
-def _remove_images(document: Document) -> None:
-    """Remove logos/images from body, tables, headers and footers."""
-    containers: list[Any] = [document]
-    containers.extend(section.header for section in document.sections)
-    containers.extend(section.footer for section in document.sections)
-
-    for container in containers:
-        paragraphs = list(getattr(container, "paragraphs", []))
-        for table in getattr(container, "tables", []):
-            for row in table.rows:
-                for cell in row.cells:
-                    paragraphs.extend(cell.paragraphs)
-
-        for paragraph in paragraphs:
-            for run in paragraph.runs:
-                for node in run._element.xpath(".//w:drawing|.//w:pict"):
-                    parent = node.getparent()
-                    if parent is not None:
-                        parent.remove(node)
-
-
 def _set_cell_text(cell: _Cell, text: Any) -> None:
     cell.text = str(text or "")
 
@@ -383,6 +368,13 @@ def _number(*values: Any) -> float:
         except (TypeError, ValueError):
             continue
     return 0.0
+
+
+def _required_number(label: str, *values: Any) -> float:
+    for value in values:
+        if value not in (None, ""):
+            return float(value)
+    raise ValueError(f"Preencha {label} dos itens antes de gerar o documento.")
 
 
 def _money(value: float) -> str:

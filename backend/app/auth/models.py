@@ -84,6 +84,7 @@ class User(Base):
     role = Column(String, default="editor")  # admin | editor | viewer
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # Cada usuário pertence a um tenant
     tenant = relationship("Tenant", back_populates="users")
@@ -91,5 +92,17 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
+
+
+class UserRoleAudit(Base):
+    __tablename__ = "user_role_audit"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    administrator_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    previous_role = Column(String, nullable=False)
+    new_role = Column(String, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
 

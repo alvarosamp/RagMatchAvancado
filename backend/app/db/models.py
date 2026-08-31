@@ -1,6 +1,6 @@
 from sqlalchemy import (
     JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text,
-    UniqueConstraint,
+    Index, UniqueConstraint,
 )
 from sqlalchemy.orm import declarative_base, relationship, synonym
 from sqlalchemy.sql import func
@@ -273,6 +273,7 @@ class AnalysisItem(Base):
 class DocumentFile(Base):
     """Arquivo operacional armazenado na biblioteca de documentos do tenant."""
     __tablename__ = "document_files"
+    __table_args__ = (Index("uq_document_files_tenant_generation_key", "tenant_id", "generation_key", unique=True),)
 
     id = Column(String(36), primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
@@ -288,6 +289,12 @@ class DocumentFile(Base):
     parent_document_id = Column(String(36), ForeignKey("document_files.id", ondelete="SET NULL"), index=True)
     catalog_product_id = Column(String(36), ForeignKey("crm_catalog_products.id", ondelete="SET NULL"), index=True)
     is_repository_signed_archive = Column(Boolean, nullable=False, default=False, index=True)
+    template_id = Column(String, index=True)
+    template_version = Column(String)
+    generated_by = Column(Integer, ForeignKey("users.id"), index=True)
+    signer_id = Column(Integer, ForeignKey("users.id"), index=True)
+    signature_status = Column(String, nullable=False, default="not_requested", index=True)
+    generation_key = Column(String, index=True)
     crm_notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="SET NULL"), index=True)
     edital_id = Column(Integer, ForeignKey("editais.id", ondelete="SET NULL"), index=True)
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)

@@ -26,6 +26,7 @@
 #
 # =============================================================================
 
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -115,9 +116,22 @@ class UserResponse(BaseModel):
     full_name: Optional[str]
     role:      str
     is_active: bool
+    updated_at: Optional[datetime] = None
     tenant:    TenantResponse   # inclui dados do tenant embutidos
 
     model_config = {"from_attributes": True}
+
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def role_valido(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"admin", "editor", "viewer"}:
+            raise ValueError("role deve ser admin, editor ou viewer")
+        return normalized
 
 
 # ─────────────────────────────────────────────────────────────────────────────

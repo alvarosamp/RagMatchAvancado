@@ -97,6 +97,7 @@ def sync_analysis_json_to_crm(
         "bi_risk_identified": optional_meaningful_text(riscos.get("risco_identificado")),
         "bi_risk_operational": _risk_notes(riscos.get("risco_operacional")),
         "bi_risk_documental": _risk_notes(riscos.get("risco_documental")),
+        "bi_general_risks": _general_risks(original_result, result),
         "particularities": None,
         "sales_status": normalize_status_label(edital.get("status")),
         "owner_id": context.user.id,
@@ -244,6 +245,8 @@ def _apply_particularity_line_fields(fields: dict[str, Any], raw_value: Any, *, 
         "risco identificado": "bi_risk_identified",
         "risco operacional": "bi_risk_operational",
         "risco documental": "bi_risk_documental",
+        "riscos gerais": "bi_general_risks",
+        "risco geral": "bi_general_risks",
     }
     for label, field_name in assignments.items():
         value = line_map.get(label)
@@ -280,6 +283,37 @@ def _risk_notes(value: Any) -> str | None:
     if isinstance(motivos, list) and motivos:
         parts.append("Motivos: " + "; ".join(normalize_text(item) for item in motivos if has_meaningful_value(item)))
     return "\n".join(parts) or None
+
+
+def _general_risks(original: dict[str, Any], normalized: dict[str, Any]) -> str | None:
+    """Accept legacy aliases and preserve list/object information deterministically."""
+    normalized_risks = normalized.get("riscos") if isinstance(normalized.get("riscos"), dict) else {}
+    original_risks = original.get("riscos") if isinstance(original.get("riscos"), dict) else {}
+    candidates = [
+        original.get("riscos_gerais"), original.get("risco_geral"), original.get("riscos gerais"),
+        normalized.get("riscos_gerais"), normalized.get("risco_geral"), normalized.get("riscos gerais"),
+        original_risks.get("riscos_gerais"), original_risks.get("risco_geral"), original_risks.get("riscos gerais"),
+        normalized_risks.get("riscos_gerais"), normalized_risks.get("risco_geral"), normalized_risks.get("riscos gerais"),
+    ]
+    value = next((item for item in candidates if has_meaningful_value(item)), None)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return optional_meaningful_text(value)
+    if isinstance(value, list):
+        lines = []
+        for item in value:
+            rendered = _render_risk_value(item)
+            if rendered:
+                lines.append(rendered)
+        return "\n".join(lines) or None
+    return _render_risk_value(value)
+
+
+def _render_risk_value(value: Any) -> str | None:
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(", ", ": "))
+    return optional_meaningful_text(value)
 
 
 def _ensure_auction_session(db: Session, context: ImportContext, notice: Any, auction_date: Any, result: dict[str, Any]) -> None:
@@ -400,12 +434,12 @@ def _upsert_products(
         raw_item_number = _raw_item_number(item, index)
         item_number = _crm_item_number(item, index, items)
         lot = optional_meaningful_text(item.get("lote_grupo"))
-        quantity = parse_float(item.get("quantidade")) or 1.0
+        quantity = parse_float(item.get("quantidade"))
         unit_value = parse_float(item.get("preco_unitario"))
         total_value = parse_float(item.get("valor_total_item"))
-        if unit_value is None and total_value is not None and quantity:
+        if unit_value is None and total_value is not None and quantity not in (None, 0):
             unit_value = round(total_value / quantity, 4)
-        if total_value is None and unit_value is not None:
+        if total_value is None and unit_value is not None and quantity is not None:
             total_value = round(unit_value * quantity, 4)
 
         product = (
@@ -469,7 +503,8 @@ def _upsert_products(
         product.bi_feature_tipo_meio = _bi_feature(original_features, "tipo_meio")
         product.bi_feature_alcance = _bi_feature(original_features, "alcance")
         product.raw_payload = original_item if isinstance(original_item, dict) else item
-        product.unit_price = unit_value
+        # Imported edital values are references. Never overwrite a commercial
+        # value that was entered manually or sourced from the LPU.
         product.reference_price = unit_value
         product.reference_total_price = total_value
         product.notes = _item_notes(item)

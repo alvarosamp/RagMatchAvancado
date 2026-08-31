@@ -31,6 +31,9 @@ from app.crm.models import (
     CrmNoticeProductDatasheet,
     CrmNoticeSession,
     CrmNoticeStage,
+    CrmNoticeSessionStatus,
+    CrmPostAuctionPhase,
+    CrmPostAuctionTransition,
 )
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
@@ -49,6 +52,7 @@ from app.services.crm_item_matcher import (
 )
 from app.services.match_eval_dataset import build_match_evaluation_dataset
 from app.services.ops_summary import summarize_crm
+from app.services.crm_workflow import POST_AUCTION_PHASES, validate_post_auction_transition
 from app.services.proposal_generator import (
     build_notice_proposal_docx,
     proposal_filename,
@@ -65,6 +69,160 @@ from app.services.crm_notice_list import invalidate_notice_list_cache, list_noti
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
+
+
+def _local_now() -> datetime:
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/Sao_Paulo")).replace(tzinfo=None)
+
+
+@router.get("/suspended-notices")
+def list_suspended_notices(
+    search: str | None = Query(default=None), portal_id: str | None = Query(default=None),
+    owner_id: int | None = Query(default=None), date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None), current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    notices = (
+        db.query(CrmNotice)
+        .options(selectinload(CrmNotice.organ), selectinload(CrmNotice.portal), selectinload(CrmNotice.notice_sessions))
+        .filter(CrmNotice.tenant_id == current_user.tenant_id)
+        .all()
+    )
+    rows = []
+    for notice in notices:
+        latest = max(notice.notice_sessions or [], key=lambda item: item.sequence or 0, default=None)
+        if latest is None or getattr(latest.status, "value", latest.status) != "suspended":
+            continue
+        haystack = " ".join(filter(None, [
+            notice.number, notice.title, getattr(notice.organ, "name", None), getattr(notice.portal, "name", None),
+        ])).lower()
+        if search and search.strip().lower() not in haystack:
+            continue
+        if portal_id and notice.portal_id != portal_id:
+            continue
+        responsible = latest.suspended_by or notice.owner_id
+        if owner_id is not None and responsible != owner_id:
+            continue
+        suspended_at = latest.suspended_at or latest.updated_at
+        if date_from and (not suspended_at or suspended_at.date().isoformat() < date_from):
+            continue
+        if date_to and (not suspended_at or suspended_at.date().isoformat() > date_to):
+            continue
+        rows.append({
+            "id": notice.id, "number": notice.number, "title": notice.title,
+            "organ": getattr(notice.organ, "name", None), "portal": getattr(notice.portal, "name", None),
+            "auction_date": notice.auction_date, "suspended_at": suspended_at,
+            "reason": latest.suspension_reason or latest.notes, "responsible_id": responsible,
+            "updated_at": latest.updated_at, "session_id": latest.id,
+        })
+    responsible_ids = {row["responsible_id"] for row in rows if row["responsible_id"] is not None}
+    responsible_names = {
+        user.id: user.full_name or user.email
+        for user in (db.query(User).filter(User.tenant_id == current_user.tenant_id, User.id.in_(responsible_ids)).all() if responsible_ids else [])
+    }
+    for row in rows:
+        row["responsible"] = responsible_names.get(row["responsible_id"])
+    return sorted(rows, key=lambda row: row["updated_at"] or datetime.min, reverse=True)
+
+
+@router.post("/notices/{notice_id}/suspend")
+def suspend_notice(
+    notice_id: str, payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")), db: Session = Depends(get_db),
+):
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Informe o motivo da suspensao.")
+    notice = db.query(CrmNotice).options(selectinload(CrmNotice.notice_sessions)).filter(
+        CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).with_for_update().first()
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    latest = max(notice.notice_sessions or [], key=lambda item: item.sequence or 0, default=None)
+    if latest is None:
+        latest = CrmNoticeSession(tenant_id=current_user.tenant_id, notice_id=notice.id, sequence=1, scheduled_at=notice.auction_date, created_by=current_user.id)
+        db.add(latest)
+        db.flush()
+    previous = getattr(latest.status, "value", latest.status)
+    latest.status = CrmNoticeSessionStatus.SUSPENDED
+    latest.suspension_reason = reason
+    latest.suspended_at = _local_now()
+    latest.suspended_by = current_user.id
+    db.add(CrmNoticeHistory(tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action="Edital suspenso", details={"from": previous, "to": "suspended", "reason": reason, "session_id": latest.id}))
+    db.commit()
+    return {"ok": True, "notice_id": notice.id, "session_id": latest.id, "status": "suspended"}
+
+
+@router.post("/notices/{notice_id}/resume")
+def resume_notice(
+    notice_id: str, payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")), db: Session = Depends(get_db),
+):
+    reason = str(payload.get("reason") or "").strip()
+    scheduled_raw = payload.get("scheduled_at")
+    if not reason or not scheduled_raw:
+        raise HTTPException(status_code=400, detail="Informe o motivo e a nova data/hora.")
+    try:
+        scheduled_at = datetime.fromisoformat(str(scheduled_raw).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Data/hora de retomada invalida.") from exc
+    if scheduled_at.tzinfo is not None:
+        from app.crm.timezone import brasilia_wall_clock
+        scheduled_at = brasilia_wall_clock(scheduled_at)
+    notice = db.query(CrmNotice).options(selectinload(CrmNotice.notice_sessions)).filter(
+        CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).with_for_update().first()
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    latest = max(notice.notice_sessions or [], key=lambda item: item.sequence or 0, default=None)
+    if latest is None or getattr(latest.status, "value", latest.status) != "suspended":
+        raise HTTPException(status_code=409, detail="A sessao vigente nao esta suspensa.")
+    latest.resumed_at = _local_now()
+    latest.resumed_by = current_user.id
+    resumed = CrmNoticeSession(
+        tenant_id=current_user.tenant_id, notice_id=notice.id, sequence=(latest.sequence or 0) + 1,
+        scheduled_at=scheduled_at, status=CrmNoticeSessionStatus.SCHEDULED,
+        notes=reason, created_by=current_user.id,
+    )
+    db.add(resumed)
+    db.flush()
+    notice.auction_date = scheduled_at
+    db.add(CrmNoticeHistory(tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action="Edital retomado", details={"from": "suspended", "to": "scheduled", "reason": reason,
+        "previous_session_id": latest.id, "new_session_id": resumed.id, "scheduled_at": scheduled_at.isoformat()}))
+    db.commit()
+    return {"ok": True, "notice_id": notice.id, "session_id": resumed.id, "status": "scheduled", "scheduled_at": scheduled_at}
+
+
+@router.post("/notices/{notice_id}/post-auction-transition")
+def transition_post_auction(
+    notice_id: str, payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")), db: Session = Depends(get_db),
+):
+    target = str(payload.get("phase") or "").strip()
+    notice = db.query(CrmNotice).filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).with_for_update().first()
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    previous = getattr(notice.post_auction_phase, "value", notice.post_auction_phase)
+    try:
+        validate_post_auction_transition(previous, target)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    now = _local_now()
+    notice.post_auction_phase = CrmPostAuctionPhase(target)
+    notice.post_auction_owner = current_user.id
+    notice.stage = CrmNoticeStage.RESULT
+    if notice.post_auction_entered_at is None:
+        notice.post_auction_entered_at = now
+    transition = CrmPostAuctionTransition(
+        tenant_id=current_user.tenant_id, notice_id=notice.id, from_phase=previous,
+        to_phase=target, user_id=current_user.id, note=str(payload.get("note") or "").strip() or None, created_at=now,
+    )
+    db.add(transition)
+    db.add(CrmNoticeHistory(tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action="Etapa pos-disputa alterada", details={"from": previous, "to": target, "note": transition.note}))
+    db.commit()
+    return {"ok": True, "notice_id": notice.id, "from_phase": previous, "phase": target, "entered_at": now}
 
 
 @router.get("/catalog-products/{product_id}/datasheets")

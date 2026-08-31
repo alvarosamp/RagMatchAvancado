@@ -43,6 +43,12 @@ def store_document_file(
     expires_at: datetime | None = None,
     status_value: str = "active",
     is_repository_signed_archive: bool = False,
+    template_id: str | None = None,
+    template_version: str | None = None,
+    generated_by: int | None = None,
+    signer_id: int | None = None,
+    signature_status: str = "not_requested",
+    generation_key: str | None = None,
 ) -> DocumentFile:
     safe_name = _safe_filename(original_filename)
     parent = _get_parent_document(db, tenant_id, parent_document_id)
@@ -77,8 +83,8 @@ def store_document_file(
         storage_path=str(storage_path),
         content_type=content_type,
         size_bytes=size_bytes,
-        category=(category or None),
-        status=status_value,
+        category=((category or "Documento assinado") if is_repository_signed_archive else (category or None)),
+        status=("signed_result" if is_repository_signed_archive else status_value),
         is_repository_signed_archive=is_repository_signed_archive,
         version=version,
         parent_document_id=parent_root_id,
@@ -88,6 +94,12 @@ def store_document_file(
         uploaded_by=user_id,
         notes=notes,
         expires_at=expires_at,
+        template_id=template_id,
+        template_version=template_version,
+        generated_by=generated_by,
+        signer_id=signer_id,
+        signature_status=signature_status,
+        generation_key=generation_key,
     )
     db.add(document)
     db.flush()
@@ -148,6 +160,7 @@ def create_signature_request(
         archive_signed_result=archive_signed_result,
     )
     document.status = "signature_pending"
+    document.signature_status = "pending"
     db.add(request)
     return request
 
@@ -194,6 +207,8 @@ def complete_signature_request(
         ).update({CrmNoticeDocument.attached_document_file_id: signed.id}, synchronize_session=False)
     request.status = DocumentSignatureStatus.SIGNED
     request.document.status = "signed"
+    request.document.signature_status = "signed"
+    signed.signature_status = "signed"
     request.requester_notification_dismissed = False
     request.signed_at = datetime.utcnow()
     return request
@@ -253,7 +268,7 @@ def delete_document_file(db: Session, *, tenant_id: int, document_id: str) -> No
         pass
 
 
-def serialize_document_file(document: DocumentFile) -> dict:
+def serialize_document_file(document: DocumentFile, *, uploaded_by_name: str | None = None) -> dict:
     return {
         "id": document.id,
         "title": document.title,
@@ -269,6 +284,13 @@ def serialize_document_file(document: DocumentFile) -> dict:
         "crm_notice_id": document.crm_notice_id,
         "edital_id": document.edital_id,
         "uploaded_by": document.uploaded_by,
+        "uploaded_by_name": uploaded_by_name,
+        "template_id": getattr(document, "template_id", None),
+        "template_version": getattr(document, "template_version", None),
+        "generated_by": getattr(document, "generated_by", None),
+        "signer_id": getattr(document, "signer_id", None),
+        "signature_status": getattr(document, "signature_status", "not_requested"),
+        "generation_key": getattr(document, "generation_key", None),
         "notes": document.notes,
         "expires_at": document.expires_at,
         "created_at": document.created_at,

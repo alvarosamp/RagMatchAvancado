@@ -38,6 +38,13 @@ def test_lpu_row_uses_pn_as_sku_for_valid_item():
     assert record["min_price"] == 20.0
 
 
+def test_lpu_missing_minimum_price_stays_missing_instead_of_using_cost():
+    record = _record(("TOR", "PN-SEM-MIN", "Modulo", "Estoque", "MFR-2", 10.0, None))
+    assert record is not None
+    assert record["cost"] == 10.0
+    assert record["min_price"] is None
+
+
 def test_lpu_summary_enumerates_imported_items():
     summary = LpuImportSummary(
         processed=7,

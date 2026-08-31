@@ -7,7 +7,6 @@ from typing import Any, Iterable
 
 ACTIVE_JOB_STATUSES = {"pending", "running"}
 OPEN_NOTICE_OUTCOMES = {"pending"}
-POST_AUCTION_CLOSED_PHASES = {"converted", "closed"}
 
 
 def _enum_value(value: Any) -> Any:
@@ -152,7 +151,7 @@ def summarize_crm(notices: Iterable[Any], now: datetime | None = None) -> dict[s
         stage_counts[stage] += 1
         outcome_counts[outcome] += 1
 
-        if outcome in OPEN_NOTICE_OUTCOMES and post_phase not in POST_AUCTION_CLOSED_PHASES:
+        if outcome in OPEN_NOTICE_OUTCOMES:
             active_pipeline += 1
 
         auction_date = _coerce_datetime(getattr(notice, "auction_date", None))
@@ -172,7 +171,7 @@ def summarize_crm(notices: Iterable[Any], now: datetime | None = None) -> dict[s
                 attention_required += 1
 
         post_deadline = _coerce_date(getattr(notice, "post_auction_deadline", None))
-        if post_deadline and post_phase not in POST_AUCTION_CLOSED_PHASES and post_deadline < today:
+        if post_deadline and outcome in OPEN_NOTICE_OUTCOMES and post_deadline < today:
             overdue_post_auction += 1
             attention_required += 1
 

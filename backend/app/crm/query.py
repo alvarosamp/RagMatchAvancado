@@ -26,6 +26,7 @@ from app.crm.models import (
     CrmOrgan,
     CrmPortal,
     CrmPostAuctionPhase,
+    CrmPostAuctionTransition,
 )
 from app.crm.timezone import brasilia_wall_clock
 from app.services.crm_notice_sync import (
@@ -107,6 +108,7 @@ TABLES: dict[str, TableConfig] = {
     ),
     "notice_documents": TableConfig(model=CrmNoticeDocument),
     "notice_history": TableConfig(model=CrmNoticeHistory, update_roles=set(), delete_roles=set()),
+    "post_auction_transitions": TableConfig(model=CrmPostAuctionTransition, insert_roles=set(), update_roles=set(), delete_roles=set()),
     "notice_sessions": TableConfig(model=CrmNoticeSession, delete_roles={"admin"}),
     "notice_item_results": TableConfig(model=CrmNoticeItemResult, delete_roles={"admin", "editor"}),
     "notice_product_matches": TableConfig(
@@ -603,15 +605,8 @@ def _validate_unique_field(
 
 def _apply_notice_business_rules(values: dict[str, Any], existing: Any | None) -> None:
     phase = values.get("post_auction_phase")
-    current_outcome = getattr(existing, "outcome", None)
-    current_outcome_value = current_outcome.value if isinstance(current_outcome, enum.Enum) else current_outcome
-
-    if phase in {CrmPostAuctionPhase.CONVERTED, CrmPostAuctionPhase.CONVERTED.value}:
-        values["outcome"] = CrmNoticeOutcome.WON.value
-        values["stage"] = CrmNoticeStage.RESULT.value
-    elif phase in {CrmPostAuctionPhase.CLOSED, CrmPostAuctionPhase.CLOSED.value} and values.get("outcome", current_outcome_value) in {None, CrmNoticeOutcome.PENDING.value}:
-        values["outcome"] = CrmNoticeOutcome.LOST.value
-        values["stage"] = CrmNoticeStage.RESULT.value
+    if phase in {"converted", "closed"}:
+        raise ValueError("Convertido e encerrado sao resultados finais, nao etapas do pipeline.")
 
     outcome = values.get("outcome")
     if outcome and outcome != CrmNoticeOutcome.PENDING.value:

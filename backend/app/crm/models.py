@@ -43,6 +43,8 @@ class CrmNoticeOutcome(str, enum.Enum):
     LOST = "lost"
     DISQUALIFIED = "disqualified"
     NOT_PURSUED = "not_pursued"
+    CANCELLED = "cancelled"
+    DESERT = "desert"
 
 
 class CrmChecklistStatus(str, enum.Enum):
@@ -73,8 +75,6 @@ class CrmPostAuctionPhase(str, enum.Enum):
     APPEALS = "appeals"
     ADJUDICATION = "adjudication"
     HOMOLOGATION = "homologation"
-    CONVERTED = "converted"
-    CLOSED = "closed"
 
 
 class CrmNoticeProductMatchStatus(str, enum.Enum):
@@ -263,6 +263,7 @@ class CrmNotice(Base):
     bi_risk_identified = Column(String)
     bi_risk_operational = Column(Text)
     bi_risk_documental = Column(Text)
+    bi_general_risks = Column(Text)
     particularities = Column(Text)
     sales_status = Column(String)
     import_key = Column(String)
@@ -296,6 +297,12 @@ class CrmNotice(Base):
         order_by="CrmNoticeProduct.sort_order",
     )
     notice_history = relationship("CrmNoticeHistory", back_populates="notice", cascade="all, delete-orphan")
+    post_auction_transitions = relationship(
+        "CrmPostAuctionTransition",
+        back_populates="notice",
+        cascade="all, delete-orphan",
+        order_by="CrmPostAuctionTransition.created_at",
+    )
     notice_sessions = relationship(
         "CrmNoticeSession",
         back_populates="notice",
@@ -323,7 +330,7 @@ class CrmNoticeProduct(Base):
     is_exclusive_epp = Column(Boolean)
     exclusive_epp_label = Column(String)
     description = Column(Text, nullable=False)
-    quantity = Column(Float, nullable=False, default=1.0)
+    quantity = Column(Float)
     unit = Column(String)
     warranty = Column(String)
     delivery_deadline = Column(String)
@@ -512,11 +519,32 @@ class CrmNoticeSession(Base):
     status = Column(SqlEnum(CrmNoticeSessionStatus, native_enum=False), nullable=False, default=CrmNoticeSessionStatus.SCHEDULED)
     outcome_summary = Column(Text)
     notes = Column(Text)
+    suspension_reason = Column(Text)
+    suspended_at = Column(DateTime)
+    suspended_by = Column(Integer, ForeignKey("users.id"))
+    resumed_at = Column(DateTime)
+    resumed_by = Column(Integer, ForeignKey("users.id"))
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
     notice = relationship("CrmNotice", back_populates="notice_sessions")
+
+
+class CrmPostAuctionTransition(Base):
+    __tablename__ = "crm_post_auction_transitions"
+    __table_args__ = (Index("ix_crm_post_auction_transition_notice_created", "tenant_id", "notice_id", "created_at"),)
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    notice_id = Column(String(36), ForeignKey("crm_notices.id", ondelete="CASCADE"), nullable=False, index=True)
+    from_phase = Column(String)
+    to_phase = Column(String, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    note = Column(Text)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    notice = relationship("CrmNotice", back_populates="post_auction_transitions")
 
 
 class CrmNoticeItemResult(Base):

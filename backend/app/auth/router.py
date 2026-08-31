@@ -18,13 +18,14 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.auth.models import Tenant, User
+from app.auth.models import Tenant, User, UserRoleAudit
 from app.auth.schemas import (
     LoginRequest,
     RegisterRequest,
     TokenResponse,
     UserCreate,
     UserResponse,
+    UserRoleUpdate,
 )
 from app.auth.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -32,6 +33,7 @@ from app.auth.security import (
     hash_password,
     verify_password,
 )
+from app.services.crm_workflow import ensure_not_last_active_admin
 from app.auth.dependencies import get_current_user, require_role
 from app.logs.config import logger
 
@@ -338,3 +340,51 @@ def list_users(
         .all()
     )
     return users
+
+
+@router.patch("/users/{user_id}/role", response_model=UserResponse)
+def update_user_role(
+    user_id: int,
+    payload: UserRoleUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    """Troca o papel em uma unica transacao e protege o ultimo admin ativo."""
+    target = (
+        db.query(User)
+        .filter(User.id == user_id, User.tenant_id == current_user.tenant_id)
+        .with_for_update()
+        .first()
+    )
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario nao encontrado.")
+    previous_role = target.role
+    if previous_role == payload.role:
+        return target
+    if previous_role == "admin" and payload.role != "admin" and target.is_active:
+        active_admins = db.query(User).filter(
+            User.tenant_id == current_user.tenant_id,
+            User.role == "admin",
+            User.is_active.is_(True),
+        ).count()
+        try:
+            ensure_not_last_active_admin(
+                previous_role=previous_role, new_role=payload.role,
+                target_is_active=target.is_active, active_admin_count=active_admins,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            ) from exc
+    target.role = payload.role
+    db.add(UserRoleAudit(
+        tenant_id=current_user.tenant_id,
+        administrator_id=current_user.id,
+        target_user_id=target.id,
+        previous_role=previous_role,
+        new_role=payload.role,
+    ))
+    db.commit()
+    db.refresh(target)
+    return target
