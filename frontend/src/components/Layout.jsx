@@ -40,14 +40,14 @@ const AI_NAV_KEYS = new Set(['analysis_dashboard', 'datasheets', 'competitive', 
 
 const NAV_STRUCTURE = [
   { type: 'item', key: 'dashboard' },
-  { type: 'group', title: 'Oportunidades', keys: ['pncp_monitor', 'radar'] },
+  { type: 'item', key: 'radar' },
   { type: 'item', key: 'upload' },
   { type: 'item', key: 'crm' },
-  { type: 'group', title: 'Analise', keys: ['analysis_dashboard', 'datasheets', 'competitive'] },
-  { type: 'group', title: 'Proposta', keys: ['proposal_studio', 'compliance', 'pricing', 'subscription'] },
+  { type: 'group', title: 'Analise', keys: ['analysis_dashboard', 'datasheets', 'competitive', 'pncp_monitor'] },
   { type: 'group', title: 'Disputa', keys: ['auction_monitor', 'bid_robot', 'controle'] },
-  { type: 'group', title: 'Comercial', keys: ['post_award', 'reports', 'analytics'] },
-  { type: 'group', title: 'Sistema', keys: ['suite', 'jobs', 'onboarding_plans', 'integrations', 'settings'] },
+  { type: 'group', title: 'Documentos', keys: ['proposal_studio', 'compliance', 'pricing', 'subscription', 'reports'] },
+  { type: 'group', title: 'Gestao', keys: ['analytics', 'post_award'] },
+  { type: 'group', title: 'Administracao', keys: ['settings', 'integrations', 'suite', 'onboarding_plans', 'jobs'] },
 ]
 
 function isActive(pathname, path) {
@@ -253,15 +253,15 @@ function renderIcon(badge) {
 
 function NavItem({ item, pathname, onNavigate }) {
   const active = isActive(pathname, item.path)
-  const className = `group flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors duration-150 ${
+  const className = `group flex items-center gap-3 rounded-lg border px-3 py-2 transition-colors duration-150 ${
     active
-      ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-white'
+      ? 'border-blue-200 bg-blue-50 text-blue-950 shadow-sm dark:border-blue-800 dark:bg-blue-950/30 dark:text-white'
       : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-950 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-white'
   }`
   const content = (
     <>
       <div
-        className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg border transition-colors ${
+        className={`grid h-9 w-9 flex-shrink-0 place-items-center rounded-lg border transition-colors ${
           active
             ? 'border-blue-200 bg-white text-brand dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
             : 'border-slate-200 bg-white text-slate-500 group-hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:group-hover:text-white'
@@ -271,9 +271,8 @@ function NavItem({ item, pathname, onNavigate }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{item.label}</p>
-        <p className="truncate text-xs text-slate-400 dark:text-slate-500">{item.hint}</p>
+        {active && item.hint && <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">{item.hint}</p>}
       </div>
-      {active && <div className="h-2 w-2 flex-shrink-0 rounded-full bg-brand dark:bg-brand-light" />}
     </>
   )
 
@@ -300,7 +299,7 @@ function NavGroup({ group, itemsByKey, pathname, onNavigate }) {
 
   return (
     <details className="group/nav rounded-lg" open={active}>
-      <summary className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+      <summary className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
         active
           ? 'bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300'
           : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300'
@@ -308,7 +307,7 @@ function NavGroup({ group, itemsByKey, pathname, onNavigate }) {
         <span>{group.title}</span>
         <span className="text-sm transition-transform group-open/nav:rotate-90">›</span>
       </summary>
-      <div className="mt-2 space-y-2 pl-2">
+      <div className="mt-1.5 space-y-1.5 pl-2">
         {groupItems.map((item) => (
           <NavItem key={item.path} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
@@ -335,7 +334,11 @@ export default function Layout({ children }) {
   }))
   const itemsByKey = new Map(items.map((item) => [item.key, item]))
   const navStructure = isAdmin
-    ? [...NAV_STRUCTURE, { type: 'group', title: 'Admin', keys: ['users'] }]
+    ? NAV_STRUCTURE.map((entry) => (
+        entry.type === 'group' && entry.title === 'Administracao'
+          ? { ...entry, keys: ['users', ...entry.keys] }
+          : entry
+      ))
     : NAV_STRUCTURE
 
   useEffect(() => {
@@ -364,7 +367,7 @@ export default function Layout({ children }) {
   }, [mobileNavOpen])
 
   const renderNavigation = (onNavigate) => (
-    <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-5" aria-label="Navegação principal">
+    <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4" aria-label="Navegação principal">
       {navStructure.map((entry) => {
         if (entry.type === 'item') {
           const item = itemsByKey.get(entry.key)
@@ -377,35 +380,34 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-surface text-slate-950 dark:bg-surface-dark dark:text-white md:flex">
-      <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex dark:border-slate-700 dark:bg-slate-900">
-        <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-700">
+      <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex dark:border-slate-700 dark:bg-slate-900">
+        <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <ProductMark title={market.app.product_name} />
+            <ProductMark className="h-10 w-10" title={market.app.product_name} />
             <div className="leading-tight">
               <p className="text-base font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-lg border border-slate-200 bg-white px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Ambiente de trabalho</p>
-            <p className="mt-2 truncate text-sm font-semibold text-slate-950 dark:text-white">{user?.tenant?.name || 'Meu ambiente'}</p>
+          <div className="mt-4 rounded-lg bg-slate-50 px-3 py-3 dark:bg-slate-800/70">
+            <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{user?.tenant?.name || 'Meu ambiente'}</p>
             <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{user?.email || 'sem email informado'}</p>
           </div>
         </div>
 
         {renderNavigation()}
 
-        <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+        <div className="border-t border-slate-200 px-3 py-3 dark:border-slate-700">
           <button
             onClick={() => setTheme(isLight ? 'dark' : 'light')}
-            className="mb-3 flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-white"
+            className="mb-2 flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-200 hover:text-brand dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-white"
           >
             {isLight ? 'Usar modo escuro' : 'Usar modo claro'}
           </button>
           <button
             onClick={logout}
-            className="flex w-full items-center justify-center rounded-lg border border-slate-200 bg-transparent px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-brand dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-blue-300"
+            className="flex w-full items-center justify-center rounded-lg border border-transparent bg-transparent px-3 py-2.5 text-sm font-semibold text-slate-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-brand dark:text-slate-300 dark:hover:border-blue-800 dark:hover:text-blue-300"
           >
             Encerrar sessao
           </button>
