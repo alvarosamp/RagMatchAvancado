@@ -22,44 +22,11 @@ async function readCrmSync() {
   } catch { return null }
 }
 
-const SUITE_STEPS = [
-  { key: 'radar', title: 'Radar de oportunidades', description: 'Encontre editais aderentes antes de importar para analise.', path: '/radar', cta: 'Buscar' },
-  { key: 'alerts', title: 'Alertas operacionais', description: 'Acompanhe prazos, filas, atrasos e proximas sessoes.', path: '/controle', cta: 'Acompanhar' },
-  { key: 'analysis', title: 'Analise IA do edital', description: 'Extraia requisitos, itens, riscos e perguntas do edital.', path: '/upload', cta: 'Analisar' },
-  { key: 'matching', title: 'Matching tecnico', description: 'Compare requisitos com catalogo, datasheets e gaps.', path: '/inteligencia/datasheets', cta: 'Comparar' },
-  { key: 'documents', title: 'Proposta e documentos', description: 'Transforme analises em relatorios e exportacoes.', path: '/relatorios', cta: 'Gerar' },
-  { key: 'crm', title: 'CRM e pipeline', description: 'Controle decisao, responsaveis, disputa e resultado.', path: '/crm', cta: 'Abrir' },
-]
-const VISIBLE_SUITE_STEPS = AI_FEATURES_ENABLED
-  ? SUITE_STEPS
-  : SUITE_STEPS.filter((step) => !['analysis', 'matching'].includes(step.key))
-
-function stepState(key, { nEditais, totalRequirements, jobs, crm }) {
-  if (key === 'radar') return { label: 'Disponivel', tone: 'blue' }
-  if (key === 'alerts') {
-    const pending = (jobs?.active_count ?? 0) + (jobs?.stale_count ?? 0) + (crm?.upcoming_auctions_count ?? 0)
-    return pending > 0 ? { label: `${pending} alertas`, tone: 'amber' } : { label: 'Sem pendencias', tone: 'emerald' }
-  }
-  if (key === 'analysis') return nEditais > 0 ? { label: `${nEditais} editais`, tone: 'emerald' } : { label: 'Importar edital', tone: 'slate' }
-  if (key === 'matching') return totalRequirements > 0 ? { label: `${totalRequirements} requisitos`, tone: 'emerald' } : { label: 'Aguardando analise', tone: 'slate' }
-  if (key === 'documents') return nEditais > 0 ? { label: 'Pronto para exportar', tone: 'blue' } : { label: 'Sem dados', tone: 'slate' }
-  if (key === 'crm') return (crm?.active_pipeline ?? 0) > 0 ? { label: `${crm.active_pipeline} ativos`, tone: 'emerald' } : { label: 'Criar pipeline', tone: 'slate' }
-  return { label: 'Disponivel', tone: 'slate' }
-}
-
-function stateClass(tone) {
-  if (tone === 'emerald') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-  if (tone === 'amber') return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-  if (tone === 'blue') return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-}
-
 export default function Dashboard() {
   const [editais,     setEditais]     = useState([])
   const [loading,     setLoading]     = useState(true)
   const [exporting,   setExporting]   = useState(null)
   const [deleting,    setDeleting]    = useState(null)
-  const [apiOnline,   setApiOnline]   = useState(null)
   const [opsSummary,  setOpsSummary]  = useState(null)
   const [crmSync,     setCrmSync]     = useState(null)
   const [signatureAlert, setSignatureAlert] = useState(null)
@@ -79,8 +46,8 @@ export default function Dashboard() {
       if (!active) return
       const editalRows = eRes.status === 'fulfilled' && Array.isArray(eRes.value.data) ? eRes.value.data : []
       setEditais(editalRows)
-      if (oRes.status === 'fulfilled') { setOpsSummary(oRes.value.data); setApiOnline(true) }
-      else { setOpsSummary(null); setApiOnline(false) }
+      if (oRes.status === 'fulfilled') setOpsSummary(oRes.value.data)
+      else setOpsSummary(null)
       setCrmSync(cRes.status === 'fulfilled' ? cRes.value : null)
       setSignatureAlert(sRes?.data || null)
       setLoading(false)
@@ -120,7 +87,6 @@ export default function Dashboard() {
     }
   }
 
-  const totalChunks       = useMemo(() => opsSummary?.editais?.total_chunks       ?? editais.reduce((s, e) => s + (e.chunks || 0), 0),       [editais, opsSummary])
   const totalRequirements = useMemo(() => opsSummary?.editais?.total_requirements ?? editais.reduce((s, e) => s + (e.requirements || 0), 0), [editais, opsSummary])
   const jobs   = opsSummary?.jobs
   const crm    = opsSummary?.crm
@@ -133,6 +99,7 @@ export default function Dashboard() {
     (crm?.upcoming_auctions_count ?? 0) > 0 ||
     signatureAlert?.count > 0
   )
+  const hasActivity = nEditais > 0 || totalRequirements > 0 || (crm?.active_pipeline ?? 0) > 0 || hasOperationalSignal
 
   const primaryActions = [
     { key: 'upload', title: 'Enviar edital', description: 'Suba PDF ou JSON para iniciar uma analise.', path: '/upload', cta: 'Comecar analise', enabled: isEditor },
@@ -150,16 +117,6 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 {user?.tenant?.name || 'Portal'}
               </h1>
-              {apiOnline !== null && (
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-                  apiOnline
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-                }`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${apiOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                  {apiOnline ? 'Online' : 'Offline'}
-                </span>
-              )}
             </div>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -168,7 +125,7 @@ export default function Dashboard() {
               {nEditais > 0 ? 'Continue acompanhando suas oportunidades.' : 'Comece enviando um edital ou buscando oportunidades.'}
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Esta tela agora mostra o que merece acao primeiro. Indicadores e alertas aparecem conforme a operacao ganha dados.
+              Escolha o proximo passo da operacao. Conforme os editais entram, o acompanhamento aparece aqui naturalmente.
             </p>
           </div>
 
@@ -184,19 +141,21 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: 'Editais', value: nEditais },
-            { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
-            { label: 'CRM ativos', value: crm?.active_pipeline ?? 0 },
-            { label: 'Alertas', value: (jobs?.stale_count ?? 0) + (crm?.attention_required ?? 0) + (signatureAlert?.count ?? 0) },
-          ].map(({ label, value }) => (
-            <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-              <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{loading ? '—' : value}</p>
-            </div>
-          ))}
-        </div>
+        {hasActivity && (
+          <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Editais acompanhados', value: nEditais },
+              { label: 'Pontos analisados', value: totalRequirements.toLocaleString('pt-BR') },
+              { label: 'No pipeline', value: crm?.active_pipeline ?? 0 },
+              { label: 'Pendencias', value: (jobs?.stale_count ?? 0) + (crm?.attention_required ?? 0) + (signatureAlert?.count ?? 0) },
+            ].map(({ label, value }) => (
+              <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{loading ? '—' : value}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {signatureAlert?.count > 0 && (
