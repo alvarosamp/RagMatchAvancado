@@ -4,6 +4,11 @@ import { documentsApi, downloadBlob, editaisApi, exportApi, opsApi } from '../ap
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
 import { useToast } from '../contexts/ToastContext'
+import ActionCard from '../components/ui/ActionCard'
+import EmptyState from '../components/ui/EmptyState'
+import PageHeader from '../components/ui/PageHeader'
+import SectionCard from '../components/ui/SectionCard'
+import StatusBadge from '../components/ui/StatusBadge'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
@@ -102,43 +107,46 @@ export default function Dashboard() {
   const hasActivity = nEditais > 0 || totalRequirements > 0 || (crm?.active_pipeline ?? 0) > 0 || hasOperationalSignal
 
   const primaryActions = [
-    { key: 'upload', title: 'Enviar edital', description: 'Suba PDF ou JSON para iniciar uma analise.', path: '/upload', cta: 'Comecar analise', enabled: isEditor },
-    { key: 'radar', title: 'Buscar oportunidades', description: 'Use o radar para encontrar editais aderentes.', path: '/radar', cta: 'Abrir radar', enabled: true },
-    { key: 'crm', title: 'Organizar pipeline', description: 'Acompanhe decisoes, responsaveis e disputas.', path: '/crm', cta: 'Abrir CRM', enabled: true },
+    { key: 'upload', title: 'Analisar edital', description: 'Envie PDF ou JSON e transforme o edital em requisitos, riscos e itens acionaveis.', path: '/upload', cta: 'Enviar edital', enabled: isEditor, badge: 'Principal', badgeTone: 'blue', tone: 'blue' },
+    { key: 'radar', title: 'Encontrar oportunidades', description: 'Busque editais aderentes antes de gastar tempo importando documentos.', path: '/radar', cta: 'Abrir radar', enabled: true, badge: 'Captação', badgeTone: 'emerald', tone: 'slate' },
+    { key: 'crm', title: 'Acompanhar disputa', description: 'Organize funil, responsaveis, decisoes e proximas sessoes em um só lugar.', path: '/crm', cta: 'Abrir CRM', enabled: true, badge: 'Gestão', badgeTone: 'slate', tone: 'slate' },
   ]
+
+  const journeySteps = [
+    { label: 'Captar', active: true },
+    { label: 'Analisar', active: nEditais > 0 },
+    { label: 'Disputar', active: (crm?.active_pipeline ?? 0) > 0 },
+    { label: 'Acompanhar', active: hasOperationalSignal },
+  ]
+
+  const actionIconProps = { className: 'h-5 w-5', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' }
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-5 lg:p-8">
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-                {user?.tenant?.name || 'Portal'}
-              </h1>
+      <PageHeader
+        eyebrow={new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        title={user?.tenant?.name || 'Portal'}
+        description={nEditais > 0
+          ? 'Continue de onde parou: acompanhe editais, oportunidades e proximas acoes comerciais sem precisar entrar em cada modulo.'
+          : 'Comece pela acao que mais combina com o momento: enviar um edital para analise ou buscar oportunidades no radar.'}
+        primaryAction={isEditor ? { label: 'Enviar edital', onClick: () => navigate('/upload') } : null}
+        secondaryAction={{ label: 'Buscar oportunidades', onClick: () => navigate('/radar') }}
+      >
+        <div className="grid gap-3 md:grid-cols-4">
+          {journeySteps.map((step, index) => (
+            <div
+              key={step.label}
+              className={`rounded-lg border px-4 py-3 ${
+                step.active
+                  ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100'
+                  : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'
+              }`}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-current/60">Etapa {index + 1}</p>
+              <p className="mt-1 text-sm font-semibold">{step.label}</p>
             </div>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-            <h2 className="mt-6 text-xl font-semibold text-slate-950 dark:text-white">
-              {nEditais > 0 ? 'Continue acompanhando suas oportunidades.' : 'Comece enviando um edital ou buscando oportunidades.'}
-            </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Escolha o proximo passo da operacao. Conforme os editais entram, o acompanhamento aparece aqui naturalmente.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-            {isEditor && (
-              <button onClick={() => navigate('/upload')} className="btn-primary">
-                Enviar edital
-              </button>
-            )}
-            <button onClick={() => navigate('/radar')} className="btn-ghost">
-              Buscar oportunidades
-            </button>
-          </div>
+          ))}
         </div>
 
         {hasActivity && (
@@ -156,7 +164,7 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </div>
+      </PageHeader>
 
       {signatureAlert?.count > 0 && (
         <button
@@ -171,27 +179,32 @@ export default function Dashboard() {
                 {signatureAlert.request?.document?.title || 'Abra a seção de documentos para continuar o processo.'}
               </p>
             </div>
-            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Leve-me</span>
+          <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Abrir assinatura</span>
           </div>
         </button>
       )}
 
       <div className="grid gap-3 lg:grid-cols-3">
         {primaryActions.filter((action) => action.enabled).map((action, index) => (
-          <button
+          <ActionCard
             key={action.key}
-            type="button"
             onClick={() => navigate(action.path)}
-            className={`rounded-xl border p-5 text-left transition-colors ${
-              index === 0
-                ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-950/50'
-                : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-800 dark:hover:bg-slate-800/80'
-            }`}
-          >
-            <p className="text-base font-semibold text-slate-950 dark:text-white">{action.title}</p>
-            <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500 dark:text-slate-400">{action.description}</p>
-            <p className="mt-4 text-sm font-semibold text-blue-700 dark:text-blue-300">{action.cta} →</p>
-          </button>
+            title={action.title}
+            description={action.description}
+            cta={action.cta}
+            badge={action.badge}
+            badgeTone={action.badgeTone}
+            tone={index === 0 ? action.tone : 'slate'}
+            icon={
+              action.key === 'upload' ? (
+                <svg {...actionIconProps} viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" /></svg>
+              ) : action.key === 'radar' ? (
+                <svg {...actionIconProps} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /><path d="M11 7v4l3 2" /></svg>
+              ) : (
+                <svg {...actionIconProps} viewBox="0 0 24 24"><path d="M3 7h18" /><path d="M6 7v13" /><path d="M18 7v13" /><path d="M9 11h6" /><path d="M9 15h6" /><path d="M8 4h8l2 3H6z" /></svg>
+              )
+            }
+          />
         ))}
       </div>
 
@@ -200,13 +213,11 @@ export default function Dashboard() {
         <div className="grid gap-4 lg:grid-cols-2">
 
           {/* Fila de jobs */}
-          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Fila de processamento</p>
-              <button onClick={() => navigate('/jobs')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
-                Ver tudo →
-              </button>
-            </div>
+          <SectionCard
+            title="Processamento"
+            description="Apenas o que precisa de acompanhamento operacional."
+            action={{ label: 'Ver tudo →', onClick: () => navigate('/jobs') }}
+          >
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 { label: 'Em andamento', value: jobs?.active_count ?? 0,  warn: (jobs?.active_count ?? 0) > 0 },
@@ -237,16 +248,14 @@ export default function Dashboard() {
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">Nenhum processamento em andamento.</p>
             )}
-          </div>
+          </SectionCard>
 
           {/* CRM */}
-          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">CRM comercial</p>
-              <button onClick={() => navigate('/crm')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
-                Abrir →
-              </button>
-            </div>
+          <SectionCard
+            title="Disputas e CRM"
+            description="Prazos, decisões e oportunidades pedindo atenção."
+            action={{ label: 'Abrir →', onClick: () => navigate('/crm') }}
+          >
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 { label: 'Atenção',  value: crm?.attention_required    ?? 0, warn: (crm?.attention_required    ?? 0) > 0 },
@@ -274,46 +283,35 @@ export default function Dashboard() {
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">Nenhuma disputa nos próximos 7 dias.</p>
             )}
-          </div>
+          </SectionCard>
         </div>
       )}
 
       {!loading && !hasOperationalSignal && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <SectionCard>
           <p className="text-sm font-semibold text-slate-950 dark:text-white">Sem pendencias por enquanto</p>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             Quando houver processamento, assinatura, disputa proxima ou item do CRM pedindo atencao, tudo aparece aqui.
           </p>
-        </div>
+        </SectionCard>
       )}
 
       {/* ── Editais ───────────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">{market.labels.source_document_plural_title}</p>
-          {crmSync && (
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              CRM em {formatDate(crmSync.builtAt)}
-            </p>
-          )}
-        </div>
-
+      <SectionCard
+        title={market.labels.source_document_plural_title}
+        description={crmSync ? `CRM atualizado em ${formatDate(crmSync.builtAt)}` : 'Documentos enviados para análise e acompanhamento.'}
+      >
         {loading ? (
           <div className="space-y-2">
             {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
           </div>
         ) : editais.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-base font-semibold text-slate-900 dark:text-white">Nenhum edital enviado ainda</p>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Envie o primeiro edital para liberar analise, requisitos, matching, relatorios e acompanhamento da disputa.
-            </p>
-            {isEditor && (
-              <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
-                {market.labels.send_first_source_document}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            title="Nenhum edital enviado ainda"
+            description="Envie o primeiro edital para liberar analise, requisitos, matching, relatorios e acompanhamento da disputa."
+            action={isEditor ? { label: market.labels.send_first_source_document, onClick: () => navigate('/upload') } : null}
+            icon={<svg {...actionIconProps} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8" /><path d="M8 17h6" /></svg>}
+          />
         ) : (
           <div className="space-y-2">
             {editais.map(edital => (
@@ -328,10 +326,12 @@ export default function Dashboard() {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{edital.filename}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">
-                    {edital.chunks || 0} chunks · {edital.requirements || 0} requisitos
-                    {edital.parsed_at && ` · ${formatDate(edital.parsed_at)}`}
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={(edital.requirements || 0) > 0 ? 'ok' : 'pending'}>
+                      {(edital.requirements || 0) > 0 ? `${edital.requirements} requisitos` : 'Aguardando análise'}
+                    </StatusBadge>
+                    {edital.parsed_at && <span className="text-xs text-slate-400 dark:text-slate-400">{formatDate(edital.parsed_at)}</span>}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -366,7 +366,7 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-      </div>
+      </SectionCard>
     </div>
   )
 }
