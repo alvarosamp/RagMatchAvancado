@@ -126,59 +126,77 @@ export default function Dashboard() {
   const crm    = opsSummary?.crm
   const nEditais = opsSummary?.editais?.total_editais ?? editais.length
 
+  const hasOperationalSignal = (
+    (jobs?.active_count ?? 0) > 0 ||
+    (jobs?.stale_count ?? 0) > 0 ||
+    (crm?.attention_required ?? 0) > 0 ||
+    (crm?.upcoming_auctions_count ?? 0) > 0 ||
+    signatureAlert?.count > 0
+  )
+
+  const primaryActions = [
+    { key: 'upload', title: 'Enviar edital', description: 'Suba PDF ou JSON para iniciar uma analise.', path: '/upload', cta: 'Comecar analise', enabled: isEditor },
+    { key: 'radar', title: 'Buscar oportunidades', description: 'Use o radar para encontrar editais aderentes.', path: '/radar', cta: 'Abrir radar', enabled: true },
+    { key: 'crm', title: 'Organizar pipeline', description: 'Acompanhe decisoes, responsaveis e disputas.', path: '/crm', cta: 'Abrir CRM', enabled: true },
+  ]
+
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-5 p-5 lg:p-8">
 
-      {/* ── Cabeçalho ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-            {user?.tenant?.name || 'Portal'}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {apiOnline !== null && (
-            <span className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border ${
-              apiOnline
-                ? 'border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400'
-                : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${apiOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              {apiOnline ? 'API online' : 'API offline'}
-            </span>
-          )}
-          {isEditor && (
-            <button onClick={() => navigate('/upload')} className="btn-primary">
-              {market.labels.upload_source_document}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+                {user?.tenant?.name || 'Portal'}
+              </h1>
+              {apiOnline !== null && (
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                  apiOnline
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${apiOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                  {apiOnline ? 'Online' : 'Offline'}
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            <h2 className="mt-6 text-xl font-semibold text-slate-950 dark:text-white">
+              {nEditais > 0 ? 'Continue acompanhando suas oportunidades.' : 'Comece enviando um edital ou buscando oportunidades.'}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Esta tela agora mostra o que merece acao primeiro. Indicadores e alertas aparecem conforme a operacao ganha dados.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+            {isEditor && (
+              <button onClick={() => navigate('/upload')} className="btn-primary">
+                Enviar edital
+              </button>
+            )}
+            <button onClick={() => navigate('/radar')} className="btn-ghost">
+              Buscar oportunidades
             </button>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* ── Números ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          { label: market.labels.source_document_plural_title, value: nEditais, action: () => navigate('/upload') },
-          { label: 'Chunks',     value: totalChunks.toLocaleString('pt-BR') },
-          { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
-          { label: 'CRM ativos', value: crm?.active_pipeline ?? '—',      action: () => navigate('/crm') },
-        ].map(({ label, value, action }) => (
-          <button
-            key={label}
-            type="button"
-            onClick={action}
-            disabled={!action}
-            className={`rounded-lg border p-4 text-left transition-colors
-              border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800
-              ${action ? 'hover:border-slate-300 dark:hover:bg-slate-700 cursor-pointer' : 'cursor-default'}`}
-          >
-            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
-          </button>
-        ))}
+        <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Editais', value: nEditais },
+            { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
+            { label: 'CRM ativos', value: crm?.active_pipeline ?? 0 },
+            { label: 'Alertas', value: (jobs?.stale_count ?? 0) + (crm?.attention_required ?? 0) + (signatureAlert?.count ?? 0) },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+              <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{loading ? '—' : value}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {signatureAlert?.count > 0 && (
@@ -199,45 +217,27 @@ export default function Dashboard() {
         </button>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">Suite de licitacoes</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Os 6 modulos principais para o usuario nao precisar assinar ferramentas separadas.
-            </p>
-          </div>
-          <button type="button" onClick={() => navigate('/suite')} className="btn-ghost">
-            Ver suite completa
+      <div className="grid gap-3 lg:grid-cols-3">
+        {primaryActions.filter((action) => action.enabled).map((action, index) => (
+          <button
+            key={action.key}
+            type="button"
+            onClick={() => navigate(action.path)}
+            className={`rounded-xl border p-5 text-left transition-colors ${
+              index === 0
+                ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:hover:bg-blue-950/50'
+                : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-blue-800 dark:hover:bg-slate-800/80'
+            }`}
+          >
+            <p className="text-base font-semibold text-slate-950 dark:text-white">{action.title}</p>
+            <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500 dark:text-slate-400">{action.description}</p>
+            <p className="mt-4 text-sm font-semibold text-blue-700 dark:text-blue-300">{action.cta} →</p>
           </button>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {VISIBLE_SUITE_STEPS.map((step) => {
-            const status = stepState(step.key, { nEditais, totalRequirements, jobs, crm })
-            return (
-              <button
-                key={step.key}
-                type="button"
-                onClick={() => navigate(step.path)}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-blue-200 hover:bg-white dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800 dark:hover:bg-slate-800"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-950 dark:text-white">{step.title}</p>
-                  <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold ${stateClass(status.tone)}`}>
-                    {status.label}
-                  </span>
-                </div>
-                <p className="mt-2 min-h-[40px] text-xs leading-5 text-slate-500 dark:text-slate-400">{step.description}</p>
-                <p className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-300">{step.cta}</p>
-              </button>
-            )
-          })}
-        </div>
+        ))}
       </div>
 
       {/* ── Sinais operacionais ────────────────────────────────────────── */}
-      {!loading && (
+      {!loading && hasOperationalSignal && (
         <div className="grid gap-4 lg:grid-cols-2">
 
           {/* Fila de jobs */}
@@ -319,6 +319,15 @@ export default function Dashboard() {
         </div>
       )}
 
+      {!loading && !hasOperationalSignal && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">Sem pendencias por enquanto</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Quando houver processamento, assinatura, disputa proxima ou item do CRM pedindo atencao, tudo aparece aqui.
+          </p>
+        </div>
+      )}
+
       {/* ── Editais ───────────────────────────────────────────────────── */}
       <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
         <div className="flex items-center justify-between mb-4">
@@ -335,8 +344,11 @@ export default function Dashboard() {
             {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
           </div>
         ) : editais.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 py-12 text-center">
-            <p className="text-sm text-slate-400 dark:text-slate-400">{market.labels.empty_source_documents}</p>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-10 text-center dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-base font-semibold text-slate-900 dark:text-white">Nenhum edital enviado ainda</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Envie o primeiro edital para liberar analise, requisitos, matching, relatorios e acompanhamento da disputa.
+            </p>
             {isEditor && (
               <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
                 {market.labels.send_first_source_document}
