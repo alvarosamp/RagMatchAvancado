@@ -5,10 +5,10 @@ export const MARKET_PROFILES = {
     id: 'public_procurement',
     name: 'Licitacoes',
     app: {
-      product_name: 'Tor Tecnologias',
-      tagline: 'Portal de licitacoes',
-      description: 'Gestao comercial de editais, itens e disputa.',
-      footer_primary: 'Tor Tecnologias | Portal operacional de licitacoes.',
+      product_name: 'Edital Matcher',
+      tagline: 'Inteligencia para licitacoes',
+      description: 'Gestao inteligente de editais, produtos e disputas.',
+      footer_primary: 'Edital Matcher | Plataforma de inteligencia para licitacoes.',
       footer_secondary: 'Captar, analisar, disputar e acompanhar em um lugar.',
     },
     labels: {

@@ -8,6 +8,7 @@ import { MarketProvider }        from './contexts/MarketContext'
 import './index.css'
 
 import PageLoader from './components/PageLoader'
+const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
 const InternalRegister = lazy(() => import('./pages/InternalRegister'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -63,6 +64,7 @@ createRoot(document.getElementById('root')).render(
           <AuthProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
@@ -101,7 +103,6 @@ createRoot(document.getElementById('root')).render(
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>
             } />
 
-            <Route path="/"  element={<Navigate to="/dashboard" replace />} />
             <Route path="*"  element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Suspense>

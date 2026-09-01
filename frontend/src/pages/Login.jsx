@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
-import torLogo from '../images/Tor.jpeg'
+import ProductMark from '../components/ProductMark'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
 export default function Login() {
@@ -45,7 +45,7 @@ export default function Login() {
       <div className="grid min-h-screen lg:grid-cols-[0.95fr_1.05fr]">
         <section className="hidden border-r border-blue-100 bg-[#edf3fa] px-12 py-10 lg:flex lg:flex-col lg:justify-between dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-3">
-            <img src={torLogo} alt={market.app.product_name} className="h-11 w-11 rounded-lg object-cover" />
+            <ProductMark title={market.app.product_name} />
             <div>
               <p className="text-base font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
@@ -83,7 +83,7 @@ export default function Login() {
         <section className="flex items-center justify-center px-6 py-10">
           <div className="w-full max-w-[420px]">
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <img src={torLogo} alt={market.app.product_name} className="h-10 w-10 rounded-lg object-cover" />
+              <ProductMark className="h-10 w-10" title={market.app.product_name} />
               <div>
                 <p className="font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
@@ -91,6 +91,9 @@ export default function Login() {
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <Link to="/" className="mb-6 inline-flex items-center text-xs font-semibold text-slate-500 hover:text-brand dark:text-slate-400 dark:hover:text-blue-300">
+                ← Voltar para o site
+              </Link>
               <div className="mb-7">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Acesso</p>
                 <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Entrar no portal</h2>

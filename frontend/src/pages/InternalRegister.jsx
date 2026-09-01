@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PasswordRequirements from '../components/PasswordRequirements'
+import ProductMark from '../components/ProductMark'
 import { useAuth } from '../contexts/AuthContext'
-import torLogo from '../images/Tor.jpeg'
+import { useMarket } from '../contexts/MarketContext'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 
 const passwordPolicy = {
@@ -30,6 +31,7 @@ export default function InternalRegister() {
   const [showPassword, setShowPassword] = useState(false)
   const [theme, setTheme] = useState(() => readStoredTheme())
   const { register } = useAuth()
+  const market = useMarket()
   const navigate = useNavigate()
   const [form, setForm] = useState({
     email: '',
@@ -77,9 +79,9 @@ export default function InternalRegister() {
       <div className={`w-full max-w-xl rounded-[32px] border p-8 shadow-xl ${isLight ? 'border-slate-200 bg-white/95' : 'border-slate-700 bg-slate-800/95'}`}>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={torLogo} alt="Tor Tecnologias" className="w-11 h-11 rounded-lg object-cover" />
+            <ProductMark className="h-11 w-11" title={market.app.product_name} />
             <div>
-              <p className={`font-display text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>Tor Tecnologias</p>
+              <p className={`font-display text-xl font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>{market.app.product_name}</p>
               <p className={`text-[11px] font-mono uppercase tracking-[0.28em] ${isLight ? 'text-red-700' : 'text-red-400'}`}>
                 Cadastro interno
               </p>

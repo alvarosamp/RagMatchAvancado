@@ -2,8 +2,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
-import torLogo from '../images/Tor.jpeg'
 import { persistTheme, readStoredTheme } from '../utils/themeStorage'
+import ProductMark from './ProductMark'
 
 const NAV = [
   { key: 'dashboard', path: '/dashboard', badge: 'DB' },
@@ -380,11 +380,7 @@ export default function Layout({ children }) {
       <aside className="hidden w-72 flex-shrink-0 flex-col border-r border-slate-200 bg-white md:flex dark:border-slate-700 dark:bg-slate-900">
         <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <img
-              src={torLogo}
-              alt="Tor Tecnologias"
-              className="h-11 w-11 flex-shrink-0 rounded-lg object-cover"
-            />
+            <ProductMark title={market.app.product_name} />
             <div className="leading-tight">
               <p className="text-base font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
@@ -393,7 +389,7 @@ export default function Layout({ children }) {
 
           <div className="mt-5 rounded-lg border border-slate-200 bg-white px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Ambiente de trabalho</p>
-            <p className="mt-2 truncate text-sm font-semibold text-slate-950 dark:text-white">{user?.tenant?.name || 'Ambiente Tor'}</p>
+            <p className="mt-2 truncate text-sm font-semibold text-slate-950 dark:text-white">{user?.tenant?.name || 'Meu ambiente'}</p>
             <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{user?.email || 'sem email informado'}</p>
           </div>
         </div>
@@ -420,7 +416,7 @@ export default function Layout({ children }) {
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white md:hidden dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">
-              <img src={torLogo} alt="Tor Tecnologias" className="h-10 w-10 rounded-lg object-cover" />
+              <ProductMark className="h-10 w-10" title={market.app.product_name} />
               <div>
                 <p className="text-sm font-semibold text-slate-950 dark:text-white">{market.app.product_name}</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">{market.app.tagline}</p>
