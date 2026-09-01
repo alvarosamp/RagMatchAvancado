@@ -1,29 +1,154 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductMark from '../components/ProductMark'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
 
 const journey = [
-  ['01', 'Encontrar', 'Radar PNCP e filtros para transformar publicações em oportunidades priorizadas.'],
-  ['02', 'Analisar', 'Leitura estruturada do edital, requisitos, riscos e evidências em um só lugar.'],
-  ['03', 'Comparar', 'Matching técnico, catálogo de produtos, datasheets e inteligência competitiva.'],
-  ['04', 'Decidir', 'Score, pareceres e contexto comercial para disputar, analisar ou descartar.'],
-  ['05', 'Operar', 'CRM, documentos, relatórios e acompanhamento da disputa até o resultado.'],
+  {
+    number: '01',
+    title: 'Encontrar',
+    text: 'Radar PNCP e filtros para transformar publicações em oportunidades priorizadas.',
+    signal: '12 novas oportunidades',
+    detail: 'Filtros por órgão, UF, categoria, prazo e aderência ajudam a equipe a separar ruído de chance real.',
+    action: 'Radar',
+    path: '/radar',
+  },
+  {
+    number: '02',
+    title: 'Analisar',
+    text: 'Leitura estruturada do edital, requisitos, riscos e evidências em um só lugar.',
+    signal: '48 requisitos extraídos',
+    detail: 'A análise quebra o edital em itens, obrigações, documentos, prazos e pontos que precisam de validação humana.',
+    action: 'Análise',
+    path: '/upload',
+  },
+  {
+    number: '03',
+    title: 'Comparar',
+    text: 'Matching técnico, catálogo de produtos, datasheets e inteligência competitiva.',
+    signal: '92% de compatibilidade',
+    detail: 'Produtos, datasheets e concorrentes entram na mesma leitura para sustentar a decisão com evidência.',
+    action: 'Datasheets',
+    path: '/inteligencia/datasheets',
+  },
+  {
+    number: '04',
+    title: 'Decidir',
+    text: 'Score, pareceres e contexto comercial para disputar, analisar ou descartar.',
+    signal: 'Decisão registrada',
+    detail: 'A equipe escolhe disputar, aprofundar ou descartar com histórico, justificativa e impacto no funil.',
+    action: 'CRM',
+    path: '/crm',
+  },
+  {
+    number: '05',
+    title: 'Operar',
+    text: 'CRM, documentos, relatórios e acompanhamento da disputa até o resultado.',
+    signal: 'Operação acompanhada',
+    detail: 'Tarefas, documentos, assinaturas, lances assistidos e relatórios ficam conectados à oportunidade original.',
+    action: 'Operação',
+    path: '/dashboard',
+  },
 ]
 
 const availableTools = [
-  ['Radar PNCP', 'Busca, filtros, score e priorização de oportunidades.'],
-  ['Importação de editais', 'Entrada por PDF, JSON ou oportunidade do radar.'],
-  ['Análise documental', 'Requisitos, lotes, itens, categorias e riscos estruturados.'],
-  ['Matching técnico', 'Compatibilidade entre exigências e produtos do catálogo.'],
-  ['Chat com o edital', 'Perguntas e respostas apoiadas nas evidências do documento.'],
-  ['Datasheets', 'Extração, catálogo, comparação e identificação de lacunas.'],
-  ['Inteligência competitiva', 'Concorrentes, alternativas e argumentos de resposta.'],
-  ['CRM comercial', 'Funil, calendário, órgãos, portais e acompanhamento da disputa.'],
-  ['Documentos e assinaturas', 'Versões, anexos, solicitações e status de assinatura.'],
-  ['Robô de lances assistido', 'Sessões, lotes e lances críticos com confirmação humana.'],
-  ['Relatórios e exportações', 'Visões executivas e arquivos PDF, XLSX e CSV.'],
-  ['Gestão da operação', 'Fila de processamento, progresso, alertas e indicadores.'],
+  {
+    title: 'Radar PNCP',
+    text: 'Busca, filtros, score e priorização de oportunidades.',
+    category: 'Captação',
+    metric: 'Score 91',
+    path: '/radar',
+    details: ['Monitoramento de publicações', 'Triagem por aderência', 'Importação para análise'],
+  },
+  {
+    title: 'Importação de editais',
+    text: 'Entrada por PDF, JSON ou oportunidade do radar.',
+    category: 'Entrada',
+    metric: 'PDF + JSON',
+    path: '/upload',
+    details: ['Upload assistido', 'Fila de processamento', 'Base para análise'],
+  },
+  {
+    title: 'Análise documental',
+    text: 'Requisitos, lotes, itens, categorias e riscos estruturados.',
+    category: 'Análise',
+    metric: '48 requisitos',
+    path: '/analise/dashboard',
+    details: ['Riscos destacados', 'Evidências do edital', 'Resumo executivo'],
+  },
+  {
+    title: 'Matching técnico',
+    text: 'Compatibilidade entre exigências e produtos do catálogo.',
+    category: 'Decisão',
+    metric: '92% match',
+    path: '/analise/dashboard',
+    details: ['Produtos aderentes', 'Lacunas técnicas', 'Parecer explicável'],
+  },
+  {
+    title: 'Chat com o edital',
+    text: 'Perguntas e respostas apoiadas nas evidências do documento.',
+    category: 'IA',
+    metric: 'Com fontes',
+    path: '/chat',
+    details: ['Perguntas rápidas', 'Respostas com base documental', 'Apoio à revisão'],
+  },
+  {
+    title: 'Datasheets',
+    text: 'Extração, catálogo, comparação e identificação de lacunas.',
+    category: 'Catálogo',
+    metric: 'Comparável',
+    path: '/inteligencia/datasheets',
+    details: ['Produtos cadastrados', 'Comparação técnica', 'Lacunas do item'],
+  },
+  {
+    title: 'Inteligência competitiva',
+    text: 'Concorrentes, alternativas e argumentos de resposta.',
+    category: 'Mercado',
+    metric: 'Contexto',
+    path: '/inteligencia/competitiva',
+    details: ['Concorrentes mapeados', 'Alternativas técnicas', 'Argumentos comerciais'],
+  },
+  {
+    title: 'CRM comercial',
+    text: 'Funil, calendário, órgãos, portais e acompanhamento da disputa.',
+    category: 'Comercial',
+    metric: 'Pipeline',
+    path: '/crm',
+    details: ['Etapas do funil', 'Responsáveis', 'Histórico de decisão'],
+  },
+  {
+    title: 'Documentos e assinaturas',
+    text: 'Versões, anexos, solicitações e status de assinatura.',
+    category: 'Governança',
+    metric: 'Status claro',
+    path: '/assinatura',
+    details: ['Solicitações', 'Anexos', 'Controle de versão'],
+  },
+  {
+    title: 'Robô de lances assistido',
+    text: 'Sessões, lotes e lances críticos com confirmação humana.',
+    category: 'Disputa',
+    metric: 'Assistido',
+    path: '/robo-lances',
+    details: ['Sessões monitoradas', 'Lances críticos', 'Confirmação humana'],
+  },
+  {
+    title: 'Relatórios e exportações',
+    text: 'Visões executivas e arquivos PDF, XLSX e CSV.',
+    category: 'Gestão',
+    metric: 'PDF/XLSX',
+    path: '/relatorios',
+    details: ['Indicadores executivos', 'Arquivos exportáveis', 'Acompanhamento mensal'],
+  },
+  {
+    title: 'Gestão da operação',
+    text: 'Fila de processamento, progresso, alertas e indicadores.',
+    category: 'Operação',
+    metric: 'Ao vivo',
+    path: '/jobs',
+    details: ['Processamentos', 'Alertas', 'Indicadores de fila'],
+  },
 ]
 
 const expansionTools = [
@@ -221,6 +346,126 @@ function FeatureSection({ eyebrow, title, description, bullets, preview, reverse
   )
 }
 
+function JourneyExplorer({ appLink }) {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const active = journey[activeIndex]
+
+  return (
+    <section id="ciclo" className="bg-slate-950 py-24 text-white sm:py-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-300">Ciclo completo</p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Menos ferramentas soltas. Mais continuidade entre as etapas.</h2>
+            <p className="mt-5 text-lg leading-8 text-slate-300">Clique em uma etapa para ver como a informação acompanha a oportunidade até a operação comercial.</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">{active.number} · {active.title}</p>
+                <h3 className="mt-3 text-2xl font-black">{active.signal}</h3>
+              </div>
+              <Link to={active.path || appLink} className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-100">
+                Abrir {active.action}
+              </Link>
+            </div>
+            <p className="mt-4 max-w-2xl leading-7 text-slate-300">{active.detail}</p>
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-cyan-300 transition-all duration-500" style={{ width: `${((activeIndex + 1) / journey.length) * 100}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-14 grid gap-4 md:grid-cols-5">
+          {journey.map((step, index) => {
+            const isActive = index === activeIndex
+            return (
+              <button
+                key={step.number}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className={`group rounded-2xl border p-5 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950 ${isActive ? 'border-cyan-300 bg-cyan-300 text-slate-950 shadow-xl shadow-cyan-950/30' : 'border-white/10 bg-white/[0.05] hover:-translate-y-1 hover:border-cyan-300/60 hover:bg-white/[0.08]'}`}
+                aria-pressed={isActive}
+              >
+                <p className={`text-xs font-black ${isActive ? 'text-slate-700' : 'text-cyan-300'}`}>{step.number}</p>
+                <h3 className="mt-8 text-xl font-black">{step.title}</h3>
+                <p className={`mt-3 text-sm leading-6 ${isActive ? 'text-slate-700' : 'text-slate-400'}`}>{step.text}</p>
+                <span className={`mt-5 inline-flex text-xs font-black uppercase tracking-wide ${isActive ? 'text-slate-900' : 'text-cyan-200 group-hover:text-cyan-100'}`}>Ver etapa</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ToolExplorer() {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const active = availableTools[activeIndex]
+
+  return (
+    <section id="ferramentas" className="bg-slate-50 py-24 sm:py-28">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-700">Ferramentas disponíveis</p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">O que já existe na plataforma hoje.</h2>
+            <p className="mt-5 text-lg leading-8 text-slate-600">Os cards abaixo funcionam como um mapa navegável do produto, separando o que cada módulo resolve na operação.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-blue-950/5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">{active.category}</span>
+                <h3 className="mt-4 text-2xl font-black text-slate-950">{active.title}</h3>
+                <p className="mt-3 leading-7 text-slate-600">{active.text}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-950 px-4 py-3 text-right text-white">
+                <p className="text-[10px] font-black uppercase tracking-wide text-cyan-300">Sinal</p>
+                <p className="text-lg font-black">{active.metric}</p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {active.details.map((detail) => (
+                <div key={detail} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">{detail}</div>
+              ))}
+            </div>
+            <Link to={active.path} className="mt-6 inline-flex rounded-xl bg-blue-700 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-blue-800">
+              Abrir módulo
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {availableTools.map((tool, index) => {
+            const isActive = index === activeIndex
+            return (
+              <button
+                key={tool.title}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className={`group rounded-2xl border bg-white p-6 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-50 ${isActive ? 'border-blue-400 shadow-xl shadow-blue-950/10' : 'border-slate-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-950/5'}`}
+                aria-pressed={isActive}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${isActive ? 'bg-blue-700 text-white' : 'bg-emerald-100 text-emerald-700'}`}>{isActive ? 'Selecionado' : 'Disponível'}</span>
+                  <span className="text-xs font-black uppercase tracking-wide text-slate-400">{tool.category}</span>
+                </div>
+                <h3 className="mt-5 font-black text-slate-900">{tool.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{tool.text}</p>
+                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+                  <span className="text-sm font-black text-blue-700">{tool.metric}</span>
+                  <span className="text-xl text-slate-300 transition group-hover:translate-x-1 group-hover:text-blue-700">→</span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function Landing() {
   const { user } = useAuth()
   const market = useMarket()
@@ -281,41 +526,14 @@ export default function Landing() {
           </div>
         </section>
 
-        <section id="ciclo" className="bg-slate-950 py-24 text-white sm:py-28">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="max-w-3xl">
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-300">Ciclo completo</p>
-              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">Menos ferramentas soltas. Mais continuidade entre as etapas.</h2>
-              <p className="mt-5 text-lg leading-8 text-slate-300">A informação capturada no início acompanha a oportunidade até a decisão e a operação comercial.</p>
-            </div>
-            <div className="mt-14 grid gap-4 md:grid-cols-5">
-              {journey.map(([number, title, text]) => (
-                <div key={number} className="rounded-2xl border border-white/10 bg-white/[0.05] p-5">
-                  <p className="text-xs font-black text-cyan-300">{number}</p><h3 className="mt-8 text-xl font-black">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <JourneyExplorer appLink={appLink} />
 
         <FeatureSection eyebrow="Radar e decisão" title="Priorize o que merece a atenção da equipe." description="O radar organiza oportunidades e reúne sinais técnicos, comerciais, de prazo e de risco antes que o edital entre no funil." bullets={['Busca e monitoramento no PNCP', 'Score e prioridade por oportunidade', 'Decisão entre disputar, analisar ou descartar', 'Importação direta para a análise']} preview={<RadarPreview />} />
         <FeatureSection reverse eyebrow="Análise e matching" title="Saia do documento extenso para uma decisão explicável." description="Requisitos e itens são estruturados para comparar o edital com o catálogo, encontrar lacunas e manter a evidência acessível." bullets={['Requisitos e lotes estruturados', 'Matching técnico com produtos', 'Chat apoiado no conteúdo do edital', 'Comparação de datasheets e concorrentes']} preview={<AnalysisPreview />} />
         <FeatureSection eyebrow="CRM comercial" title="Leve a inteligência técnica para dentro do funil." description="A oportunidade não termina na leitura do edital. O CRM concentra acompanhamento, agenda, decisão e contexto para a equipe comercial." bullets={['Pipeline por etapa da oportunidade', 'Calendário, órgãos e portais', 'Histórico de decisões e resultados', 'Visão compartilhada entre áreas']} preview={<CrmPreview />} />
         <FeatureSection reverse eyebrow="Operação e governança" title="Acompanhe processamento, documentos e resultados." description="Tenha uma visão operacional do que está rodando, do que aguarda ação e do que já pode virar relatório para a gestão." bullets={['Fila e progresso dos processamentos', 'Documentos, versões e assinaturas', 'Relatórios executivos e operacionais', 'Exportações em PDF, XLSX e CSV']} preview={<OperationPreview />} />
 
-        <section id="ferramentas" className="bg-slate-50 py-24 sm:py-28">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="max-w-3xl"><p className="text-sm font-black uppercase tracking-[0.2em] text-blue-700">Ferramentas disponíveis</p><h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">O que já existe na plataforma hoje.</h2><p className="mt-5 text-lg leading-8 text-slate-600">Recursos conectados ao produto e à operação real do sistema.</p></div>
-            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {availableTools.map(([title, text]) => (
-                <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-950/5">
-                  <div className="flex items-center justify-between gap-3"><h3 className="font-black text-slate-900">{title}</h3><span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-700">Disponível</span></div>
-                  <p className="mt-3 text-sm leading-6 text-slate-500">{text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <ToolExplorer />
 
         <section className="py-24 sm:py-28">
           <div className="mx-auto max-w-7xl px-6">
