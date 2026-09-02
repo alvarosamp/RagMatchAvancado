@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const STORAGE_PREFIX = 'tor_procurement_module_'
+const CRM_ENTRYPOINT = '/crm/'
 
 const MODULES = {
   pncp_monitor: {
@@ -105,7 +106,8 @@ const MODULES = {
     eyebrow: 'Disputa em tempo real',
     description: 'Painel para registrar sessoes, mensagens do pregoeiro, avisos e acompanhamento de disputa.',
     primaryAction: 'Abrir CRM',
-    primaryPath: '/crm',
+    primaryPath: CRM_ENTRYPOINT,
+    external: true,
     metrics: [
       ['Sessoes proximas', '7 dias'],
       ['Mensagens', 'Registro'],
@@ -129,7 +131,8 @@ const MODULES = {
     eyebrow: 'Contrato e entrega',
     description: 'Acompanhe contrato, vigencia, entregas, renovacoes, documentos pos-adjudicacao e SLA interno.',
     primaryAction: 'Abrir CRM',
-    primaryPath: '/crm',
+    primaryPath: CRM_ENTRYPOINT,
+    external: true,
     metrics: [
       ['Contratos', 'Pipeline'],
       ['Vigencia', 'Renovacoes'],
@@ -237,7 +240,7 @@ export default function ProcurementExpansion({ moduleId }) {
             <h1 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">{module.title}</h1>
             <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">{module.description}</p>
           </div>
-          <button type="button" onClick={() => navigate(module.primaryPath)} className="btn-primary">
+          <button type="button" onClick={() => module.external ? window.location.assign(module.primaryPath) : navigate(module.primaryPath)} className="btn-primary">
             {module.primaryAction}
           </button>
         </div>
@@ -307,4 +310,3 @@ export default function ProcurementExpansion({ moduleId }) {
     </div>
   )
 }
-

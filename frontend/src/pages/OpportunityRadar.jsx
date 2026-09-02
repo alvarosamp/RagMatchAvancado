@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { pncpApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 
+const CRM_ENTRYPOINT = '/crm/'
+
 const INITIAL_FILTERS = {
   texto: 'switch roteador firewall access point',
   modalidade: 'Pregao Eletronico',
@@ -481,7 +483,7 @@ export default function OpportunityRadar() {
   }
 
   const handleOpenCrm = () => {
-    navigate('/crm')
+    window.location.assign(CRM_ENTRYPOINT)
   }
 
   const handleOpenJobs = () => {

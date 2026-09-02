@@ -11,6 +11,7 @@ import SectionCard from '../components/ui/SectionCard'
 import StatusBadge from '../components/ui/StatusBadge'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+const CRM_ENTRYPOINT = '/crm/'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -109,7 +110,7 @@ export default function Dashboard() {
   const primaryActions = [
     { key: 'upload', title: 'Analisar edital', description: 'Envie PDF ou JSON e transforme o edital em requisitos, riscos e itens acionaveis.', path: '/upload', cta: 'Enviar edital', enabled: isEditor, badge: 'Principal', badgeTone: 'blue', tone: 'blue' },
     { key: 'radar', title: 'Encontrar oportunidades', description: 'Busque editais aderentes antes de gastar tempo importando documentos.', path: '/radar', cta: 'Abrir radar', enabled: true, badge: 'Captação', badgeTone: 'emerald', tone: 'slate' },
-    { key: 'crm', title: 'Acompanhar disputa', description: 'Organize funil, responsaveis, decisoes e proximas sessoes em um só lugar.', path: '/crm', cta: 'Abrir CRM', enabled: true, badge: 'Gestão', badgeTone: 'slate', tone: 'slate' },
+    { key: 'crm', title: 'Acompanhar disputa', description: 'Organize funil, responsaveis, decisoes e proximas sessoes em um só lugar.', path: CRM_ENTRYPOINT, external: true, cta: 'Abrir CRM', enabled: true, badge: 'Gestão', badgeTone: 'slate', tone: 'slate' },
   ]
 
   const journeySteps = [
@@ -188,7 +189,7 @@ export default function Dashboard() {
         {primaryActions.filter((action) => action.enabled).map((action, index) => (
           <ActionCard
             key={action.key}
-            onClick={() => navigate(action.path)}
+            onClick={() => action.external ? window.location.assign(action.path) : navigate(action.path)}
             title={action.title}
             description={action.description}
             cta={action.cta}
@@ -254,7 +255,7 @@ export default function Dashboard() {
           <SectionCard
             title="Disputas e CRM"
             description="Prazos, decisões e oportunidades pedindo atenção."
-            action={{ label: 'Abrir →', onClick: () => navigate('/crm') }}
+            action={{ label: 'Abrir →', onClick: () => window.location.assign(CRM_ENTRYPOINT) }}
           >
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[

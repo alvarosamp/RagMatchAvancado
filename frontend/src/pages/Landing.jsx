@@ -4,6 +4,8 @@ import ProductMark from '../components/ProductMark'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
 
+const CRM_ENTRYPOINT = '/crm/'
+
 const journey = [
   {
     number: '01',
@@ -39,7 +41,7 @@ const journey = [
     signal: 'Decisão registrada',
     detail: 'A equipe escolhe disputar, aprofundar ou descartar com histórico, justificativa e impacto no funil.',
     action: 'CRM',
-    path: '/crm',
+    path: CRM_ENTRYPOINT,
   },
   {
     number: '05',
@@ -114,7 +116,7 @@ const availableTools = [
     text: 'Funil, calendário, órgãos, portais e acompanhamento da disputa.',
     category: 'Comercial',
     metric: 'Pipeline',
-    path: '/crm',
+    path: CRM_ENTRYPOINT,
     details: ['Etapas do funil', 'Responsáveis', 'Histórico de decisão'],
   },
   {

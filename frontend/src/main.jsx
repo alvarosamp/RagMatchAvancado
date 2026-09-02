@@ -89,6 +89,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
+            <Route path="/crm/*"                  element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
             <Route path="/editais/:id/chat"       element={AI_FEATURES_ENABLED ? <PrivateRoute><EditalChat /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
