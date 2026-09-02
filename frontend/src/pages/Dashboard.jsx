@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BriefcaseBusiness, FileText, Search, Upload } from 'lucide-react'
 import { documentsApi, downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
@@ -7,8 +8,10 @@ import { useToast } from '../contexts/ToastContext'
 import ActionCard from '../components/ui/ActionCard'
 import EmptyState from '../components/ui/EmptyState'
 import PageHeader from '../components/ui/PageHeader'
+import ProgressBar from '../components/ui/ProgressBar'
 import SectionCard from '../components/ui/SectionCard'
-import StatusBadge from '../components/ui/StatusBadge'
+import EditalRow from '../components/ui/EditalRow'
+import { EditalSkeleton } from '../components/ui/Skeleton'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 const CRM_ENTRYPOINT = '/crm/'
@@ -120,8 +123,6 @@ export default function Dashboard() {
     { label: 'Acompanhar', active: hasOperationalSignal },
   ]
 
-  const actionIconProps = { className: 'h-5 w-5', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' }
-
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-5 lg:p-8">
 
@@ -198,11 +199,11 @@ export default function Dashboard() {
             tone={index === 0 ? action.tone : 'slate'}
             icon={
               action.key === 'upload' ? (
-                <svg {...actionIconProps} viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M17 8l-5-5-5 5" /><path d="M12 3v12" /></svg>
+                <Upload className="h-5 w-5" />
               ) : action.key === 'radar' ? (
-                <svg {...actionIconProps} viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /><path d="M11 7v4l3 2" /></svg>
+                <Search className="h-5 w-5" />
               ) : (
-                <svg {...actionIconProps} viewBox="0 0 24 24"><path d="M3 7h18" /><path d="M6 7v13" /><path d="M18 7v13" /><path d="M9 11h6" /><path d="M9 15h6" /><path d="M8 4h8l2 3H6z" /></svg>
+                <BriefcaseBusiness className="h-5 w-5" />
               )
             }
           />
@@ -242,7 +243,10 @@ export default function Dashboard() {
                       <p className="truncate text-xs font-medium text-slate-800 dark:text-white">{job.label}</p>
                       <p className="text-[11px] text-slate-400 dark:text-slate-400">{job.status}</p>
                     </div>
-                    <span className="ml-3 text-sm font-bold text-slate-600 dark:text-red-400 flex-shrink-0">{job.progress_pct}%</span>
+                    <div className="ml-3 flex w-24 flex-shrink-0 items-center gap-2">
+                      <ProgressBar value={job.progress_pct} className="flex-1" />
+                      <span className="text-sm font-bold tabular-nums text-slate-600 dark:text-red-400">{job.progress_pct}%</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -304,66 +308,32 @@ export default function Dashboard() {
       >
         {loading ? (
           <div className="space-y-2">
-            {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
+            {[1,2,3].map(i => <EditalSkeleton key={i} />)}
           </div>
         ) : editais.length === 0 ? (
           <EmptyState
             title="Nenhum edital enviado ainda"
             description="Envie o primeiro edital para liberar analise, requisitos, matching, relatorios e acompanhamento da disputa."
             action={isEditor ? { label: market.labels.send_first_source_document, onClick: () => navigate('/upload') } : null}
-            icon={<svg {...actionIconProps} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h8" /><path d="M8 17h6" /></svg>}
+            icon={<FileText className="h-5 w-5" />}
           />
         ) : (
           <div className="space-y-2">
             {editais.map(edital => (
-              <div
+              <EditalRow
                 key={edital.id}
                 onClick={() => navigate(`/editais/${edital.id}`)}
-                className="flex items-center gap-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 grid place-items-center">
-                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400">PDF</span>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{edital.filename}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <StatusBadge status={(edital.requirements || 0) > 0 ? 'ok' : 'pending'}>
-                      {(edital.requirements || 0) > 0 ? `${edital.requirements} requisitos` : 'Aguardando análise'}
-                    </StatusBadge>
-                    {edital.parsed_at && <span className="text-xs text-slate-400 dark:text-slate-400">{formatDate(edital.parsed_at)}</span>}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  {AI_FEATURES_ENABLED && (
-                    <>
-                      <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                        Chat
-                      </button>
-                      <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                        Análise
-                      </button>
-                    </>
-                  )}
-                  {['xlsx','csv'].map(tipo => (
-                    <button key={tipo} onClick={e => handleExport(e, edital.id, tipo)}
-                      disabled={Boolean(exporting)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-40">
-                      {exporting === `${edital.id}-${tipo}` ? '…' : tipo.toUpperCase()}
-                    </button>
-                  ))}
-                  {isEditor && (
-                    <button onClick={e => handleDelete(e, edital)}
-                      disabled={deleting === edital.id}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-40">
-                      {deleting === edital.id ? '...' : 'Apagar'}
-                    </button>
-                  )}
-                </div>
-              </div>
+                edital={edital}
+                onChat={() => navigate(`/editais/${edital.id}/chat`)}
+                onAnalysis={() => navigate(`/editais/${edital.id}/analise-llm`)}
+                onExportXlsx={(event) => handleExport(event, edital.id, 'xlsx')}
+                onExportCsv={(event) => handleExport(event, edital.id, 'csv')}
+                onDelete={(event) => handleDelete(event, edital)}
+                exporting={exporting}
+                deleting={deleting}
+                aiEnabled={AI_FEATURES_ENABLED}
+                isEditor={isEditor}
+              />
             ))}
           </div>
         )}

@@ -3,24 +3,27 @@
   "version": "0.4.0",
   "type": "module",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build",
+    "dev": "vite",
+    "build": "vite build",
     "build:crm": "node ../scripts/sync-bid-buddy.mjs",
     "build:crm:pull": "node ../scripts/sync-bid-buddy.mjs --pull",
     "build:all": "npm run build:crm && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios":        "^1.6.0",
-    "react":        "^18.2.0",
-    "react-dom":    "^18.2.0",
-    "react-router-dom": "^6.22.0"
+    "axios": "^1.6.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.400.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
-    "autoprefixer":   "^10.4.17",
-    "postcss":        "^8.4.35",
-    "tailwindcss":    "^3.4.1",
-    "vite":           "^5.1.0"
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.0"
   }
 }

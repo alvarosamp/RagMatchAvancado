@@ -1,3 +1,5 @@
+import { cn } from '../../utils/cn'
+
 // Badges sólidos (não translúcidos no claro) — tons compartilhados por
 // categoria/risco/status entre páginas, pra não reinventar cor em cada tela.
 const TONE_CLASSES = {
@@ -10,7 +12,7 @@ const TONE_CLASSES = {
 
 export default function Badge({ tone = 'slate', className = '', children }) {
   return (
-    <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${TONE_CLASSES[tone] || TONE_CLASSES.slate} ${className}`}>
+    <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium', TONE_CLASSES[tone] || TONE_CLASSES.slate, className)}>
       {children}
     </span>
   )
