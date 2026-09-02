@@ -1,0 +1,14 @@
+services:
+  frontend-kimi:
+    image: alvarocareli/ragmatch-frontend:kimi-frontend-7b7e8e2e4bab
+    container_name: ragmatch-frontend-kimi
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    networks:
+      - app-internal
+
+networks:
+  app-internal:
+    external: true
+    name: ragmatchavan-ado_app-internal
