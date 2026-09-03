@@ -2,8 +2,8 @@
   "app": "bid-buddy",
   "sourcePath": "bid-buddy",
   "sourceRepo": "https://github.com/LuizH-Paiva/bid-buddy.git",
-  "sourceBranch": "main",
-  "sourceCommit": "b408ffca9177df265f8a1d6c3ade238088d90fb2",
-  "builtAt": "2026-09-03T13:48:50.117Z",
+  "sourceBranch": "HEAD",
+  "sourceCommit": "feeeb73fc1b78e1a0ea550303c7ba1db71668cc2",
+  "builtAt": "2026-09-03T18:58:49.810Z",
   "pulledBeforeBuild": false
 }
