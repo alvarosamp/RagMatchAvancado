@@ -41,6 +41,15 @@ from app.services.crm_notice_sync import (
     sync_notice_relationships,
 )
 
+CATALOG_INTERNAL_COLUMNS = {
+    "embedding",
+    "embedding_model",
+    "embedding_provider",
+    "embedding_dimensions",
+    "embedding_source_hash",
+    "embedding_updated_at",
+}
+
 
 CRM_TO_MAIN_ROLE = {
     "admin": "admin",
@@ -316,7 +325,10 @@ def crm_user_payload(user: User) -> dict[str, Any]:
 
 def serialize_record(row: Any) -> dict[str, Any]:
     data: dict[str, Any] = {}
+    internal_columns = CATALOG_INTERNAL_COLUMNS if isinstance(row, CrmCatalogProduct) else set()
     for column in row.__table__.columns:
+        if column.name in internal_columns:
+            continue
         value = getattr(row, column.name)
         if column.name in USER_ID_FIELDS and value is not None:
             data[column.name] = str(value)
@@ -434,6 +446,8 @@ def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, e
     for column in model.__table__.columns:
         name = column.name
         if name in {"id", "created_at", "updated_at", "tenant_id"}:
+            continue
+        if model is CrmCatalogProduct and name in CATALOG_INTERNAL_COLUMNS:
             continue
         if name not in payload:
             continue

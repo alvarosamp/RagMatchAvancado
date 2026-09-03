@@ -11,7 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [theme, setTheme] = useState(() => readStoredTheme('light'))
   const [form, setForm] = useState({ email: '', password: '' })
-  const { login } = useAuth()
+  const { login, enterDemo } = useAuth()
   const market = useMarket()
   const navigate = useNavigate()
 
@@ -38,6 +38,11 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDemo = () => {
+    enterDemo()
+    navigate('/dashboard')
   }
 
   return (
@@ -144,6 +149,14 @@ export default function Login() {
                   {loading ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
+
+              <button
+                type="button"
+                onClick={handleDemo}
+                className="mt-3 w-full rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-brand transition hover:border-blue-300 hover:bg-blue-100 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-200 dark:hover:bg-blue-900/50"
+              >
+                Entrar em demonstração
+              </button>
 
               <button
                 type="button"

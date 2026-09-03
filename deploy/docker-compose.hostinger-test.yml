@@ -1,0 +1,191 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-edital_matcher}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatorio}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - app-internal
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatorio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatorio}
+    command: server /data
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-internal
+
+  # Roda as migrations do Alembic uma vez, antes da API subir.
+  # Usa a mesma imagem da API — nao precisa de build/push separado.
+  migrate:
+    image: alvarocareli/ragmatch-api:${API_IMAGE_TAG:-latest}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-internal
+
+  api:
+    image: alvarocareli/ragmatch-api:${API_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "8000"
+    volumes:
+      - ./data:/data
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      OBJECT_STORAGE_ENABLED: "${OBJECT_STORAGE_ENABLED:-1}"
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER}}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD}}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-phi3}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatorio}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      APP_ENV: production
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      AUTH_COOKIE_SECURE: "1"
+      AUTH_COOKIE_SAMESITE: lax
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      mlflow:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.ragmatch-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.ragmatch-api.entrypoints=websecure"
+      - "traefik.http.routers.ragmatch-api.tls=true"
+      - "traefik.http.routers.ragmatch-api.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.ragmatch-api.loadbalancer.server.port=8000"
+    networks:
+      - app-internal
+      - traefik-proxy
+
+  frontend-kimi:
+    image: alvarocareli/ragmatch-frontend:${FRONTEND_IMAGE_TAG}
+    container_name: ragmatch-frontend-kimi
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.ragmatch-frontend-kimi.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.ragmatch-frontend-kimi.entrypoints=websecure"
+      - "traefik.http.routers.ragmatch-frontend-kimi.tls=true"
+      - "traefik.http.routers.ragmatch-frontend-kimi.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.ragmatch-frontend-kimi.loadbalancer.server.port=80"
+    networks:
+      - app-internal
+      - traefik-proxy
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    expose:
+      - "11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app-internal
+
+  ollama-setup:
+    image: ollama/ollama:latest
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+        sleep 10 &&
+        ollama pull ${OLLAMA_EMBED_MODEL:-nomic-embed-text} &&
+        ollama pull ${OLLAMA_MODEL:-phi3}
+      "
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      - ollama
+    networks:
+      - app-internal
+
+  mlflow:
+    image: alvarocareli/ragmatch-mlflow:${MLFLOW_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
+    volumes:
+      - mlflow_data:/mlruns
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+        --default-artifact-root /mlruns/artifacts
+        --host 0.0.0.0
+        --port 5000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-internal
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:
+  mlflow_data:
+
+networks:
+  app-internal:
+    driver: bridge
+  traefik-proxy:
+    external: true
+    name: traefik-proxy

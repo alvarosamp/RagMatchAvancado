@@ -8,6 +8,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from app.core.ml_config import get_ml_config
 from app.logs.config import logger
 
 STOPWORDS = {
@@ -18,6 +19,10 @@ STOPWORDS = {
 DEFAULT_EMBEDDING_WEIGHT = float(os.environ.get("CRM_MATCH_EMBEDDING_WEIGHT", "0.55"))
 DEFAULT_LEXICAL_WEIGHT = 1.0 - DEFAULT_EMBEDDING_WEIGHT
 LLM_MODEL = os.environ.get("CRM_MATCH_LLM_MODEL", "llama3.2:1b")
+_ML_CONFIG = get_ml_config()
+THRESHOLD_ATENDE = _ML_CONFIG.threshold_atende
+THRESHOLD_VERIFICAR = _ML_CONFIG.threshold_verificar
+THRESHOLD_POSSIBLE = THRESHOLD_VERIFICAR + ((THRESHOLD_ATENDE - THRESHOLD_VERIFICAR) / 2)
 
 
 @dataclass(frozen=True)
@@ -123,26 +128,26 @@ def combine_scores(lexical_score: float, semantic_score: float | None, llm_score
 
 
 def score_to_level(score: float) -> str:
-    if score >= 0.82:
+    if score >= THRESHOLD_ATENDE:
         return "strong"
-    if score >= 0.64:
+    if score >= THRESHOLD_POSSIBLE:
         return "possible"
-    if score >= 0.46:
+    if score >= THRESHOLD_VERIFICAR:
         return "weak"
     return "none"
 
 
 def build_match_summary(best_scores: list[dict[str, Any]], total_reference_value: float) -> dict[str, Any]:
     total_items = len(best_scores)
-    strong_items = sum(1 for item in best_scores if item["best_score"] >= 0.82)
-    possible_items = sum(1 for item in best_scores if 0.64 <= item["best_score"] < 0.82)
-    weak_items = sum(1 for item in best_scores if 0.46 <= item["best_score"] < 0.64)
-    unmatched_items = sum(1 for item in best_scores if item["best_score"] < 0.46)
+    strong_items = sum(1 for item in best_scores if item["best_score"] >= THRESHOLD_ATENDE)
+    possible_items = sum(1 for item in best_scores if THRESHOLD_POSSIBLE <= item["best_score"] < THRESHOLD_ATENDE)
+    weak_items = sum(1 for item in best_scores if THRESHOLD_VERIFICAR <= item["best_score"] < THRESHOLD_POSSIBLE)
+    unmatched_items = sum(1 for item in best_scores if item["best_score"] < THRESHOLD_VERIFICAR)
 
     covered_reference_value = sum(
         float(item.get("reference_value") or 0.0)
         for item in best_scores
-        if item["best_score"] >= 0.64
+        if item["best_score"] >= THRESHOLD_POSSIBLE
     )
     weighted_denominator = total_reference_value or float(total_items or 1)
     weighted_numerator = covered_reference_value or float(strong_items + possible_items)

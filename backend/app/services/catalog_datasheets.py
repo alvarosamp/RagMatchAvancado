@@ -11,6 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.crm.models import CrmCatalogProduct, CrmCatalogProductDatasheet, CrmChecklistStatus, CrmNoticeDocument, CrmNoticeProductDatasheet
+from app.db.models import DocumentFile
 
 ROOT = Path(os.getenv("TOR_CATALOG_DATASHEETS_ROOT", r"D:\TOR\CatalogDatasheets" if os.name == "nt" else "/data/catalog_datasheets"))
 MAX_BYTES = int(os.getenv("MAX_DOCUMENT_UPLOAD_BYTES", str(50 * 1024 * 1024)))
@@ -53,11 +54,86 @@ def current_catalog_datasheet(db: Session, *, tenant_id: int, product_id: str) -
 def sync_product_datasheet_links(db: Session, *, tenant_id: int, product_id: str, datasheet: CrmCatalogProductDatasheet | None = None) -> None:
     current = datasheet or current_catalog_datasheet(db, tenant_id=tenant_id, product_id=product_id)
     for link in db.query(CrmNoticeProductDatasheet).filter(CrmNoticeProductDatasheet.tenant_id == tenant_id, CrmNoticeProductDatasheet.catalog_product_id == product_id).all():
-        link.catalog_datasheet_id = current.id if current else None
         document = db.get(CrmNoticeDocument, link.notice_document_id) if link.notice_document_id else None
         if document:
-            document.source_url = f"/api/crm/catalog-datasheets/{current.id}/download" if current else None
-            document.status = CrmChecklistStatus.READY if current else CrmChecklistStatus.PENDING
+            attach_catalog_datasheet_to_notice_document(db, link=link, document=document, datasheet=current)
+
+
+def attach_catalog_datasheet_to_notice_document(
+    db: Session,
+    *,
+    link: CrmNoticeProductDatasheet,
+    document: CrmNoticeDocument,
+    datasheet: CrmCatalogProductDatasheet | None,
+) -> DocumentFile | None:
+    """Materializa o datasheet privado como anexo real do checklist do edital."""
+    previous_datasheet_id = link.catalog_datasheet_id
+    previous_document_id = link.document_file_id
+    link.catalog_datasheet_id = datasheet.id if datasheet else None
+
+    if datasheet is None:
+        if previous_document_id:
+            previous = db.get(DocumentFile, previous_document_id)
+            expected_prefix = f"catalog-datasheet:{link.notice_product_id}:"
+            if previous and str(previous.generation_key or "").startswith(expected_prefix):
+                previous.crm_notice_id = None
+        link.document_file_id = None
+        document.attached_document_file_id = None
+        document.source_url = None
+        document.status = CrmChecklistStatus.PENDING
+        return None
+
+    generation_key = f"catalog-datasheet:{link.notice_product_id}:{datasheet.id}"
+    attached = db.query(DocumentFile).filter(
+        DocumentFile.tenant_id == link.tenant_id,
+        DocumentFile.generation_key == generation_key,
+    ).first()
+    if attached is None:
+        # Importacao local evita acoplamento circular entre os dois servicos.
+        from app.services.document_files import store_document_file
+
+        parent_id = previous_document_id if previous_document_id else None
+        with Path(datasheet.storage_path).open("rb") as source:
+            attached = store_document_file(
+                db,
+                tenant_id=link.tenant_id,
+                user_id=datasheet.uploaded_by,
+                fileobj=source,
+                original_filename=datasheet.original_filename,
+                content_type=datasheet.content_type,
+                title=document.name,
+                category=document.category or "Datasheets de produtos",
+                crm_notice_id=link.notice_id,
+                parent_document_id=parent_id,
+                notes=document.notes,
+                generation_key=generation_key,
+            )
+        # O produto e associado depois da copia para nao disparar o sincronismo
+        # global de DocumentFile, pois cada edital precisa do seu proprio anexo.
+        attached.catalog_product_id = link.catalog_product_id
+
+    link.document_file_id = attached.id
+    should_replace_attachment = (
+        previous_datasheet_id != datasheet.id
+        or not previous_document_id
+        or not document.attached_document_file_id
+        or document.attached_document_file_id == previous_document_id
+    )
+    if should_replace_attachment:
+        document.attached_document_file_id = attached.id
+
+    if previous_document_id and previous_document_id != attached.id:
+        previous = db.get(DocumentFile, previous_document_id)
+        expected_prefix = f"catalog-datasheet:{link.notice_product_id}:"
+        if previous and str(previous.generation_key or "").startswith(expected_prefix):
+            # A versao antiga continua na biblioteca, mas deixa de entrar no ZIP
+            # e na lista de anexos vigentes deste edital.
+            previous.crm_notice_id = None
+
+    document.source_kind = "catalog_datasheet"
+    document.source_url = f"/api/crm/catalog-datasheets/{datasheet.id}/download"
+    document.status = CrmChecklistStatus.READY
+    return attached
 
 
 def serialize(row: CrmCatalogProductDatasheet) -> dict:

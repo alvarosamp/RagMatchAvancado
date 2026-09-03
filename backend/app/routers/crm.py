@@ -53,7 +53,11 @@ from app.services.crm_item_matcher import (
     reject_notice_item_match,
     run_notice_item_match,
 )
-from app.services.match_eval_dataset import build_match_evaluation_dataset
+from app.services.match_eval_dataset import (
+    build_attached_products_ai_opportunity_report,
+    build_match_calibration_report,
+    build_match_evaluation_dataset,
+)
 from app.services.ops_summary import summarize_crm
 from app.services.crm_workflow import POST_AUCTION_PHASES, validate_post_auction_transition
 from app.services.proposal_generator import (
@@ -61,13 +65,19 @@ from app.services.proposal_generator import (
     proposal_filename,
 )
 from app.services.calendar_export import build_ics, session_calendar_payload
+from app.services.catalog_embeddings import backfill_catalog_embeddings, catalog_embedding_status
 from app.services.email_monitor import email_monitor_configured, run_email_monitor_once
 from app.services.decision_intelligence import (
     persist_notice_decision_intelligence,
     serialize_decision_intelligence,
 )
 from app.services.crm_notice_sync import sync_notice_relationships
-from app.services.catalog_datasheets import current_catalog_datasheet, serialize as serialize_catalog_datasheet, store_catalog_datasheet
+from app.services.catalog_datasheets import (
+    attach_catalog_datasheet_to_notice_document,
+    current_catalog_datasheet,
+    serialize as serialize_catalog_datasheet,
+    store_catalog_datasheet,
+)
 from app.services.crm_notice_list import invalidate_notice_list_cache, list_notice_summaries
 
 router = APIRouter(prefix="/crm", tags=["crm"])
@@ -300,10 +310,8 @@ def link_catalog_product_and_datasheet(
         db.add(document)
         db.flush()
         link.notice_document_id = document.id
-    document.source_kind = "catalog_datasheet"
-    document.source_url = f"/api/crm/catalog-datasheets/{current.id}/download" if current else None
     document.notes = f"Produto do catalogo: {catalog_product.name}." if current else f"Produto do catalogo: {catalog_product.name}. Nenhum datasheet cadastrado."
-    document.status = CrmChecklistStatus.READY if current else CrmChecklistStatus.PENDING
+    attach_catalog_datasheet_to_notice_document(db, link=link, document=document, datasheet=current)
     db.commit()
     return {
         "notice_product_id": notice_product.id,
@@ -1467,6 +1475,73 @@ def crm_match_evaluation_dataset(
     )
 
 
+@router.get("/matches/calibration-report")
+def crm_match_calibration_report(
+    notice_id: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    include_unmarked: bool = Query(default=False),
+    limit: int = Query(default=1000, ge=1, le=5000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    dataset = build_match_evaluation_dataset(
+        db,
+        current_user,
+        notice_id=notice_id,
+        source=source,
+        limit=limit,
+        include_unmarked=include_unmarked,
+    )
+    report = build_match_calibration_report(dataset["records"])
+    return {
+        "dataset": {
+            "dataset_version": dataset["dataset_version"],
+            "schema_version": dataset["schema_version"],
+            "summary": dataset["summary"],
+            "evaluation": dataset["evaluation"],
+        },
+        "calibration": report,
+    }
+
+
+@router.get("/catalog/embeddings/status")
+def crm_catalog_embeddings_status(
+    active_only: bool = Query(default=True),
+    limit_examples: int = Query(default=20, ge=0, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Mostra cobertura e pendencias dos embeddings do catalogo."""
+    return catalog_embedding_status(
+        db,
+        current_user.tenant_id,
+        active_only=active_only,
+        limit_examples=limit_examples,
+    )
+
+
+@router.post("/catalog/embeddings/backfill")
+def crm_catalog_embeddings_backfill(
+    active_only: bool = Body(default=True, embed=True),
+    stale_only: bool = Body(default=True, embed=True),
+    limit: int = Body(default=100, embed=True, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    """Atualiza embeddings do catalogo em lotes idempotentes."""
+    try:
+        return backfill_catalog_embeddings(
+            db,
+            current_user.tenant_id,
+            active_only=active_only,
+            stale_only=stale_only,
+            limit=limit,
+        )
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+
 @router.post("/matches/ground-truth/run")
 def crm_run_ground_truth_matches(
     background_tasks: BackgroundTasks,
@@ -1536,6 +1611,25 @@ def crm_attached_products_report(
         db,
         current_user,
         notice_id=notice_id,
+        limit=limit,
+    )
+
+
+@router.get("/matches/attached-products/ai-opportunities")
+def crm_attached_products_ai_opportunities(
+    notice_id: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    include_unmarked: bool = Query(default=False),
+    limit: int = Query(default=1000, ge=1, le=5000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    return build_attached_products_ai_opportunity_report(
+        db,
+        current_user,
+        notice_id=notice_id,
+        source=source,
+        include_unmarked=include_unmarked,
         limit=limit,
     )
 

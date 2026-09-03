@@ -18,6 +18,8 @@ from app.crm.models import (
     CrmNoticeProductMatchStatus,
 )
 from app.pipeline.embedder import embed_texts_batch
+from app.logs.config import logger
+from app.services.catalog_embeddings import ensure_catalog_embeddings
 from app.services.crm_match_scoring import (
     MatchScore,
     build_match_summary,
@@ -81,6 +83,15 @@ def run_notice_item_match(
         ]
         if not catalog_products_filtered:
             raise ValueError("Nenhum produto ativo encontrado no catalogo para a categoria selecionada.")
+
+    embedding_stats: dict[str, Any] | None = None
+    if AI_FEATURES_ENABLED and catalog_products_filtered:
+        try:
+            embedding_stats = ensure_catalog_embeddings(db, catalog_products_filtered)
+        except Exception as exc:
+            # Retrieval lexical continua operacional. Nao transformamos uma
+            # indisponibilidade do provider em score semantico artificial.
+            logger.warning("[CRM Match] Embeddings persistidos indisponiveis; usando lexical: %s", exc)
 
     if notice_product_id:
         db.query(CrmNoticeProductMatch).filter(
@@ -173,7 +184,10 @@ def run_notice_item_match(
             notice_id=notice.id,
             user_id=current_user.id,
             action="Match catalogo x edital executado",
-            details=summary,
+            details={
+                **summary,
+                "embedding": embedding_stats or {"status": "lexical_fallback"},
+            },
         )
     )
     db.commit()
@@ -620,22 +634,31 @@ def _rank_candidates(
     use_llm: bool,
 ) -> list[dict[str, Any]]:
     notice_text = _notice_product_text(product)
-    lexical_ranked = sorted(
-        (
-            {
-                "catalog": catalog,
-                "lexical_score": lexical_similarity(notice_text, _catalog_product_text(catalog)),
-            }
-            for catalog in catalog_products
-        ),
-        key=lambda item: item["lexical_score"],
-        reverse=True,
-    )[:PRESELECT_LIMIT]
+    candidates = [
+        {
+            "catalog": catalog,
+            "lexical_score": lexical_similarity(notice_text, _catalog_product_text(catalog)),
+        }
+        for catalog in catalog_products
+    ]
 
     if AI_FEATURES_ENABLED:
-        _attach_semantic_scores(product, lexical_ranked, embedding_cache=embedding_cache)
+        _attach_semantic_scores(product, candidates, embedding_cache=embedding_cache)
+
+    # O corte acontece depois da fusao lexical + semantica. Assim um produto
+    # semanticamente correto nao e eliminado apenas por usar vocabulario
+    # diferente do item do edital.
+    hybrid_ranked = sorted(
+        candidates,
+        key=lambda item: combine_scores(
+            item["lexical_score"],
+            item.get("semantic_score"),
+            None,
+        ).overall_score,
+        reverse=True,
+    )[:PRESELECT_LIMIT]
     ranked: list[dict[str, Any]] = []
-    for candidate in lexical_ranked:
+    for candidate in hybrid_ranked:
         llm_payload = None
         if use_llm and (candidate.get("semantic_score") or candidate["lexical_score"]) >= 0.5 and len(ranked) < 2:
             llm_payload = try_llm_rerank(
@@ -706,16 +729,9 @@ def _attach_semantic_scores(
 ) -> None:
     notice_key = f"notice:{product.id}"
     notice_text = _notice_product_text(product)
-    entries = [(notice_key, notice_text)]
-    for candidate in ranked_candidates:
-        entries.append((f"catalog:{candidate['catalog'].id}", _catalog_product_text(candidate["catalog"])))
-
-    missing = [(key, text) for key, text in entries if key not in embedding_cache and normalize_text(text)]
-    if missing:
+    if notice_key not in embedding_cache and normalize_text(notice_text):
         try:
-            vectors = embed_texts_batch([text for _, text in missing])
-            for (key, _), vector in zip(missing, vectors):
-                embedding_cache[key] = vector
+            embedding_cache[notice_key] = embed_texts_batch([notice_text])[0]
         except Exception:
             return
 
@@ -724,8 +740,12 @@ def _attach_semantic_scores(
         return
 
     for candidate in ranked_candidates:
-        catalog_embedding = embedding_cache.get(f"catalog:{candidate['catalog'].id}")
-        candidate["semantic_score"] = cosine_similarity(notice_embedding, catalog_embedding) if catalog_embedding else None
+        catalog_embedding = getattr(candidate["catalog"], "embedding", None)
+        candidate["semantic_score"] = (
+            cosine_similarity(notice_embedding, catalog_embedding)
+            if catalog_embedding is not None
+            else None
+        )
 
 
 def _load_notice(db: Session, current_user: User, notice_id: str) -> CrmNotice:

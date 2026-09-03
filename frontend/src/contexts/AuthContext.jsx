@@ -23,6 +23,18 @@ export function AuthProvider({ children }) {
 
   // Ao montar, verifica se há token salvo e carrega o usuário
   useEffect(() => {
+    if (localStorage.getItem('demo_mode') === '1') {
+      setUser({
+        id: 'demo-user',
+        email: 'demo@empresa.com.br',
+        full_name: 'Demo Produto',
+        role: 'admin',
+        tenant_id: 'demo',
+      })
+      setLoading(false)
+      return
+    }
+
     authApi.me()
       .then(res => setUser(res.data))
       .catch(() => clearPortalSessionStorage())
@@ -41,6 +53,23 @@ export function AuthProvider({ children }) {
     const meRes = await authApi.me()
     setUser(meRes.data)
     return meRes.data
+  }, [])
+
+  const enterDemo = useCallback(() => {
+    const demoUser = {
+      id: 'demo-user',
+      email: 'demo@empresa.com.br',
+      full_name: 'Demo Produto',
+      role: 'admin',
+      tenant_id: 'demo',
+    }
+
+    localStorage.removeItem('access_token')
+    localStorage.setItem('demo_mode', '1')
+    localStorage.setItem('tenant_slug', 'demo')
+    localStorage.setItem('user_role', 'admin')
+    setUser(demoUser)
+    return demoUser
   }, [])
 
   const register = useCallback(async (payload) => {
@@ -67,7 +96,7 @@ export function AuthProvider({ children }) {
   const isEditor = user?.role === 'admin' || user?.role === 'editor'
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, isAdmin, isEditor }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, enterDemo, isAdmin, isEditor }}>
       {children}
     </AuthContext.Provider>
   )

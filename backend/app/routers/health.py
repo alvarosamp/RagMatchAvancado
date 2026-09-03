@@ -23,7 +23,11 @@ def _check_ollama() -> None:
             os.getenv("OLLAMA_MODEL", "llama3.2:1b"),
             os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
         }
-        missing = sorted(model for model in required if model and model not in available)
+        missing = sorted(
+            model
+            for model in required
+            if model and not any(candidate == model or candidate.startswith(f"{model}:") for candidate in available)
+        )
         if missing:
             raise RuntimeError(f"modelos ausentes: {', '.join(missing)}")
     except Exception as exc:
