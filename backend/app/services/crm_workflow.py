@@ -7,16 +7,17 @@ POST_AUCTION_PHASES = ("judgment", "qualification", "appeals", "adjudication", "
 def validate_post_auction_transition(previous: str | None, target: str) -> None:
     if target not in POST_AUCTION_PHASES:
         raise ValueError("Etapa pos-disputa invalida.")
-    if previous is None:
-        if target != POST_AUCTION_PHASES[0]:
-            raise ValueError("O fluxo pos-disputa deve iniciar em Julgamento.")
-        return
-    if previous not in POST_AUCTION_PHASES:
+    if previous is not None and previous not in POST_AUCTION_PHASES:
         raise ValueError("A etapa pos-disputa atual e invalida.")
-    old_index = POST_AUCTION_PHASES.index(previous)
-    new_index = POST_AUCTION_PHASES.index(target)
-    if new_index > old_index + 1:
-        raise ValueError("O avanco deve ser sequencial; retornos a etapas anteriores sao permitidos.")
+
+
+def next_post_auction_phase(current: str | None) -> str:
+    if current is None:
+        return POST_AUCTION_PHASES[0]
+    if current not in POST_AUCTION_PHASES:
+        raise ValueError("A etapa pos-disputa atual e invalida.")
+    index = POST_AUCTION_PHASES.index(current)
+    return POST_AUCTION_PHASES[min(index + 1, len(POST_AUCTION_PHASES) - 1)]
 
 
 def ensure_not_last_active_admin(

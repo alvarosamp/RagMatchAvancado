@@ -59,7 +59,7 @@ from app.services.match_eval_dataset import (
     build_match_evaluation_dataset,
 )
 from app.services.ops_summary import summarize_crm
-from app.services.crm_workflow import POST_AUCTION_PHASES, validate_post_auction_transition
+from app.services.crm_workflow import POST_AUCTION_PHASES, next_post_auction_phase, validate_post_auction_transition
 from app.services.proposal_generator import (
     build_notice_proposal_docx,
     proposal_filename,
@@ -692,6 +692,57 @@ def crm_advance_notice(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital CRM nao encontrado.")
 
     previous_stage = notice.stage.value if hasattr(notice.stage, "value") else str(notice.stage)
+    previous_post_phase = (
+        notice.post_auction_phase.value
+        if hasattr(notice.post_auction_phase, "value")
+        else notice.post_auction_phase
+    )
+    if previous_post_phase or previous_stage == CrmNoticeStage.AUCTION.value:
+        try:
+            next_phase = next_post_auction_phase(previous_post_phase)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        if next_phase == previous_post_phase:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Edital ja esta na ultima etapa.")
+
+        now = _local_now()
+        notice.stage = CrmNoticeStage.RESULT
+        notice.post_auction_phase = CrmPostAuctionPhase(next_phase)
+        notice.post_auction_owner = current_user.id
+        if notice.post_auction_entered_at is None:
+            notice.post_auction_entered_at = now
+        db.add(
+            CrmPostAuctionTransition(
+                tenant_id=current_user.tenant_id,
+                notice_id=notice.id,
+                from_phase=previous_post_phase,
+                to_phase=next_phase,
+                user_id=current_user.id,
+                created_at=now,
+            )
+        )
+        db.add(
+            CrmNoticeHistory(
+                tenant_id=current_user.tenant_id,
+                notice_id=notice.id,
+                user_id=current_user.id,
+                action=f"Avancado para {next_phase}",
+                details={
+                    "from": previous_post_phase or previous_stage,
+                    "to": next_phase,
+                    "advanced_by": current_user.id,
+                },
+            )
+        )
+        db.commit()
+        return {
+            "ok": True,
+            "notice_id": notice.id,
+            "stage": CrmNoticeStage.RESULT.value,
+            "post_auction_phase": next_phase,
+            "advanced_by": current_user.id,
+        }
+
     next_stage = _next_notice_stage(previous_stage)
     if next_stage == previous_stage:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Edital ja esta na ultima etapa.")
