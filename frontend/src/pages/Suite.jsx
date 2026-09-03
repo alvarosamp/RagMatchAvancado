@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMarket } from '../contexts/MarketContext'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+const CRM_ENTRYPOINT = '/crm/'
 
 const MODULES = [
   {
@@ -49,7 +50,8 @@ const MODULES = [
     number: '06',
     title: 'CRM e pipeline',
     description: 'Funil de licitacoes para acompanhar decisao, responsaveis, itens, disputa e resultado.',
-    path: '/crm',
+    path: CRM_ENTRYPOINT,
+    external: true,
     cta: 'Abrir CRM',
     checks: ['Kanban', 'Responsaveis', 'Historico comercial'],
   },
@@ -106,7 +108,7 @@ function ModuleCard({ module }) {
           </span>
         ))}
       </div>
-      <button type="button" onClick={() => navigate(module.path)} className="btn-ghost mt-5 w-full">
+      <button type="button" onClick={() => module.external ? window.location.assign(module.path) : navigate(module.path)} className="btn-ghost mt-5 w-full">
         {module.cta}
       </button>
     </article>

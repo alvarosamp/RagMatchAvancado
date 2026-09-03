@@ -1,0 +1,12 @@
+services:
+  frontend:
+    image: alvarocareli/ragmatch-frontend:${FRONTEND_IMAGE_TAG:?FRONTEND_IMAGE_TAG obrigatorio para deploy de branch}
+    container_name: ragmatch-frontend-${DEPLOY_SLOT:-branch}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.ragmatch-frontend-${DEPLOY_SLOT:-branch}.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.ragmatch-frontend-${DEPLOY_SLOT:-branch}.entrypoints=websecure"
+      - "traefik.http.routers.ragmatch-frontend-${DEPLOY_SLOT:-branch}.tls=true"
+      - "traefik.http.routers.ragmatch-frontend-${DEPLOY_SLOT:-branch}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ragmatch-frontend-${DEPLOY_SLOT:-branch}.loadbalancer.server.port=80"

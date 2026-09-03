@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BriefcaseBusiness, FileText, Search, Upload } from 'lucide-react'
 import { documentsApi, downloadBlob, editaisApi, exportApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useMarket } from '../contexts/MarketContext'
 import { useToast } from '../contexts/ToastContext'
+import ActionCard from '../components/ui/ActionCard'
+import EmptyState from '../components/ui/EmptyState'
+import PageHeader from '../components/ui/PageHeader'
+import ProgressBar from '../components/ui/ProgressBar'
+import SectionCard from '../components/ui/SectionCard'
+import EditalRow from '../components/ui/EditalRow'
+import { EditalSkeleton } from '../components/ui/Skeleton'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+const CRM_ENTRYPOINT = '/crm/'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -22,44 +31,11 @@ async function readCrmSync() {
   } catch { return null }
 }
 
-const SUITE_STEPS = [
-  { key: 'radar', title: 'Radar de oportunidades', description: 'Encontre editais aderentes antes de importar para analise.', path: '/radar', cta: 'Buscar' },
-  { key: 'alerts', title: 'Alertas operacionais', description: 'Acompanhe prazos, filas, atrasos e proximas sessoes.', path: '/controle', cta: 'Acompanhar' },
-  { key: 'analysis', title: 'Analise IA do edital', description: 'Extraia requisitos, itens, riscos e perguntas do edital.', path: '/upload', cta: 'Analisar' },
-  { key: 'matching', title: 'Matching tecnico', description: 'Compare requisitos com catalogo, datasheets e gaps.', path: '/inteligencia/datasheets', cta: 'Comparar' },
-  { key: 'documents', title: 'Proposta e documentos', description: 'Transforme analises em relatorios e exportacoes.', path: '/relatorios', cta: 'Gerar' },
-  { key: 'crm', title: 'CRM e pipeline', description: 'Controle decisao, responsaveis, disputa e resultado.', path: '/crm', cta: 'Abrir' },
-]
-const VISIBLE_SUITE_STEPS = AI_FEATURES_ENABLED
-  ? SUITE_STEPS
-  : SUITE_STEPS.filter((step) => !['analysis', 'matching'].includes(step.key))
-
-function stepState(key, { nEditais, totalRequirements, jobs, crm }) {
-  if (key === 'radar') return { label: 'Disponivel', tone: 'blue' }
-  if (key === 'alerts') {
-    const pending = (jobs?.active_count ?? 0) + (jobs?.stale_count ?? 0) + (crm?.upcoming_auctions_count ?? 0)
-    return pending > 0 ? { label: `${pending} alertas`, tone: 'amber' } : { label: 'Sem pendencias', tone: 'emerald' }
-  }
-  if (key === 'analysis') return nEditais > 0 ? { label: `${nEditais} editais`, tone: 'emerald' } : { label: 'Importar edital', tone: 'slate' }
-  if (key === 'matching') return totalRequirements > 0 ? { label: `${totalRequirements} requisitos`, tone: 'emerald' } : { label: 'Aguardando analise', tone: 'slate' }
-  if (key === 'documents') return nEditais > 0 ? { label: 'Pronto para exportar', tone: 'blue' } : { label: 'Sem dados', tone: 'slate' }
-  if (key === 'crm') return (crm?.active_pipeline ?? 0) > 0 ? { label: `${crm.active_pipeline} ativos`, tone: 'emerald' } : { label: 'Criar pipeline', tone: 'slate' }
-  return { label: 'Disponivel', tone: 'slate' }
-}
-
-function stateClass(tone) {
-  if (tone === 'emerald') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-  if (tone === 'amber') return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
-  if (tone === 'blue') return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300'
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-}
-
 export default function Dashboard() {
   const [editais,     setEditais]     = useState([])
   const [loading,     setLoading]     = useState(true)
   const [exporting,   setExporting]   = useState(null)
   const [deleting,    setDeleting]    = useState(null)
-  const [apiOnline,   setApiOnline]   = useState(null)
   const [opsSummary,  setOpsSummary]  = useState(null)
   const [crmSync,     setCrmSync]     = useState(null)
   const [signatureAlert, setSignatureAlert] = useState(null)
@@ -79,8 +55,8 @@ export default function Dashboard() {
       if (!active) return
       const editalRows = eRes.status === 'fulfilled' && Array.isArray(eRes.value.data) ? eRes.value.data : []
       setEditais(editalRows)
-      if (oRes.status === 'fulfilled') { setOpsSummary(oRes.value.data); setApiOnline(true) }
-      else { setOpsSummary(null); setApiOnline(false) }
+      if (oRes.status === 'fulfilled') setOpsSummary(oRes.value.data)
+      else setOpsSummary(null)
       setCrmSync(cRes.status === 'fulfilled' ? cRes.value : null)
       setSignatureAlert(sRes?.data || null)
       setLoading(false)
@@ -120,66 +96,77 @@ export default function Dashboard() {
     }
   }
 
-  const totalChunks       = useMemo(() => opsSummary?.editais?.total_chunks       ?? editais.reduce((s, e) => s + (e.chunks || 0), 0),       [editais, opsSummary])
   const totalRequirements = useMemo(() => opsSummary?.editais?.total_requirements ?? editais.reduce((s, e) => s + (e.requirements || 0), 0), [editais, opsSummary])
   const jobs   = opsSummary?.jobs
   const crm    = opsSummary?.crm
   const nEditais = opsSummary?.editais?.total_editais ?? editais.length
 
+  const hasOperationalSignal = (
+    (jobs?.active_count ?? 0) > 0 ||
+    (jobs?.stale_count ?? 0) > 0 ||
+    (crm?.attention_required ?? 0) > 0 ||
+    (crm?.upcoming_auctions_count ?? 0) > 0 ||
+    signatureAlert?.count > 0
+  )
+  const hasActivity = nEditais > 0 || totalRequirements > 0 || (crm?.active_pipeline ?? 0) > 0 || hasOperationalSignal
+
+  const primaryActions = [
+    { key: 'upload', title: 'Analisar edital', description: 'Envie PDF ou JSON e transforme o edital em requisitos, riscos e itens acionaveis.', path: '/upload', cta: 'Enviar edital', enabled: isEditor, badge: 'Principal', badgeTone: 'blue', tone: 'blue' },
+    { key: 'radar', title: 'Encontrar oportunidades', description: 'Busque editais aderentes antes de gastar tempo importando documentos.', path: '/radar', cta: 'Abrir radar', enabled: true, badge: 'Captação', badgeTone: 'emerald', tone: 'slate' },
+    { key: 'crm', title: 'Acompanhar disputa', description: 'Organize funil, responsaveis, decisoes e proximas sessoes em um só lugar.', path: CRM_ENTRYPOINT, external: true, cta: 'Abrir CRM', enabled: true, badge: 'Gestão', badgeTone: 'slate', tone: 'slate' },
+  ]
+
+  const journeySteps = [
+    { label: 'Captar', active: true },
+    { label: 'Analisar', active: nEditais > 0 },
+    { label: 'Disputar', active: (crm?.active_pipeline ?? 0) > 0 },
+    { label: 'Acompanhar', active: hasOperationalSignal },
+  ]
+
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-5 p-5 lg:p-8">
 
-      {/* ── Cabeçalho ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-            {user?.tenant?.name || 'Portal'}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      <PageHeader
+        eyebrow={new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        title={user?.tenant?.name || 'Portal'}
+        description={nEditais > 0
+          ? 'Continue de onde parou: acompanhe editais, oportunidades e proximas acoes comerciais sem precisar entrar em cada modulo.'
+          : 'Comece pela acao que mais combina com o momento: enviar um edital para analise ou buscar oportunidades no radar.'}
+        primaryAction={isEditor ? { label: 'Enviar edital', onClick: () => navigate('/upload') } : null}
+        secondaryAction={{ label: 'Buscar oportunidades', onClick: () => navigate('/radar') }}
+      >
+        <div className="grid gap-3 md:grid-cols-4">
+          {journeySteps.map((step, index) => (
+            <div
+              key={step.label}
+              className={`rounded-lg border px-4 py-3 ${
+                step.active
+                  ? 'border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100'
+                  : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'
+              }`}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-current/60">Etapa {index + 1}</p>
+              <p className="mt-1 text-sm font-semibold">{step.label}</p>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          {apiOnline !== null && (
-            <span className={`flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border ${
-              apiOnline
-                ? 'border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400'
-                : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${apiOnline ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              {apiOnline ? 'API online' : 'API offline'}
-            </span>
-          )}
-          {isEditor && (
-            <button onClick={() => navigate('/upload')} className="btn-primary">
-              {market.labels.upload_source_document}
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* ── Números ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          { label: market.labels.source_document_plural_title, value: nEditais, action: () => navigate('/upload') },
-          { label: 'Chunks',     value: totalChunks.toLocaleString('pt-BR') },
-          { label: 'Requisitos', value: totalRequirements.toLocaleString('pt-BR') },
-          { label: 'CRM ativos', value: crm?.active_pipeline ?? '—',      action: () => navigate('/crm') },
-        ].map(({ label, value, action }) => (
-          <button
-            key={label}
-            type="button"
-            onClick={action}
-            disabled={!action}
-            className={`rounded-lg border p-4 text-left transition-colors
-              border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800
-              ${action ? 'hover:border-slate-300 dark:hover:bg-slate-700 cursor-pointer' : 'cursor-default'}`}
-          >
-            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
-          </button>
-        ))}
-      </div>
+        {hasActivity && (
+          <div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: 'Editais acompanhados', value: nEditais },
+              { label: 'Pontos analisados', value: totalRequirements.toLocaleString('pt-BR') },
+              { label: 'No pipeline', value: crm?.active_pipeline ?? 0 },
+              { label: 'Pendencias', value: (jobs?.stale_count ?? 0) + (crm?.attention_required ?? 0) + (signatureAlert?.count ?? 0) },
+            ].map(({ label, value }) => (
+              <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{loading ? '—' : value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </PageHeader>
 
       {signatureAlert?.count > 0 && (
         <button
@@ -194,60 +181,45 @@ export default function Dashboard() {
                 {signatureAlert.request?.document?.title || 'Abra a seção de documentos para continuar o processo.'}
               </p>
             </div>
-            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Leve-me</span>
+          <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Abrir assinatura</span>
           </div>
         </button>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">Suite de licitacoes</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Os 6 modulos principais para o usuario nao precisar assinar ferramentas separadas.
-            </p>
-          </div>
-          <button type="button" onClick={() => navigate('/suite')} className="btn-ghost">
-            Ver suite completa
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {VISIBLE_SUITE_STEPS.map((step) => {
-            const status = stepState(step.key, { nEditais, totalRequirements, jobs, crm })
-            return (
-              <button
-                key={step.key}
-                type="button"
-                onClick={() => navigate(step.path)}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-blue-200 hover:bg-white dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800 dark:hover:bg-slate-800"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-950 dark:text-white">{step.title}</p>
-                  <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-semibold ${stateClass(status.tone)}`}>
-                    {status.label}
-                  </span>
-                </div>
-                <p className="mt-2 min-h-[40px] text-xs leading-5 text-slate-500 dark:text-slate-400">{step.description}</p>
-                <p className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-300">{step.cta}</p>
-              </button>
-            )
-          })}
-        </div>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {primaryActions.filter((action) => action.enabled).map((action, index) => (
+          <ActionCard
+            key={action.key}
+            onClick={() => action.external ? window.location.assign(action.path) : navigate(action.path)}
+            title={action.title}
+            description={action.description}
+            cta={action.cta}
+            badge={action.badge}
+            badgeTone={action.badgeTone}
+            tone={index === 0 ? action.tone : 'slate'}
+            icon={
+              action.key === 'upload' ? (
+                <Upload className="h-5 w-5" />
+              ) : action.key === 'radar' ? (
+                <Search className="h-5 w-5" />
+              ) : (
+                <BriefcaseBusiness className="h-5 w-5" />
+              )
+            }
+          />
+        ))}
       </div>
 
       {/* ── Sinais operacionais ────────────────────────────────────────── */}
-      {!loading && (
+      {!loading && hasOperationalSignal && (
         <div className="grid gap-4 lg:grid-cols-2">
 
           {/* Fila de jobs */}
-          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">Fila de processamento</p>
-              <button onClick={() => navigate('/jobs')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
-                Ver tudo →
-              </button>
-            </div>
+          <SectionCard
+            title="Processamento"
+            description="Apenas o que precisa de acompanhamento operacional."
+            action={{ label: 'Ver tudo →', onClick: () => navigate('/jobs') }}
+          >
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 { label: 'Em andamento', value: jobs?.active_count ?? 0,  warn: (jobs?.active_count ?? 0) > 0 },
@@ -271,23 +243,24 @@ export default function Dashboard() {
                       <p className="truncate text-xs font-medium text-slate-800 dark:text-white">{job.label}</p>
                       <p className="text-[11px] text-slate-400 dark:text-slate-400">{job.status}</p>
                     </div>
-                    <span className="ml-3 text-sm font-bold text-slate-600 dark:text-red-400 flex-shrink-0">{job.progress_pct}%</span>
+                    <div className="ml-3 flex w-24 flex-shrink-0 items-center gap-2">
+                      <ProgressBar value={job.progress_pct} className="flex-1" />
+                      <span className="text-sm font-bold tabular-nums text-slate-600 dark:text-red-400">{job.progress_pct}%</span>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">Nenhum processamento em andamento.</p>
             )}
-          </div>
+          </SectionCard>
 
           {/* CRM */}
-          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">CRM comercial</p>
-              <button onClick={() => navigate('/crm')} className="text-xs text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white">
-                Abrir →
-              </button>
-            </div>
+          <SectionCard
+            title="Disputas e CRM"
+            description="Prazos, decisões e oportunidades pedindo atenção."
+            action={{ label: 'Abrir →', onClick: () => window.location.assign(CRM_ENTRYPOINT) }}
+          >
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
                 { label: 'Atenção',  value: crm?.attention_required    ?? 0, warn: (crm?.attention_required    ?? 0) > 0 },
@@ -315,87 +288,56 @@ export default function Dashboard() {
             ) : (
               <p className="text-xs text-slate-400 dark:text-slate-500">Nenhuma disputa nos próximos 7 dias.</p>
             )}
-          </div>
+          </SectionCard>
         </div>
       )}
 
-      {/* ── Editais ───────────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">{market.labels.source_document_plural_title}</p>
-          {crmSync && (
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              CRM em {formatDate(crmSync.builtAt)}
-            </p>
-          )}
-        </div>
+      {!loading && !hasOperationalSignal && (
+        <SectionCard>
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">Sem pendencias por enquanto</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Quando houver processamento, assinatura, disputa proxima ou item do CRM pedindo atencao, tudo aparece aqui.
+          </p>
+        </SectionCard>
+      )}
 
+      {/* ── Editais ───────────────────────────────────────────────────── */}
+      <SectionCard
+        title={market.labels.source_document_plural_title}
+        description={crmSync ? `CRM atualizado em ${formatDate(crmSync.builtAt)}` : 'Documentos enviados para análise e acompanhamento.'}
+      >
         {loading ? (
           <div className="space-y-2">
-            {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-slate-100 dark:bg-slate-900 animate-pulse" />)}
+            {[1,2,3].map(i => <EditalSkeleton key={i} />)}
           </div>
         ) : editais.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 py-12 text-center">
-            <p className="text-sm text-slate-400 dark:text-slate-400">{market.labels.empty_source_documents}</p>
-            {isEditor && (
-              <button onClick={() => navigate('/upload')} className="btn-primary mt-4">
-                {market.labels.send_first_source_document}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            title="Nenhum edital enviado ainda"
+            description="Envie o primeiro edital para liberar analise, requisitos, matching, relatorios e acompanhamento da disputa."
+            action={isEditor ? { label: market.labels.send_first_source_document, onClick: () => navigate('/upload') } : null}
+            icon={<FileText className="h-5 w-5" />}
+          />
         ) : (
           <div className="space-y-2">
             {editais.map(edital => (
-              <div
+              <EditalRow
                 key={edital.id}
                 onClick={() => navigate(`/editais/${edital.id}`)}
-                className="flex items-center gap-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 grid place-items-center">
-                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400">PDF</span>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{edital.filename}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-400 mt-0.5">
-                    {edital.chunks || 0} chunks · {edital.requirements || 0} requisitos
-                    {edital.parsed_at && ` · ${formatDate(edital.parsed_at)}`}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  {AI_FEATURES_ENABLED && (
-                    <>
-                      <button onClick={() => navigate(`/editais/${edital.id}/chat`)}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                        Chat
-                      </button>
-                      <button onClick={() => navigate(`/editais/${edital.id}/analise-llm`)}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                        Análise
-                      </button>
-                    </>
-                  )}
-                  {['xlsx','csv'].map(tipo => (
-                    <button key={tipo} onClick={e => handleExport(e, edital.id, tipo)}
-                      disabled={Boolean(exporting)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-40">
-                      {exporting === `${edital.id}-${tipo}` ? '…' : tipo.toUpperCase()}
-                    </button>
-                  ))}
-                  {isEditor && (
-                    <button onClick={e => handleDelete(e, edital)}
-                      disabled={deleting === edital.id}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-400 dark:text-slate-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-40">
-                      {deleting === edital.id ? '...' : 'Apagar'}
-                    </button>
-                  )}
-                </div>
-              </div>
+                edital={edital}
+                onChat={() => navigate(`/editais/${edital.id}/chat`)}
+                onAnalysis={() => navigate(`/editais/${edital.id}/analise-llm`)}
+                onExportXlsx={(event) => handleExport(event, edital.id, 'xlsx')}
+                onExportCsv={(event) => handleExport(event, edital.id, 'csv')}
+                onDelete={(event) => handleDelete(event, edital)}
+                exporting={exporting}
+                deleting={deleting}
+                aiEnabled={AI_FEATURES_ENABLED}
+                isEditor={isEditor}
+              />
             ))}
           </div>
         )}
-      </div>
+      </SectionCard>
     </div>
   )
 }

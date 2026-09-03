@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const CRM_ENTRYPOINT = '/crm/'
+const CRM_ENTRYPOINT = '/crm/index.html'
 
 export default function CrmHub() {
   useEffect(() => {

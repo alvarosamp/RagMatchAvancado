@@ -20,8 +20,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from pgvector.sqlalchemy import Vector
 
-from app.db.models import Base
+from app.db.models import Base, EMBEDDING_DIM
 
 
 def _uuid() -> str:
@@ -198,6 +199,12 @@ class CrmCatalogProduct(Base):
     notes = Column(Text)
     lpu_version = Column(String)
     lpu_drive_url = Column(Text)
+    embedding = Column(Vector(EMBEDDING_DIM))
+    embedding_model = Column(String)
+    embedding_provider = Column(String)
+    embedding_dimensions = Column(Integer)
+    embedding_source_hash = Column(String(64), index=True)
+    embedding_updated_at = Column(DateTime)
     is_active = Column(Boolean, nullable=False, default=True)
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

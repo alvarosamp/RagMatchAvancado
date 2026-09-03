@@ -2,3 +2,9 @@ services:
   api:
     ports: !override
       - "8001:8000"
+    volumes: !override
+      - ./backend:/app
+      - ./data:/data
+  migrate:
+    volumes: !override
+      - ./backend:/app

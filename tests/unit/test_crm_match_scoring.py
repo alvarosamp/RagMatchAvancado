@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+
+from app.services import crm_item_matcher
 from app.services.crm_match_scoring import build_match_summary, combine_scores, lexical_similarity, normalize_text, score_to_level
 from app.services.crm_item_matcher import build_product_reuse_signature
 
@@ -44,3 +47,32 @@ def test_build_product_reuse_signature_ignores_case_and_accents():
 
     assert original == equivalent
     assert original != different
+
+
+def test_hybrid_preselection_keeps_semantically_strong_candidate(monkeypatch):
+    notice_product = SimpleNamespace(
+        id="notice-item-1", description="computador portatil", product_code=None,
+        item_number=None, lot=None, notes=None,
+    )
+    lexical_candidate = SimpleNamespace(
+        id="lexical", name="computador portatil", brand=None, model=None, sku=None,
+        specification=None, description=None, keywords=None, notes=None,
+        embedding=[-1.0, 0.0],
+    )
+    semantic_candidate = SimpleNamespace(
+        id="semantic", name="laptop corporativo", brand=None, model=None, sku=None,
+        specification=None, description=None, keywords=None, notes=None,
+        embedding=[1.0, 0.0],
+    )
+    monkeypatch.setattr(crm_item_matcher, "AI_FEATURES_ENABLED", True)
+    monkeypatch.setattr(crm_item_matcher, "PRESELECT_LIMIT", 1)
+    monkeypatch.setattr(crm_item_matcher, "embed_texts_batch", lambda texts: [[1.0, 0.0]])
+
+    ranked = crm_item_matcher._rank_candidates(
+        notice_product,
+        [lexical_candidate, semantic_candidate],
+        embedding_cache={},
+        use_llm=False,
+    )
+
+    assert [item["catalog"].id for item in ranked] == ["semantic"]

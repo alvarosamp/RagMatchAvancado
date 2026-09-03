@@ -1,4 +1,4 @@
-const PORTAL_AUTH_KEYS = ['access_token', 'tenant_slug', 'user_role']
+const PORTAL_AUTH_KEYS = ['access_token', 'tenant_slug', 'user_role', 'demo_mode']
 const CRM_AUTH_KEY_PATTERN = /^sb-.*-auth-token/
 
 export function clearCrmSessionStorage() {

@@ -8,6 +8,7 @@ import { MarketProvider }        from './contexts/MarketContext'
 import './index.css'
 
 import PageLoader from './components/PageLoader'
+const Landing = lazy(() => import('./pages/Landing'))
 const Login = lazy(() => import('./pages/Login'))
 const InternalRegister = lazy(() => import('./pages/InternalRegister'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -63,6 +64,7 @@ createRoot(document.getElementById('root')).render(
           <AuthProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
@@ -87,6 +89,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
+            <Route path="/crm/*"                  element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
             <Route path="/editais/:id"            element={<PrivateRoute><EditalDetail  /></PrivateRoute>} />
             <Route path="/editais/:id/chat"       element={AI_FEATURES_ENABLED ? <PrivateRoute><EditalChat /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
@@ -101,7 +104,6 @@ createRoot(document.getElementById('root')).render(
               <PrivateRoute><AdminRoute><Usuarios /></AdminRoute></PrivateRoute>
             } />
 
-            <Route path="/"  element={<Navigate to="/dashboard" replace />} />
             <Route path="*"  element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </Suspense>
