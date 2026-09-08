@@ -262,12 +262,12 @@ Checklist operacional:
   - estado vazio padronizado;
   - contagem dos filtros ajustada para singular/plural.
 
-- [ ] 4.8. Calendario: refinamento visual completo
+- [x] 4.8. Calendario: refinamento visual completo
   - revisar celulas do calendario, marcadores de evento, hierarquia de sessoes e prazos;
   - conferir como dias com muitos editais se comportam;
   - validar visualizacao em tela menor e em tela grande.
 
-- [ ] 4.9. Popup de edital
+- [x] 4.9. Popup de edital
   - revisar tamanho, respiro, header, fechamento e botao de abrir em nova janela;
   - garantir que o modo embutido nao mostre menu lateral nem botao de voltar ao pipeline;
   - validar que a experiencia funciona igual saindo do Pipeline e do Calendario.
@@ -336,6 +336,10 @@ Criterios de aceite:
 
 Status:
 
+- Lote 3 concluido e validado no preview;
+- Calendario refinado com celulas mais legiveis, contagem de eventos por dia, ordenacao por horario e lista lateral mantendo o card compartilhado do edital;
+- popup do edital refinado com header mais informativo, data em destaque, etapa/status e botao de abrir em nova janela;
+- modo embutido conferido no popup sem menu lateral esquerdo e sem botao "Voltar para o pipeline";
 - Lote 2 concluido e validado no preview;
 - filtros, atalhos do funil, colunas e card compartilhado do edital revisados;
 - diretriz reforcada: compactar sem esconder informacoes operacionais; tooltips podem complementar, mas nao substituir informacao essencial visivel;
