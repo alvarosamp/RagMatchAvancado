@@ -272,7 +272,7 @@ Checklist operacional:
   - garantir que o modo embutido nao mostre menu lateral nem botao de voltar ao pipeline;
   - validar que a experiencia funciona igual saindo do Pipeline e do Calendario.
 
-- [ ] 4.10. Pagina do edital: cabecalho e acoes
+- [x] 4.10. Pagina do edital: cabecalho e acoes
   - revisar hierarquia do titulo, etapa, data, portal/orgao e acoes principais;
   - padronizar menu de tres pontos;
   - verificar se as acoes atuais tem nome, icone e posicao adequados.
@@ -336,6 +336,10 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.10 concluido e validado no preview;
+- cabecalho da pagina do edital reorganizado em identificacao, faixa de resumo operacional e acoes;
+- altura do cabecalho reduzida mantendo informacoes importantes visiveis: numero, UASG, portal, localidade, orgao, sessao e valor total;
+- acoes principais e marcadores de documentacao/analise tecnica ficaram visualmente separados, preservando tooltips e aria-labels;
 - Lote 3 concluido e validado no preview;
 - Calendario refinado com celulas mais legiveis, contagem de eventos por dia, ordenacao por horario e lista lateral mantendo o card compartilhado do edital;
 - popup do edital refinado com header mais informativo, data em destaque, etapa/status e botao de abrir em nova janela;
