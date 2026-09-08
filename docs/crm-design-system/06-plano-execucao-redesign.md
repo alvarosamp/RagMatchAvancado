@@ -282,7 +282,7 @@ Checklist operacional:
   - manter edicao campo a campo por icone;
   - conferir hover/foco dos icones de editar e acessibilidade por teclado.
 
-- [ ] 4.12. Aba Itens
+- [x] 4.12. Aba Itens
   - revisar layout por lote, itens em disputa, itens retirados e total do item;
   - manter valor total na parte inferior do card;
   - deixar pendente a nova solucao para lotes totalmente retirados ate detalharmos melhor as regras de negocio.
@@ -292,12 +292,12 @@ Checklist operacional:
   - depois revisar como mistura de checklist com biblioteca de arquivos;
   - garantir sinalizacao clara de documentos pendentes e assinatura solicitada.
 
-- [ ] 4.14. Abas internas restantes
+- [x] 4.14. Abas internas restantes
   - revisar Historico, sessoes/agendamento, disputa, pos-disputa, resultados e abas em implementacao;
   - padronizar cabecalhos internos, tabelas, listas, formularios e estados vazios;
   - verificar nomenclaturas e icones.
 
-- [ ] 4.15. Botoes, icones, menus e tooltips
+- [x] 4.15. Botoes, icones, menus e tooltips
   - garantir que botoes de ferramenta usem icones consistentes;
   - incluir tooltips em icones que possam gerar duvida;
   - padronizar acoes primarias, secundarias, destrutivas e menus de tres pontos.
@@ -336,6 +336,18 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.15 concluido e validado no preview;
+- botoes iconograficos revisados com descricoes por tooltip, title ou aria-label conforme o componente;
+- acoes de sessao, concorrente, documento, links externos e remocao de item receberam rotulos mais claros;
+- nomenclaturas visiveis remanescentes foram revisadas para manter acentos e linguagem consistente;
+- Item 4.14 concluido e validado no preview;
+- abas Sala de disputa, Match, Sessoes, Pos-disputa, Concorrentes e Historico receberam cabecalhos operacionais, superficies consistentes e revisao de nomenclaturas;
+- Historico passou a ser exibido como timeline compacta;
+- estado vazio de Pos-disputa foi alinhado com o padrao das demais abas;
+- Item 4.12 concluido e validado no preview;
+- Aba Itens recebeu revisao de nomenclaturas, acentos e consistencia visual dos cards de item;
+- valor total do item permanece no rodape do card, como decisao preservada;
+- itens retirados e lotes totalmente retirados seguem com a solucao atual; a nova solucao visual permanece como demanda separada ate detalhamento das regras de negocio;
 - Item 4.11 concluido e validado no preview;
 - Aba Informacoes refinada como ficha operacional com grupos mais leves, grid em ate tres colunas em telas largas e edicao campo a campo preservada por icone;
 - labels revisados para manter nomenclatura mais consistente com card e cabecalho do edital;
