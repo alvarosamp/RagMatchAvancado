@@ -17,7 +17,7 @@ codex/crm-design-system-layout
 Ultimo commit conhecido no repositorio principal:
 
 ```text
-b6cb883
+64d4013
 ```
 
 Branch do CRM fonte:
@@ -29,7 +29,7 @@ codex/crm-layout-redesign
 Ultimo commit conhecido no CRM fonte:
 
 ```text
-853d705
+a267f61
 ```
 
 Ambiente de validacao:
@@ -307,7 +307,7 @@ Checklist operacional:
   - padronizar cores e pesos para risco, pendencia, vencimento, assinatura e tarefas;
   - evitar alertas vermelhos misturados com dados comuns.
 
-- [ ] 4.17. Estados vazios, loading e erro
+- [x] 4.17. Estados vazios, loading e erro
   - padronizar mensagens de nenhum resultado, nenhum edital, sem documentos, sem itens e falhas de carregamento;
   - revisar loaders para nao parecerem desconectados do restante do layout;
   - garantir que estados vazios indiquem proximidade operacional sem virar texto explicativo longo.
@@ -336,6 +336,10 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.17 concluido e validado no preview;
+- componente reutilizavel EmptyState/LoadingState aplicado a pipeline, calendario, detalhe do edital, disputa, sessoes, concorrentes, match e resultados;
+- estados vazios passaram a usar superficie, icone, titulo e descricao curta, preservando a proximidade operacional;
+- loaders passaram a usar a mesma linguagem visual das superficies do CRM;
 - Item 4.16 concluido e validado no preview;
 - badges de etapa e resultado foram alinhados ao radius do design system;
 - card do edital passou a separar alertas fortes de metadados de pos-disputa;
