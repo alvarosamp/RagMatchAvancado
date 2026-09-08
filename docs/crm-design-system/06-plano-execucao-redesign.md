@@ -80,6 +80,7 @@ Fluxo de implementacao:
 - [x] Decisao visual registrada: modo claro precisa ter mais presenca; modo escuro precisa ser menos pesado.
 - [x] Decisao de manter "Suspensos" como nomenclatura do setor.
 - [x] Decisao de manter pipeline e calendario como duas visualizacoes dos mesmos dados.
+- [x] Decisao de estabelecer Editais como modulo principal, com escolha de visualizacao por Pipeline ou Calendario.
 - [x] Decisao de tratar ganhos e perdidos separados por abrirem caminho para modulo futuro de pos-venda/atas/pedidos/faturamento.
 - [x] Criacao dos documentos de design system:
   - `01-estrategico-conceitual.md`
@@ -172,7 +173,30 @@ Criterios de aceite:
 - cores semanticas continuam reconheciveis;
 - o CRM parece mais agradavel para uso diario.
 
-### 3. Revisao visual geral
+### 3. Unificacao estrutural do modulo Editais
+
+Objetivo:
+
+- tratar Editais como modulo principal do CRM;
+- permitir alternar entre visualizacao por Pipeline e visualizacao por Calendario dentro do mesmo modulo;
+- reduzir duplicacao de regras, filtros, componentes, acoes e popups.
+
+Implementar:
+
+- criar uma estrutura comum para o modulo Editais;
+- manter filtros compartilhados entre Pipeline e Calendario;
+- manter o mesmo popup de edital nas duas visualizacoes;
+- compartilhar nomenclaturas, icones, acoes e regras de card/evento;
+- preservar URLs diretas para pipeline e calendario quando forem uteis.
+
+Criterios de aceite:
+
+- usuario entende que Pipeline e Calendario sao duas formas de ver os mesmos editais;
+- filtros e acoes funcionam de forma consistente nas duas visualizacoes;
+- abrir edital em popup nao faz o usuario perder o contexto da visualizacao atual;
+- o codigo fica mais simples de manter por reduzir duplicacoes entre telas.
+
+### 4. Revisao visual geral
 
 Objetivo:
 
