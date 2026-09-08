@@ -277,7 +277,7 @@ Checklist operacional:
   - padronizar menu de tres pontos;
   - verificar se as acoes atuais tem nome, icone e posicao adequados.
 
-- [ ] 4.11. Aba Informacoes
+- [x] 4.11. Aba Informacoes
   - revisar ficha operacional, agrupamentos, labels, campos editaveis e icones de edicao;
   - manter edicao campo a campo por icone;
   - conferir hover/foco dos icones de editar e acessibilidade por teclado.
@@ -336,6 +336,11 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.11 concluido e validado no preview;
+- Aba Informacoes refinada como ficha operacional com grupos mais leves, grid em ate tres colunas em telas largas e edicao campo a campo preservada por icone;
+- labels revisados para manter nomenclatura mais consistente com card e cabecalho do edital;
+- campos existentes mas pouco visiveis foram expostos: titulo/objeto e link da proposta do fornecedor;
+- textos multilineares importantes deixam de ser cortados visualmente nesta aba;
 - Item 4.10 concluido e validado no preview;
 - cabecalho da pagina do edital reorganizado em identificacao, faixa de resumo operacional e acoes;
 - altura do cabecalho reduzida mantendo informacoes importantes visiveis: numero, UASG, portal, localidade, orgao, sessao e valor total;
