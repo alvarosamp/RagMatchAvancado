@@ -129,6 +129,8 @@ Fluxo de implementacao:
 - [x] Filtros de Editais extraidos para painel e regra compartilhados entre Pipeline e Calendario.
 - [x] Fonte de editais compartilhada entre Pipeline e Calendario por hook comum.
 - [x] Filtros preservados na URL ao alternar entre Pipeline e Calendario.
+- [x] Revisao visual inicial do Calendario: legenda enquadrada em superficie consistente, lista lateral sem card dentro de card e estado vazio padronizado.
+- [x] Contagem dos filtros ajustada para singular/plural.
 
 ## Pausado para revisao posterior
 
@@ -221,22 +223,127 @@ Objetivo:
 
 - eliminar incongruencias deixadas pelas fases anteriores.
 
-Verificar:
+Checklist operacional:
 
-- tamanhos de fonte;
-- espacamentos;
-- radius;
-- uso de cards;
-- botoes com icones;
-- tooltips;
-- estados vazios;
-- responsividade basica.
+- [x] 4.1. Base visual global
+  - revisar tokens de cor ainda inconsistentes nos temas claro e escuro;
+  - conferir contraste de textos, bordas, superficies, badges e alertas;
+  - padronizar sombras, bordas, radius e densidade das superficies do CRM.
+
+- [x] 4.2. Layout principal e navegacao
+  - revisar menu lateral, cabecalho interno, largura maxima das telas e respiros;
+  - reduzir arredondamentos exagerados onde nao combinam com o design system;
+  - garantir que Editais, Suspensos, Resultados e demais modulos tenham estrutura visual coerente.
+
+- [x] 4.3. Modulo Editais: cabecalho e alternancia de visualizacao
+  - revisar cabecalho compartilhado de Editais;
+  - validar botoes Pipeline/Calendario como selecao de visualizacao;
+  - conferir se a descricao e as acoes do topo nao competem com os filtros.
+
+- [ ] 4.4. Filtros e controles operacionais
+  - compactar o painel de filtros sem esconder informacoes importantes;
+  - padronizar inputs, selects, botoes de preset, limpar filtros e contagem;
+  - avaliar se filtros avancados devem ficar recolhiveis em uma segunda etapa.
+
+- [ ] 4.5. Pipeline e colunas
+  - revisar altura minima, largura, cabecalho das colunas e estados vazios;
+  - melhorar hierarquia visual dos contadores por etapa;
+  - garantir boa leitura em tela grande sem desperdicar espaco.
+
+- [ ] 4.6. Card do edital no Pipeline e no Calendario
+  - revisar densidade do card para ficar compacto sem ficar truncado demais;
+  - conferir agrupamento de informacoes por contexto: prazo, portal/cidade/orgao, valor, documentacao, itens e alertas;
+  - manter icones e nomenclaturas congruentes com a pagina do edital;
+  - validar prioridade no topo direito como area reservada para ranking manual futuro.
+
+- [x] 4.7. Calendario: estrutura visual inicial
+  - legenda enquadrada em superficie consistente;
+  - lista lateral sem card dentro de card;
+  - estado vazio padronizado;
+  - contagem dos filtros ajustada para singular/plural.
+
+- [ ] 4.8. Calendario: refinamento visual completo
+  - revisar celulas do calendario, marcadores de evento, hierarquia de sessoes e prazos;
+  - conferir como dias com muitos editais se comportam;
+  - validar visualizacao em tela menor e em tela grande.
+
+- [ ] 4.9. Popup de edital
+  - revisar tamanho, respiro, header, fechamento e botao de abrir em nova janela;
+  - garantir que o modo embutido nao mostre menu lateral nem botao de voltar ao pipeline;
+  - validar que a experiencia funciona igual saindo do Pipeline e do Calendario.
+
+- [ ] 4.10. Pagina do edital: cabecalho e acoes
+  - revisar hierarquia do titulo, etapa, data, portal/orgao e acoes principais;
+  - padronizar menu de tres pontos;
+  - verificar se as acoes atuais tem nome, icone e posicao adequados.
+
+- [ ] 4.11. Aba Informacoes
+  - revisar ficha operacional, agrupamentos, labels, campos editaveis e icones de edicao;
+  - manter edicao campo a campo por icone;
+  - conferir hover/foco dos icones de editar e acessibilidade por teclado.
+
+- [ ] 4.12. Aba Itens
+  - revisar layout por lote, itens em disputa, itens retirados e total do item;
+  - manter valor total na parte inferior do card;
+  - deixar pendente a nova solucao para lotes totalmente retirados ate detalharmos melhor as regras de negocio.
+
+- [ ] 4.13. Aba Documentacao
+  - manter pausada ate detalhamento do fluxo;
+  - depois revisar como mistura de checklist com biblioteca de arquivos;
+  - garantir sinalizacao clara de documentos pendentes e assinatura solicitada.
+
+- [ ] 4.14. Abas internas restantes
+  - revisar Historico, sessoes/agendamento, disputa, pos-disputa, resultados e abas em implementacao;
+  - padronizar cabecalhos internos, tabelas, listas, formularios e estados vazios;
+  - verificar nomenclaturas e icones.
+
+- [ ] 4.15. Botoes, icones, menus e tooltips
+  - garantir que botoes de ferramenta usem icones consistentes;
+  - incluir tooltips em icones que possam gerar duvida;
+  - padronizar acoes primarias, secundarias, destrutivas e menus de tres pontos.
+
+- [ ] 4.16. Badges, alertas e status
+  - diferenciar informacao comum, status operacional e alerta forte;
+  - padronizar cores e pesos para risco, pendencia, vencimento, assinatura e tarefas;
+  - evitar alertas vermelhos misturados com dados comuns.
+
+- [ ] 4.17. Estados vazios, loading e erro
+  - padronizar mensagens de nenhum resultado, nenhum edital, sem documentos, sem itens e falhas de carregamento;
+  - revisar loaders para nao parecerem desconectados do restante do layout;
+  - garantir que estados vazios indiquem proximidade operacional sem virar texto explicativo longo.
+
+- [ ] 4.18. Responsividade e telas menores
+  - validar Pipeline, Calendario, popup e pagina do edital em larguras menores;
+  - garantir que textos nao estourem botoes, cards, abas ou filtros;
+  - conferir scroll horizontal do pipeline e comportamento do popup.
+
+- [ ] 4.19. Acessibilidade basica
+  - revisar foco visivel, aria-labels de botoes iconicos e navegacao por teclado;
+  - conferir contraste dos estados de hover/focus;
+  - garantir que tooltips nao sejam a unica forma de entender a acao.
+
+- [ ] 4.20. Revisao final de consistencia
+  - percorrer telas principais do CRM em modo claro e escuro;
+  - comparar Pipeline, Calendario e pagina do edital lado a lado;
+  - atualizar checklist com excecoes e novas demandas encontradas;
+  - validar build e preview antes do commit final da revisao.
 
 Criterios de aceite:
 
 - telas principais parecem pertencer ao mesmo sistema;
 - informacoes importantes continuam acessiveis;
 - interface fica mais fluida e organizada.
+
+Status:
+
+- Lote 1 concluido e validado no preview;
+- base visual global, layout principal, navegacao e cabecalho do modulo Editais revisados;
+- Calendario recebeu ajustes de estrutura visual e consistencia de superficies;
+- ainda falta revisar detalhe do edital, abas internas, botoes, tooltips, estados vazios e responsividade basica.
+
+Demandas novas identificadas durante a revisao:
+
+- [ ] Revisar a solucao visual dos itens retirados e lotes totalmente retirados apos detalhar regras de negocio e fluxo.
 
 ## Regras para atualizar este arquivo
 
