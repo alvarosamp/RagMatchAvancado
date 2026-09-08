@@ -123,6 +123,9 @@ Fluxo de implementacao:
 - [x] Modo embutido do edital remove o botao "Voltar para o pipeline" para evitar navegacao interna no popup.
 - [x] Menu de acoes do card alinhado com a pagina do edital: abrir agendamento do edital, abrir tabela de disputa, avancar etapa, marcar documentacao analisada, marcar analise tecnica realizada, enviar para pos-disputa, suspender edital, descartar, reabrir e excluir edital.
 - [x] Tokens globais do modo claro e modo escuro revisados para dar mais presenca ao claro e suavizar o escuro.
+- [x] Modulo Editais iniciou unificacao visual com cabecalho compartilhado e alternancia Pipeline/Calendario.
+- [x] Calendario removido como item independente do menu lateral e tratado como visualizacao dentro de Editais.
+- [x] Cards da lista lateral do Calendario unificados com o layout dos cards do Pipeline.
 
 ## Pausado para revisao posterior
 
@@ -201,6 +204,12 @@ Criterios de aceite:
 - filtros e acoes funcionam de forma consistente nas duas visualizacoes;
 - abrir edital em popup nao faz o usuario perder o contexto da visualizacao atual;
 - o codigo fica mais simples de manter por reduzir duplicacoes entre telas.
+
+Status:
+
+- iniciado com cabecalho compartilhado e alternancia de visualizacao;
+- cards da lista lateral do Calendario ja usam o mesmo layout visual do Pipeline;
+- ainda falta unificar filtros, fonte de dados e regras compartilhadas para concluir a etapa estrutural.
 
 ### 4. Revisao visual geral
 
