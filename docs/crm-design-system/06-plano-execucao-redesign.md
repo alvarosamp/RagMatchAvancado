@@ -126,6 +126,9 @@ Fluxo de implementacao:
 - [x] Modulo Editais iniciou unificacao visual com cabecalho compartilhado e alternancia Pipeline/Calendario.
 - [x] Calendario removido como item independente do menu lateral e tratado como visualizacao dentro de Editais.
 - [x] Cards da lista lateral do Calendario unificados com o layout dos cards do Pipeline.
+- [x] Filtros de Editais extraidos para painel e regra compartilhados entre Pipeline e Calendario.
+- [x] Fonte de editais compartilhada entre Pipeline e Calendario por hook comum.
+- [x] Filtros preservados na URL ao alternar entre Pipeline e Calendario.
 
 ## Pausado para revisao posterior
 
@@ -207,9 +210,10 @@ Criterios de aceite:
 
 Status:
 
-- iniciado com cabecalho compartilhado e alternancia de visualizacao;
-- cards da lista lateral do Calendario ja usam o mesmo layout visual do Pipeline;
-- ainda falta unificar filtros, fonte de dados e regras compartilhadas para concluir a etapa estrutural.
+- concluido em primeira versao;
+- cabecalho, alternancia de visualizacao, popup, cards da lista lateral, filtros, fonte de dados e regras de filtragem/sort foram compartilhados;
+- filtros sao preservados na URL ao alternar entre Pipeline e Calendario;
+- manter em observacao: volume real de editais no Calendario e necessidade futura de paginacao, carregamento por intervalo mensal ou filtro server-side.
 
 ### 4. Revisao visual geral
 
