@@ -287,10 +287,10 @@ Checklist operacional:
   - manter valor total na parte inferior do card;
   - deixar pendente a nova solucao para lotes totalmente retirados ate detalharmos melhor as regras de negocio.
 
-- [ ] 4.13. Aba Documentacao
-  - manter pausada ate detalhamento do fluxo;
-  - depois revisar como mistura de checklist com biblioteca de arquivos;
-  - garantir sinalizacao clara de documentos pendentes e assinatura solicitada.
+- [x] 4.13. Aba Documentacao
+  - revisar como mistura de checklist com biblioteca de arquivos;
+  - garantir sinalizacao clara de documentos pendentes e assinatura solicitada;
+  - manter como demanda futura o refinamento das regras especificas de fluxo documental.
 
 - [x] 4.14. Abas internas restantes
   - revisar Historico, sessoes/agendamento, disputa, pos-disputa, resultados e abas em implementacao;
@@ -312,17 +312,18 @@ Checklist operacional:
   - revisar loaders para nao parecerem desconectados do restante do layout;
   - garantir que estados vazios indiquem proximidade operacional sem virar texto explicativo longo.
 
-- [ ] 4.18. Responsividade e telas menores
+- [x] 4.18. Responsividade e telas menores
   - validar Pipeline, Calendario, popup e pagina do edital em larguras menores;
   - garantir que textos nao estourem botoes, cards, abas ou filtros;
   - conferir scroll horizontal do pipeline e comportamento do popup.
 
-- [ ] 4.19. Acessibilidade basica
+- [x] 4.19. Acessibilidade basica
   - revisar foco visivel, aria-labels de botoes iconicos e navegacao por teclado;
   - conferir contraste dos estados de hover/focus;
-  - garantir que tooltips nao sejam a unica forma de entender a acao.
+  - garantir que tooltips nao sejam a unica forma de entender a acao;
+  - revisar comportamento de foco e teclado na barra de abas, especialmente em telas menores.
 
-- [ ] 4.20. Revisao final de consistencia
+- [x] 4.20. Revisao final de consistencia
   - percorrer telas principais do CRM em modo claro e escuro;
   - comparar Pipeline, Calendario e pagina do edital lado a lado;
   - atualizar checklist com excecoes e novas demandas encontradas;
@@ -336,6 +337,27 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.13 concluido e validado no preview;
+- Aba Documentacao reorganizada como checklist operacional por categoria, com resumo de conferidos, pendentes e assinaturas;
+- cada documento passou a separar identificacao/status, arquivo vinculado e acoes de biblioteca em blocos proprios;
+- assinatura pendente e documento sem arquivo ficaram sinalizados como atencao operacional sem se misturar com metadados comuns;
+- categorias documentais principais receberam exibicao com nomenclatura normalizada.
+- Item 4.18 concluido e validado no preview responsivo;
+- cards do pipeline passaram a empilhar metricas e status em telas menores, preservando leitura sem esconder informacoes;
+- acoes do card ficam visiveis em interfaces de toque e continuam discretas com hover/foco em telas maiores;
+- filtros, cabecalho do modulo, calendario, popup e detalhe do edital foram ajustados para reduzir estouros e compressao visual;
+- observacao para 4.19: revisar foco e navegacao por teclado nas abas depois da validacao visual;
+- Item 4.19 concluido e validado no preview;
+- calendario passou a anunciar data e quantidade de eventos para leitores de tela, com foco visivel nos dias e controles mensais rotulados;
+- filtros, seletores e acoes iconograficas receberam rotulos acessiveis onde o texto visivel nao era suficiente;
+- barra de abas usa navegacao manual: setas, Home e End movem o foco; Enter ou Espaco abre a aba; Page Up e Page Down preservam a rolagem da pagina;
+- ao editar um campo, o foco segue para o controle de edicao e retorna ao botao ao concluir;
+- popup do edital permite fechar com Esc mesmo com foco dentro da pagina incorporada e devolve o foco ao elemento que o abriu.
+- Item 4.20 concluido e validado no preview;
+- Pipeline, Calendario, detalhe do edital e popup foram conferidos em modo claro e escuro;
+- filtros do modulo passaram a usar tres colunas em larguras de desktop com menu lateral, mantendo todos os valores legiveis; a grade completa fica reservada para telas muito largas;
+- cabecalho do edital passou a distribuir suas metricas em duas linhas fora de telas muito largas, com orgao ocupando mais espaco para evitar truncamento desnecessario;
+- build e verificacao de tipos concluidos; o lint continua com um erro e um aviso preexistentes em `src/lib/local-preview.ts` e `src/hooks/useCrmNotices.ts`, fora do escopo desta revisao.
 - Item 4.17 concluido e validado no preview;
 - componente reutilizavel EmptyState/LoadingState aplicado a pipeline, calendario, detalhe do edital, disputa, sessoes, concorrentes, match e resultados;
 - estados vazios passaram a usar superficie, icone, titulo e descricao curta, preservando a proximidade operacional;
