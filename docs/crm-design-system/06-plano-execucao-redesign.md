@@ -122,6 +122,7 @@ Fluxo de implementacao:
 - [x] Popup do calendario tambem carrega a pagina do edital em modo embutido, sem menu lateral esquerdo.
 - [x] Modo embutido do edital remove o botao "Voltar para o pipeline" para evitar navegacao interna no popup.
 - [x] Menu de acoes do card alinhado com a pagina do edital: abrir agendamento do edital, abrir tabela de disputa, avancar etapa, marcar documentacao analisada, marcar analise tecnica realizada, enviar para pos-disputa, suspender edital, descartar, reabrir e excluir edital.
+- [x] Tokens globais do modo claro e modo escuro revisados para dar mais presenca ao claro e suavizar o escuro.
 
 ## Pausado para revisao posterior
 
@@ -172,6 +173,11 @@ Criterios de aceite:
 - modo escuro tem camadas mais suaves;
 - cores semanticas continuam reconheciveis;
 - o CRM parece mais agradavel para uso diario.
+
+Status:
+
+- aplicado e validado no preview;
+- manter em observacao durante a revisao visual geral para ajustes finos de contraste e densidade.
 
 ### 3. Unificacao estrutural do modulo Editais
 
