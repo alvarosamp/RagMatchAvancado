@@ -302,7 +302,7 @@ Checklist operacional:
   - incluir tooltips em icones que possam gerar duvida;
   - padronizar acoes primarias, secundarias, destrutivas e menus de tres pontos.
 
-- [ ] 4.16. Badges, alertas e status
+- [x] 4.16. Badges, alertas e status
   - diferenciar informacao comum, status operacional e alerta forte;
   - padronizar cores e pesos para risco, pendencia, vencimento, assinatura e tarefas;
   - evitar alertas vermelhos misturados com dados comuns.
@@ -336,6 +336,11 @@ Criterios de aceite:
 
 Status:
 
+- Item 4.16 concluido e validado no preview;
+- badges de etapa e resultado foram alinhados ao radius do design system;
+- card do edital passou a separar alertas fortes de metadados de pos-disputa;
+- alertas de data, risco de instalacao, assinatura pendente, documentos pendentes e direcionamento de marca foram padronizados por severidade;
+- status do Match passou a usar tokens semanticos em vez de cores soltas;
 - Item 4.15 concluido e validado no preview;
 - botoes iconograficos revisados com descricoes por tooltip, title ou aria-label conforme o componente;
 - acoes de sessao, concorrente, documento, links externos e remocao de item receberam rotulos mais claros;
