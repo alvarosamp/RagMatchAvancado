@@ -240,17 +240,17 @@ Checklist operacional:
   - validar botoes Pipeline/Calendario como selecao de visualizacao;
   - conferir se a descricao e as acoes do topo nao competem com os filtros.
 
-- [ ] 4.4. Filtros e controles operacionais
+- [x] 4.4. Filtros e controles operacionais
   - compactar o painel de filtros sem esconder informacoes importantes;
   - padronizar inputs, selects, botoes de preset, limpar filtros e contagem;
   - avaliar se filtros avancados devem ficar recolhiveis em uma segunda etapa.
 
-- [ ] 4.5. Pipeline e colunas
+- [x] 4.5. Pipeline e colunas
   - revisar altura minima, largura, cabecalho das colunas e estados vazios;
   - melhorar hierarquia visual dos contadores por etapa;
   - garantir boa leitura em tela grande sem desperdicar espaco.
 
-- [ ] 4.6. Card do edital no Pipeline e no Calendario
+- [x] 4.6. Card do edital no Pipeline e no Calendario
   - revisar densidade do card para ficar compacto sem ficar truncado demais;
   - conferir agrupamento de informacoes por contexto: prazo, portal/cidade/orgao, valor, documentacao, itens e alertas;
   - manter icones e nomenclaturas congruentes com a pagina do edital;
@@ -336,6 +336,9 @@ Criterios de aceite:
 
 Status:
 
+- Lote 2 concluido e validado no preview;
+- filtros, atalhos do funil, colunas e card compartilhado do edital revisados;
+- diretriz reforcada: compactar sem esconder informacoes operacionais; tooltips podem complementar, mas nao substituir informacao essencial visivel;
 - Lote 1 concluido e validado no preview;
 - base visual global, layout principal, navegacao e cabecalho do modulo Editais revisados;
 - Calendario recebeu ajustes de estrutura visual e consistencia de superficies;
@@ -344,6 +347,7 @@ Status:
 Demandas novas identificadas durante a revisao:
 
 - [ ] Revisar a solucao visual dos itens retirados e lotes totalmente retirados apos detalhar regras de negocio e fluxo.
+- [ ] Avaliar, nos proximos lotes, se algum componente ficou visualmente aglutinado apos a compactacao do Pipeline.
 
 ## Regras para atualizar este arquivo
 
