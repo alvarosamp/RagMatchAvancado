@@ -2,8 +2,8 @@
   "app": "bid-buddy",
   "sourcePath": "bid-buddy",
   "sourceRepo": "https://github.com/LuizH-Paiva/bid-buddy.git",
-  "sourceBranch": "main",
-  "sourceCommit": "feeeb73fc1b78e1a0ea550303c7ba1db71668cc2",
-  "builtAt": "2026-09-09T16:30:02.458Z",
+  "sourceBranch": "codex/crm-layout-redesign",
+  "sourceCommit": "a267f61a2424f5c0cefc712a4bec6cdba1af0a42",
+  "builtAt": "2026-09-08T14:05:02.528Z",
   "pulledBeforeBuild": false
 }

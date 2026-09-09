@@ -1,7 +1,8 @@
 import sys
 import importlib.util
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -11,7 +12,19 @@ _HEALTH_PATH = Path(__file__).resolve().parents[2] / "backend" / "app" / "router
 _SPEC = importlib.util.spec_from_file_location("health_under_test", _HEALTH_PATH)
 health = importlib.util.module_from_spec(_SPEC)
 assert _SPEC and _SPEC.loader
-_SPEC.loader.exec_module(health)
+
+_db_session_stub = ModuleType("app.db.session")
+_db_session_stub.SessionLocal = MagicMock()
+_logs_config_stub = ModuleType("app.logs.config")
+_logs_config_stub.logger = MagicMock()
+with patch.dict(
+    sys.modules,
+    {
+        "app.db.session": _db_session_stub,
+        "app.logs.config": _logs_config_stub,
+    },
+):
+    _SPEC.loader.exec_module(health)
 
 
 def _ollama_with_models(*models: str):

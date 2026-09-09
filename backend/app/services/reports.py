@@ -146,8 +146,8 @@ def build_executive_report(
                 "valor_estimado": _money(notice.estimated_value),
                 "resumo": _notice_summary(notice),
                 "orgao": getattr(getattr(notice, "organ", None), "name", None),
-                "modalidade": notice.modality,
-                "uf": notice.state,
+                "modalidade": getattr(notice, "modality", None),
+                "uf": getattr(notice, "state", None),
             }
             for notice in upcoming
         ],

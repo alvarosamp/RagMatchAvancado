@@ -146,8 +146,6 @@ def summarize_crm(notices: Iterable[Any], now: datetime | None = None) -> dict[s
     for notice in rows:
         stage = str(_enum_value(getattr(notice, "stage", "triage")) or "triage")
         outcome = str(_enum_value(getattr(notice, "outcome", "pending")) or "pending")
-        post_phase = _enum_value(getattr(notice, "post_auction_phase", None))
-
         stage_counts[stage] += 1
         outcome_counts[outcome] += 1
 

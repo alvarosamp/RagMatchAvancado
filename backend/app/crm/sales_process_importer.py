@@ -12,7 +12,7 @@ from openpyxl import load_workbook
 
 if TYPE_CHECKING:
     from app.auth.models import Tenant, User
-    from app.crm.models import CrmNotice
+    from app.crm.models import CrmNotice, CrmOrgan, CrmPortal
 
 
 PRIMARY_EMAIL = "alvaroscareli@gmail.com"

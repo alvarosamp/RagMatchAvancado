@@ -21,7 +21,6 @@ from openpyxl.styles import Font, PatternFill
 from sqlalchemy import MetaData, Table, func, inspect, select
 
 from app.db.session import engine
-from app.logs.config import logger
 from app.services.object_storage import get_bytes, object_storage_enabled, put_bytes
 
 
