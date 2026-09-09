@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { reportsApi } from '../api/client'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const BRL = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
-})
-
-const DATE = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
 })
 
 const STAGE_LABELS = {
@@ -25,7 +21,7 @@ function money(value) {
 
 function formatDate(value) {
   if (!value) return 'Sem data'
-  return DATE.format(new Date(value))
+  return formatBrasiliaDateTime(value, 'Sem data')
 }
 
 function Kpi({ label, value, helper }) {

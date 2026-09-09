@@ -50,6 +50,7 @@ export const authApi = {
   login:    (data)  => api.post('/auth/login', data),
   logout:   ()      => api.post('/auth/logout'),
   me:       ()      => api.get('/auth/me'),
+  updateProfile: (data) => api.patch('/auth/me/profile', data),
   createUser: (data) => api.post('/auth/users', data),
   listUsers:  ()    => api.get('/auth/users'),
 }

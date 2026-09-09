@@ -39,6 +39,8 @@ export default function InternalRegister() {
     tenant_slug: '',
     tenant_name: '',
     full_name: '',
+    cpf: '',
+    phone: '',
   })
 
   useEffect(() => {
@@ -65,6 +67,8 @@ export default function InternalRegister() {
         tenant_slug: form.tenant_slug,
         tenant_name: form.tenant_name,
         full_name: form.full_name,
+        cpf: form.cpf,
+        phone: form.phone,
       })
       navigate('/dashboard')
     } catch (err) {
@@ -127,6 +131,29 @@ export default function InternalRegister() {
               className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
               value={form.full_name}
               onChange={(event) => set('full_name', event.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>CPF</label>
+            <input
+              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
+              inputMode="numeric"
+              value={form.cpf}
+              onChange={(event) => set('cpf', event.target.value)}
+              placeholder="000.000.000-00"
+              required
+            />
+          </div>
+          <div>
+            <label className={`block text-xs font-mono mb-1.5 uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>Telefone</label>
+            <input
+              className={`w-full rounded-lg px-4 py-2.5 text-sm ${isLight ? 'border border-slate-300 bg-slate-50 text-slate-900' : 'input'}`}
+              type="tel"
+              value={form.phone}
+              onChange={(event) => set('phone', event.target.value)}
+              placeholder="(61) 99999-9999"
+              required
             />
           </div>
           <div className="sm:col-span-2">

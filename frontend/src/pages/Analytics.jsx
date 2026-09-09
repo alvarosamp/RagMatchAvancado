@@ -7,6 +7,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import api from '../api/client'
+import { formatBrasiliaDate } from '../utils/datetime'
 
 // ── Hooks de dados ────────────────────────────────────────────────────────────
 
@@ -417,7 +418,7 @@ export default function Analytics() {
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-xs text-white truncate">{e.filename}</p>
                     <p className="font-mono text-xs text-gray-600">
-                      {e.data ? new Date(e.data).toLocaleDateString('pt-BR') : '—'} · {e.total_resultados} matchings
+                      {formatBrasiliaDate(e.data)} · {e.total_resultados} matchings
                     </p>
                   </div>
                   <div className="text-right">

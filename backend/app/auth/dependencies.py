@@ -91,10 +91,12 @@ def get_current_user(
         # Valida assinatura e expiração, retorna o payload
         payload = decode_access_token(token)
 
-        # "sub" = subject = email do usuário
+        # Prefer the immutable numeric id. The email remains as a compatibility
+        # fallback for tokens issued before the user profile became editable.
+        user_id = payload.get("user_id")
         email: str = payload.get("sub")
-        if not email:
-            logger.warning("[Auth] Token sem claim 'sub'")
+        if not user_id and not email:
+            logger.warning("[Auth] Token sem identificador de usuario")
             raise credentials_exception
 
     except JWTError as e:
@@ -102,8 +104,7 @@ def get_current_user(
         logger.warning(f"[Auth] JWT inválido: {e}")
         raise credentials_exception
 
-    # Busca o usuário no banco pelo email
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.id == int(user_id)).first() if user_id else db.query(User).filter(User.email == email).first()
     if not user:
         logger.warning(f"[Auth] Usuário não encontrado: {email}")
         raise credentials_exception

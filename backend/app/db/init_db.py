@@ -19,6 +19,7 @@ def init_db(db: Session) -> dict:
     try:
         ensure_pgvector_extension(db)
         Base.metadata.create_all(bind=engine)
+        _ensure_user_schema_updates()
         _ensure_job_enum_updates()
         _ensure_crm_schema_updates()
         _ensure_analysis_items_schema_updates()
@@ -36,6 +37,19 @@ def init_db(db: Session) -> dict:
     except Exception as exc:
         logger.error(f"Erro ao inicializar banco: {exc}")
         raise
+
+
+def _ensure_user_schema_updates() -> None:
+    inspector = inspect(engine)
+    _ensure_columns(
+        inspector,
+        "users",
+        {
+            "cpf": "VARCHAR(11)",
+            "phone": "VARCHAR(11)",
+        },
+    )
+    _ensure_indexes(["CREATE INDEX IF NOT EXISTS ix_users_cpf ON users (cpf)"])
 
 
 def _ensure_crm_schema_updates() -> None:

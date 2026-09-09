@@ -3,13 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import { documentsApi, downloadBlob } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
-function fmtDate(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
+const fmtDate = (value) => formatBrasiliaDateTime(value, '-')
 
 function fmtSize(value) {
   const size = Number(value || 0)

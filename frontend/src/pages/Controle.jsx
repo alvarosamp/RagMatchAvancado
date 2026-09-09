@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { editaisApi, jobsApi } from '../api/client'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
@@ -95,11 +96,7 @@ function EditalMobileCard({ row, navigate }) {
 
 
 function fmt(dt) {
-  if (!dt) return '—'
-  return new Date(dt).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return formatBrasiliaDateTime(dt, '—', { year: '2-digit' })
 }
 
 function fmtDur(secs) {

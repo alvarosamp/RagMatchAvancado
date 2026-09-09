@@ -33,6 +33,38 @@ from pydantic import BaseModel, EmailStr, field_validator
 from app.auth.password_policy import assert_valid_password
 
 
+def _required_text(value: str, label: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} e obrigatorio")
+    return normalized
+
+
+def _normalize_cpf(value: str) -> str:
+    import re
+
+    digits = re.sub(r"\D", "", value)
+    if len(digits) != 11 or digits == digits[0] * 11:
+        raise ValueError("CPF deve conter 11 digitos validos")
+    for size in (9, 10):
+        total = sum(int(digit) * weight for digit, weight in zip(digits[:size], range(size + 1, 1, -1)))
+        check = 11 - total % 11
+        if check >= 10:
+            check = 0
+        if check != int(digits[size]):
+            raise ValueError("CPF invalido")
+    return digits
+
+
+def _normalize_phone(value: str) -> str:
+    import re
+
+    digits = re.sub(r"\D", "", value)
+    if len(digits) not in {10, 11}:
+        raise ValueError("Telefone deve conter DDD e 10 ou 11 digitos")
+    return digits
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Tenant schemas
 # ─────────────────────────────────────────────────────────────────────────────
@@ -83,7 +115,9 @@ class UserCreate(BaseModel):
     """
     email:     EmailStr   # Pydantic valida o formato do email automaticamente
     password:  str
-    full_name: Optional[str] = None
+    full_name: str
+    cpf: str
+    phone: str
     role:      str = "editor"   # padrão: editor (não admin)
 
     @field_validator("password")
@@ -96,6 +130,21 @@ class UserCreate(BaseModel):
     @classmethod
     def normalizar_email(cls, v: str) -> str:
         return str(v).strip().lower()
+
+    @field_validator("full_name")
+    @classmethod
+    def nome_obrigatorio(cls, value: str) -> str:
+        return _required_text(value, "Nome")
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_valido(cls, value: str) -> str:
+        return _normalize_cpf(value)
+
+    @field_validator("phone")
+    @classmethod
+    def telefone_valido(cls, value: str) -> str:
+        return _normalize_phone(value)
 
     @field_validator("role")
     @classmethod
@@ -114,6 +163,9 @@ class UserResponse(BaseModel):
     id:        int
     email:     str
     full_name: Optional[str]
+    cpf: Optional[str] = None
+    phone: Optional[str] = None
+    profile_complete: bool = False
     role:      str
     is_active: bool
     updated_at: Optional[datetime] = None
@@ -132,6 +184,33 @@ class UserRoleUpdate(BaseModel):
         if normalized not in {"admin", "editor", "viewer"}:
             raise ValueError("role deve ser admin, editor ou viewer")
         return normalized
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: str
+    cpf: str
+    phone: str
+    email: EmailStr
+
+    @field_validator("full_name")
+    @classmethod
+    def nome_obrigatorio(cls, value: str) -> str:
+        return _required_text(value, "Nome")
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_valido(cls, value: str) -> str:
+        return _normalize_cpf(value)
+
+    @field_validator("phone")
+    @classmethod
+    def telefone_valido(cls, value: str) -> str:
+        return _normalize_phone(value)
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, value: str) -> str:
+        return str(value).strip().lower()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -191,7 +270,9 @@ class RegisterRequest(BaseModel):
     # Dados do usuário admin
     email:       EmailStr
     password:    str
-    full_name:   Optional[str] = None
+    full_name:   str
+    cpf:         str
+    phone:       str
 
     @field_validator("tenant_slug")
     @classmethod
@@ -210,3 +291,18 @@ class RegisterRequest(BaseModel):
     @classmethod
     def senha_forte(cls, v: str) -> str:
         return assert_valid_password(v)
+
+    @field_validator("full_name")
+    @classmethod
+    def nome_obrigatorio(cls, value: str) -> str:
+        return _required_text(value, "Nome")
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_valido(cls, value: str) -> str:
+        return _normalize_cpf(value)
+
+    @field_validator("phone")
+    @classmethod
+    def telefone_valido(cls, value: str) -> str:
+        return _normalize_phone(value)

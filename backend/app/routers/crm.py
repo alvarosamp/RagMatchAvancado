@@ -164,6 +164,7 @@ def suspend_notice(
     db.add(CrmNoticeHistory(tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
         action="Edital suspenso", details={"from": previous, "to": "suspended", "reason": reason, "session_id": latest.id}))
     db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
     return {"ok": True, "notice_id": notice.id, "session_id": latest.id, "status": "suspended"}
 
 
@@ -204,6 +205,7 @@ def resume_notice(
         action="Edital retomado", details={"from": "suspended", "to": "scheduled", "reason": reason,
         "previous_session_id": latest.id, "new_session_id": resumed.id, "scheduled_at": scheduled_at.isoformat()}))
     db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
     return {"ok": True, "notice_id": notice.id, "session_id": resumed.id, "status": "scheduled", "scheduled_at": scheduled_at}
 
 
@@ -235,6 +237,7 @@ def transition_post_auction(
     db.add(CrmNoticeHistory(tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
         action="Etapa pos-disputa alterada", details={"from": previous, "to": target, "note": transition.note}))
     db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
     return {"ok": True, "notice_id": notice.id, "from_phase": previous, "phase": target, "entered_at": now}
 
 
@@ -313,6 +316,7 @@ def link_catalog_product_and_datasheet(
     document.notes = f"Produto do catalogo: {catalog_product.name}." if current else f"Produto do catalogo: {catalog_product.name}. Nenhum datasheet cadastrado."
     attach_catalog_datasheet_to_notice_document(db, link=link, document=document, datasheet=current)
     db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
     return {
         "notice_product_id": notice_product.id,
         "catalog_product_id": catalog_product.id,
@@ -713,6 +717,7 @@ def crm_advance_notice(
         )
     )
     db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
     return {
         "ok": True,
         "notice_id": notice.id,
