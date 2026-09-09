@@ -175,7 +175,6 @@ def _row_to_record(
     availability = _clean_text(_get(values, "disponibilidade"))
     if _is_unavailable(availability):
         return None
-    price = _to_float(_get(values, "preco", "preço", "price"))
     cost = _to_float(_get(values, "custo final", "custo", "preco", "preco final", "preço", "preço final", "price"))
     minimum_price = _to_float_or_none(_get(values, "preco minimo", "preco mínimo", "preço minimo", "preço mínimo"))
     category = _category_from_sheet(sheet_name)

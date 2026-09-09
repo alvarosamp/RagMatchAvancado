@@ -22,8 +22,11 @@ def normalize_identifier(value: Any) -> str:
 
 def edital_business_key_from_result(result: dict[str, Any]) -> str | None:
     edital = result.get("edital") or {}
+    n_interno = result.get("n_interno")
+    if _meaningful(n_interno):
+        return f"edital|n-interno|{normalize_identifier(n_interno)}"
+
     parts = [
-        result.get("n_interno"),
         edital.get("numero_pregao"),
         edital.get("numero_licitacao"),
         edital.get("orgao"),

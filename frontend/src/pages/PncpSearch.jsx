@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { pncpApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
+import { formatBrasiliaDate } from '../utils/datetime'
 
 const MODALIDADES = [
   '', 'Pregão Eletrônico', 'Concorrência Eletrônica', 'Concorrência',
@@ -59,7 +60,7 @@ function ResultCard({ item, onImport, importing }) {
             )}
             {item.data_publicacao_pncp && (
               <p className="text-xs text-gray-500 font-mono">
-                📅 {new Date(item.data_publicacao_pncp).toLocaleDateString('pt-BR')}
+                📅 {formatBrasiliaDate(item.data_publicacao_pncp)}
               </p>
             )}
             {item.valor_total_estimado != null && item.valor_total_estimado > 0 && (

@@ -16,7 +16,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 # ── Setup de mocks ANTES de importar o chunker ───────────────────────────────
 # O chunker faz: from app.pipeline.docling_parser import ParsedChunk, ParsedDocument
@@ -45,21 +45,24 @@ def _stub(name: str, **attrs) -> ModuleType:
     return m
 
 
-# Injeta stubs antes do import do chunker
-sys.modules["app.pipeline.docling_parser"] = _stub(
-    "app.pipeline.docling_parser",
-    ParsedChunk=ParsedChunk,
-    ParsedDocument=ParsedDocument,
-)
-sys.modules["app.logs.config"] = _stub("app.logs.config", logger=MagicMock())
-
 # Agora podemos importar o módulo diretamente pelo caminho
 import importlib.util
 
 _CHUNKER_PATH = Path(__file__).resolve().parents[2] / "backend" / "app" / "pipeline" / "chunker.py"
 _spec = importlib.util.spec_from_file_location("chunker_mod", _CHUNKER_PATH)
 _mod = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_mod)
+with patch.dict(
+    sys.modules,
+    {
+        "app.pipeline.docling_parser": _stub(
+            "app.pipeline.docling_parser",
+            ParsedChunk=ParsedChunk,
+            ParsedDocument=ParsedDocument,
+        ),
+        "app.logs.config": _stub("app.logs.config", logger=MagicMock()),
+    },
+):
+    _spec.loader.exec_module(_mod)
 
 chunk_document = _mod.chunk_document
 _apply_sliding_window = _mod._apply_sliding_window

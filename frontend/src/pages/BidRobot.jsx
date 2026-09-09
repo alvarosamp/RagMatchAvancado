@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { bidRobotApi } from '../api/client'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -218,7 +219,7 @@ export default function BidRobot() {
                   {selected.events.map((event) => (
                     <div key={event.id} className="rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700">
                       <p className="font-medium text-slate-800 dark:text-slate-200">{event.message}</p>
-                      <p className="text-xs text-slate-400">{new Date(event.created_at).toLocaleString('pt-BR')}</p>
+                      <p className="text-xs text-slate-400">{formatBrasiliaDateTime(event.created_at)}</p>
                     </div>
                   ))}
                 </div>
@@ -306,7 +307,7 @@ function ChatLog({ session, onSend }) {
         {chatEvents.map((event) => (
           <div key={event.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900/60">
             <p className="text-slate-700 dark:text-slate-200">{event.message}</p>
-            <p className="text-xs text-slate-400">{new Date(event.created_at).toLocaleString('pt-BR')} {event.payload?.source === 'portal_sync' ? '· sincronizado do portal' : '· manual'}</p>
+            <p className="text-xs text-slate-400">{formatBrasiliaDateTime(event.created_at)} {event.payload?.source === 'portal_sync' ? '· sincronizado do portal' : '· manual'}</p>
           </div>
         ))}
       </div>

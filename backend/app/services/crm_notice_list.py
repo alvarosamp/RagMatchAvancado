@@ -14,7 +14,7 @@ import os
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import and_, case, exists, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
@@ -23,6 +23,8 @@ from app.crm.models import (
     CrmNotice,
     CrmNoticeDocument,
     CrmNoticeProduct,
+    CrmNoticeSession,
+    CrmNoticeSessionStatus,
     CrmNoticeStage,
     CrmPostAuctionPhase,
 )
@@ -57,6 +59,20 @@ def list_notice_summaries(
     )
     if not include_discarded:
         query = query.filter(CrmNotice.outcome != "not_pursued")
+    latest_session_sequence = (
+        db.query(func.max(CrmNoticeSession.sequence))
+        .filter(CrmNoticeSession.notice_id == CrmNotice.id)
+        .correlate(CrmNotice)
+        .scalar_subquery()
+    )
+    currently_suspended = exists().where(
+        and_(
+            CrmNoticeSession.notice_id == CrmNotice.id,
+            CrmNoticeSession.sequence == latest_session_sequence,
+            CrmNoticeSession.status == CrmNoticeSessionStatus.SUSPENDED,
+        )
+    )
+    query = query.filter(~currently_suspended)
     if stage:
         query = _filter_pipeline_column(query, stage)
     if cursor_values:
@@ -287,7 +303,7 @@ def _cache_key(tenant_id: int, limit: int, cursor: str | None, stage: str | None
             version = int(client.get(f"crm:notice-list:version:{tenant_id}") or 0)
         except Exception:
             pass
-    raw = json.dumps(["v2-item-previews", tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
+    raw = json.dumps(["v3-hide-suspended", tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
     return "crm:notice-list:" + base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 

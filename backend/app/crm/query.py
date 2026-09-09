@@ -25,7 +25,6 @@ from app.crm.models import (
     CrmNoticeStage,
     CrmOrgan,
     CrmPortal,
-    CrmPostAuctionPhase,
     CrmPostAuctionTransition,
 )
 from app.crm.timezone import brasilia_wall_clock

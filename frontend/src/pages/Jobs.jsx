@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { jobsApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const isCancelled = (job) =>
   job.status === 'failed' && String(job.error_message || '').toLowerCase().startsWith('cancelado pelo usu')
@@ -186,7 +187,7 @@ export default function Jobs() {
                     </p>
                   </div>
                   <span className="text-xs font-body text-gray-500">
-                    {item.finished_at ? new Date(item.finished_at).toLocaleString('pt-BR') : '-'}
+                    {formatBrasiliaDateTime(item.finished_at, '-')}
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-gray-300">{item.error_message || 'Erro nao informado.'}</p>
@@ -232,7 +233,7 @@ export default function Jobs() {
                 <div className="w-36 flex-shrink-0">
                   <p className="text-xs text-gray-400">{job.id.slice(0, 8)}...</p>
                   <p className="text-xs text-gray-600">
-                    {job.created_at ? new Date(job.created_at).toLocaleString('pt-BR') : '-'}
+                    {formatBrasiliaDateTime(job.created_at, '-')}
                   </p>
                 </div>
 

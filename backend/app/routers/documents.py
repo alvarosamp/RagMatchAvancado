@@ -107,6 +107,8 @@ def list_signature_users(
             "id": row.id,
             "email": row.email,
             "full_name": row.full_name,
+            "cpf": row.cpf,
+            "phone": row.phone,
             "role": row.role,
         }
         for row in users
@@ -177,6 +179,8 @@ def generate_and_archive_document(
         signer_data = dict(options.get("signer") or {})
         signer_data.setdefault("name", signer.full_name or signer.email)
         signer_data.setdefault("email", signer.email)
+        signer_data.setdefault("cpf", signer.cpf)
+        signer_data.setdefault("phone", signer.phone)
         signer_data.setdefault("role", signer.role)
         options["signer"] = signer_data
     try:
