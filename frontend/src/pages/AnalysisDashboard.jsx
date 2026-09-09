@@ -7,6 +7,7 @@ import StatCard from '../components/ui/StatCard'
 import Card from '../components/ui/Card'
 import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
 import { BreakdownGroup } from '../components/ui/MetricBar'
+import { formatBrasiliaTime } from '../utils/datetime'
 
 const PERIODS = [
   { key: 'day', label: 'Diario' },
@@ -162,7 +163,7 @@ export default function AnalysisDashboard() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Business Intelligence</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">Editais</h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              {lastUpdated ? `Atualizado as ${lastUpdated.toLocaleTimeString('pt-BR')}` : 'Carregando dados'} · atualizacao automatica a cada 20s
+              {lastUpdated ? `Atualizado as ${formatBrasiliaTime(lastUpdated)}` : 'Carregando dados'} · atualizacao automatica a cada 20s
             </p>
           </div>
 

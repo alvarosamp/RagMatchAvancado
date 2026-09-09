@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { pncpApi } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
+import { formatBrasiliaDate as formatDateInBrasilia, formatBrasiliaDateTime as formatDateTimeInBrasilia } from '../utils/datetime'
 
 const CRM_ENTRYPOINT = '/crm/'
 
@@ -44,19 +45,8 @@ function formatCurrency(value) {
   return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function formatDate(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString('pt-BR')
-}
-
-function formatDateTime(value) {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString('pt-BR')
-}
+const formatDate = (value) => formatDateInBrasilia(value, '-')
+const formatDateTime = (value) => formatDateTimeInBrasilia(value, '-')
 
 function priorityClass(priority) {
   if (priority === 'alta') return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'

@@ -12,16 +12,12 @@ import ProgressBar from '../components/ui/ProgressBar'
 import SectionCard from '../components/ui/SectionCard'
 import EditalRow from '../components/ui/EditalRow'
 import { EditalSkeleton } from '../components/ui/Skeleton'
+import { formatBrasiliaDate, formatBrasiliaDateTime } from '../utils/datetime'
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 const CRM_ENTRYPOINT = '/crm/'
 
-function formatDate(value) {
-  if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
+const formatDate = (value) => formatBrasiliaDateTime(value)
 
 async function readCrmSync() {
   try {
@@ -127,7 +123,7 @@ export default function Dashboard() {
     <div className="mx-auto max-w-7xl space-y-5 p-5 lg:p-8">
 
       <PageHeader
-        eyebrow={new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        eyebrow={formatBrasiliaDate(new Date(), '—', { weekday: 'long', day: 'numeric', month: 'long', year: undefined })}
         title={user?.tenant?.name || 'Portal'}
         description={nEditais > 0
           ? 'Continue de onde parou: acompanhe editais, oportunidades e proximas acoes comerciais sem precisar entrar em cada modulo.'
@@ -281,7 +277,7 @@ export default function Dashboard() {
                 {crm.upcoming_auctions.map(n => (
                   <div key={n.id} className="rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2">
                     <p className="text-xs font-medium text-slate-800 dark:text-white truncate">{n.number || n.title || 'Sem número'}</p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">{n.organ_name || '—'} · {n.auction_date ? new Date(n.auction_date).toLocaleDateString('pt-BR') : 'sem data'}</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">{n.organ_name || '—'} · {n.auction_date ? formatBrasiliaDate(n.auction_date) : 'sem data'}</p>
                   </div>
                 ))}
               </div>

@@ -29,7 +29,7 @@ export default function Usuarios() {
   const [users,   setUsers]   = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
-  const [form,    setForm]    = useState({ email: '', password: '', full_name: '', role: 'editor' })
+  const [form,    setForm]    = useState({ email: '', password: '', full_name: '', cpf: '', phone: '', role: 'editor' })
   const [creating,setCreating]= useState(false)
   const [showForm,setShowForm]= useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -55,7 +55,7 @@ export default function Usuarios() {
 
     try {
       await authApi.createUser(form)
-      setForm({ email: '', password: '', full_name: '', role: 'editor' })
+      setForm({ email: '', password: '', full_name: '', cpf: '', phone: '', role: 'editor' })
       setShowForm(false)
       load()
     } catch (err) {
@@ -106,7 +106,7 @@ export default function Usuarios() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-mono text-gray-400 mb-1.5">Nome completo</label>
-                <input className="input" placeholder="Maria Silva" value={form.full_name} onChange={e => set('full_name', e.target.value)} />
+                <input className="input" placeholder="Maria Silva" value={form.full_name} onChange={e => set('full_name', e.target.value)} required />
               </div>
               <div>
                 <label className="block text-xs font-mono text-gray-400 mb-1.5">Role</label>
@@ -115,6 +115,16 @@ export default function Usuarios() {
                   <option value="viewer">Viewer</option>
                   <option value="admin">Admin</option>
                 </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono text-gray-400 mb-1.5">CPF</label>
+                <input className="input" inputMode="numeric" placeholder="000.000.000-00" value={form.cpf} onChange={e => set('cpf', e.target.value)} required />
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-gray-400 mb-1.5">Telefone</label>
+                <input className="input" type="tel" placeholder="(61) 99999-9999" value={form.phone} onChange={e => set('phone', e.target.value)} required />
               </div>
             </div>
             {error && <p className="text-sm text-red-fail font-mono">{error}</p>}
@@ -142,6 +152,7 @@ export default function Usuarios() {
                 <div className="flex-1 min-w-0">
                   <p className="font-body font-medium text-white text-sm">{u.full_name || '—'}</p>
                   <p className="text-xs text-gray-500 font-mono truncate">{u.email}</p>
+                  <p className="text-xs text-gray-600 font-mono truncate">{u.cpf || 'CPF pendente'} · {u.phone || 'telefone pendente'}</p>
                 </div>
                 <span className={cfg.cls}>{cfg.label}</span>
                 <div className={`w-2 h-2 rounded-full ${u.is_active ? 'bg-green-match' : 'bg-red-fail'}`} />

@@ -81,11 +81,12 @@ const NAV_STRUCTURE = [
 ]
 
 export default function Layout({ children }) {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout, isAdmin, updateProfile } = useAuth()
   const market = useMarket()
   const location = useLocation()
   const [theme, setTheme] = useState(() => readStoredTheme())
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(() => user?.profile_complete === false && user?.id !== 'demo-user')
   const isLight = theme === 'light'
 
   const baseItems = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).filter(
@@ -115,6 +116,10 @@ export default function Layout({ children }) {
   useEffect(() => {
     setMobileNavOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (user?.profile_complete === false && user?.id !== 'demo-user') setProfileOpen(true)
+  }, [user?.id, user?.profile_complete])
 
   useEffect(() => {
     if (!mobileNavOpen) return undefined
@@ -227,6 +232,15 @@ export default function Layout({ children }) {
           </div>
         )}
 
+        {user?.profile_complete === false && user?.id !== 'demo-user' && (
+          <div className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 md:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p><strong>Complete seu cadastro.</strong> Precisamos do seu nome, CPF, telefone e e-mail para documentos e assinaturas.</p>
+              <button className="rounded-lg bg-amber-700 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-800" onClick={() => setProfileOpen(true)}>Completar agora</button>
+            </div>
+          </div>
+        )}
+
         <main className="flex-1 overflow-y-auto">{children}</main>
 
         <footer className="border-t border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 md:px-6 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -235,6 +249,63 @@ export default function Layout({ children }) {
             <p>{market.app.footer_secondary}</p>
           </div>
         </footer>
+      </div>
+      {profileOpen && user?.profile_complete === false && (
+        <ProfileCompletionDialog user={user} onSave={updateProfile} onClose={() => setProfileOpen(false)} />
+      )}
+    </div>
+  )
+}
+
+function ProfileCompletionDialog({ user, onSave, onClose }) {
+  const [form, setForm] = useState({
+    full_name: user?.full_name || '',
+    cpf: user?.cpf || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
+  async function submit(event) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await onSave(form)
+      onClose()
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail || 'Nao foi possivel salvar o cadastro.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="profile-completion-title">
+      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <h2 id="profile-completion-title" className="text-xl font-bold text-slate-950 dark:text-white">Complete seu cadastro</h2>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Esses dados identificam voce nos documentos e nas solicitacoes de assinatura.</p>
+        <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="sm:col-span-2 text-sm font-medium text-slate-700 dark:text-slate-200">Nome completo
+            <input className="input mt-1.5" value={form.full_name} onChange={(event) => set('full_name', event.target.value)} required />
+          </label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">CPF
+            <input className="input mt-1.5" inputMode="numeric" placeholder="000.000.000-00" value={form.cpf} onChange={(event) => set('cpf', event.target.value)} required />
+          </label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Telefone
+            <input className="input mt-1.5" type="tel" placeholder="(61) 99999-9999" value={form.phone} onChange={(event) => set('phone', event.target.value)} required />
+          </label>
+          <label className="sm:col-span-2 text-sm font-medium text-slate-700 dark:text-slate-200">E-mail
+            <input className="input mt-1.5" type="email" value={form.email} onChange={(event) => set('email', event.target.value)} required />
+          </label>
+          {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
+          <div className="sm:col-span-2 flex justify-end gap-3">
+            <button type="button" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300" onClick={onClose}>Agora nao</button>
+            <button type="submit" disabled={saving} className="btn-primary px-4 py-2 disabled:opacity-50">{saving ? 'Salvando...' : 'Salvar cadastro'}</button>
+          </div>
+        </form>
       </div>
     </div>
   )

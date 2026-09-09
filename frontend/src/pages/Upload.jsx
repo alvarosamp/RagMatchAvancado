@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import JobPoller from '../components/JobPoller'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
+import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const MAX_PDF_MB = 50
 const JSON_CONCURRENCY = 1
@@ -170,7 +171,7 @@ export default function Upload() {
     const sourcePath = inferBatchSourcePath(selectedFiles)
     const label = sourcePath
       ? `Historico ${sourcePath}`
-      : `Importacao ${new Date().toLocaleString('pt-BR')}`
+      : `Importacao ${formatBrasiliaDateTime(new Date())}`
     const response = await analysisApi.createBatch({
       label,
       source_path: sourcePath,

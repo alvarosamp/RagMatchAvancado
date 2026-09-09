@@ -26,6 +26,7 @@ from app.auth.schemas import (
     UserCreate,
     UserResponse,
     UserRoleUpdate,
+    UserProfileUpdate,
 )
 from app.auth.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -142,6 +143,8 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
         email           = payload.email,
         hashed_password = hash_password(payload.password),
         full_name       = payload.full_name,
+        cpf             = payload.cpf,
+        phone           = payload.phone,
         role            = "admin",   # primeiro usuário é sempre admin
         tenant_id       = tenant.id,
     )
@@ -264,6 +267,25 @@ def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.patch("/me/profile", response_model=UserResponse)
+def update_my_profile(
+    payload: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    duplicate = db.query(User).filter(User.email == payload.email, User.id != current_user.id).first()
+    if duplicate:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este email ja esta cadastrado.")
+
+    current_user.full_name = payload.full_name
+    current_user.cpf = payload.cpf
+    current_user.phone = payload.phone
+    current_user.email = payload.email
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # POST /auth/users — admin cria usuário no mesmo tenant
 # ─────────────────────────────────────────────────────────────────────────────
@@ -304,6 +326,8 @@ def create_user(
         email           = payload.email,
         hashed_password = hash_password(payload.password),
         full_name       = payload.full_name,
+        cpf             = payload.cpf,
+        phone           = payload.phone,
         role            = payload.role,
         tenant_id       = current_user.tenant_id,  # sempre o tenant do admin
     )

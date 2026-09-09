@@ -85,6 +85,12 @@ export function AuthProvider({ children }) {
     return meRes.data
   }, [])
 
+  const updateProfile = useCallback(async (payload) => {
+    const response = await authApi.updateProfile(payload)
+    setUser(response.data)
+    return response.data
+  }, [])
+
   const logout = useCallback(async () => {
     await authApi.logout().catch(() => null)
     clearPortalSessionStorage()
@@ -96,7 +102,7 @@ export function AuthProvider({ children }) {
   const isEditor = user?.role === 'admin' || user?.role === 'editor'
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, enterDemo, isAdmin, isEditor }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register, updateProfile, enterDemo, isAdmin, isEditor }}>
       {children}
     </AuthContext.Provider>
   )

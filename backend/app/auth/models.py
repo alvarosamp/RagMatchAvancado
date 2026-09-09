@@ -79,6 +79,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
     full_name = Column(String, nullable=True)
+    cpf = Column(String(11), nullable=True, index=True)
+    phone = Column(String(11), nullable=True)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     role = Column(String, default="editor")  # admin | editor | viewer
@@ -92,6 +94,10 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', tenant_id={self.tenant_id})>"
+
+    @property
+    def profile_complete(self) -> bool:
+        return all((self.full_name, self.cpf, self.phone, self.email))
 
 
 class UserRoleAudit(Base):
