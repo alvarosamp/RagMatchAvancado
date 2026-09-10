@@ -36,3 +36,8 @@ def test_tenant_registration_requires_complete_admin_profile():
 def test_profile_rejects_invalid_cpf(cpf):
     with pytest.raises(ValidationError):
         UserProfileUpdate(**{**VALID, "cpf": cpf})
+
+
+def test_profile_rejects_invalid_phone():
+    with pytest.raises(ValidationError):
+        UserProfileUpdate(**{**VALID, "phone": "9999-9999"})

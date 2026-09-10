@@ -86,7 +86,7 @@ export default function Layout({ children }) {
   const location = useLocation()
   const [theme, setTheme] = useState(() => readStoredTheme())
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(() => user?.profile_complete === false && user?.id !== 'demo-user')
+  const [profileOpen, setProfileOpen] = useState(() => user?.profile_complete === false)
   const isLight = theme === 'light'
 
   const baseItems = (isAdmin ? [...NAV, ...NAV_ADMIN] : NAV).filter(
@@ -118,7 +118,7 @@ export default function Layout({ children }) {
   }, [location.pathname])
 
   useEffect(() => {
-    if (user?.profile_complete === false && user?.id !== 'demo-user') setProfileOpen(true)
+    if (user?.profile_complete === false) setProfileOpen(true)
   }, [user?.id, user?.profile_complete])
 
   useEffect(() => {
@@ -232,7 +232,7 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        {user?.profile_complete === false && user?.id !== 'demo-user' && (
+        {user?.profile_complete === false && (
           <div className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 md:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p><strong>Complete seu cadastro.</strong> Precisamos do seu nome, CPF, telefone e e-mail para documentos e assinaturas.</p>
