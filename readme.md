@@ -342,8 +342,14 @@ O repositorio agora possui um pipeline de CI/CD em `.github/workflows/ci.yml` co
 
 1. roda lint, testes e build do frontend;
 2. valida as imagens Docker de `backend`, `frontend` e `mlflow`;
-3. no push da branch `main`, publica as imagens no Docker Hub;
-4. depois conecta no VPS por SSH e executa o deploy automatico com `scripts/deploy-production.sh`.
+3. em todo push da branch `main`, publica API, frontend e MLflow no Docker Hub com
+   a mesma tag imutavel `sha-<commit>` e atualiza `latest`;
+4. confirma no registry que as seis referencias (tag imutavel e `latest` dos tres
+   servicos) existem antes de liberar o deploy;
+5. depois conecta no VPS por SSH e executa o deploy automatico com `scripts/deploy-production.sh`.
+
+A publicacao so acontece depois que lint, testes e build do frontend passam. Em pull
+requests, as imagens sao construidas para validacao, mas nao sao enviadas ao registry.
 
 ### Secrets necessarios no GitHub
 

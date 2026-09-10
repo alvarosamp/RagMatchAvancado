@@ -2,18 +2,20 @@ name: CI-CD
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
       publish_images:
         description: "Buildar e publicar imagens no Docker Hub (latest + sha)"
+        type: boolean
         required: true
-        default: "false"
+        default: false
       deploy_vps:
         description: "Fazer deploy na VPS (requer VPS_* secrets)"
+        type: boolean
         required: true
-        default: "false"
+        default: false
 
 permissions:
   contents: read
@@ -105,12 +107,12 @@ jobs:
         run: npm run build
 
   docker-build:
-    name: Docker Build Check
+    name: Docker Build Check (PR)
     runs-on: ubuntu-latest
     needs:
       - backend-tests
       - frontend-build
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v4
@@ -150,13 +152,14 @@ jobs:
     needs:
       - backend-tests
       - frontend-build
-      - docker-build
     if: >-
-      github.event_name != 'pull_request' &&
       (
-        github.ref == 'refs/heads/main' ||
-        (github.event_name == 'workflow_dispatch' && inputs.publish_images == 'true')
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_images)
       )
+    concurrency:
+      group: dockerhub-${{ github.ref }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
@@ -207,15 +210,41 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image_name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
 
+  verify-published-images:
+    name: Verify Published Docker Images
+    runs-on: ubuntu-latest
+    needs: publish-images
+    env:
+      IMAGE_TAG: sha-${{ github.sha }}
+
+    steps:
+      - name: Verify the deploy tag for every service
+        run: |
+          set -euo pipefail
+          for image in ragmatch-api ragmatch-frontend ragmatch-mlflow; do
+            reference="${DOCKERHUB_NAMESPACE}/${image}:${IMAGE_TAG}"
+            echo "Checking ${reference}"
+            docker manifest inspect "${reference}" >/dev/null
+          done
+
+      - name: Verify latest on main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          for image in ragmatch-api ragmatch-frontend ragmatch-mlflow; do
+            reference="${DOCKERHUB_NAMESPACE}/${image}:latest"
+            echo "Checking ${reference}"
+            docker manifest inspect "${reference}" >/dev/null
+          done
+
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
-    needs: publish-images
+    needs: verify-published-images
     if: >-
-      github.event_name != 'pull_request' &&
       (
-        github.ref == 'refs/heads/main' ||
-        (github.event_name == 'workflow_dispatch' && inputs.deploy_vps == 'true')
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'workflow_dispatch' && inputs.deploy_vps)
       )
     environment:
       name: production
