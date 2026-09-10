@@ -158,7 +158,7 @@ jobs:
         (github.event_name == 'workflow_dispatch' && inputs.publish_images)
       )
     concurrency:
-      group: dockerhub-${{ github.ref }}
+      group: dockerhub-${{ matrix.image_name }}-${{ github.ref }}
       cancel-in-progress: false
     strategy:
       fail-fast: false
