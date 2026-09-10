@@ -93,6 +93,21 @@ Fluxo de implementacao:
 
 ### Redesign ja implementado
 
+- [x] Rodada de ajustes do Pipeline apos revisao detalhada:
+  - filtros principais simplificados para busca, datas, portal, prioridade e ordenacao por proximidade/recencia;
+  - primeira faixa reservada a busca e datas, com campos de data de largura fixa ao estreitar a tela;
+  - portal e prioridade organizados em uma segunda faixa;
+  - atalhos de data mantidos na faixa inferior, com ordenacao e limpeza alinhadas ao canto direito;
+  - filtro de etapa removido do painel principal de filtros;
+  - filtro de cidade removido do painel principal de filtros;
+  - estrelas de prioridade nos cards transformadas em controle clicavel;
+  - prioridade passa a alimentar o filtro de prioridade;
+  - avanco rapido permanece concentrado no menu de tres pontos do card.
+- [x] Aba Itens: adotar a ficha operacional como padrao de detalhes.
+  - separar preco LPU, minimo operacional editavel, referencia e totais;
+  - calcular minimo de kits a partir dos componentes;
+  - tornar o vinculo de catalogo visivel no resumo e estruturado dentro dos detalhes;
+  - reduzir repeticoes de valores e metadados no card do item.
 - [x] Aba Informacoes redesenhada como ficha operacional.
 - [x] Edicao campo a campo por icone, sem modo geral de edicao.
 - [x] Icones de edicao discretos, aparecendo por hover/foco.

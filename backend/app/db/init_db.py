@@ -141,6 +141,7 @@ def _ensure_crm_schema_updates() -> None:
             "bi_feature_alcance": "VARCHAR",
             "raw_payload": "JSON",
             "cost": "DOUBLE PRECISION",
+            "minimum_unit_price": "DOUBLE PRECISION",
             "reference_total_price": "DOUBLE PRECISION",
             "selected_for_dispute": "BOOLEAN NOT NULL DEFAULT TRUE",
             "catalog_match_source": "VARCHAR",
