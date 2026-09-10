@@ -350,6 +350,11 @@ O repositorio agora possui um pipeline de CI/CD em `.github/workflows/ci.yml` co
 
 A publicacao so acontece depois que lint, testes e build do frontend passam. Em pull
 requests, as imagens sao construidas para validacao, mas nao sao enviadas ao registry.
+Ao concluir, o resumo da execucao mostra o valor exato que deve ser informado na
+Hostinger, no formato `IMAGE_TAG=sha-<SHA completo do commit>`. A mesma tag existe
+em `ragmatch-api`, `ragmatch-frontend` e `ragmatch-mlflow`; nao use uma tag diferente
+para cada servico. `latest` tambem e atualizado, mas a tag `sha-...` e a recomendada
+para producao por ser imutavel e permitir rollback.
 
 ### Secrets necessarios no GitHub
 

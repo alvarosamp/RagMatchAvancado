@@ -197,7 +197,7 @@ jobs:
           images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ matrix.image_name }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-
+            type=raw,value=sha-${{ github.sha }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -218,6 +218,15 @@ jobs:
       IMAGE_TAG: sha-${{ github.sha }}
 
     steps:
+      - name: Show the Hostinger deployment tag
+        run: |
+          {
+            echo "## Hostinger deployment tag"
+            echo '```env'
+            echo "IMAGE_TAG=${IMAGE_TAG}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Verify the deploy tag for every service
         run: |
           set -euo pipefail
