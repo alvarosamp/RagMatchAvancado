@@ -108,6 +108,11 @@ Fluxo de implementacao:
   - calcular minimo de kits a partir dos componentes;
   - tornar o vinculo de catalogo visivel no resumo e estruturado dentro dos detalhes;
   - reduzir repeticoes de valores e metadados no card do item.
+- [x] Tabela de disputa: reorganizar por edital e explicitar referencia, LPU, minimo operacional e totais.
+  - remover o uso visual ambiguo de "preco catalogo";
+  - suportar minimo editado e soma de kits;
+  - garantir leitura responsiva e impressao operacional;
+  - disponibilizar download compativel com Excel, alem de impressao/PDF.
 - [x] Aba Informacoes redesenhada como ficha operacional.
 - [x] Edicao campo a campo por icone, sem modo geral de edicao.
 - [x] Icones de edicao discretos, aparecendo por hover/foco.
