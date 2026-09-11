@@ -272,6 +272,7 @@ class CrmNotice(Base):
     bi_risk_documental = Column(Text)
     bi_general_risks = Column(Text)
     particularities = Column(Text)
+    operational_checks = Column(JSON)
     sales_status = Column(String)
     import_key = Column(String)
     stage = Column(SqlEnum(CrmNoticeStage, native_enum=False), nullable=False, default=CrmNoticeStage.TRIAGE)

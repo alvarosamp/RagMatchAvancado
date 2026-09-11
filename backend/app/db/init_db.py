@@ -83,6 +83,7 @@ def _ensure_crm_schema_updates() -> None:
             "bi_risk_identified": "VARCHAR",
             "bi_risk_operational": "TEXT",
             "bi_risk_documental": "TEXT",
+            "operational_checks": "JSON",
             "sales_status": "VARCHAR",
             "import_key": "VARCHAR",
             "import_batch_id": "INTEGER",
