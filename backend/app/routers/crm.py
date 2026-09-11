@@ -497,7 +497,7 @@ def crm_dashboard_summary(
     }
 
 
-def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
+def _minimum_unit_price(product: CrmNoticeProduct) -> float:
     if product.minimum_unit_price is not None:
         return float(product.minimum_unit_price or 0.0)
     catalog = product.catalog_product
@@ -556,7 +556,7 @@ def _suggest_bid(
     *,
     current_best_bid: float | None,
     reference_price: float | None,
-    minimum_viable_bid: float,
+    minimum_unit_price: float,
     decrement: float = DEFAULT_BID_DECREMENT,
 ) -> tuple[float | None, str, str]:
     anchor = current_best_bid if current_best_bid and current_best_bid > 0 else reference_price
@@ -564,9 +564,9 @@ def _suggest_bid(
         return None, "missing_price", "Informe o menor lance atual ou o preco de referencia."
 
     suggested = max(float(anchor) - decrement, 0.01)
-    if minimum_viable_bid and suggested < minimum_viable_bid:
+    if minimum_unit_price and suggested < minimum_unit_price:
         return (
-            minimum_viable_bid,
+            minimum_unit_price,
             "stop",
             "Sugestao chegou no limite minimo. Nao reduzir sem autorizacao.",
         )
@@ -1122,11 +1122,11 @@ def crm_notice_bid_room(
             if product.reference_price is not None
             else None
         )
-        minimum = _minimum_viable_bid(product)
+        minimum = _minimum_unit_price(product)
         suggested, status_value, message = _suggest_bid(
             current_best_bid=current_best_bid,
             reference_price=reference_price,
-            minimum_viable_bid=minimum,
+            minimum_unit_price=minimum,
             decrement=decrement,
         )
         catalog = product.catalog_product
@@ -1165,7 +1165,7 @@ def crm_notice_bid_room(
                 "raw_payload": product.raw_payload,
                 "reference_price": product.reference_price,
                 "reference_total_price": product.reference_total_price,
-                "minimum_viable_bid": minimum,
+                "minimum_unit_price": minimum,
                 "suggested_bid": suggested,
                 "suggestion_status": status_value,
                 "suggestion_message": message,
@@ -1185,7 +1185,7 @@ def crm_notice_bid_room(
                         "id": log.id,
                         "current_best_bid": log.current_best_bid,
                         "suggested_bid": log.suggested_bid,
-                        "minimum_viable_bid": log.minimum_viable_bid,
+                        "minimum_unit_price": log.minimum_viable_bid,
                         "decision": log.decision,
                         "notes": log.notes,
                         "created_at": log.created_at.isoformat()
@@ -1260,11 +1260,11 @@ def crm_record_bid_room_log(
         if product.reference_price is not None
         else None
     )
-    minimum = _minimum_viable_bid(product)
+    minimum = _minimum_unit_price(product)
     suggested, status_value, message = _suggest_bid(
         current_best_bid=current_best_bid,
         reference_price=reference_price,
-        minimum_viable_bid=minimum,
+        minimum_unit_price=minimum,
         decrement=float(payload.get("decrement") or DEFAULT_BID_DECREMENT),
     )
     requested_suggested = payload.get("suggested_bid")
@@ -1293,7 +1293,7 @@ def crm_record_bid_room_log(
             "id": log.id,
             "current_best_bid": log.current_best_bid,
             "suggested_bid": log.suggested_bid,
-            "minimum_viable_bid": log.minimum_viable_bid,
+            "minimum_unit_price": log.minimum_viable_bid,
             "decision": log.decision,
             "notes": log.notes,
             "created_at": log.created_at.isoformat() if log.created_at else None,
