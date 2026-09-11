@@ -575,6 +575,96 @@ class CrmNoticeItemResult(Base):
 
     notice = relationship("CrmNotice", back_populates="notice_item_results")
     notice_product = relationship("CrmNoticeProduct", back_populates="item_result")
+    fulfillment = relationship(
+        "CrmItemFulfillment",
+        back_populates="item_result",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class CrmItemFulfillment(Base):
+    """Operational labeling and shipment state for an item won by the company."""
+
+    __tablename__ = "crm_item_fulfillments"
+    __table_args__ = (
+        UniqueConstraint("item_result_id", name="uq_crm_item_fulfillments_result"),
+        Index("ix_crm_item_fulfillments_tenant_shipped", "tenant_id", "shipped_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    item_result_id = Column(String(36), ForeignKey("crm_notice_item_results.id", ondelete="CASCADE"), index=True)
+    manual_description = Column(Text)
+    manual_quantity = Column(Float)
+    manual_unit = Column(String)
+    manual_item_number = Column(String)
+    manual_reference = Column(String)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    serial_numbers = Column(JSON, nullable=False, default=list)
+    label_notes = Column(Text)
+    labeled_at = Column(DateTime)
+    labeled_by = Column(Integer, ForeignKey("users.id"))
+    carrier = Column(String)
+    shipment_reference = Column(String)
+    shipped_at = Column(DateTime)
+    estimated_delivery_at = Column(DateTime)
+    shipment_notes = Column(Text)
+    shipped_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    item_result = relationship("CrmNoticeItemResult", back_populates="fulfillment")
+    history = relationship(
+        "CrmItemFulfillmentHistory",
+        back_populates="fulfillment",
+        cascade="all, delete-orphan",
+        order_by="CrmItemFulfillmentHistory.created_at",
+    )
+    invoices = relationship(
+        "CrmItemFulfillmentInvoice",
+        back_populates="fulfillment",
+        cascade="all, delete-orphan",
+        order_by="CrmItemFulfillmentInvoice.created_at",
+    )
+
+
+class CrmItemFulfillmentInvoice(Base):
+    """Many-to-many link between stored fiscal documents and fulfilled items."""
+
+    __tablename__ = "crm_item_fulfillment_invoices"
+    __table_args__ = (
+        UniqueConstraint("fulfillment_id", "document_file_id", name="uq_crm_item_fulfillment_invoice"),
+        Index("ix_crm_item_fulfillment_invoice_tenant_document", "tenant_id", "document_file_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    fulfillment_id = Column(String(36), ForeignKey("crm_item_fulfillments.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_file_id = Column(String(36), ForeignKey("document_files.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    fulfillment = relationship("CrmItemFulfillment", back_populates="invoices")
+
+
+class CrmItemFulfillmentHistory(Base):
+    """Append-only audit trail for labeling and shipment saves."""
+
+    __tablename__ = "crm_item_fulfillment_history"
+    __table_args__ = (
+        Index("ix_crm_item_fulfillment_history_item_created", "tenant_id", "fulfillment_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    fulfillment_id = Column(String(36), ForeignKey("crm_item_fulfillments.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type = Column(String, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    fulfillment = relationship("CrmItemFulfillment", back_populates="history")
 
 
 class CrmNoticeCompetitor(Base):

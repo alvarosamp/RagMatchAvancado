@@ -24,6 +24,9 @@ from app.crm.models import (
     CrmCatalogProduct,
     CrmCatalogProductDatasheet,
     CrmChecklistStatus,
+    CrmItemFulfillment,
+    CrmItemFulfillmentHistory,
+    CrmItemFulfillmentInvoice,
     CrmNoticeDocument,
     CrmItemWinnerType,
     CrmNotice,
@@ -40,6 +43,7 @@ from app.crm.models import (
 )
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
+from app.db.models import DocumentFile
 from app.jobs.models import Job, JobStatus, JobType
 from app.jobs.queue import JobQueue
 from app.services.crm_item_matcher import (
@@ -87,6 +91,403 @@ DEFAULT_BID_DECREMENT = 1.0
 def _local_now() -> datetime:
     from zoneinfo import ZoneInfo
     return datetime.now(ZoneInfo("America/Sao_Paulo")).replace(tzinfo=None)
+
+
+def _parse_local_datetime(value: Any, field_label: str) -> datetime:
+    if not value:
+        raise HTTPException(status_code=400, detail=f"Informe {field_label}.")
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"{field_label.capitalize()} invalida.") from exc
+    if parsed.tzinfo is not None:
+        from app.crm.timezone import brasilia_wall_clock
+        parsed = brasilia_wall_clock(parsed)
+    return parsed
+
+
+def _get_or_create_fulfillment(db: Session, result: CrmNoticeItemResult, user_id: int) -> CrmItemFulfillment:
+    fulfillment = db.query(CrmItemFulfillment).filter(
+        CrmItemFulfillment.tenant_id == result.tenant_id,
+        CrmItemFulfillment.item_result_id == result.id,
+    ).first()
+    if fulfillment is None:
+        fulfillment = CrmItemFulfillment(
+            tenant_id=result.tenant_id,
+            item_result_id=result.id,
+            serial_numbers=[],
+            created_by=user_id,
+        )
+        db.add(fulfillment)
+        db.flush()
+    return fulfillment
+
+
+def _resolve_fulfillment_item(
+    db: Session, tenant_id: int, item_key: str, user_id: int,
+) -> tuple[CrmNoticeItemResult | None, CrmItemFulfillment]:
+    result = db.query(CrmNoticeItemResult).filter(
+        CrmNoticeItemResult.id == item_key,
+        CrmNoticeItemResult.tenant_id == tenant_id,
+        CrmNoticeItemResult.winner_type == CrmItemWinnerType.US,
+    ).with_for_update().first()
+    if result is not None:
+        return result, _get_or_create_fulfillment(db, result, user_id)
+    fulfillment = db.query(CrmItemFulfillment).filter(
+        CrmItemFulfillment.id == item_key,
+        CrmItemFulfillment.tenant_id == tenant_id,
+        CrmItemFulfillment.item_result_id.is_(None),
+    ).with_for_update().first()
+    if fulfillment is None:
+        raise HTTPException(status_code=404, detail="Item de expedicao nao encontrado.")
+    return None, fulfillment
+
+
+def _fulfillment_invoice_payloads(db: Session, fulfillment: CrmItemFulfillment | None) -> list[dict[str, Any]]:
+    if fulfillment is None:
+        return []
+    rows = (
+        db.query(CrmItemFulfillmentInvoice, DocumentFile)
+        .join(DocumentFile, DocumentFile.id == CrmItemFulfillmentInvoice.document_file_id)
+        .filter(
+            CrmItemFulfillmentInvoice.tenant_id == fulfillment.tenant_id,
+            CrmItemFulfillmentInvoice.fulfillment_id == fulfillment.id,
+        )
+        .order_by(CrmItemFulfillmentInvoice.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "link_id": link.id,
+            "document_id": document.id,
+            "title": document.title,
+            "original_filename": document.original_filename,
+            "content_type": document.content_type,
+            "size_bytes": document.size_bytes,
+            "created_at": link.created_at,
+            "download_url": f"/api/documents/files/{document.id}/download",
+        }
+        for link, document in rows
+    ]
+
+
+@router.get("/fulfillment")
+def list_fulfillment_items(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    rows = (
+        db.query(CrmNoticeItemResult, CrmNoticeProduct, CrmNotice, CrmItemFulfillment)
+        .join(CrmNoticeProduct, CrmNoticeProduct.id == CrmNoticeItemResult.notice_product_id)
+        .join(CrmNotice, CrmNotice.id == CrmNoticeItemResult.notice_id)
+        .outerjoin(CrmItemFulfillment, CrmItemFulfillment.item_result_id == CrmNoticeItemResult.id)
+        .filter(
+            CrmNoticeItemResult.tenant_id == current_user.tenant_id,
+            CrmNoticeItemResult.winner_type == CrmItemWinnerType.US,
+        )
+        .order_by(CrmNoticeItemResult.created_at.desc())
+        .all()
+    )
+    items = []
+    for result, product, notice, fulfillment in rows:
+        history = []
+        if fulfillment is not None:
+            history = [
+                {
+                    "id": entry.id,
+                    "event_type": entry.event_type,
+                    "details": entry.details or {},
+                    "created_by": entry.created_by,
+                    "created_at": entry.created_at,
+                }
+                for entry in sorted(fulfillment.history or [], key=lambda item: item.created_at or datetime.min, reverse=True)
+            ]
+        status_value = "posted" if fulfillment and fulfillment.shipped_at else "labeled" if fulfillment and fulfillment.labeled_at else "pending"
+        items.append({
+            "result_id": result.id,
+            "notice_id": notice.id,
+            "notice_number": notice.number,
+            "notice_title": notice.title,
+            "organ": notice.organ.name if notice.organ else None,
+            "item_number": product.item_number,
+            "lot": product.lot,
+            "description": product.description,
+            "quantity": result.winning_quantity if result.winning_quantity is not None else product.quantity,
+            "unit": product.unit,
+            "brand": result.winner_brand,
+            "model": result.winner_model,
+            "status": status_value,
+            "serial_numbers": (fulfillment.serial_numbers or []) if fulfillment else [],
+            "label_notes": fulfillment.label_notes if fulfillment else None,
+            "labeled_at": fulfillment.labeled_at if fulfillment else None,
+            "carrier": fulfillment.carrier if fulfillment else None,
+            "shipment_reference": fulfillment.shipment_reference if fulfillment else None,
+            "shipped_at": fulfillment.shipped_at if fulfillment else None,
+            "estimated_delivery_at": fulfillment.estimated_delivery_at if fulfillment else None,
+            "shipment_notes": fulfillment.shipment_notes if fulfillment else None,
+            "history": history,
+            "invoices": _fulfillment_invoice_payloads(db, fulfillment),
+            "manual": False,
+            "manual_reference": None,
+            "created_at": result.created_at,
+        })
+
+    manual_rows = db.query(CrmItemFulfillment).filter(
+        CrmItemFulfillment.tenant_id == current_user.tenant_id,
+        CrmItemFulfillment.item_result_id.is_(None),
+    ).all()
+    for fulfillment in manual_rows:
+        history = [
+            {
+                "id": entry.id,
+                "event_type": entry.event_type,
+                "details": entry.details or {},
+                "created_by": entry.created_by,
+                "created_at": entry.created_at,
+            }
+            for entry in sorted(fulfillment.history or [], key=lambda item: item.created_at or datetime.min, reverse=True)
+        ]
+        status_value = "posted" if fulfillment.shipped_at else "labeled" if fulfillment.labeled_at else "pending"
+        items.append({
+            "result_id": fulfillment.id,
+            "notice_id": None,
+            "notice_number": fulfillment.manual_reference or "Item manual",
+            "notice_title": None,
+            "organ": None,
+            "item_number": fulfillment.manual_item_number,
+            "lot": None,
+            "description": fulfillment.manual_description,
+            "quantity": fulfillment.manual_quantity,
+            "unit": fulfillment.manual_unit,
+            "brand": None,
+            "model": None,
+            "status": status_value,
+            "serial_numbers": fulfillment.serial_numbers or [],
+            "label_notes": fulfillment.label_notes,
+            "labeled_at": fulfillment.labeled_at,
+            "carrier": fulfillment.carrier,
+            "shipment_reference": fulfillment.shipment_reference,
+            "shipped_at": fulfillment.shipped_at,
+            "estimated_delivery_at": fulfillment.estimated_delivery_at,
+            "shipment_notes": fulfillment.shipment_notes,
+            "history": history,
+            "invoices": _fulfillment_invoice_payloads(db, fulfillment),
+            "manual": True,
+            "manual_reference": fulfillment.manual_reference,
+            "created_at": fulfillment.created_at,
+        })
+    items.sort(key=lambda item: item.get("created_at") or datetime.min, reverse=True)
+    return {"items": items}
+
+
+@router.post("/fulfillment/manual", status_code=status.HTTP_201_CREATED)
+def create_manual_fulfillment_item(
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    description = str(payload.get("description") or "").strip()
+    unit = str(payload.get("unit") or "UN").strip().upper()
+    try:
+        quantity = float(payload.get("quantity"))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Informe uma quantidade valida.") from exc
+    if not description:
+        raise HTTPException(status_code=400, detail="Informe qual e o item.")
+    if quantity <= 0:
+        raise HTTPException(status_code=400, detail="A quantidade deve ser maior que zero.")
+    now = _local_now()
+    fulfillment = CrmItemFulfillment(
+        tenant_id=current_user.tenant_id,
+        item_result_id=None,
+        manual_description=description,
+        manual_quantity=quantity,
+        manual_unit=unit or "UN",
+        manual_item_number=str(payload.get("item_number") or "").strip() or None,
+        manual_reference=str(payload.get("reference") or "").strip() or None,
+        serial_numbers=[],
+        created_by=current_user.id,
+    )
+    db.add(fulfillment)
+    db.flush()
+    db.add(CrmItemFulfillmentHistory(
+        tenant_id=current_user.tenant_id,
+        fulfillment_id=fulfillment.id,
+        event_type="created_manually",
+        details={
+            "description": description,
+            "quantity": quantity,
+            "unit": fulfillment.manual_unit,
+            "item_number": fulfillment.manual_item_number,
+            "reference": fulfillment.manual_reference,
+            "created_at": now.isoformat(),
+        },
+        created_by=current_user.id,
+    ))
+    db.commit()
+    return {"ok": True, "result_id": fulfillment.id, "status": "pending"}
+
+
+@router.post("/fulfillment/invoices/link")
+def link_fulfillment_invoices(
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    raw_item_ids = payload.get("item_ids")
+    raw_document_ids = payload.get("document_ids")
+    if not isinstance(raw_item_ids, list) or not isinstance(raw_document_ids, list):
+        raise HTTPException(status_code=400, detail="Informe listas validas de itens e notas fiscais.")
+    item_keys = list(dict.fromkeys(str(value).strip() for value in raw_item_ids if str(value).strip()))
+    document_ids = list(dict.fromkeys(str(value).strip() for value in raw_document_ids if str(value).strip()))
+    if not item_keys or not document_ids:
+        raise HTTPException(status_code=400, detail="Selecione ao menos um item e uma nota fiscal.")
+
+    documents = db.query(DocumentFile).filter(
+        DocumentFile.tenant_id == current_user.tenant_id,
+        DocumentFile.id.in_(document_ids),
+    ).all()
+    if len(documents) != len(document_ids):
+        raise HTTPException(status_code=404, detail="Uma ou mais notas fiscais nao foram encontradas.")
+
+    resolved = [_resolve_fulfillment_item(db, current_user.tenant_id, item_key, current_user.id) for item_key in item_keys]
+    notice_ids = {result.notice_id for result, _fulfillment in resolved if result is not None}
+    if len(notice_ids) > 1:
+        raise HTTPException(status_code=400, detail="Vincule a nota apenas a itens do mesmo edital.")
+    notice_id = next(iter(notice_ids), None)
+    for document in documents:
+        if notice_id and document.crm_notice_id and document.crm_notice_id != notice_id:
+            raise HTTPException(status_code=409, detail="A nota fiscal ja pertence a outro edital.")
+        if notice_id and not document.crm_notice_id:
+            document.crm_notice_id = notice_id
+        document.category = "Nota fiscal"
+
+    created = 0
+    for result, fulfillment in resolved:
+        for document in documents:
+            exists = db.query(CrmItemFulfillmentInvoice.id).filter(
+                CrmItemFulfillmentInvoice.fulfillment_id == fulfillment.id,
+                CrmItemFulfillmentInvoice.document_file_id == document.id,
+            ).first()
+            if exists:
+                continue
+            db.add(CrmItemFulfillmentInvoice(
+                tenant_id=current_user.tenant_id,
+                fulfillment_id=fulfillment.id,
+                document_file_id=document.id,
+                created_by=current_user.id,
+            ))
+            db.add(CrmItemFulfillmentHistory(
+                tenant_id=current_user.tenant_id,
+                fulfillment_id=fulfillment.id,
+                event_type="invoice_attached",
+                details={"document_id": document.id, "filename": document.original_filename},
+                created_by=current_user.id,
+            ))
+            if result is not None:
+                db.add(CrmNoticeHistory(
+                    tenant_id=current_user.tenant_id,
+                    notice_id=result.notice_id,
+                    user_id=current_user.id,
+                    action="Nota fiscal vinculada ao item",
+                    details={"item_result_id": result.id, "document_id": document.id},
+                ))
+            created += 1
+    db.commit()
+    return {"ok": True, "links_created": created, "items": len(resolved), "documents": len(documents)}
+
+
+@router.patch("/fulfillment/{result_id}/label")
+def label_won_item(
+    result_id: str,
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    if payload.get("labeled") is not True:
+        raise HTTPException(status_code=400, detail="Confirme que todos os itens foram etiquetados.")
+    raw_serials = payload.get("serial_numbers")
+    if not isinstance(raw_serials, list):
+        raise HTTPException(status_code=400, detail="Informe os numeros de serie utilizados.")
+    serials = list(dict.fromkeys(str(value).strip() for value in raw_serials if str(value).strip()))
+    if not serials:
+        raise HTTPException(status_code=400, detail="Informe ao menos um numero de serie ou faixa utilizada.")
+
+    result, fulfillment = _resolve_fulfillment_item(db, current_user.tenant_id, result_id, current_user.id)
+    now = _local_now()
+    fulfillment.serial_numbers = serials
+    fulfillment.label_notes = str(payload.get("notes") or "").strip() or None
+    fulfillment.labeled_at = now
+    fulfillment.labeled_by = current_user.id
+    snapshot = {"serial_numbers": serials, "notes": fulfillment.label_notes, "labeled_at": now.isoformat()}
+    db.add(CrmItemFulfillmentHistory(
+        tenant_id=current_user.tenant_id,
+        fulfillment_id=fulfillment.id,
+        event_type="labeled",
+        details=snapshot,
+        created_by=current_user.id,
+    ))
+    if result is not None:
+        db.add(CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=result.notice_id,
+            user_id=current_user.id,
+            action="Item etiquetado",
+            details={"item_result_id": result.id, **snapshot},
+        ))
+    db.commit()
+    return {"ok": True, "result_id": result.id if result else fulfillment.id, "status": "labeled", **snapshot}
+
+
+@router.post("/fulfillment/{result_id}/ship")
+def ship_won_item(
+    result_id: str,
+    payload: dict[str, Any] = Body(...),
+    current_user: User = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    carrier = str(payload.get("carrier") or "").strip()
+    reference = str(payload.get("shipment_reference") or "").strip()
+    if not carrier or not reference:
+        raise HTTPException(status_code=400, detail="Informe a transportadora e a identificacao da remessa.")
+    shipped_at = _parse_local_datetime(payload.get("shipped_at"), "a data e hora da postagem")
+    estimated_at = _parse_local_datetime(payload.get("estimated_delivery_at"), "a previsao de entrega")
+    if estimated_at < shipped_at:
+        raise HTTPException(status_code=400, detail="A previsao de entrega nao pode ser anterior a postagem.")
+
+    result, fulfillment = _resolve_fulfillment_item(db, current_user.tenant_id, result_id, current_user.id)
+    if not fulfillment.labeled_at or not (fulfillment.serial_numbers or []):
+        raise HTTPException(status_code=409, detail="Conclua a etiquetagem antes de postar o item.")
+    fulfillment.carrier = carrier
+    fulfillment.shipment_reference = reference
+    fulfillment.shipped_at = shipped_at
+    fulfillment.estimated_delivery_at = estimated_at
+    fulfillment.shipment_notes = str(payload.get("notes") or "").strip() or None
+    fulfillment.shipped_by = current_user.id
+    snapshot = {
+        "carrier": carrier,
+        "shipment_reference": reference,
+        "shipped_at": shipped_at.isoformat(),
+        "estimated_delivery_at": estimated_at.isoformat(),
+        "notes": fulfillment.shipment_notes,
+    }
+    db.add(CrmItemFulfillmentHistory(
+        tenant_id=current_user.tenant_id,
+        fulfillment_id=fulfillment.id,
+        event_type="posted",
+        details=snapshot,
+        created_by=current_user.id,
+    ))
+    if result is not None:
+        db.add(CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=result.notice_id,
+            user_id=current_user.id,
+            action="Remessa postada",
+            details={"item_result_id": result.id, **snapshot},
+        ))
+    db.commit()
+    return {"ok": True, "result_id": result.id if result else fulfillment.id, "status": "posted", **snapshot}
 
 
 @router.get("/suspended-notices")
