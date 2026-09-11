@@ -17,7 +17,7 @@ codex/crm-design-system-layout
 Ultimo commit conhecido no repositorio principal:
 
 ```text
-dd0f01c
+c00c124
 ```
 
 Branch do CRM fonte:
@@ -29,13 +29,13 @@ codex/crm-layout-redesign
 Ultimo commit conhecido no CRM fonte:
 
 ```text
-d482ba3
+beddf86
 ```
 
 Ambiente de validacao:
 
 ```text
-http://127.0.0.1:8081/crm/editais?preview=1
+http://127.0.0.1:8082/crm/editais?preview=1
 ```
 
 Pull requests de acompanhamento:
@@ -558,6 +558,7 @@ Sequencia de implementacao planejada:
 - 11/09/2026 - O popup do Calendario foi retirado dos proximos passos apos confirmacao de que ja esta implementado e funcional no sistema em producao.
 - 11/09/2026 - Minimo unitario implementado como unica regra operacional: edicao contextual, origem do valor, tratamento de Kits no item principal e uso consistente na tabela e Sala de disputa. Build e testes unitarios concluidos.
 - 11/09/2026 - Aba Itens: LPU removida do cabecalho e concentrada no Vinculo de catalogo; Resultado do item foi separado como secao do item do edital. Kits mantem LPUs por produto vinculado, sem agregacao visual artificial.
+- 11/09/2026 - Foi criado o backlog imediato em `07-backlog-imediato.md`, para separar a proxima fila operacional deste historico estrategico.
 
 ## Regras para atualizar este arquivo
 
