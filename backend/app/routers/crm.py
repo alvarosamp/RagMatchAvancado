@@ -899,12 +899,14 @@ def crm_dashboard_summary(
 
 
 def _minimum_viable_bid(product: CrmNoticeProduct) -> float:
-    if product.unit_price is not None:
-        return float(product.unit_price or 0.0)
+    if product.minimum_unit_price is not None:
+        return float(product.minimum_unit_price or 0.0)
     catalog = product.catalog_product
     if catalog is not None:
-        return float(getattr(catalog, "min_price", None) or catalog.cost or 0.0)
-    return float(product.cost or 0.0)
+        return float(getattr(catalog, "min_price", None) or 0.0)
+    if product.reference_price is not None:
+        return float(product.reference_price or 0.0)
+    return 0.0
 
 
 def _normalize_portal_name(value: str | None) -> str:

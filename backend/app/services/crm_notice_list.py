@@ -165,10 +165,10 @@ def _product_counts(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[
 
 
 def _product_summaries(db: Session, tenant_id: int, notice_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
-    """Return only the first two item previews for each card.
+    """Return the two commercially most relevant item previews for each card.
 
     The pipeline must not hydrate every item relationship, but the cards still
-    need enough information to identify the items and display their alerts.
+    need enough information to identify the items, their quantity and values.
     """
     if not notice_ids:
         return {}
@@ -198,7 +198,15 @@ def _product_summaries(db: Session, tenant_id: int, notice_ids: list[str]) -> di
             CrmNoticeProduct.selected_for_dispute.label("selected_for_dispute"),
             func.row_number().over(
                 partition_by=CrmNoticeProduct.notice_id,
-                order_by=(CrmNoticeProduct.sort_order.asc(), CrmNoticeProduct.id.asc()),
+                order_by=(
+                    func.coalesce(
+                        CrmNoticeProduct.reference_total_price,
+                        CrmNoticeProduct.reference_price * func.coalesce(CrmNoticeProduct.quantity, 1),
+                        0,
+                    ).desc(),
+                    CrmNoticeProduct.sort_order.asc(),
+                    CrmNoticeProduct.id.asc(),
+                ),
             ).label("preview_position"),
         )
         .filter(CrmNoticeProduct.tenant_id == tenant_id, CrmNoticeProduct.notice_id.in_(notice_ids))

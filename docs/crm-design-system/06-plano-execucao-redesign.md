@@ -17,7 +17,7 @@ codex/crm-design-system-layout
 Ultimo commit conhecido no repositorio principal:
 
 ```text
-64d4013
+3d1ee1e
 ```
 
 Branch do CRM fonte:
@@ -29,13 +29,20 @@ codex/crm-layout-redesign
 Ultimo commit conhecido no CRM fonte:
 
 ```text
-a267f61
+771d663
 ```
 
 Ambiente de validacao:
 
 ```text
-http://127.0.0.1:8080/crm/editais/notice-1?preview=1
+http://127.0.0.1:8081/crm/editais?preview=1
+```
+
+Pull requests de acompanhamento:
+
+```text
+Repositorio principal: https://github.com/alvarosamp/RagMatchAvancado/pull/24
+CRM fonte: https://github.com/LuizH-Paiva/bid-buddy/pull/4
 ```
 
 Fluxo de implementacao:
@@ -93,10 +100,34 @@ Fluxo de implementacao:
 
 ### Redesign ja implementado
 
+- [x] Rodada de ajustes do Pipeline apos revisao detalhada:
+  - filtros principais simplificados para busca, datas, portal, prioridade e ordenacao por proximidade/recencia;
+  - primeira faixa reservada a busca e datas, com campos de data de largura fixa ao estreitar a tela;
+  - portal e prioridade organizados em uma segunda faixa;
+  - atalhos de data mantidos na faixa inferior, com ordenacao e limpeza alinhadas ao canto direito;
+  - filtro de etapa removido do painel principal de filtros;
+  - filtro de cidade removido do painel principal de filtros;
+  - estrelas de prioridade nos cards transformadas em controle clicavel;
+  - prioridade passa a alimentar o filtro de prioridade;
+  - avanco rapido permanece concentrado no menu de tres pontos do card.
+- [x] Aba Itens: adotar a ficha operacional como padrao de detalhes.
+  - separar preco LPU, minimo operacional editavel, referencia e totais;
+  - calcular minimo de kits a partir dos componentes;
+  - tornar o vinculo de catalogo visivel no resumo e estruturado dentro dos detalhes;
+  - reduzir repeticoes de valores e metadados no card do item.
+- [x] Tabela de disputa: reorganizar por edital e explicitar referencia, LPU, minimo operacional e totais.
+  - remover o uso visual ambiguo de "preco catalogo";
+  - suportar minimo editado e soma de kits;
+  - garantir leitura responsiva e impressao operacional;
+  - disponibilizar download compativel com Excel, alem de impressao/PDF.
 - [x] Aba Informacoes redesenhada como ficha operacional.
 - [x] Edicao campo a campo por icone, sem modo geral de edicao.
 - [x] Icones de edicao discretos, aparecendo por hover/foco.
 - [x] Valor total do item mantido na parte inferior dos cards de item.
+- [x] Card do pipeline voltou a exibir resumo detalhado dos itens, priorizando os dois itens de maior valor total.
+- [x] Resumo dos itens no card exibe quantidade, valor de referencia unitario e valor total.
+- [x] Contador de itens restantes ajustado para refletir corretamente `+N itens`.
+- [x] Produtos anexados ao mesmo item passaram a ser tratados visualmente como `Kit`, sem fragmentar a leitura do item principal no card.
 - [x] Acoes do edital reorganizadas no topo.
 - [x] "Suspender edital" movido para o menu de tres pontos.
 - [x] "Enviar para pos-disputa" movido para o menu de tres pontos.
@@ -116,6 +147,12 @@ Fluxo de implementacao:
 - [x] Alertas fortes separados das informacoes comuns.
 - [x] Indicador discreto para pendencias anteriores no topo do card.
 - [x] Icones e nomenclaturas do card alinhados com a pagina do edital: agendamento/data, documentacao, analise tecnica, orgao e numero do pregao/licitacao.
+- [x] Checagens operacionais do card padronizadas como icones compactos: Documentacao, Tecnica, Proposta e Habilitacao.
+- [x] Estados de checagem padronizados: neutro/branco quando pendente e verde quando concluido.
+- [x] `Proposta cadastrada` adicionada como checagem operacional oficial, junto de documentacao e analise tecnica.
+- [x] `Habilitacao anexada` adicionada como checagem operacional oficial.
+- [x] Pendencias anteriores do card passam a considerar proposta nao cadastrada e habilitacao nao anexada conforme a etapa do edital.
+- [x] Prioridade por estrelas adicionada tambem ao cabecalho do edital, permitindo definir ou redefinir prioridade sem voltar ao pipeline.
 - [x] Pipeline ajustado para abrir edital em popup sem sair da tela.
 - [x] Popup do pipeline inclui opcao de abrir edital em nova janela.
 - [x] Popup do pipeline carrega a pagina do edital em modo embutido, sem menu lateral esquerdo.
@@ -337,6 +374,30 @@ Criterios de aceite:
 
 Status:
 
+- Demanda de item composto registrada e tratada na tabela de disputa;
+- quando um item original possui dois ou mais produtos vinculados, a tabela de disputa passa a exibir uma unica linha para o item original;
+- produtos anexados ao item deixam de aparecer como subitens separados na tabela de disputa;
+- valores operacionais de LPU/minimo sao somados por unidade e o total minimo usa a quantidade do item original;
+- descricoes, marcas, modelos, SKUs e produtos do catalogo passam a ser expostos em conjunto na mesma linha operacional.
+- Card do pipeline refinado para retomar o resumo operacional de itens:
+  - os dois itens exibidos sao os de maior valor total;
+  - cada item mostra quantidade, referencia unitaria e total;
+  - itens com produtos anexados recebem identificacao visual como `Kit`;
+  - contador `+N itens` passa a considerar os itens efetivamente exibidos.
+- Checks operacionais refinados e ampliados:
+  - Documentacao, Tecnica, Proposta e Habilitacao usam a mesma linguagem visual;
+  - pendentes ficam neutros;
+  - concluidos ficam verdes;
+  - Proposta e Habilitacao podem ser marcadas dentro do edital e pelo menu do card.
+- Prioridade por estrelas adicionada ao cabecalho do edital, preservando a mesma logica do card:
+  - 1 estrela = baixa;
+  - 2 estrelas = media;
+  - 3 estrelas = alta;
+  - clicar na estrela ativa remove a prioridade.
+- Backend do resumo do card passou a priorizar os itens comercialmente mais relevantes, ordenando por valor total de referencia.
+- PRs atualizadas:
+  - `bid-buddy` PR #4 com commit `771d663`;
+  - repositorio principal PR #24 com commit `3d1ee1e`.
 - Item 4.13 concluido e validado no preview;
 - Aba Documentacao reorganizada como checklist operacional por categoria, com resumo de conferidos, pendentes e assinaturas;
 - cada documento passou a separar identificacao/status, arquivo vinculado e acoes de biblioteca em blocos proprios;
@@ -402,6 +463,8 @@ Status:
 
 Demandas novas identificadas durante a revisao:
 
+- [x] Ajustar a tabela de disputa para tratar produtos anexados como composicao do item original, sem criar subitens separados.
+- [ ] Revisar a representacao visual de itens compostos na aba Itens e na Sala de disputa, garantindo que produto principal e produtos anexados fiquem claros sem poluir o card.
 - [ ] Revisar a solucao visual dos itens retirados e lotes totalmente retirados apos detalhar regras de negocio e fluxo.
 - [ ] Avaliar, nos proximos lotes, se algum componente ficou visualmente aglutinado apos a compactacao do Pipeline.
 

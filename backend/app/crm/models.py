@@ -365,6 +365,7 @@ class CrmNoticeProduct(Base):
     raw_payload = Column(JSON)
     cost = Column(Float)
     unit_price = Column(Float)
+    minimum_unit_price = Column(Float)
     reference_price = Column(Float)
     reference_total_price = Column(Float)
     selected_for_dispute = Column(Boolean, nullable=False, default=True)
