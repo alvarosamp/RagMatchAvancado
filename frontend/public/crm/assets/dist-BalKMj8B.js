@@ -1,0 +1,1 @@
+import{a as e,n as t}from"./jsx-runtime-OQpaS_Dv.js";import{mt as n}from"./index-DbCtfqC5.js";var r=n(`Check`,[[`path`,{d:`M20 6 9 17l-5-5`,key:`1gmf2c`}]]),i=e(t(),1);function a(e){let t=i.useRef({value:e,previous:e});return i.useMemo(()=>(t.current.value!==e&&(t.current.previous=t.current.value,t.current.value=e),t.current.previous),[e])}export{r as n,a as t};
