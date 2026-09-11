@@ -34,6 +34,19 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
 
 ## Qualidade tecnica
 
+- [ ] Tornar o preview local persistente no navegador.
+  - Salvar o estado simulado em `localStorage`, sem qualquer acesso ao banco ou ao ambiente de producao.
+  - Preservar alteracoes durante recargas da pagina e disponibilizar uma acao explicita para restaurar os dados de exemplo.
+  - Versionar o estado salvo para evitar que uma estrutura antiga quebre previews futuros.
+
+- [ ] Corrigir a semantica dos indicadores de checagem no card do Pipeline.
+  - Os icones do card sao somente leitura; seu tooltip e rotulo acessivel nao devem sugerir que a marcacao pode ser feita ali.
+  - A marcacao permanece dentro da pagina do edital, onde ha confirmacao visual e salvamento.
+
+- [ ] Avaliar a substituicao das etiquetas textuais de checagem por estado estruturado.
+  - Hoje, Documentacao, Analise tecnica, Proposta e Habilitacao sao identificadas por marcadores dentro de `particularities`.
+  - Um campo estruturado permitiria filtros, relatorios, auditoria e integracoes sem depender de busca textual, preservando as observacoes livres em separado.
+
 - [ ] Ampliar testes para a tabela de disputa com Kits, incluindo produtos vinculados, quantidade original e minimo unitario manual.
 - [ ] Cobrir o contrato entre backend e Sala de disputa para garantir o uso consistente de `minimum_unit_price` e evitar o retorno da nomenclatura legada na interface.
 

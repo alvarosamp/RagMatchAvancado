@@ -559,6 +559,7 @@ Sequencia de implementacao planejada:
 - 11/09/2026 - Minimo unitario implementado como unica regra operacional: edicao contextual, origem do valor, tratamento de Kits no item principal e uso consistente na tabela e Sala de disputa. Build e testes unitarios concluidos.
 - 11/09/2026 - Aba Itens: LPU removida do cabecalho e concentrada no Vinculo de catalogo; Resultado do item foi separado como secao do item do edital. Kits mantem LPUs por produto vinculado, sem agregacao visual artificial.
 - 11/09/2026 - Foi criado o backlog imediato em `07-backlog-imediato.md`, para separar a proxima fila operacional deste historico estrategico.
+- 11/09/2026 - O backlog imediato passou a registrar a persistencia local do preview, a semantica somente-leitura dos indicadores do card e a futura estruturacao dos estados de checagem.
 
 ## Regras para atualizar este arquivo
 
