@@ -357,6 +357,11 @@ Criterios de aceite:
 
 Status:
 
+- Demanda de item composto registrada e tratada na tabela de disputa;
+- quando um item original possui dois ou mais produtos vinculados, a tabela de disputa passa a exibir uma unica linha para o item original;
+- produtos anexados ao item deixam de aparecer como subitens separados na tabela de disputa;
+- valores operacionais de LPU/minimo sao somados por unidade e o total minimo usa a quantidade do item original;
+- descricoes, marcas, modelos, SKUs e produtos do catalogo passam a ser expostos em conjunto na mesma linha operacional.
 - Item 4.13 concluido e validado no preview;
 - Aba Documentacao reorganizada como checklist operacional por categoria, com resumo de conferidos, pendentes e assinaturas;
 - cada documento passou a separar identificacao/status, arquivo vinculado e acoes de biblioteca em blocos proprios;
@@ -422,6 +427,8 @@ Status:
 
 Demandas novas identificadas durante a revisao:
 
+- [x] Ajustar a tabela de disputa para tratar produtos anexados como composicao do item original, sem criar subitens separados.
+- [ ] Revisar a representacao visual de itens compostos na aba Itens e na Sala de disputa, garantindo que produto principal e produtos anexados fiquem claros sem poluir o card.
 - [ ] Revisar a solucao visual dos itens retirados e lotes totalmente retirados apos detalhar regras de negocio e fluxo.
 - [ ] Avaliar, nos proximos lotes, se algum componente ficou visualmente aglutinado apos a compactacao do Pipeline.
 
