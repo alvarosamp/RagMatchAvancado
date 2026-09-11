@@ -115,6 +115,7 @@ Fluxo de implementacao:
   - calcular minimo de kits a partir dos componentes;
   - tornar o vinculo de catalogo visivel no resumo e estruturado dentro dos detalhes;
   - reduzir repeticoes de valores e metadados no card do item.
+  - aplicar a edicao campo a campo por icone tambem aos dados editaveis do item, preservando a leitura organizada como estado padrao.
 - [x] Tabela de disputa: reorganizar por edital e explicitar referencia, LPU, minimo operacional e totais.
   - remover o uso visual ambiguo de "preco catalogo";
   - suportar minimo editado e soma de kits;
