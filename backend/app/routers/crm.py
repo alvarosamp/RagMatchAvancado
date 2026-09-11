@@ -1140,6 +1140,7 @@ def crm_advance_notice(
             )
         )
         db.commit()
+        invalidate_notice_list_cache(current_user.tenant_id)
         return {
             "ok": True,
             "notice_id": notice.id,

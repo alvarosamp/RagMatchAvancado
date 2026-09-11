@@ -22,6 +22,7 @@ from app.crm.models import (
     CrmChecklistStatus,
     CrmNotice,
     CrmNoticeDocument,
+    CrmNoticeOutcome,
     CrmNoticeProduct,
     CrmNoticeSession,
     CrmNoticeSessionStatus,
@@ -58,7 +59,7 @@ def list_notice_summaries(
         .filter(CrmNotice.tenant_id == current_user.tenant_id)
     )
     if not include_discarded:
-        query = query.filter(CrmNotice.outcome != "not_pursued")
+        query = query.filter(CrmNotice.outcome == CrmNoticeOutcome.PENDING)
     latest_session_sequence = (
         db.query(func.max(CrmNoticeSession.sequence))
         .filter(CrmNoticeSession.notice_id == CrmNotice.id)
@@ -311,7 +312,7 @@ def _cache_key(tenant_id: int, limit: int, cursor: str | None, stage: str | None
             version = int(client.get(f"crm:notice-list:version:{tenant_id}") or 0)
         except Exception:
             pass
-    raw = json.dumps(["v3-hide-suspended", tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
+    raw = json.dumps(["v4-open-pending-only", tenant_id, version, limit, cursor, stage, include_discarded], separators=(",", ":"), ensure_ascii=True)
     return "crm:notice-list:" + base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 
