@@ -17,7 +17,7 @@ codex/crm-design-system-layout
 Ultimo commit conhecido no repositorio principal:
 
 ```text
-3d1ee1e
+c00c124
 ```
 
 Branch do CRM fonte:
@@ -29,13 +29,13 @@ codex/crm-layout-redesign
 Ultimo commit conhecido no CRM fonte:
 
 ```text
-771d663
+beddf86
 ```
 
 Ambiente de validacao:
 
 ```text
-http://127.0.0.1:8081/crm/editais?preview=1
+http://127.0.0.1:8082/crm/editais?preview=1
 ```
 
 Pull requests de acompanhamento:
@@ -115,7 +115,9 @@ Fluxo de implementacao:
   - calcular minimo de kits a partir dos componentes;
   - tornar o vinculo de catalogo visivel no resumo e estruturado dentro dos detalhes;
   - reduzir repeticoes de valores e metadados no card do item.
-- [x] Tabela de disputa: reorganizar por edital e explicitar referencia, LPU, minimo operacional e totais.
+  - aplicar a edicao campo a campo por icone tambem aos dados editaveis do item, preservando a leitura organizada como estado padrao.
+  - corrigir truncamento de valores em larguras intermediarias, remover referencia total duplicada e manter valor total seguido do minimo total no rodape.
+- [x] Tabela de disputa: reorganizar por edital e explicitar referencia, LPU, minimo unitario e totais.
   - remover o uso visual ambiguo de "preco catalogo";
   - suportar minimo editado e soma de kits;
   - garantir leitura responsiva e impressao operacional;
@@ -180,26 +182,7 @@ Motivo:
 
 ## Proximos passos
 
-### 1. Calendario com popup de edital
-
-Objetivo:
-
-- manter a experiencia ja iniciada no calendario: clicar no edital deve abrir popup, nao exigir selecionar e depois abrir.
-
-Implementar:
-
-- clique direto no edital abre popup;
-- botao de abrir em nova janela dentro do popup;
-- lista lateral fica mais limpa;
-- cards da lista mostram data e contexto.
-
-Criterios de aceite:
-
-- usuario nao perde a data selecionada;
-- fluxo fica mais direto;
-- calendario e pipeline usam comportamento parecido para abrir edital.
-
-### 2. Revisao de temas claro e escuro
+### 1. Revisao de temas claro e escuro
 
 Objetivo:
 
@@ -224,7 +207,7 @@ Status:
 - aplicado e validado no preview;
 - manter em observacao durante a revisao visual geral para ajustes finos de contraste e densidade.
 
-### 3. Unificacao estrutural do modulo Editais
+### 2. Unificacao estrutural do modulo Editais
 
 Objetivo:
 
@@ -254,7 +237,7 @@ Status:
 - filtros sao preservados na URL ao alternar entre Pipeline e Calendario;
 - manter em observacao: volume real de editais no Calendario e necessidade futura de paginacao, carregamento por intervalo mensal ou filtro server-side.
 
-### 4. Revisao visual geral
+### 3. Revisao visual geral
 
 Objetivo:
 
@@ -467,6 +450,116 @@ Demandas novas identificadas durante a revisao:
 - [ ] Revisar a representacao visual de itens compostos na aba Itens e na Sala de disputa, garantindo que produto principal e produtos anexados fiquem claros sem poluir o card.
 - [ ] Revisar a solucao visual dos itens retirados e lotes totalmente retirados apos detalhar regras de negocio e fluxo.
 - [ ] Avaliar, nos proximos lotes, se algum componente ficou visualmente aglutinado apos a compactacao do Pipeline.
+- [x] Aplicar a mesma edicao campo a campo ao minimo unitario dentro do vinculo de catalogo.
+- [ ] Consolidar campos dinamicos do BI que representam a mesma caracteristica com nomes diferentes, evitando repeticoes como Wi-Fi e Tecnologia Wi-Fi.
+- [x] Unificar, na aba Itens, a exibicao da versao LPU e do acesso ao arquivo em uma acao visual unica, mantendo a informacao disponivel.
+
+### Planejamento futuro: minimo unitario e Preco LPU
+
+Decisao de negocio registrada, sem implementacao nesta etapa:
+
+- o conceito de **Minimo operacional** deve ser retirado da interface e da regra de negocio; ele nao sera mantido como um segundo valor;
+- o unico valor operacional de piso exibido e editavel sera o **Minimo unitario**;
+- o campo representa o menor valor unitario aceitavel para aquele item e permanece independente por item;
+- o valor de referencia e a base inicial quando nao existe Preco LPU;
+- quando houver Preco LPU no catalogo, ele deve ser usado como valor inicial do Minimo unitario;
+- se o usuario alterar o Minimo unitario, o valor manual passa a ter precedencia sobre o Preco LPU e sobre o valor de referencia;
+- o Minimo total deve ser calculado como Minimo unitario multiplicado pela quantidade original do item;
+- a tabela de disputa deve consumir o mesmo Minimo unitario resolvido, sem repetir uma regra propria de calculo.
+
+Precedencia planejada do valor:
+
+1. valor manual do Minimo unitario, quando definido pelo usuario;
+2. Preco LPU do produto vinculado, quando existente;
+3. valor de referencia unitario do item.
+
+Regras complementares para a implementacao:
+
+- a interface deve indicar a origem do valor (`Manual`, `LPU` ou `Referencia`) e deixar claro quando a edicao manual esta sobrepondo os demais valores;
+- limpar o valor manual deve restaurar o fallback previsto, e nao criar um quarto estado ambiguo;
+- o campo persistido `minimum_unit_price` deve ser avaliado como campo canonico antes de qualquer renomeacao ou remocao do conceito antigo, para evitar perda de dados e incompatibilidade com registros existentes;
+- Kits devem manter a quantidade do item original e continuar sendo tratados como um unico item na disputa;
+- em Kits, a alteracao manual ocorre somente no Minimo unitario do item original. Nao existe minimo operacional separado nem edicao concorrente por componente;
+- o Kit sem Minimo unitario manual usa a mesma precedencia do item original: LPU vinculada, quando existir, ou valor de referencia. Produtos anexados nao recalculam nem sobrescrevem esse minimo;
+- todos os pontos que exibem ou usam minimo (aba Itens, card do Pipeline, Sala de disputa, exportacoes e documentos) devem passar por uma auditoria para consumir o mesmo resolvedor.
+
+Sequencia de implementacao planejada:
+
+- [x] substituir a nomenclatura visual "Minimo operacional" por "Minimo unitario";
+- [x] retirar o campo e a nomenclatura de minimo operacional, preservando `minimum_unit_price` como campo canonico do Minimo unitario; registros historicos de disputa mantem o nome legado somente por compatibilidade;
+- [x] centralizar a resolucao em uma funcao que retorna valor e origem, incluindo o estado manual;
+- [x] aplicar edicao por campo ao Minimo unitario usando o padrao visual ja adotado na aba Informacoes;
+- [x] revisar o comportamento de Kits para permitir edicao somente no Minimo unitario do item original;
+- [x] ajustar a tabela de disputa para consumir exclusivamente o Minimo unitario resolvido;
+- [x] validar precedencia Manual > LPU > Referencia, ausencia de valor e calculo de total com testes unitarios.
+
+### Planejamento futuro: consolidacao dos campos do BI
+
+Diagnostico registrado, sem implementacao nesta etapa:
+
+- o BI pode entregar a mesma caracteristica com chaves diferentes, como `wifi` e `Tecnologia Wi-Fi`;
+- a aba Itens deve exibir uma caracteristica sem repeticao semantica, mesmo quando ela aparece em fontes diferentes;
+- a consolidacao deve ser feita na camada de apresentacao e normalizacao, preservando os dados brutos para auditoria e reprocessamento;
+- campos com conflito de valor nao devem ser descartados silenciosamente: o valor principal deve ser escolhido por prioridade de fonte e o conflito deve permanecer consultavel no detalhe.
+
+Prioridade planejada das fontes:
+
+1. campo estruturado do item;
+2. campos estruturados de `bi_features`;
+3. valores equivalentes em `raw_payload`;
+4. caracteristicas inferidas da descricao ou categoria.
+
+Sequencia de implementacao planejada:
+
+- [ ] criar um mapa de chaves canonicas para caracteristicas recorrentes, como Wi-Fi, portas, gerenciamento, PoE, uplink, camada e velocidade;
+- [ ] normalizar nomes, acentos, caixa e formatos antes de montar os campos exibidos;
+- [ ] deduplicar por caracteristica canonica, e nao pela combinacao literal de chave e valor;
+- [ ] preservar a origem de cada valor e sinalizar conflitos quando duas fontes divergirem;
+- [ ] revisar os limites de exibicao e garantir que a compactacao nao esconda dados relevantes;
+- [ ] validar com itens que contenham a mesma caracteristica em BI estruturado, payload bruto e inferencia tecnica.
+
+### Planejamento futuro: versao e acesso a LPU
+
+Diagnostico registrado, sem implementacao nesta etapa:
+
+- versao da LPU e acesso ao arquivo devem formar uma unica informacao visual, reduzindo a repeticao de links e botoes;
+- a acao deve exibir a versao quando existir e usar um unico controle iconografico para abrir o arquivo, com tooltip e rotulo acessivel;
+- quando houver versao sem link, a versao deve continuar visivel com estado "Sem link";
+- quando houver link sem versao, deve existir acesso ao arquivo com identificacao generica de LPU;
+- quando nao houver versao nem link, nenhum controle vazio deve ocupar espaco;
+- em Kits, as LPUs nao devem ser agregadas em uma unica referencia visual: cada produto vinculado conserva sua propria LPU dentro do seu Vinculo de catalogo.
+
+Regra de fonte a validar na implementacao:
+
+- o snapshot da LPU salvo no edital deve ter prioridade para preservar o contexto historico da analise;
+- a relacao atual com o catalogo deve funcionar como fallback quando o snapshot nao estiver disponivel;
+- a interface deve diferenciar, quando necessario, uma LPU registrada no momento da analise de uma LPU atualizada no catalogo.
+
+Sequencia de implementacao planejada:
+
+- [x] criar um componente visual unico para versao, origem e acesso a LPU;
+- [x] remover exibicoes duplicadas de versao, link e botao de LPU na mesma superficie;
+- [x] definir os estados com versao, sem link, com link sem versao e sem dados;
+- [x] retirar LPU do cabecalho do item e concentra-la no Vinculo de catalogo;
+- [x] definir que Kits nao agregam multiplas LPUs: cada produto vinculado mantem sua referencia no Vinculo de catalogo;
+- [x] preservar a prioridade entre snapshot salvo no edital e catalogo atual por meio dos resolvedores existentes;
+- [x] aplicar tooltip, `aria-label` e foco visivel ao controle unico em telas compactas.
+
+## Historico de atualizacoes recentes
+
+- 11/09/2026 - `bid-buddy` recebeu o componente compartilhado de edicao contextual e a aba Itens passou a reutilizar o padrao visual da aba Informacoes.
+- 11/09/2026 - Cards de item passaram a separar resumo unitario e fechamento financeiro; o valor total aparece antes do minimo total no rodape.
+- 11/09/2026 - Resumo superior do item deixou de exibir referencias totais duplicadas e passou a usar uma grade responsiva para evitar truncamento.
+- 11/09/2026 - O roadmap foi atualizado com os commits locais `d482ba3` e `dd0f01c`. Nenhum dos dois foi enviado ao GitHub nesta etapa.
+- 11/09/2026 - Nova regra de negocio registrada: o Minimo unitario passa a ser o conceito canonico, com precedencia Manual > LPU > Referencia; a implementacao foi adiada para uma etapa futura.
+- 11/09/2026 - Decisao refinada: o minimo operacional sera retirado; em Kits, o Minimo unitario manual sera alterado somente no item original, sem valores concorrentes por componente.
+- 11/09/2026 - Os demais pontos do diagnostico foram detalhados: consolidacao semantica dos campos do BI e unificacao visual da versao e do acesso a LPU.
+- 11/09/2026 - Aba Itens: versao e abertura da LPU foram unificadas em um unico controle compacto; o valor da LPU continua como metrica separada. A visualizacao foi conferida no preview local.
+- 11/09/2026 - O popup do Calendario foi retirado dos proximos passos apos confirmacao de que ja esta implementado e funcional no sistema em producao.
+- 11/09/2026 - Minimo unitario implementado como unica regra operacional: edicao contextual, origem do valor, tratamento de Kits no item principal e uso consistente na tabela e Sala de disputa. Build e testes unitarios concluidos.
+- 11/09/2026 - Aba Itens: LPU removida do cabecalho e concentrada no Vinculo de catalogo; Resultado do item foi separado como secao do item do edital. Kits mantem LPUs por produto vinculado, sem agregacao visual artificial.
+- 11/09/2026 - Foi criado o backlog imediato em `07-backlog-imediato.md`, para separar a proxima fila operacional deste historico estrategico.
+- 11/09/2026 - O backlog imediato passou a registrar a persistencia local do preview, a semantica somente-leitura dos indicadores do card e a futura estruturacao dos estados de checagem.
 
 ## Regras para atualizar este arquivo
 
