@@ -547,6 +547,7 @@ Sequencia de implementacao planejada:
 
 ## Historico de atualizacoes recentes
 
+- 14/09/2026 - Continuidade apos Pregao implementada: resultados de itens preservam o valor final calculado, mas nao alteram a etapa nem o resultado geral do edital. O botao `Avancar etapa` passou a enviar Pregao para Julgamento tanto no Pipeline quanto dentro do edital. Commits: `b1b9c02` no frontend e `9bd1fac` no backend.
 - 14/09/2026 - Revisao de fluxo registrada como prioridade: o resultado de um item nao encerra o edital. O edital deve permanecer no pipeline apos o Pregao e seguir por Julgamento, Habilitacao, Recursos e contrarrazoes, Adjudicacao e Homologacao. Foi identificado tambem que o botao `Avancar etapa` bloqueia indevidamente a transicao de Pregao para Julgamento no frontend, embora o backend ja suporte a regra.
 - 11/09/2026 - Avaliacao geral do CRM frente ao Design System registrada: aderencia estimada em 7/10. Pipeline, cards, popup e Informacoes foram considerados os pontos mais maduros; Documentacao, consolidacao de BI, arquitetura de navegacao, alertas orientados por tarefas e formalizacao dos componentes-base foram mantidos como proximas frentes.
 - 11/09/2026 - Kits passaram a ser exibidos como um unico item comercial na aba Itens e no Pipeline: componentes deixam de aparecer como subitens, os totais de referencia e minimo sao agregados e cada produto vinculado preserva marca/modelo e minimo LPU. A validacao da Sala de disputa com Kit real permanece pendente.

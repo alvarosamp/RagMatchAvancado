@@ -6,12 +6,13 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
 
 ## Proximo ciclo de implementacao
 
-- [ ] Corrigir a continuidade do edital apos o Pregao.
+- [x] Corrigir a continuidade do edital apos o Pregao.
   - O resultado de um item e uma informacao operacional da disputa; ele nao pode encerrar o edital nem desloca-lo automaticamente para `Resultados`.
   - Manter o edital no pipeline apos registrar itens vencidos, perdidos ou desclassificados, permitindo concluir Julgamento, Habilitacao, Recursos e contrarrazoes, Adjudicacao e Homologacao.
   - Definir o resultado geral do edital somente por encerramento explicito apos Homologacao, ou por uma regra futura aprovada para encerramento antecipado.
   - Corrigir o botao `Avancar etapa` para realizar `Pregao -> Julgamento`; hoje o frontend interpreta Pregao como a ultima etapa antes de chamar o backend.
   - Validar o mesmo comportamento por botao e por arrastar o card no Pipeline, incluindo edital com item ja marcado como vencido.
+  - Implementado em 14/09/2026 nos commits `b1b9c02` (frontend) e `9bd1fac` (backend).
 
 - [ ] Consolidar campos tecnicos dinamicos do BI na aba Itens.
   - Criar chaves canonicas para atributos recorrentes, incluindo Wi-Fi, portas, gerenciamento, PoE, uplink, camada e velocidade.
