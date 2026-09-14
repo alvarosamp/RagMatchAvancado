@@ -180,25 +180,13 @@ def derive_notice_outcome_from_items(notice: CrmNotice) -> CrmNoticeOutcome | No
 
 
 def sync_notice_result_from_items(notice: CrmNotice) -> None:
-    derived_outcome = derive_notice_outcome_from_items(notice)
     derived_final_value = derive_notice_final_value(notice)
 
     if derived_final_value is not None:
         notice.final_value = derived_final_value
 
-    if derived_outcome is None:
-        return
-
-    if derived_outcome == CrmNoticeOutcome.PENDING:
-        if _outcome_value(notice.outcome) in {
-            CrmNoticeOutcome.WON.value,
-            CrmNoticeOutcome.LOST.value,
-        }:
-            notice.outcome = CrmNoticeOutcome.PENDING
-        return
-
-    notice.outcome = derived_outcome
-    notice.stage = CrmNoticeStage.RESULT
+    # Item results support the auction and post-auction workflow. They must not
+    # close the notice: the final outcome is decided only at process closure.
 
 
 def _clean(value: Any) -> str | None:
