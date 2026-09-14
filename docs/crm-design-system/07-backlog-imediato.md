@@ -6,6 +6,20 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
 
 ## Proximo ciclo de implementacao
 
+- [x] Implementar encerramento explicito do edital.
+  - Adicionar a acao `Encerrar edital` no menu de acoes do edital, com historico, confirmacao e resumo dos resultados por item.
+  - Enquanto o edital estiver antes de Homologacao, permitir apenas a classificacao final `Cancelado`, com motivo obrigatorio.
+  - Em Homologacao, permitir `Ganho`, `Perdido` ou `Cancelado`; Ganho deve permanecer Ganho mesmo quando apenas parte dos itens foi vencida.
+  - Preservar resultados por item e usar o encerramento como unica acao que retira o edital do Pipeline e o envia para Resultados/Encerrados.
+  - Manter uma unica tela de Resultados, com filtros para Ganho, Perdido e Cancelado.
+  - Manter `Descartado` como decisao interna de Triagem na area separada Editais descartados; `Cancelado` representa encerramento externo de edital que entrou no fluxo e aparece em Resultados.
+  - Tratar `Desclassificado` como estado provisório de item durante Julgamento ou Habilitacao; o edital permanece pendente e so pode ser encerrado como Perdido apos Homologacao.
+  - Adicionar `Reabrir edital` em Resultados: exigir motivo, limpar a classificacao final, preservar os resultados por item e retornar o edital para Homologacao.
+  - Permitir encerrar e reabrir a qualquer usuario com permissao de edicao.
+  - Exigir resultado registrado para todos os itens ainda em disputa antes de permitir Ganho ou Perdido em Homologacao.
+  - Solicitar motivo em texto livre para Cancelado e para Reabrir edital.
+  - Implementado em 14/09/2026: encerramento, reabertura, validacoes de fase/itens, historico, filtros de Resultados e preview local.
+
 - [x] Corrigir a continuidade do edital apos o Pregao.
   - O resultado de um item e uma informacao operacional da disputa; ele nao pode encerrar o edital nem desloca-lo automaticamente para `Resultados`.
   - Manter o edital no pipeline apos registrar itens vencidos, perdidos ou desclassificados, permitindo concluir Julgamento, Habilitacao, Recursos e contrarrazoes, Adjudicacao e Homologacao.
