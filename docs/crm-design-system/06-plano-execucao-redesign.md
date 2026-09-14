@@ -547,6 +547,11 @@ Sequencia de implementacao planejada:
 
 ## Historico de atualizacoes recentes
 
+- 14/09/2026 - Revisao de fluxo registrada como prioridade: o resultado de um item nao encerra o edital. O edital deve permanecer no pipeline apos o Pregao e seguir por Julgamento, Habilitacao, Recursos e contrarrazoes, Adjudicacao e Homologacao. Foi identificado tambem que o botao `Avancar etapa` bloqueia indevidamente a transicao de Pregao para Julgamento no frontend, embora o backend ja suporte a regra.
+- 11/09/2026 - Avaliacao geral do CRM frente ao Design System registrada: aderencia estimada em 7/10. Pipeline, cards, popup e Informacoes foram considerados os pontos mais maduros; Documentacao, consolidacao de BI, arquitetura de navegacao, alertas orientados por tarefas e formalizacao dos componentes-base foram mantidos como proximas frentes.
+- 11/09/2026 - Kits passaram a ser exibidos como um unico item comercial na aba Itens e no Pipeline: componentes deixam de aparecer como subitens, os totais de referencia e minimo sao agregados e cada produto vinculado preserva marca/modelo e minimo LPU. A validacao da Sala de disputa com Kit real permanece pendente.
+- 11/09/2026 - Checagens operacionais de Documentacao, Analise tecnica, Proposta e Habilitacao passaram a usar estado estruturado, com migracao dos marcadores legados no proximo salvamento. Os icones do Pipeline foram confirmados como somente leitura, com tooltip semantico.
+
 - 11/09/2026 - `bid-buddy` recebeu o componente compartilhado de edicao contextual e a aba Itens passou a reutilizar o padrao visual da aba Informacoes.
 - 11/09/2026 - Cards de item passaram a separar resumo unitario e fechamento financeiro; o valor total aparece antes do minimo total no rodape.
 - 11/09/2026 - Resumo superior do item deixou de exibir referencias totais duplicadas e passou a usar uma grade responsiva para evitar truncamento.
