@@ -34,11 +34,17 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
   - Exibir uma unica caracteristica por conceito; quando houver conflito, manter o valor principal e tornar a divergencia consultavel.
   - Validar com dados que hoje repetem informacoes, como `Wi-Fi` e `Tecnologia Wi-Fi`.
 
-- [ ] Validar Kits na Sala de disputa com dados reais.
-  - A aba Itens e o card do Pipeline ja tratam o Kit como um unico item comercial, mantendo a quantidade original e agregando referencia e minimo.
-  - Produtos vinculados aparecem apenas dentro do item principal, em formato compacto com marca/modelo e minimo LPU.
-  - Confirmar na tabela de disputa que a quantidade original e o minimo unitario resolvido do item principal sao usados sem criar subitens comerciais.
-  - Cobrir o caso com pelo menos dois produtos vinculados e LPUs diferentes.
+- [ ] Validar com dados reais o fluxo de composicao de catalogo na aba Itens.
+  - Tratar o item importado do edital como entidade principal: ele conserva numero, lote, descricao, quantidade, preco de referencia, situacao na disputa e resultado.
+  - Tratar um ou mais produtos do catalogo como composicao do item. Dois ou mais produtos representam obrigatoriamente um Kit, isto e, componentes de uma unica solucao vendida em conjunto.
+  - Substituir os caminhos separados de "Vincular a produto do catalogo" e "Anexar outro item" por uma unica acao orientada ao usuario: `Vincular produtos do catalogo`, com selecao de um ou mais produtos antes da confirmacao.
+  - Reservar a criacao de item sem origem no edital para uma acao excepcional e explicitamente nomeada `Adicionar item manual`; ela nao deve concorrer com o fluxo normal de analise dos itens importados.
+  - Exibir a composicao no proprio item, de forma compacta: produto, marca/modelo, SKU quando existir e Preco LPU individual. Componentes nao aparecem como itens, subitens ou linhas comerciais independentes.
+  - Permitir adicionar, substituir ou remover componentes sem alterar a quantidade, a referencia ou a identidade do item do edital.
+  - Para Kit, resolver o Minimo unitario por `Manual > soma das LPUs dos componentes > Referencia`. O Minimo total e o minimo unitario resolvido multiplicado pela quantidade original.
+  - Quando faltar LPU em qualquer componente do Kit, nao somar valores parciais: sinalizar composicao incompleta e exigir minimo unitario manual ou a regularizacao da LPU faltante.
+  - Validar os cenarios: sem vinculo, vinculo simples, Kit com LPUs diferentes, componente sem LPU, minimo manual, remocao de componente e criacao excepcional de item manual.
+  - Implementado no frontend em 14/09/2026: seletor multiplo unico, composicao editavel, criacao excepcional de item manual, calculo de minimo de Kit e alerta para LPU incompleta. A validacao manual permanece pendente porque o catalogo do preview atual nao possui produtos ativos.
 
 - [ ] Separar com mais clareza analise de itens e resultado da disputa.
   - A aba Itens ainda apresenta o resumo "Resultado por item" antes da analise operacional.

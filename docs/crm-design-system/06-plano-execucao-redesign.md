@@ -493,6 +493,21 @@ Sequencia de implementacao planejada:
 - [x] ajustar a tabela de disputa para consumir exclusivamente o Minimo unitario resolvido;
 - [x] validar precedencia Manual > LPU > Referencia, ausencia de valor e calculo de total com testes unitarios.
 
+### Revisao de regra: Kit como composicao obrigatoria
+
+Decisao confirmada em 14/09/2026 para orientar a proxima revisao da aba Itens, sem implementacao nesta etapa:
+
+- o item importado do edital e a entidade comercial unica; numero, lote, descricao, quantidade, preco de referencia, selecao para disputa e resultado pertencem somente a ele;
+- produtos do catalogo sao componentes da composicao desse item; dois ou mais componentes constituem sempre um `Kit`, uma solucao obrigatoria vendida em conjunto;
+- a quantidade do Kit nunca e duplicada nos componentes: ela e sempre a quantidade original do item do edital;
+- cada componente conserva identidade de catalogo, marca, modelo, SKU, versao e Preco LPU individual para auditoria;
+- o Minimo unitario do Kit segue `Manual > soma das LPUs de todos os componentes > Referencia`;
+- se houver componente sem LPU, o sistema nao pode formar um minimo automatico parcial: deve informar a pendencia e exigir a definicao manual do Minimo unitario ou o cadastro da LPU ausente;
+- o Minimo total do Kit e calculado apenas uma vez: Minimo unitario resolvido multiplicado pela quantidade original;
+- a experiencia deve unificar os comandos hoje separados para vinculo simples e adicao de componente em uma unica acao de selecao de produtos do catalogo; criar item manual permanece uma excecao claramente nomeada.
+
+Esta decisao substitui, para Kits, a regra anterior de manter o minimo do item principal sem recalculo pelos componentes anexados. A precedencia `Manual > LPU > Referencia` continua valida para itens de produto unico.
+
 ### Planejamento futuro: consolidacao dos campos do BI
 
 Diagnostico registrado, sem implementacao nesta etapa:
