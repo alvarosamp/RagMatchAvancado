@@ -36,6 +36,10 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
 
 ## Aguardando detalhamento de regra de negocio
 
+- [ ] Reclassificar editais deslocados para Resultados pela regra anterior.
+  - Identificar editais em `Resultado` sem fase pos-disputa, cujo resultado geral foi derivado de itens e que ainda precisam percorrer o fluxo administrativo.
+  - A reclassificacao deve ser assistida ou confirmada pelo usuario; nao mover automaticamente editais historicos que possam estar realmente encerrados.
+
 - [ ] Substituir os dados empresariais fixos do gerador de documentos por um cadastro de empresa por tenant.
   - O dialogo de geracao ja utiliza somente Modelo, Assinante e a justificativa quando o modelo for Declaracao de Exequibilidade.
   - Dados da empresa, edital e assinante devem ser preenchidos automaticamente; valores empresariais nao devem ficar fixos no codigo quando houver suporte a multiplas empresas.
