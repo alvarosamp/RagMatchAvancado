@@ -1179,6 +1179,81 @@ def crm_advance_notice(
     }
 
 
+@router.post("/notices/{notice_id}/close")
+def close_notice(
+    notice_id: str, payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db), current_user: User = Depends(require_role("admin", "editor")),
+):
+    outcome = str(payload.get("outcome") or "").strip()
+    reason = str(payload.get("reason") or "").strip()
+    if outcome not in {CrmNoticeOutcome.WON.value, CrmNoticeOutcome.LOST.value, CrmNoticeOutcome.CANCELLED.value}:
+        raise HTTPException(status_code=400, detail="Classificacao final invalida.")
+    if outcome == CrmNoticeOutcome.CANCELLED.value and not reason:
+        raise HTTPException(status_code=400, detail="Informe o motivo do cancelamento.")
+    notice = db.query(CrmNotice).options(
+        selectinload(CrmNotice.notice_products), selectinload(CrmNotice.notice_item_results),
+    ).filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).with_for_update().first()
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    phase = getattr(notice.post_auction_phase, "value", notice.post_auction_phase)
+    if outcome != CrmNoticeOutcome.CANCELLED.value:
+        if phase != CrmPostAuctionPhase.HOMOLOGATION.value:
+            raise HTTPException(status_code=409, detail="Ganho ou Perdido so podem encerrar o edital em Homologacao.")
+        active_ids = {
+            product.id for product in notice.notice_products
+            if getattr(product, "selected_for_dispute", True) is not False
+            and not bool((getattr(product, "raw_payload", None) or {}).get("kit_component"))
+        }
+        result_ids = {result.notice_product_id for result in notice.notice_item_results}
+        missing = active_ids - result_ids
+        if missing:
+            raise HTTPException(status_code=409, detail=f"Registre o resultado dos {len(missing)} item(ns) em disputa antes de encerrar.")
+    previous = {"stage": getattr(notice.stage, "value", notice.stage), "phase": phase, "outcome": getattr(notice.outcome, "value", notice.outcome)}
+    notice.stage = CrmNoticeStage.RESULT
+    notice.post_auction_phase = None
+    notice.outcome = CrmNoticeOutcome(outcome)
+    notice.outcome_reason = reason or None
+    db.add(CrmNoticeHistory(
+        tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action=f"Edital encerrado como {outcome}",
+        details={"from": previous, "outcome": outcome, "reason": reason or None},
+    ))
+    db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
+    return {"ok": True, "notice_id": notice.id, "outcome": outcome}
+
+
+@router.post("/notices/{notice_id}/reopen")
+def reopen_notice(
+    notice_id: str, payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db), current_user: User = Depends(require_role("admin", "editor")),
+):
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Informe o motivo da reabertura.")
+    notice = db.query(CrmNotice).filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).with_for_update().first()
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    previous_outcome = getattr(notice.outcome, "value", notice.outcome)
+    if previous_outcome not in {CrmNoticeOutcome.WON.value, CrmNoticeOutcome.LOST.value, CrmNoticeOutcome.CANCELLED.value}:
+        raise HTTPException(status_code=409, detail="Somente editais encerrados podem ser reabertos.")
+    now = _local_now()
+    notice.stage = CrmNoticeStage.RESULT
+    notice.post_auction_phase = CrmPostAuctionPhase.HOMOLOGATION
+    notice.post_auction_entered_at = now
+    notice.post_auction_owner = current_user.id
+    notice.outcome = CrmNoticeOutcome.PENDING
+    notice.outcome_reason = None
+    db.add(CrmNoticeHistory(
+        tenant_id=current_user.tenant_id, notice_id=notice.id, user_id=current_user.id,
+        action="Edital reaberto em Homologacao",
+        details={"from_outcome": previous_outcome, "reason": reason},
+    ))
+    db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
+    return {"ok": True, "notice_id": notice.id, "phase": CrmPostAuctionPhase.HOMOLOGATION.value}
+
+
 @router.post("/email-monitor/run")
 def crm_run_email_monitor(
     limit: int | None = Body(default=None, embed=True),
