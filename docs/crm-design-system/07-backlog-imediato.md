@@ -6,6 +6,12 @@ Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-e
 
 ## Proximo ciclo de implementacao
 
+- [x] Restaurar a reabertura de editais descartados.
+  - Disponibilizar `Reabrir` na lista de Descartados e no menu do edital descartado.
+  - Retornar o edital para Triagem, limpar o motivo como estado atual e preservar o descarte anterior no Historico.
+  - Informar que o agendamento removido no descarte deve ser realizado novamente quando o edital avancar.
+  - Implementado em 15/09/2026; a validacao manual com registro descartado permanece necessaria no ambiente de homologacao.
+
 - [x] Implementar encerramento explicito do edital.
   - Adicionar a acao `Encerrar edital` no menu de acoes do edital, com historico, confirmacao e resumo dos resultados por item.
   - Enquanto o edital estiver antes de Homologacao, permitir apenas a classificacao final `Cancelado`, com motivo obrigatorio.
