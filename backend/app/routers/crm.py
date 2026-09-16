@@ -852,6 +852,53 @@ def reopen_notice(
     return {"ok": True, "notice_id": notice.id, "phase": CrmPostAuctionPhase.HOMOLOGATION.value}
 
 
+def _legacy_reopened_notices_query(db: Session, current_user: User):
+    return (
+        db.query(CrmNotice)
+        .filter(
+            CrmNotice.tenant_id == current_user.tenant_id,
+            CrmNotice.stage == CrmNoticeStage.RESULT,
+            CrmNotice.outcome == CrmNoticeOutcome.PENDING,
+            CrmNotice.post_auction_phase.is_(None),
+        )
+    )
+
+
+@router.get("/notices/reopen-recovery")
+def list_legacy_reopened_notices(
+    db: Session = Depends(get_db), current_user: User = Depends(require_role("admin", "editor")),
+):
+    notices = _legacy_reopened_notices_query(db, current_user).order_by(CrmNotice.updated_at.desc()).all()
+    return {
+        "items": [
+            {"id": notice.id, "number": notice.number, "title": notice.title}
+            for notice in notices
+        ],
+    }
+
+
+@router.post("/notices/reopen-recovery")
+def recover_legacy_reopened_notices(
+    db: Session = Depends(get_db), current_user: User = Depends(require_role("admin", "editor")),
+):
+    notices = _legacy_reopened_notices_query(db, current_user).with_for_update().all()
+    now = _local_now()
+    for notice in notices:
+        notice.post_auction_phase = CrmPostAuctionPhase.HOMOLOGATION
+        notice.post_auction_entered_at = now
+        notice.post_auction_owner = current_user.id
+        db.add(CrmNoticeHistory(
+            tenant_id=current_user.tenant_id,
+            notice_id=notice.id,
+            user_id=current_user.id,
+            action="Reabertura legada regularizada em Homologacao",
+            details={"from": {"stage": "result", "phase": None, "outcome": "pending"}},
+        ))
+    db.commit()
+    invalidate_notice_list_cache(current_user.tenant_id)
+    return {"ok": True, "recovered_count": len(notices), "phase": CrmPostAuctionPhase.HOMOLOGATION.value}
+
+
 @router.post("/email-monitor/run")
 def crm_run_email_monitor(
     limit: int | None = Body(default=None, embed=True),
