@@ -94,6 +94,40 @@ def _enqueue_job(db: Session, job: Job, *, delay_ms: int = 0) -> None:
         actor.send(*args)
 
 
+def prepare_failed_job_retry(job: Job, *, now: datetime | None = None) -> None:
+    """Prepara um retry manual sem apagar a trilha das tentativas anteriores."""
+    if job.status != JobStatus.FAILED:
+        raise ValueError("Somente jobs com falha podem ser reenfileirados.")
+    if job.error_message == "Cancelado pelo usuário":
+        raise ValueError("Jobs cancelados pelo usuario nao podem ser reenfileirados.")
+    if job.job_type == JobType.UPLOAD_EDITAL:
+        raise ValueError("Reenvie o arquivo para reprocessar um upload com falha.")
+
+    retry_at = now or datetime.now(timezone.utc)
+    attempts = int(job.attempt_count or (job.payload or {}).get("attempts", 0))
+    job.max_attempts = max(int(job.max_attempts or 0), attempts + 1)
+    payload = dict(job.payload or {})
+    payload["manual_retry_count"] = int(payload.get("manual_retry_count", 0)) + 1
+    payload["last_manual_retry_at"] = retry_at.isoformat()
+    job.payload = payload
+    job.status = JobStatus.PENDING
+    job.progress = 0.0
+    job.result = None
+    job.error_message = None
+    job.started_at = None
+    job.finished_at = None
+
+
+def requeue_failed_job(db: Session, job: Job) -> None:
+    prepare_failed_job_retry(job)
+    db.add(job)
+    _enqueue_job(db, job)
+    logger.info(
+        "[Jobs] Retry manual enfileirado | job=%s | correlation_id=%s | proxima_tentativa=%s/%s",
+        job.id[:8], job.correlation_id, int(job.attempt_count or 0) + 1, job.max_attempts,
+    )
+
+
 def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
     """Retry transient failures with backoff, preserving the visible job record."""
     job = db.get(Job, job_id)

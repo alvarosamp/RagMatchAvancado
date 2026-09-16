@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 
 from app.db.session import get_db
 from app.jobs.models import Job, JobStatus
+from app.jobs.queue import requeue_failed_job
 from app.auth.models import User
 from app.auth.dependencies import get_current_user
 from app.logs.config import logger
@@ -191,6 +192,37 @@ def cancel_job(
     db.refresh(job)
 
     logger.info(f"[Jobs] Job cancelado | id={job_id[:8]}... | user={current_user.email}")
+    return _build_response(job)
+
+
+@router.post("/{job_id}/retry", response_model=JobResponse)
+def retry_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reenfileira matching com falha, preservando correlacao e tentativas."""
+    if current_user.role not in {"admin", "editor"}:
+        raise HTTPException(status_code=403, detail="Permissao insuficiente para reprocessar jobs.")
+
+    job = (
+        db.query(Job)
+        .filter(
+            Job.id == job_id,
+            Job.tenant_id == current_user.tenant.slug,
+        )
+        .with_for_update()
+        .first()
+    )
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job não encontrado.")
+
+    try:
+        requeue_failed_job(db, job)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    db.refresh(job)
     return _build_response(job)
 
 

@@ -57,3 +57,14 @@ jobs ativos e falhas recentes.
 
 Jobs anteriores a migration recebem `correlation_id=id`, preservando a
 rastreabilidade sem invalidar registros historicos.
+
+### Retry manual
+
+`POST /jobs/{job_id}/retry` permite que administradores e editores
+reenfileirem um matching com falha. A operacao:
+
+- preserva o mesmo `correlation_id`;
+- mantem o contador historico de tentativas;
+- concede exatamente uma nova tentativa quando o limite foi esgotado;
+- registra quantidade e horario dos retries manuais no payload;
+- rejeita jobs ativos, concluidos, cancelados e uploads sem arquivo persistido.
