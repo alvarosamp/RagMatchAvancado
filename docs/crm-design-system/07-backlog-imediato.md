@@ -1,8 +1,38 @@
 # CRM - Backlog Imediato
 
-Atualizado em 14/09/2026.
+Atualizado em 15/09/2026.
 
 Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-execucao-redesign.md`) mantem o historico, as decisoes e o roadmap completo; este backlog concentra somente as proximas acoes para evitar reler o documento inteiro em cada ciclo.
+
+## Programa de higienizacao e fluidez
+
+Objetivo: reduzir repeticao visual e de dados sem retirar contexto operacional, mantendo o fluxo atual de Pipeline, Calendario, popup e pagina propria do edital.
+
+### Fase 1 - Card, cabecalho e descoberta de itens
+
+- [x] Reorganizar as superficies internas do card do edital, preservando todos os dados e reduzindo a fragmentacao visual.
+- [x] Enriquecer o resumo dos dois itens prioritarios com caracteristicas tecnicas decisorias por categoria, sem despejar todos os campos do BI.
+- [x] Tornar o contador `+N itens` acionavel e abrir um resumo dos demais itens sem sair do Pipeline ou Calendario.
+- [x] Criar uma regra unica para o valor total do processo, compartilhada por card e cabecalho, com origem explicita: referencia, valor definido durante o fluxo ou valor final apos encerramento.
+- [x] Incluir o criterio de selecao no cabecalho do edital e preservar as demais metricas consideradas decisorias.
+- [x] Separar semanticamente progresso documental, checagem operacional e alerta critico no card.
+- [ ] Validar item simples, Kit, muitos itens, ausencia de preco, valor parcial e valor final antes de concluir a fase.
+
+Implementado em 15/09/2026: o card passou a usar separadores em vez de caixas internas concorrentes; os dois itens mais relevantes exibem uma sintese tecnica curta; `+N itens` abre o inventario comercial completo; e o valor do processo ganhou contrato de exibicao compartilhado. A validacao com dados reais permanece como criterio de conclusao da Fase 1.
+
+### Fase 2 - Higienizacao de dados e aba Itens
+
+- [ ] Normalizar campos tecnicos equivalentes importados do BI, mantendo o dado bruto consultavel para auditoria.
+- [ ] Consolidar a leitura da aba Itens em tres niveis: resumo comercial, vinculo de catalogo e detalhe tecnico.
+- [ ] Revisar repeticoes entre cabecalho, detalhes, Kit, LPU, marca, modelo e resultado por item.
+- [ ] Validar a experiencia com item simples, Kit e item retirado, preservando regras de vinculacao, quantidade original e precificacao.
+
+### Fase 3 - Consistencia transversal e operacao documental
+
+- [ ] Formalizar a hierarquia semantica de cores, etapas, resultados, checagens e alertas em todo o CRM.
+- [ ] Revisar a aba Documentacao como checklist e biblioteca de arquivos, apos detalhamento das regras de negocio.
+- [ ] Reduzir variacoes de superficies, badges, espacamentos e componentes entre abas internas.
+- [ ] Executar auditoria responsiva e de temas claro/escuro com dados reais antes de considerar a higienizacao concluida.
 
 ## Proximo ciclo de implementacao
 
