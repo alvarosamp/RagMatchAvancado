@@ -22,10 +22,14 @@ Implementado em 15/09/2026: o card passou a usar separadores em vez de caixas in
 
 ### Fase 2 - Higienizacao de dados e aba Itens
 
-- [ ] Normalizar campos tecnicos equivalentes importados do BI, mantendo o dado bruto consultavel para auditoria.
-- [ ] Consolidar a leitura da aba Itens em tres niveis: resumo comercial, vinculo de catalogo e detalhe tecnico.
-- [ ] Revisar repeticoes entre cabecalho, detalhes, Kit, LPU, marca, modelo e resultado por item.
+- [x] Normalizar campos tecnicos equivalentes importados do BI, mantendo o dado bruto consultavel para auditoria.
+- [x] Consolidar a leitura da aba Itens em tres niveis: resumo comercial, vinculo de catalogo e detalhe tecnico.
+- [x] Revisar repeticoes entre cabecalho, detalhes, Kit, LPU, marca, modelo e resultado por item.
 - [ ] Validar a experiencia com item simples, Kit e item retirado, preservando regras de vinculacao, quantidade original e precificacao.
+
+Implementado em 15/09/2026: atributos equivalentes do BI passaram a ter chaves canonicas, com prioridade para dados estruturados e divergencias preservadas para consulta. O item apresenta uma sintese tecnica no resumo, o vinculo comercial completo em Catalogo e o detalhe tecnico expandido; marca, modelo e resultado deixaram de se repetir desnecessariamente. Para Kits, a composicao, a quantidade original e o calculo do minimo permanecem inalterados; o valor de referencia e contabilizado somente no item importado do edital, sem somar componentes do Kit. A validacao com dados reais continua obrigatoria antes de encerrar a fase.
+
+Validacao local em 15/09/2026: o preview confirmou um Kit com dois componentes e minimos individuais, um item simples com edicao por campo e um lote retirado recolhido. Nenhuma dessas verificacoes alterou dados do preview.
 
 ### Fase 3 - Consistencia transversal e operacao documental
 
