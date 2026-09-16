@@ -20,6 +20,8 @@ Objetivo: reduzir repeticao visual e de dados sem retirar contexto operacional, 
 
 Implementado em 15/09/2026: o card passou a usar separadores em vez de caixas internas concorrentes; os dois itens mais relevantes exibem uma sintese tecnica curta; `+N itens` abre o inventario comercial completo; e o valor do processo ganhou contrato de exibicao compartilhado. A validacao com dados reais permanece como criterio de conclusao da Fase 1.
 
+Refinamento local em 15/09/2026: o valor total do edital foi deslocado para o rodape direito do card, separado do contexto operacional para reforcar a leitura financeira e reduzir a aglutinacao de informacoes.
+
 ### Fase 2 - Higienizacao de dados e aba Itens
 
 - [x] Normalizar campos tecnicos equivalentes importados do BI, mantendo o dado bruto consultavel para auditoria.
