@@ -45,6 +45,7 @@ class JobResponse(BaseModel):
             edital_id = job.result["edital_id"]
     """
     id:            str
+    correlation_id: str
     job_type:      str
     status:        str
     progress:      float          # 0.0 a 1.0 — para barra de progresso
@@ -52,6 +53,9 @@ class JobResponse(BaseModel):
     payload:       Optional[dict]
     result:        Optional[dict]  # preenchido quando status="done"
     error_message: Optional[str]   # preenchido quando status="failed"
+    attempt_count: int
+    max_attempts: int
+    last_enqueued_at: Optional[datetime]
     created_at:    Optional[datetime]
     started_at:    Optional[datetime]
     finished_at:   Optional[datetime]
@@ -231,6 +235,7 @@ def _build_response(job: Job) -> JobResponse:
 
     return JobResponse(
         id               = job.id,
+        correlation_id   = job.correlation_id or job.id,
         job_type         = job.job_type.value if job.job_type else "",
         status           = job.status.value if job.status else "",
         progress         = job.progress or 0.0,
@@ -238,6 +243,9 @@ def _build_response(job: Job) -> JobResponse:
         payload          = job.payload,
         result           = job.result,
         error_message    = job.error_message,
+        attempt_count    = int(job.attempt_count or (job.payload or {}).get("attempts", 0)),
+        max_attempts     = int(job.max_attempts or 3),
+        last_enqueued_at = job.last_enqueued_at,
         created_at       = job.created_at,
         started_at       = job.started_at,
         finished_at      = job.finished_at,

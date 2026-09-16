@@ -44,7 +44,8 @@ def _claim_job(db: Session, job_id: str) -> bool:
         return False
 
     payload = dict(job.payload or {})
-    payload["attempts"] = int(payload.get("attempts", 0)) + 1
+    job.attempt_count = int(job.attempt_count or payload.get("attempts", 0)) + 1
+    payload["attempts"] = job.attempt_count
     job.payload = payload
     job.status = JobStatus.RUNNING
     job.progress = 0.05
@@ -52,14 +53,20 @@ def _claim_job(db: Session, job_id: str) -> bool:
     job.finished_at = None
     job.error_message = None
     db.commit()
+    logger.info(
+        "[Worker] Job assumido | job=%s | correlation_id=%s | tentativa=%s/%s",
+        job.id[:8], job.correlation_id, job.attempt_count, job.max_attempts,
+    )
     return True
 
 
 def _enqueue_job(db: Session, job: Job, *, delay_ms: int = 0) -> None:
     """Persist the delivery metadata and publish a job to the Redis broker."""
     payload = dict(job.payload or {})
-    payload["last_enqueued_at"] = datetime.now(timezone.utc).isoformat()
+    enqueued_at = datetime.now(timezone.utc)
+    payload["last_enqueued_at"] = enqueued_at.isoformat()
     job.payload = payload
+    job.last_enqueued_at = enqueued_at
     db.commit()
 
     from app.jobs.tasks import process_crm_notice_match, process_matching, process_upload
@@ -94,8 +101,8 @@ def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
         return True
 
     payload = dict(job.payload or {})
-    attempts = int(payload.get("attempts", 1))
-    max_attempts = max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3")))
+    attempts = int(job.attempt_count or payload.get("attempts", 1))
+    max_attempts = max(1, int(job.max_attempts or os.getenv("JOB_MAX_ATTEMPTS", "3")))
     if attempts >= max_attempts:
         _update_job(
             db, job_id, status=JobStatus.FAILED,
@@ -109,7 +116,10 @@ def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
     job.started_at = None
     job.error_message = f"Tentativa {attempts}/{max_attempts} falhou: {error}"
     db.commit()
-    logger.warning("[Worker] Reenfileirando job=%s em %ss", job_id[:8], delay_ms // 1000)
+    logger.warning(
+        "[Worker] Reenfileirando | job=%s | correlation_id=%s | tentativa=%s/%s | delay=%ss",
+        job_id[:8], job.correlation_id, attempts, max_attempts, delay_ms // 1000,
+    )
     _enqueue_job(db, job, delay_ms=delay_ms)
     return False
 
@@ -119,15 +129,16 @@ def recover_interrupted_jobs(db: Session) -> dict[str, int]:
     now = datetime.now(timezone.utc)
     pending_after = max(30, int(os.getenv("JOB_PENDING_REQUEUE_SECONDS", "60")))
     stale_after = max(300, int(os.getenv("JOB_STALE_TIMEOUT_SECONDS", "7200")))
-    max_attempts = max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3")))
+    default_max_attempts = max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3")))
     summary = {"pending_requeued": 0, "stale_requeued": 0, "stale_failed": 0}
 
     jobs = db.query(Job).filter(Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING])).all()
     for job in jobs:
         payload = dict(job.payload or {})
-        attempts = int(payload.get("attempts", 0))
+        attempts = int(job.attempt_count or payload.get("attempts", 0))
+        max_attempts = max(1, int(job.max_attempts or default_max_attempts))
         if job.status == JobStatus.PENDING:
-            last_enqueued = _parse_timestamp(payload.get("last_enqueued_at")) or job.created_at
+            last_enqueued = job.last_enqueued_at or _parse_timestamp(payload.get("last_enqueued_at")) or job.created_at
             if last_enqueued and _as_utc(last_enqueued) <= now - timedelta(seconds=pending_after):
                 _enqueue_job(db, job)
                 summary["pending_requeued"] += 1
@@ -218,6 +229,7 @@ class JobQueue:
         import_batch_id:  int | None = None,
         source_path:      str | None = None,
         crm_notice_id:    str | None = None,
+        correlation_id:   str | None = None,
     ) -> str:
         """
         Cria um job de upload+processamento de edital.
@@ -240,6 +252,7 @@ class JobQueue:
         # (não podemos usar NamedTemporaryFile com delete=True porque
         # o background task roda depois que o request termina)
         job_id   = str(uuid.uuid4())
+        correlation_id = correlation_id or str(uuid.uuid4())
         object_key = None
         pdf_path = None
         from app.services.object_storage import object_storage_enabled, put_upload
@@ -256,10 +269,12 @@ class JobQueue:
         # Cria o Job no banco com status PENDING
         job = Job(
             id        = job_id,
+            correlation_id=correlation_id,
             job_type  = JobType.UPLOAD_EDITAL,
             status    = JobStatus.PENDING,
             tenant_id = tenant_id,
             user_id   = user_id,
+            max_attempts=max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3"))),
             # payload = dados de entrada que o worker vai precisar
             payload   = {
                 "pdf_path": pdf_path,
@@ -276,7 +291,10 @@ class JobQueue:
         db.add(job)
         db.commit()
 
-        logger.info(f"[JobQueue] Job criado | id={job_id[:8]}... | arquivo={filename} | tenant={tenant_id}")
+        logger.info(
+            "[JobQueue] Job criado | id=%s | correlation_id=%s | arquivo=%s | tenant=%s",
+            job_id[:8], correlation_id, filename, tenant_id,
+        )
 
         _enqueue_job(db, job)
 
@@ -289,6 +307,7 @@ class JobQueue:
         tenant_id:        str,
         user_id:          int,
         db:               Session,
+        correlation_id:   str | None = None,
     ) -> str:
         """
         Cria um job de matching para um edital já processado.
@@ -304,13 +323,16 @@ class JobQueue:
             job_id (UUID string)
         """
         job_id = str(uuid.uuid4())
+        correlation_id = correlation_id or str(uuid.uuid4())
 
         job = Job(
             id        = job_id,
+            correlation_id=correlation_id,
             job_type  = JobType.RUN_MATCHING,
             status    = JobStatus.PENDING,
             tenant_id = tenant_id,
             user_id   = user_id,
+            max_attempts=max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3"))),
             payload   = {
                 "edital_id": edital_id,
                 "tenant_id": tenant_id,
@@ -319,7 +341,10 @@ class JobQueue:
         db.add(job)
         db.commit()
 
-        logger.info(f"[JobQueue] Job matching criado | id={job_id[:8]}... | edital={edital_id}")
+        logger.info(
+            "[JobQueue] Job matching criado | id=%s | correlation_id=%s | edital=%s",
+            job_id[:8], correlation_id, edital_id,
+        )
 
         _enqueue_job(db, job)
 
@@ -335,18 +360,22 @@ class JobQueue:
         notice_product_id: str | None = None,
         category: str | None = None,
         use_llm: bool = True,
+        correlation_id: str | None = None,
     ) -> str:
         """
         Cria um job assíncrono de match do CRM (catalogo x itens do edital).
         """
         job_id = str(uuid.uuid4())
+        correlation_id = correlation_id or str(uuid.uuid4())
 
         job = Job(
             id=job_id,
+            correlation_id=correlation_id,
             job_type=JobType.CRM_NOTICE_MATCH,
             status=JobStatus.PENDING,
             tenant_id=tenant_id,
             user_id=user_id,
+            max_attempts=max(1, int(os.getenv("JOB_MAX_ATTEMPTS", "3"))),
             payload={
                 "notice_id": notice_id,
                 "tenant_id": tenant_id,
@@ -358,7 +387,10 @@ class JobQueue:
         db.add(job)
         db.commit()
 
-        logger.info(f"[JobQueue] Job CRM match criado | id={job_id[:8]}... | notice={notice_id}")
+        logger.info(
+            "[JobQueue] Job CRM match criado | id=%s | correlation_id=%s | notice=%s",
+            job_id[:8], correlation_id, notice_id,
+        )
 
         _enqueue_job(db, job)
 
@@ -673,6 +705,18 @@ def _executar_job_crm_notice_match(
             raise ValueError(f"Edital CRM {notice_id} nao encontrado")
         if not user:
             raise ValueError(f"Usuario {user_id} nao encontrado para executar o match CRM")
+
+        from app.core.features import ai_feature_enabled
+        if not ai_feature_enabled("crm_matching", user.tenant):
+            _update_job(
+                db,
+                job_id,
+                status=JobStatus.FAILED,
+                finished_at=datetime.now(timezone.utc),
+                error_message="Matching do CRM desabilitado para esta empresa.",
+            )
+            logger.info("[Worker] CRM match bloqueado por feature flag | job=%s", job_id[:8])
+            return
 
         _update_job(db, job_id, progress=0.10)
 

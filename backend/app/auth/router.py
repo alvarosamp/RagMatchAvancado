@@ -22,6 +22,7 @@ from app.auth.models import Tenant, User, UserRoleAudit
 from app.auth.schemas import (
     LoginRequest,
     RegisterRequest,
+    TenantAIFeaturesUpdate,
     TokenResponse,
     UserCreate,
     UserResponse,
@@ -37,6 +38,7 @@ from app.auth.security import (
 from app.services.crm_workflow import ensure_not_last_active_admin
 from app.auth.dependencies import get_current_user, require_role
 from app.logs.config import logger
+from app.core.features import effective_ai_features, update_tenant_ai_features
 
 router = APIRouter(prefix="/auth", tags=["autenticação"])
 AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
@@ -265,6 +267,42 @@ def me(current_user: User = Depends(get_current_user)):
     Requer: Authorization: Bearer <token>
     """
     return current_user
+
+
+@router.get("/tenant/ai-features")
+def get_tenant_ai_features(
+    current_user: User = Depends(require_role("admin")),
+):
+    """Exibe overrides e estado efetivo das capacidades de IA do tenant."""
+    return {
+        "tenant_slug": current_user.tenant.slug,
+        "overrides": dict(current_user.tenant.ai_features or {}),
+        "features": effective_ai_features(current_user.tenant),
+    }
+
+
+@router.patch("/tenant/ai-features")
+def patch_tenant_ai_features(
+    payload: TenantAIFeaturesUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    """Altera somente o tenant autenticado; null restaura o padrao global."""
+    changes = {field: getattr(payload, field) for field in payload.model_fields_set}
+    update_tenant_ai_features(current_user.tenant, changes)
+    db.add(current_user.tenant)
+    db.commit()
+    db.refresh(current_user.tenant)
+    logger.info(
+        "[AI Features] Rollout atualizado | tenant=%s | keys=%s",
+        current_user.tenant.slug,
+        sorted(changes),
+    )
+    return {
+        "tenant_slug": current_user.tenant.slug,
+        "overrides": dict(current_user.tenant.ai_features or {}),
+        "features": effective_ai_features(current_user.tenant),
+    }
 
 
 @router.patch("/me/profile", response_model=UserResponse)

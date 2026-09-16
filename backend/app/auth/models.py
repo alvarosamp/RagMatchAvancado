@@ -23,7 +23,7 @@ Vocabulário:
 - Rbac (Role-Based Access Control): Controle de acesso baseado em funções, onde cada usuário tem uma função (ex: admin, user) que define o que pode acessar
 '''
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -52,6 +52,9 @@ class Tenant(Base):
     name = Column(String, nullable=False)  # ex: "Empresa ABC LTDA"
     created_at = Column(DateTime, server_default=func.now())
     is_active = Column(Boolean, default=True)
+    # Overrides de rollout por empresa. Ausencia de uma chave significa
+    # herdar o padrao do ambiente.
+    ai_features = Column(JSON, nullable=False, default=dict)
 
     # Um tenant tem muitos usuários
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")

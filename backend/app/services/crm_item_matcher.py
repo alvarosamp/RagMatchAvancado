@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
-from app.core.features import AI_FEATURES_ENABLED, CRM_MATCH_USE_LLM
+from app.core.features import AI_FEATURES_ENABLED, CRM_MATCH_USE_LLM, ai_feature_enabled
 from app.crm.models import (
     CrmCatalogProduct,
     CrmNotice,
@@ -55,7 +55,12 @@ def run_notice_item_match(
     notice_product_id: str | None = None,
     category: str | None = None,
 ) -> dict[str, Any]:
-    use_llm = bool(use_llm and AI_FEATURES_ENABLED and CRM_MATCH_USE_LLM)
+    tenant = getattr(current_user, "tenant", None)
+    use_llm = bool(
+        use_llm
+        and CRM_MATCH_USE_LLM
+        and ai_feature_enabled("crm_llm_rerank", tenant)
+    )
     notice = _load_notice(db, current_user, notice_id)
     catalog_products = (
         db.query(CrmCatalogProduct)
@@ -85,7 +90,7 @@ def run_notice_item_match(
             raise ValueError("Nenhum produto ativo encontrado no catalogo para a categoria selecionada.")
 
     embedding_stats: dict[str, Any] | None = None
-    if AI_FEATURES_ENABLED and catalog_products_filtered:
+    if ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
         try:
             embedding_stats = ensure_catalog_embeddings(db, catalog_products_filtered)
         except Exception as exc:
@@ -142,7 +147,13 @@ def run_notice_item_match(
             })
             continue
 
-        ranked = _rank_candidates(product, catalog_products_filtered, embedding_cache=embedding_cache, use_llm=use_llm)
+        ranked = _rank_candidates(
+            product,
+            catalog_products_filtered,
+            embedding_cache=embedding_cache,
+            use_llm=use_llm,
+            use_embeddings=ai_feature_enabled("crm_embeddings", tenant),
+        )
         matches: list[CrmNoticeProductMatch] = []
         for rank, candidate in enumerate(ranked[:SUGGESTIONS_PER_ITEM], start=1):
             score: MatchScore = candidate["score"]
@@ -632,6 +643,7 @@ def _rank_candidates(
     *,
     embedding_cache: dict[str, list[float]],
     use_llm: bool,
+    use_embeddings: bool | None = None,
 ) -> list[dict[str, Any]]:
     notice_text = _notice_product_text(product)
     candidates = [
@@ -642,7 +654,10 @@ def _rank_candidates(
         for catalog in catalog_products
     ]
 
-    if AI_FEATURES_ENABLED:
+    # None preserva compatibilidade para chamadas internas/testes antigos.
+    # O fluxo principal sempre envia a decisao ja resolvida por tenant.
+    embeddings_enabled = AI_FEATURES_ENABLED if use_embeddings is None else use_embeddings
+    if embeddings_enabled:
         _attach_semantic_scores(product, candidates, embedding_cache=embedding_cache)
 
     # O corte acontece depois da fusao lexical + semantica. Assim um produto

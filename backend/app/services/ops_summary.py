@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date, datetime, timezone
+from math import ceil
 from typing import Any, Iterable
 
 
@@ -41,6 +42,8 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
     recent_failures: list[dict[str, Any]] = []
     durations: list[float] = []
     stale_count = 0
+    retrying_count = 0
+    exhausted_count = 0
 
     for job in jobs:
         status = str(_enum_value(getattr(job, "status", "unknown")) or "unknown")
@@ -56,6 +59,12 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
 
         payload = getattr(job, "payload", None) or {}
         result = getattr(job, "result", None) or {}
+        attempt_count = int(getattr(job, "attempt_count", 0) or payload.get("attempts", 0))
+        max_attempts = int(getattr(job, "max_attempts", 3) or 3)
+        if attempt_count > 1:
+            retrying_count += 1
+        if status == "failed" and attempt_count >= max_attempts:
+            exhausted_count += 1
         label = payload.get("filename") or result.get("filename") or f"Job {str(getattr(job, 'id', ''))[:8]}"
 
         if status in ACTIVE_JOB_STATUSES:
@@ -64,6 +73,7 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
             active_jobs.append(
                 {
                     "id": getattr(job, "id", None),
+                    "correlation_id": getattr(job, "correlation_id", None) or getattr(job, "id", None),
                     "job_type": job_type,
                     "status": status,
                     "progress_pct": progress_pct,
@@ -75,6 +85,8 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
                     if getattr(job, "started_at", None)
                     else None,
                     "duration_seconds": round(duration, 1) if duration is not None else None,
+                    "attempt_count": attempt_count,
+                    "max_attempts": max_attempts,
                 }
             )
 
@@ -83,22 +95,37 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
             recent_failures.append(
                 {
                     "id": getattr(job, "id", None),
+                    "correlation_id": getattr(job, "correlation_id", None) or getattr(job, "id", None),
                     "job_type": job_type,
                     "label": label,
                     "finished_at": finished_at.isoformat(),
                     "error_message": getattr(job, "error_message", None),
+                    "attempt_count": attempt_count,
+                    "max_attempts": max_attempts,
                 }
             )
 
     active_jobs.sort(key=lambda item: (item.get("status") != "running", item.get("started_at") or "", item.get("created_at") or ""))
     recent_failures.sort(key=lambda item: item.get("finished_at") or "", reverse=True)
 
+    terminal_count = status_counts.get("done", 0) + status_counts.get("failed", 0)
+    sorted_durations = sorted(durations)
+    p95_duration = (
+        sorted_durations[max(ceil(len(sorted_durations) * 0.95) - 1, 0)]
+        if sorted_durations
+        else None
+    )
+
     return {
         "total": sum(status_counts.values()),
         "active_count": status_counts.get("pending", 0) + status_counts.get("running", 0),
         "stale_count": stale_count,
         "failed_last_24h": len(recent_failures),
+        "retrying_count": retrying_count,
+        "exhausted_count": exhausted_count,
+        "success_rate": round(status_counts.get("done", 0) / terminal_count, 4) if terminal_count else None,
         "avg_duration_seconds": round(sum(durations) / len(durations), 1) if durations else None,
+        "p95_duration_seconds": round(p95_duration, 1) if p95_duration is not None else None,
         "status_counts": {
             "pending": status_counts.get("pending", 0),
             "running": status_counts.get("running", 0),

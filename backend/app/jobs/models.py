@@ -70,6 +70,7 @@ class Job(Base):
     """
     __tablename__ = 'jobs'
     id = Column(String, primary_key = True, index = True)
+    correlation_id = Column(String(36), nullable=False, index=True)
     job_type = Column(Enum(JobType), nullable = False)
     status = Column(Enum(JobStatus), nullable = False, default=JobStatus.PENDING, index = True)
     progress = Column(Float, default = 0.0) # 0.0 a 1.0
@@ -80,8 +81,11 @@ class Job(Base):
     payload = Column(JSON)
     result = Column(JSON)
     error_message = Column(Text)
+    attempt_count = Column(Integer, nullable=False, default=0)
+    max_attempts = Column(Integer, nullable=False, default=3)
     #timestamps
     created_at = Column(DateTime, server_default = func.now())
+    last_enqueued_at = Column(DateTime, nullable=True)
     started_at = Column(DateTime, nullable = True)
     finished_at = Column(DateTime, nullable = True)
 

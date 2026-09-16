@@ -13,6 +13,9 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
     jobs = [
         SimpleNamespace(
             id="job-running",
+            correlation_id="corr-running",
+            attempt_count=2,
+            max_attempts=3,
             job_type="upload_edital",
             status="running",
             progress=0.45,
@@ -37,6 +40,9 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
         ),
         SimpleNamespace(
             id="job-failed",
+            correlation_id="corr-failed",
+            attempt_count=3,
+            max_attempts=3,
             job_type="upload_edital",
             status="failed",
             progress=0.2,
@@ -67,11 +73,18 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
     assert summary["active_count"] == 2
     assert summary["stale_count"] == 1
     assert summary["failed_last_24h"] == 1
+    assert summary["retrying_count"] == 2
+    assert summary["exhausted_count"] == 1
+    assert summary["success_rate"] == 0.5
     assert summary["avg_duration_seconds"] == 1800.0
+    assert summary["p95_duration_seconds"] == 1800.0
     assert summary["status_counts"]["running"] == 1
     assert summary["status_counts"]["done"] == 1
     assert summary["active_jobs"][0]["id"] == "job-running"
+    assert summary["active_jobs"][0]["correlation_id"] == "corr-running"
+    assert summary["active_jobs"][0]["attempt_count"] == 2
     assert summary["recent_failures"][0]["id"] == "job-failed"
+    assert summary["recent_failures"][0]["correlation_id"] == "corr-failed"
 
 
 def test_summarize_editais_rolls_up_chunks_and_requirements():
