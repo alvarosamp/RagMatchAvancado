@@ -674,6 +674,18 @@ def _executar_job_crm_notice_match(
         if not user:
             raise ValueError(f"Usuario {user_id} nao encontrado para executar o match CRM")
 
+        from app.core.features import ai_feature_enabled
+        if not ai_feature_enabled("crm_matching", user.tenant):
+            _update_job(
+                db,
+                job_id,
+                status=JobStatus.FAILED,
+                finished_at=datetime.now(timezone.utc),
+                error_message="Matching do CRM desabilitado para esta empresa.",
+            )
+            logger.info("[Worker] CRM match bloqueado por feature flag | job=%s", job_id[:8])
+            return
+
         _update_job(db, job_id, progress=0.10)
 
         if _is_cancelled(db, job_id):

@@ -218,6 +218,7 @@ bid-buddy/node_modules/
 
 # Frontend build outputs and generated embeds
 frontend/dist/
+frontend/coverage/
 frontend/dist-embed/
 bid-buddy/dist/
 bid-buddy/dist-embed/

@@ -34,7 +34,7 @@ def test_mixed_cancelled_and_desert_items_do_not_invent_one_terminal_outcome():
     assert derive_notice_outcome_from_items(notice) == CrmNoticeOutcome.LOST
 
 
-def test_lost_notice_leaves_triage_and_moves_to_results():
+def test_item_result_does_not_close_notice_before_process_closure():
     notice = SimpleNamespace(
         outcome=CrmNoticeOutcome.PENDING,
         stage=CrmNoticeStage.TRIAGE,
@@ -47,5 +47,6 @@ def test_lost_notice_leaves_triage_and_moves_to_results():
 
     sync_notice_result_from_items(notice)
 
-    assert notice.outcome == CrmNoticeOutcome.LOST
-    assert notice.stage == CrmNoticeStage.RESULT
+    assert notice.outcome == CrmNoticeOutcome.PENDING
+    assert notice.stage == CrmNoticeStage.TRIAGE
+    assert notice.final_value == 0.0

@@ -77,7 +77,7 @@ async def upload_edital(
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
 ):
-    require_ai_enabled()
+    require_ai_enabled("document_processing", current_user.tenant)
     """
     Recebe o PDF e cria job assíncrono (OCR → Chunk → Embed).
     Retorna imediatamente com job_id (HTTP 202 Accepted).
@@ -188,7 +188,7 @@ def match_edital(
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
 ):
-    require_ai_enabled()
+    require_ai_enabled("matching", current_user.tenant)
     """
     Cria job assíncrono de matching (RAG + Heurísticas + LLM).
     Retorna imediatamente com job_id (HTTP 202 Accepted).
@@ -473,7 +473,7 @@ def chat_edital(
     current_user: User    = Depends(get_current_user),
     db:           Session = Depends(get_db),
 ):
-    require_ai_enabled()
+    require_ai_enabled("edital_chat", current_user.tenant)
     """
     Mini-RAG: responde perguntas sobre um edital específico.
 

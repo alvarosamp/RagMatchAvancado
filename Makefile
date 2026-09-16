@@ -9,7 +9,7 @@
 #   make help
 # =============================================================================
 
-.PHONY: help up down logs build rebuild test test-cov test-all \
+.PHONY: help up down logs build rebuild test test-unit test-integration test-frontend test-cov test-all \
         lint lint-fix format mlflow-ui evaluate drift-check promote \
         shell-api shell-db crm-sync crm-sync-pull
 
@@ -38,6 +38,8 @@ help:
 	@printf "  make format       Formata com black + ruff\n"
 	@printf "\n$(BLUE)Testes$(RESET)\n"
 	@printf "  make test         Roda testes unitários (rápido, sem infra)\n"
+	@printf "  make test-integration Testa os contratos HTTP entre componentes\n"
+	@printf "  make test-frontend Testa o frontend com cobertura\n"
 	@printf "  make test-cov     Testes + relatório de cobertura HTML\n"
 	@printf "  make test-all     Todos os testes incluindo integração\n"
 	@printf "\n$(BLUE)MLOps$(RESET)\n"
@@ -100,20 +102,28 @@ format:
 # ── Testes ────────────────────────────────────────────────────────────────────
 # PYTHONPATH=backend permite que os testes importem de 'app.*'
 
-test:
+test: test-unit
+
+test-unit:
 	PYTHONPATH=backend pytest tests/unit tests/test_password_policy.py tests/test_requirements.py \
 	  -v --tb=short
+
+test-integration:
+	PYTHONPATH=backend pytest tests/integration -v --tb=short
+
+test-frontend:
+	cd frontend && npm run test:coverage
 
 test-cov:
 	PYTHONPATH=backend pytest tests/unit tests/test_password_policy.py tests/test_requirements.py \
 	  --cov=backend/app \
+	  --cov-fail-under=35 \
 	  --cov-report=html \
 	  --cov-report=term-missing \
 	  -v
 	@printf "\n$(GREEN)✓ Relatório HTML: htmlcov/index.html$(RESET)\n"
 
-test-all:
-	PYTHONPATH=backend pytest tests/ -v --tb=short
+test-all: test-unit test-integration test-frontend
 
 # ── MLOps Scripts ─────────────────────────────────────────────────────────────
 

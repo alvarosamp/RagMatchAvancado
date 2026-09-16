@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import { formatNumber, compactDescription } from '../components/ui/format'
 import Card from '../components/ui/Card'
 import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
+import { copyJsonToClipboard, filenameFromDisposition } from '../utils/jsonExport'
 
 const TABS = [
   { key: 'itens', label: 'Itens elegiveis' },
@@ -45,6 +46,8 @@ export default function AnaliseJson() {
   const [tab, setTab] = useState('itens')
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [copyingItemId, setCopyingItemId] = useState(null)
+  const [downloadingItemId, setDownloadingItemId] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -96,6 +99,36 @@ export default function AnaliseJson() {
     } catch (err) {
       toast({ type: 'error', message: err.response?.data?.detail || 'Erro ao apagar edital.' })
       setDeleting(false)
+    }
+  }
+
+  const copyMatchJson = async (item) => {
+    setCopyingItemId(item.id)
+    try {
+      const response = await analysisApi.matchItemJson(id, item.id)
+      await copyJsonToClipboard(response.data)
+      toast({ type: 'success', message: `JSON do item ${item.item_number || item.id} copiado.` })
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel copiar o JSON do item.' })
+    } finally {
+      setCopyingItemId(null)
+    }
+  }
+
+  const downloadMatchJson = async (item) => {
+    setDownloadingItemId(item.id)
+    try {
+      const response = await analysisApi.downloadMatchItemJson(id, item.id)
+      const filename = filenameFromDisposition(
+        response.headers?.['content-disposition'],
+        `match_item_${item.item_number || item.id}.json`,
+      )
+      downloadBlob(response.data, filename)
+      toast({ type: 'success', message: `JSON do item ${item.item_number || item.id} baixado.` })
+    } catch (err) {
+      toast({ type: 'error', message: err.response?.data?.detail || 'Nao foi possivel baixar o JSON do item.' })
+    } finally {
+      setDownloadingItemId(null)
     }
   }
 
@@ -216,12 +249,13 @@ export default function AnaliseJson() {
                     <th className="px-5 py-3 font-semibold">Prazo</th>
                     <th className="px-5 py-3 text-right font-semibold">Qtd</th>
                     <th className="px-5 py-3 text-right font-semibold">Preco unit.</th>
+                    <th className="px-5 py-3 text-right font-semibold">JSON Match</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum item elegivel listado.</td>
+                      <td colSpan={8} className="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum item elegivel listado.</td>
                     </tr>
                   ) : (
                     items.map((item) => (
@@ -235,6 +269,26 @@ export default function AnaliseJson() {
                         <td className="px-5 py-4 text-sm text-slate-700 dark:text-slate-300">{item.prazo_entrega || item.raw_payload?.prazo_entrega || '-'}</td>
                         <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatNumber(item.quantity)}</td>
                         <td className="px-5 py-4 text-right text-sm text-slate-700 dark:text-slate-300">{formatMoney(item.unit_value ?? item.raw_payload?.preco_unitario)}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => copyMatchJson(item)}
+                              disabled={copyingItemId === item.id || downloadingItemId === item.id}
+                              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-brand-light dark:hover:text-brand-light"
+                            >
+                              {copyingItemId === item.id ? 'Copiando...' : 'Copiar JSON'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadMatchJson(item)}
+                              disabled={copyingItemId === item.id || downloadingItemId === item.id}
+                              className="rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-50 dark:bg-brand-light dark:hover:bg-brand"
+                            >
+                              {downloadingItemId === item.id ? 'Baixando...' : 'Baixar JSON'}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}

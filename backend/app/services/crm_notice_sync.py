@@ -11,7 +11,6 @@ from app.crm.models import (
     CrmNoticeOutcome,
     CrmNoticeProduct,
     CrmNoticeSession,
-    CrmNoticeStage,
 )
 
 

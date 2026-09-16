@@ -51,8 +51,9 @@ def live():
 @router.get("/health/ready")
 def ready():
     """Readiness probe: dependencies needed to handle CRM requests work."""
-    db = SessionLocal()
+    db = None
     try:
+        db = SessionLocal()
         db.execute(text("SELECT 1"))
         redis_url = os.getenv("REDIS_URL")
         if redis_url:
@@ -63,6 +64,14 @@ def ready():
                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Redis indisponivel.") from exc
         if _is_enabled("AI_FEATURES_ENABLED"):
             _check_ollama()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Banco de dados indisponivel.",
+        ) from exc
     finally:
-        db.close()
+        if db is not None:
+            db.close()
     return {"status": "ready"}

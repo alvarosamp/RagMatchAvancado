@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, time, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -10,14 +11,18 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
-from app.db.models import AnalysisDocument, Edital, ImportBatch
-from app.db.session import get_db
 from app.crm.json_analysis_importer import sync_analysis_json_to_crm
 from app.crm.sales_process_importer import build_import_context_for_user
-from app.services.analysis_export_service import export_analysis_pdf, export_analysis_report_pdf
+from app.db.models import AnalysisDocument, AnalysisItem, Edital, ImportBatch
+from app.db.session import get_db
+from app.services.analysis_export_service import (
+    export_analysis_pdf,
+    export_analysis_report_pdf,
+)
 from app.services.analysis_normalizer import normalize_analysis_result
 from app.services.analysis_store import persist_analysis_document
 from app.services.document_identity import is_unidentified_edital_result
+from app.services.match_item_export import build_match_item_export, match_item_filename
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -325,6 +330,55 @@ def export_analysis_document_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get("/documents/{document_id}/items/{item_id}/match-json")
+def get_match_item_json(
+    document_id: int,
+    item_id: int,
+    download: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export one edital item using the versioned contract consumed by Match."""
+    document, item = _get_tenant_document_item(
+        db,
+        tenant_id=current_user.tenant_id,
+        document_id=document_id,
+        item_id=item_id,
+    )
+    payload = build_match_item_export(document, item)
+    if not download:
+        return payload
+
+    filename = match_item_filename(document, item)
+    return Response(
+        content=json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _get_tenant_document_item(
+    db: Session,
+    *,
+    tenant_id: int,
+    document_id: int,
+    item_id: int,
+) -> tuple[AnalysisDocument, AnalysisItem]:
+    row = (
+        db.query(AnalysisDocument, AnalysisItem)
+        .join(AnalysisItem, AnalysisItem.analysis_id == AnalysisDocument.id)
+        .filter(
+            AnalysisDocument.id == document_id,
+            AnalysisDocument.tenant_id == tenant_id,
+            AnalysisItem.id == item_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Item da analise nao encontrado.")
+    return row
 
 
 def _serialize_document(

@@ -45,7 +45,7 @@ async def extract_datasheet(
     file: UploadFile = File(..., description="PDF do datasheet (nosso ou de concorrente)"),
     current_user: User = Depends(require_role("admin", "editor")),
 ):
-    require_ai_enabled()
+    require_ai_enabled("datasheet_extraction", current_user.tenant)
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF sao aceitos.")
 
@@ -68,7 +68,7 @@ async def preview_tor_datasheet(
     category: str | None = Form(default=None),
     current_user: User = Depends(require_role("admin", "editor")),
 ):
-    require_ai_enabled()
+    require_ai_enabled("datasheet_extraction", current_user.tenant)
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF sao aceitos.")
 

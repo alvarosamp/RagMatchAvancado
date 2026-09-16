@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth.dependencies import get_current_user, require_role
 from app.auth.models import User
+from app.core.features import require_ai_enabled
 from app.crm.lpu_importer import import_lpu_catalog
 from app.crm.sales_process_importer import build_import_context_for_user, run_import
 from app.crm.models import (
@@ -1845,6 +1846,7 @@ def crm_run_notice_matches(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
+    require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
     payload = payload or {}
@@ -1917,6 +1919,7 @@ def crm_run_notice_matches_job(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
+    require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
 
@@ -2109,6 +2112,7 @@ def crm_catalog_embeddings_backfill(
     current_user: User = Depends(require_role("admin")),
 ):
     """Atualiza embeddings do catalogo em lotes idempotentes."""
+    require_ai_enabled("crm_embeddings", current_user.tenant)
     try:
         return backfill_catalog_embeddings(
             db,
@@ -2136,6 +2140,7 @@ def crm_run_ground_truth_matches(
     LLM is deliberately opt-in: the first calibration pass evaluates the
     deterministic + embedding ranker, so scores can be compared run to run.
     """
+    require_ai_enabled("crm_matching", current_user.tenant)
     query = db.query(CrmNoticeProduct).filter(
         CrmNoticeProduct.tenant_id == current_user.tenant_id,
         CrmNoticeProduct.catalog_product_id.isnot(None),
@@ -2304,6 +2309,7 @@ def crm_run_match_batch(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
+    require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match em lote.")
 

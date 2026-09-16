@@ -152,6 +152,7 @@ services:
       - ./backend:/app
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
       PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
       PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
       EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
@@ -164,6 +165,8 @@ services:
       JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command: python -m app.scheduler
 

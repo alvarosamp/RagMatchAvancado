@@ -228,6 +228,11 @@ export const analysisApi = {
   list:      (params = {}) => api.get('/analysis/documents', { params }),
   get:       (id)          => api.get(`/analysis/documents/${id}`),
   exportPdf: (id)          => api.get(`/analysis/documents/${id}/export/pdf`, { responseType: 'blob' }),
+  matchItemJson: (documentId, itemId) => api.get(`/analysis/documents/${documentId}/items/${itemId}/match-json`),
+  downloadMatchItemJson: (documentId, itemId) => api.get(
+    `/analysis/documents/${documentId}/items/${itemId}/match-json`,
+    { params: { download: true }, responseType: 'blob' },
+  ),
   exportReportPdf: (params = {}) => api.get('/analysis/reports/export/pdf', { params, responseType: 'blob' }),
   create:    (payload)     => api.post('/analysis/documents', payload, { timeout: 180_000 }),
   remove:    (id)          => api.delete(`/analysis/documents/${id}`),

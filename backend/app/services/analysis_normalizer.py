@@ -5,7 +5,6 @@ import re
 import unicodedata
 from typing import Any
 
-
 NC = "N/C"
 
 SWITCH_BI_DEFAULTS = {
@@ -179,6 +178,7 @@ def normalize_analysis_result(result: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_item(item: Any) -> dict[str, Any]:
     payload = _dict(item)
+    raw_input = copy.deepcopy(_dict(payload.get("_raw_input")) or payload)
     categoria = _normalize_category(payload.get("categoria") or payload.get("tipo") or payload.get("item_type"))
     aliases = {
         "lote_grupo": ("lote_grupo", "lote", "grupo"),
@@ -212,6 +212,9 @@ def _normalize_item(item: Any) -> dict[str, Any]:
         categoria,
         _dict(payload.get("caracteristicas_bi")),
     )
+    # Keep the first ingested representation intact. The normalizer may run more
+    # than once before persistence, so never wrap an already preserved snapshot.
+    payload["_raw_input"] = raw_input
     return payload
 
 

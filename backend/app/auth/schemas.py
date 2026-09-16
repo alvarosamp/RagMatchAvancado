@@ -174,6 +174,17 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TenantAIFeaturesUpdate(BaseModel):
+    """Overrides opcionais; null remove o override e restaura a heranca."""
+    document_processing: bool | None = None
+    matching: bool | None = None
+    edital_chat: bool | None = None
+    datasheet_extraction: bool | None = None
+    crm_matching: bool | None = None
+    crm_embeddings: bool | None = None
+    crm_llm_rerank: bool | None = None
+
+
 class UserRoleUpdate(BaseModel):
     role: str
 
