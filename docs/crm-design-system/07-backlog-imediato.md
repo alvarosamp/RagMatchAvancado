@@ -33,12 +33,14 @@ Validacao local em 15/09/2026: o preview confirmou um Kit com dois componentes e
 
 ### Fase 3 - Consistencia transversal e operacao documental
 
-- [ ] Formalizar a hierarquia semantica de cores, etapas, resultados, checagens e alertas em todo o CRM.
+- [x] Formalizar a hierarquia semantica de cores, etapas, resultados, checagens e alertas em todo o CRM.
 - [ ] Revisar a aba Documentacao como checklist e biblioteca de arquivos, apos detalhamento das regras de negocio.
-- [ ] Reduzir variacoes de superficies, badges, espacamentos e componentes entre abas internas.
+- [x] Reduzir variacoes de superficies, badges, espacamentos e componentes entre abas internas.
 - [ ] Executar auditoria responsiva e de temas claro/escuro com dados reais antes de considerar a higienizacao concluida.
 
 Em andamento em 15/09/2026: criado o contrato central de tons semanticos para estados neutro, informativo, sucesso, atencao e risco. Badges de etapa e resultado, alertas e checagens do Pipeline, superficies operacionais, cores de etapa do Calendario e estados de Sessões, Concorrentes, Sala de disputa, Match e Encerramento passaram a consumir esse contrato sem alterar seus significados. Proxima aplicacao: revisar as variacoes restantes de superfícies e badges nas abas internas; a Documentacao permanece fora desta alteracao ate que as regras de negocio sejam revisadas.
+
+Fechamento tecnico em 15/09/2026: a revisao do preview confirmou leitura adequada dos estados nos temas claro e escuro. No popup do edital, as abas passaram a quebrar em linhas quando a largura for reduzida, removendo a rolagem horizontal interna. A implementacao visual da Fase 3 esta concluida; Documentacao e a validacao de homologacao com dados reais seguem como trilhas separadas.
 
 ## Proximo ciclo de implementacao
 
