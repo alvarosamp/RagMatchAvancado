@@ -1,8 +1,48 @@
 # CRM - Backlog Imediato
 
-Atualizado em 14/09/2026.
+Atualizado em 15/09/2026.
 
 Este arquivo e a fila curta de trabalho do CRM. O plano de execucao (`06-plano-execucao-redesign.md`) mantem o historico, as decisoes e o roadmap completo; este backlog concentra somente as proximas acoes para evitar reler o documento inteiro em cada ciclo.
+
+## Programa de higienizacao e fluidez
+
+Objetivo: reduzir repeticao visual e de dados sem retirar contexto operacional, mantendo o fluxo atual de Pipeline, Calendario, popup e pagina propria do edital.
+
+### Fase 1 - Card, cabecalho e descoberta de itens
+
+- [x] Reorganizar as superficies internas do card do edital, preservando todos os dados e reduzindo a fragmentacao visual.
+- [x] Enriquecer o resumo dos dois itens prioritarios com caracteristicas tecnicas decisorias por categoria, sem despejar todos os campos do BI.
+- [x] Tornar o contador `+N itens` acionavel e abrir um resumo dos demais itens sem sair do Pipeline ou Calendario.
+- [x] Criar uma regra unica para o valor total do processo, compartilhada por card e cabecalho, com origem explicita: referencia, valor definido durante o fluxo ou valor final apos encerramento.
+- [x] Incluir o criterio de selecao no cabecalho do edital e preservar as demais metricas consideradas decisorias.
+- [x] Separar semanticamente progresso documental, checagem operacional e alerta critico no card.
+- [ ] Validar item simples, Kit, muitos itens, ausencia de preco, valor parcial e valor final antes de concluir a fase.
+
+Implementado em 15/09/2026: o card passou a usar separadores em vez de caixas internas concorrentes; os dois itens mais relevantes exibem uma sintese tecnica curta; `+N itens` abre o inventario comercial completo; e o valor do processo ganhou contrato de exibicao compartilhado. A validacao com dados reais permanece como criterio de conclusao da Fase 1.
+
+Refinamento local em 15/09/2026: o valor total do edital foi deslocado para o rodape direito do card, separado do contexto operacional para reforcar a leitura financeira e reduzir a aglutinacao de informacoes.
+
+### Fase 2 - Higienizacao de dados e aba Itens
+
+- [x] Normalizar campos tecnicos equivalentes importados do BI, mantendo o dado bruto consultavel para auditoria.
+- [x] Consolidar a leitura da aba Itens em tres niveis: resumo comercial, vinculo de catalogo e detalhe tecnico.
+- [x] Revisar repeticoes entre cabecalho, detalhes, Kit, LPU, marca, modelo e resultado por item.
+- [ ] Validar a experiencia com item simples, Kit e item retirado, preservando regras de vinculacao, quantidade original e precificacao.
+
+Implementado em 15/09/2026: atributos equivalentes do BI passaram a ter chaves canonicas, com prioridade para dados estruturados e divergencias preservadas para consulta. O item apresenta uma sintese tecnica no resumo, o vinculo comercial completo em Catalogo e o detalhe tecnico expandido; marca, modelo e resultado deixaram de se repetir desnecessariamente. Para Kits, a composicao, a quantidade original e o calculo do minimo permanecem inalterados; o valor de referencia e contabilizado somente no item importado do edital, sem somar componentes do Kit. A validacao com dados reais continua obrigatoria antes de encerrar a fase.
+
+Validacao local em 15/09/2026: o preview confirmou um Kit com dois componentes e minimos individuais, um item simples com edicao por campo e um lote retirado recolhido. Nenhuma dessas verificacoes alterou dados do preview.
+
+### Fase 3 - Consistencia transversal e operacao documental
+
+- [x] Formalizar a hierarquia semantica de cores, etapas, resultados, checagens e alertas em todo o CRM.
+- [ ] Revisar a aba Documentacao como checklist e biblioteca de arquivos, apos detalhamento das regras de negocio.
+- [x] Reduzir variacoes de superficies, badges, espacamentos e componentes entre abas internas.
+- [ ] Executar auditoria responsiva e de temas claro/escuro com dados reais antes de considerar a higienizacao concluida.
+
+Em andamento em 15/09/2026: criado o contrato central de tons semanticos para estados neutro, informativo, sucesso, atencao e risco. Badges de etapa e resultado, alertas e checagens do Pipeline, superficies operacionais, cores de etapa do Calendario e estados de Sessões, Concorrentes, Sala de disputa, Match e Encerramento passaram a consumir esse contrato sem alterar seus significados. Proxima aplicacao: revisar as variacoes restantes de superfícies e badges nas abas internas; a Documentacao permanece fora desta alteracao ate que as regras de negocio sejam revisadas.
+
+Fechamento tecnico em 15/09/2026: a revisao do preview confirmou leitura adequada dos estados nos temas claro e escuro. No popup do edital, as abas passaram a quebrar em linhas quando a largura for reduzida, removendo a rolagem horizontal interna. A implementacao visual da Fase 3 esta concluida; Documentacao e a validacao de homologacao com dados reais seguem como trilhas separadas.
 
 ## Proximo ciclo de implementacao
 

@@ -278,3 +278,30 @@ def test_build_notice_proposal_preview_ignores_inactive_items(tmp_path):
     assert "Item ativo" in item_table_text
     assert "Item fora da disputa" not in item_table_text
     assert "Item perdido no preview" not in item_table_text
+
+
+def test_build_notice_proposal_groups_kit_and_keeps_all_catalog_brands_and_models(tmp_path):
+    primary = SimpleNamespace(
+        id="item-1", item_number="1", description="Solução de rede", unit="UN", quantity=2,
+        unit_price=1000, selected_for_dispute=True,
+        catalog_product=SimpleNamespace(name="Switch PoE", brand="Datacom", model="DM1200", unit="UN"),
+    )
+    component = SimpleNamespace(
+        id="item-1-kit-1", item_number="1-kit-1", description="Access point para a solução", unit="UN", quantity=2,
+        unit_price=250, selected_for_dispute=True,
+        raw_payload={"kit_component": True, "kit_parent_notice_product_id": "item-1"},
+        catalog_product=SimpleNamespace(name="Access Point", brand="Ubiquiti", model="U6-Pro", unit="UN"),
+    )
+    notice = SimpleNamespace(
+        id="kit-preview", number="KIT-001", modality="Pregao Eletronico", organ=None, portal=None,
+        notice_products=[primary, component], notice_item_results=[],
+    )
+
+    path = tmp_path / "proposta_kit.docx"
+    path.write_bytes(build_notice_proposal_docx(notice))
+    item_table_text = "\n".join(cell.text for row in Document(str(path)).tables[1].rows for cell in row.cells)
+
+    assert "1-kit-1" not in item_table_text
+    assert "Kit: Switch PoE; Access Point" in item_table_text
+    assert "Datacom / DM1200 + Ubiquiti / U6-Pro" in item_table_text
+    assert "R$ 2.500,00" in item_table_text
