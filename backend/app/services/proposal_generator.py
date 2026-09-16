@@ -69,7 +69,9 @@ def proposal_filename(notice: Any) -> str:
 
 def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
-    products_by_id = {product.id: product for product in getattr(notice, "notice_products", [])}
+    products = list(getattr(notice, "notice_products", []) or [])
+    products_by_id = {product.id: product for product in products}
+    components_by_parent = _components_by_parent(products)
     for result in getattr(notice, "notice_item_results", []) or []:
         winner_type = getattr(result, "winner_type", None)
         winner_value = getattr(winner_type, "value", winner_type)
@@ -78,33 +80,25 @@ def _collect_won_items(notice: Any) -> list[dict[str, Any]]:
         product = products_by_id.get(result.notice_product_id) or result.notice_product
         if product is None:
             continue
+        if _is_kit_component(product):
+            continue
         if getattr(product, "selected_for_dispute", True) is False:
             continue
+        components = components_by_parent.get(str(getattr(product, "id", "")), [])
         quantity = _required_number("quantidade", getattr(result, "winning_quantity", None), getattr(product, "quantity", None))
         unit_price = _required_number(
             "preço comercial",
             getattr(result, "winning_price", None),
-            getattr(product, "unit_price", None),
-        )
-        catalog = getattr(product, "catalog_product", None)
-        brand = (
-            getattr(result, "winner_brand", None)
-            or getattr(catalog, "brand", None)
-            or ""
-        )
-        model = (
-            getattr(result, "winner_model", None)
-            or getattr(catalog, "model", None)
-            or ""
+            composition_unit_price(product, components),
         )
         items.append(
             {
                 "item": getattr(product, "item_number", None) or str(len(items) + 1),
-                "description": getattr(product, "description", None) or getattr(catalog, "name", None) or "Produto",
-                "unit": getattr(product, "unit", None) or getattr(catalog, "unit", None) or "UN",
+                "description": composition_description(product, components),
+                "unit": composition_unit(product, components),
                 "quantity": quantity,
                 "unit_price": unit_price,
-                "brand_model": " / ".join(part for part in [brand, model] if part) or "A DEFINIR",
+                "brand_model": composition_brand_model(product, components, result),
                 "total": quantity * unit_price,
                 "delivery_deadline": getattr(product, "delivery_deadline", None),
                 "warranty": getattr(product, "warranty", None),
@@ -120,30 +114,116 @@ def _collect_preview_items(notice: Any) -> list[dict[str, Any]]:
         if getattr(getattr(result, "winner_type", None), "value", getattr(result, "winner_type", None)) != "us"
     }
     items: list[dict[str, Any]] = []
-    for product in getattr(notice, "notice_products", []) or []:
+    products = list(getattr(notice, "notice_products", []) or [])
+    components_by_parent = _components_by_parent(products)
+    for product in products:
         if getattr(product, "id", None) in inactive_result_ids:
+            continue
+        if _is_kit_component(product):
             continue
         if getattr(product, "selected_for_dispute", True) is False:
             continue
-        catalog = getattr(product, "catalog_product", None)
-        unit_price = _required_number("preço comercial", getattr(product, "unit_price", None))
+        components = components_by_parent.get(str(getattr(product, "id", "")), [])
+        unit_price = _required_number("preço comercial", composition_unit_price(product, components))
         quantity = _required_number("quantidade", getattr(product, "quantity", None))
-        brand = getattr(catalog, "brand", None) or ""
-        model = getattr(catalog, "model", None) or ""
         items.append(
             {
                 "item": getattr(product, "item_number", None) or str(len(items) + 1),
-                "description": getattr(product, "description", None) or getattr(catalog, "name", None) or "Produto",
-                "unit": getattr(product, "unit", None) or getattr(catalog, "unit", None) or "UN",
+                "description": composition_description(product, components),
+                "unit": composition_unit(product, components),
                 "quantity": quantity,
                 "unit_price": unit_price,
-                "brand_model": " / ".join(part for part in [brand, model] if part) or "A DEFINIR",
+                "brand_model": composition_brand_model(product, components),
                 "total": quantity * unit_price,
                 "delivery_deadline": getattr(product, "delivery_deadline", None),
                 "warranty": getattr(product, "warranty", None),
             }
         )
     return sorted(items, key=lambda item: _sort_key(item["item"]))
+
+
+def _kit_parent_id(product: Any) -> str | None:
+    payload = getattr(product, "raw_payload", None) or {}
+    parent_id = payload.get("kit_parent_notice_product_id") if isinstance(payload, dict) else None
+    return str(parent_id).strip() if parent_id is not None and str(parent_id).strip() else None
+
+
+def _is_kit_component(product: Any) -> bool:
+    return _kit_parent_id(product) is not None
+
+
+def _components_by_parent(products: list[Any]) -> dict[str, list[Any]]:
+    components: dict[str, list[Any]] = {}
+    for product in products:
+        parent_id = _kit_parent_id(product)
+        if parent_id:
+            components.setdefault(parent_id, []).append(product)
+    return components
+
+
+def proposal_line_products(notice: Any) -> list[Any]:
+    """Products that represent one proposal line; kit components never become extra lines."""
+    return [
+        product
+        for product in getattr(notice, "notice_products", []) or []
+        if not _is_kit_component(product) and getattr(product, "selected_for_dispute", True) is not False
+    ]
+
+
+def proposal_line_unit_price(notice: Any, product: Any) -> Any:
+    products = list(getattr(notice, "notice_products", []) or [])
+    components = _components_by_parent(products).get(str(getattr(product, "id", "")), [])
+    return composition_unit_price(product, components)
+
+
+def composition_unit_price(product: Any, components: list[Any] | None = None) -> Any:
+    """A Kit price is the sum of its mandatory component prices; a regular item keeps its own price."""
+    components = components or []
+    if not components:
+        return getattr(product, "unit_price", None)
+    values = [getattr(component, "unit_price", None) for component in [product, *components]]
+    if any(value is None for value in values):
+        return None
+    return sum(float(value) for value in values)
+
+
+def _unique(values: list[str]) -> list[str]:
+    unique: list[str] = []
+    for value in values:
+        clean = str(value or "").strip()
+        if clean and clean not in unique:
+            unique.append(clean)
+    return unique
+
+
+def composition_description(product: Any, components: list[Any]) -> str:
+    catalog = getattr(product, "catalog_product", None)
+    description = getattr(product, "description", None) or getattr(catalog, "name", None) or "Produto"
+    if not components:
+        return description
+    component_names = _unique([
+        getattr(getattr(component, "catalog_product", None), "name", None)
+        or getattr(component, "description", None)
+        for component in [product, *components]
+    ])
+    return f"{description}\nKit: {'; '.join(component_names)}" if component_names else description
+
+
+def composition_unit(product: Any, components: list[Any]) -> str:
+    catalog = getattr(product, "catalog_product", None)
+    return getattr(product, "unit", None) or getattr(catalog, "unit", None) or "UN"
+
+
+def composition_brand_model(product: Any, components: list[Any], result: Any | None = None) -> str:
+    values: list[str] = []
+    if result is not None:
+        winner = " / ".join(part for part in [getattr(result, "winner_brand", None), getattr(result, "winner_model", None)] if part)
+        if winner:
+            values.append(winner)
+    for component in [product, *components]:
+        catalog = getattr(component, "catalog_product", None)
+        values.append(" / ".join(part for part in [getattr(catalog, "brand", None), getattr(catalog, "model", None)] if part))
+    return " + ".join(_unique(values)) or "A DEFINIR"
 
 
 def _fill_header_table(

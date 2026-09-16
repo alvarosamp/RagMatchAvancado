@@ -176,13 +176,13 @@ def generate_and_archive_document(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Selecione um assinante.")
     options = dict(payload.options)
     if signer:
-        signer_data = dict(options.get("signer") or {})
-        signer_data.setdefault("name", signer.full_name or signer.email)
-        signer_data.setdefault("email", signer.email)
-        signer_data.setdefault("cpf", signer.cpf)
-        signer_data.setdefault("phone", signer.phone)
-        signer_data.setdefault("role", signer.role)
-        options["signer"] = signer_data
+        options["signer"] = {
+            "name": signer.full_name or signer.email,
+            "email": signer.email,
+            "cpf": signer.cpf,
+            "phone": signer.phone,
+            "role": signer.role,
+        }
     try:
         content, preview = generate_document(notice, payload.template_id, payload.company, options)
     except ValueError as exc:

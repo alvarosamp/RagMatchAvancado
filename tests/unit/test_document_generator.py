@@ -91,3 +91,16 @@ def test_preview_reports_missing_quantity_without_turning_it_into_zero():
     notice.notice_products[0].quantity = None
     preview = generation_preview(notice, "feasibility_declaration", company, options)
     assert "items.1.quantity" in preview["missing_fields"]
+
+
+def test_selected_signer_overrides_the_default_representative_in_a_proposal():
+    notice, _, options = _fixture()
+    options["signer"] = {"name": "Joana Oliveira", "cpf": "987.654.321-00", "role": "Diretora Comercial"}
+    content, _ = generate_document(notice, "commercial_proposal", {}, options)
+    document = Document(BytesIO(content))
+    header_text = "\n".join(cell.text for row in document.tables[0].rows for cell in row.cells)
+    proposal_text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+
+    assert "REPRESENTANTE LEGAL: JOANA OLIVEIRA" in header_text.upper()
+    assert "CPF: 987.654.321-00" in header_text
+    assert "Joana Oliveira" in proposal_text

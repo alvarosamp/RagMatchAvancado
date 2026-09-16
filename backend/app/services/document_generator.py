@@ -16,7 +16,7 @@ from docx.oxml import OxmlElement
 from docx.table import Table
 from docx.oxml.ns import qn
 
-from app.services.proposal_generator import DEFAULT_COMPANY, build_notice_proposal_docx
+from app.services.proposal_generator import DEFAULT_COMPANY, build_notice_proposal_docx, proposal_line_products, proposal_line_unit_price
 
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
@@ -83,12 +83,10 @@ def generation_preview(notice: Any, template_id: str, company: dict[str, Any], o
         if not field.startswith("company.") and not _field_value(field, fields)
     ]
     if template_id in {"commercial_proposal", "feasibility_declaration"}:
-        for product in getattr(notice, "notice_products", []) or []:
-            if getattr(product, "selected_for_dispute", True) is False:
-                continue
+        for product in proposal_line_products(notice):
             if getattr(product, "quantity", None) is None:
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.quantity")
-            if template_id == "commercial_proposal" and getattr(product, "unit_price", None) is None:
+            if template_id == "commercial_proposal" and proposal_line_unit_price(notice, product) is None:
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.unit_price")
     return {"template": {"id": template.id, "name": template.name, "template_version": template.version}, "fields": fields, "missing_fields": sorted(set(missing))}
 
@@ -148,10 +146,13 @@ def _normalize_company(notice: Any, company: dict[str, Any] | None, options: dic
         "funcao_representante": signer.get("role") or "representante legal",
     }
     merged = {**defaults, **{key: value for key, value in supplied.items() if value not in (None, "")}}
-    if not merged.get("representante"):
-        merged["representante"] = signer.get("name") or ""
-    if not merged.get("funcao_representante"):
-        merged["funcao_representante"] = signer.get("role") or "representante legal"
+    # The selected signer is the authoritative representative for this generated document.
+    if signer.get("name"):
+        merged["representante"] = signer["name"]
+    if signer.get("cpf"):
+        merged["cpf_representante"] = signer["cpf"]
+    if signer.get("role"):
+        merged["funcao_representante"] = signer["role"]
     if not merged.get("cidade"):
         merged["cidade"] = city
     return merged
