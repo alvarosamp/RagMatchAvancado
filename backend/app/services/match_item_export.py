@@ -3,10 +3,103 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Any
 
 SCHEMA_NAME = "tor.match-item"
 SCHEMA_VERSION = "1.0.0"
+
+
+def build_crm_notice_match_export(notice: Any, products: list[Any]) -> dict[str, Any]:
+    """Build one Match JSON per edital, containing every edital item."""
+    edital_products = [
+        product
+        for product in products
+        if not _mapping(product.raw_payload).get("kit_component")
+    ]
+    item_exports = [build_crm_match_item_export(notice, product) for product in edital_products]
+    if not item_exports:
+        raise ValueError("O edital nao possui itens para exportar.")
+
+    first = item_exports[0]
+    return {
+        "metadados_exportacao": {
+            **first["metadados_exportacao"],
+            "schema": "tor.match-edital",
+            "schema_version": SCHEMA_VERSION,
+            "finalidade": "match_dos_itens_do_edital_com_catalogo_lpu",
+        },
+        "processo": first["processo"],
+        "resumo": {
+            "quantidade_itens": len(item_exports),
+            "quantidade_total": sum(
+                float(exported["item"].get("quantidade") or 0) for exported in item_exports
+            ),
+        },
+        "itens": [
+            {
+                key: value
+                for key, value in exported.items()
+                if key not in {"metadados_exportacao", "processo"}
+            }
+            for exported in item_exports
+        ],
+    }
+
+
+def match_notice_filename(payload: dict[str, Any]) -> str:
+    process_id = _mapping(payload.get("processo")).get("processo_id") or "edital"
+    return f"match_edital_{_slug(process_id)}.json"
+
+
+def build_crm_match_item_export(notice: Any, product: Any) -> dict[str, Any]:
+    """Adapt a CRM notice item to the same contract used by analysis items."""
+    raw = _mapping(product.raw_payload)
+    portal = getattr(notice, "portal", None)
+    organ = getattr(notice, "organ", None)
+    document = SimpleNamespace(
+        id=notice.analysis_document_id or notice.id,
+        business_key=notice.tor_id or notice.number,
+        source_name=_first(raw, "arquivo", "source_name", "documento_principal"),
+        source_path=_first(raw, "source_path", "caminho_origem"),
+        result={
+            "n_interno": notice.tor_id or notice.number,
+            "edital": {
+                "numero_pregao": notice.bid_number or notice.number,
+                "tipo_licitacao": notice.modality,
+                "orgao": getattr(organ, "name", None),
+                "uasg": notice.uasg,
+                "local": getattr(portal, "name", None),
+                "url_origem": getattr(portal, "url", None),
+                "data_disputa": notice.auction_date,
+            },
+            "documentacao": [],
+        },
+    )
+    item = SimpleNamespace(
+        id=product.id,
+        item_number=product.item_number,
+        categoria=product.category,
+        lote_grupo=product.lot,
+        quantity=product.quantity,
+        unit=product.unit,
+        description=product.description,
+        unit_value=product.reference_price,
+        total_value=product.reference_total_price,
+        garantia=product.warranty,
+        prazo_entrega=product.delivery_deadline,
+        exclusividade_me_epp_item=product.exclusive_epp_label
+        or product.is_exclusive_epp,
+        brand=None,
+        model=product.brand_direction_model,
+        has_direcionamento_marca=product.brand_direction_exists,
+        direcionamento_marca_tipo=product.brand_direction_type,
+        direcionamento_marca_justificativa=product.brand_direction_justification,
+        caracteristicas_tecnicas=product.technical_characteristics,
+        caracteristicas_bi=product.bi_features,
+        raw_payload=raw,
+    )
+    return build_match_item_export(document, item)
 
 
 def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:

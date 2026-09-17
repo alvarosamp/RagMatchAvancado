@@ -63,6 +63,12 @@ from app.services.match_eval_dataset import (
     build_match_calibration_report,
     build_match_evaluation_dataset,
 )
+from app.services.match_item_export import (
+    build_crm_notice_match_export,
+    build_crm_match_item_export,
+    match_item_filename,
+    match_notice_filename,
+)
 from app.services.ops_summary import summarize_crm
 from app.services.crm_workflow import next_post_auction_phase, validate_post_auction_transition
 from app.services.proposal_generator import (
@@ -87,6 +93,81 @@ from app.services.crm_notice_list import invalidate_notice_list_cache, list_noti
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
+
+
+@router.get("/notices/{notice_id}/match-json")
+def export_crm_notice_match_json(
+    notice_id: str,
+    download: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    notice = (
+        db.query(CrmNotice)
+        .options(
+            selectinload(CrmNotice.organ),
+            selectinload(CrmNotice.portal),
+            selectinload(CrmNotice.notice_products),
+        )
+        .filter(
+            CrmNotice.id == notice_id,
+            CrmNotice.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    try:
+        payload = build_crm_notice_match_export(notice, list(notice.notice_products or []))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not download:
+        return payload
+    return Response(
+        content=json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+        media_type="application/json; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{match_notice_filename(payload)}"'
+        },
+    )
+
+
+@router.get("/notices/{notice_id}/products/{notice_product_id}/match-json")
+def export_crm_notice_product_match_json(
+    notice_id: str,
+    notice_product_id: str,
+    download: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    row = (
+        db.query(CrmNotice, CrmNoticeProduct)
+        .join(CrmNoticeProduct, CrmNoticeProduct.notice_id == CrmNotice.id)
+        .options(selectinload(CrmNotice.organ), selectinload(CrmNotice.portal))
+        .filter(
+            CrmNotice.id == notice_id,
+            CrmNotice.tenant_id == current_user.tenant_id,
+            CrmNoticeProduct.id == notice_product_id,
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Item do edital nao encontrado.")
+
+    notice, product = row
+    payload = build_crm_match_item_export(notice, product)
+    if not download:
+        return payload
+    filename = match_item_filename(
+        type("DocumentRef", (), {"result": payload, "business_key": notice.tor_id or notice.number, "id": notice.id})(),
+        product,
+    )
+    return Response(
+        content=json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 def _local_now() -> datetime:

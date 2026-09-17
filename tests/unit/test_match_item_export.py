@@ -3,7 +3,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.services.analysis_normalizer import normalize_analysis_result
-from app.services.match_item_export import build_match_item_export, match_item_filename
+from app.services.match_item_export import (
+    build_crm_notice_match_export,
+    build_crm_match_item_export,
+    build_match_item_export,
+    match_item_filename,
+    match_notice_filename,
+)
 
 
 def _document(**overrides):
@@ -145,3 +151,106 @@ def test_normalizer_preserves_first_raw_item_without_recursive_snapshots() -> No
     assert raw["descricao_original"] == "Texto EXATO do edital"
     assert raw["caracteristicas_bi"]["gerenciamento"] == "gerenciável"
     assert "_raw_input" not in raw
+
+
+def test_build_crm_match_export_uses_notice_and_product_metadata() -> None:
+    notice = SimpleNamespace(
+        id="notice-1",
+        analysis_document_id=12,
+        tor_id="2026_09_10_2",
+        number="2026_09_10_2",
+        bid_number="11/2026",
+        modality="Pregao Eletronico",
+        uasg=None,
+        auction_date="2026-09-17T09:00:00",
+        organ=SimpleNamespace(name="Camara Municipal de Marialva"),
+        portal=SimpleNamespace(name="BNC", url="https://bnc.org.br"),
+    )
+    product = SimpleNamespace(
+        id="product-1",
+        item_number="1",
+        category="Switch",
+        lot="1",
+        quantity=24,
+        unit="UN",
+        description="Switch 24 portas gerenciavel",
+        reference_price=209.99,
+        reference_total_price=5037.96,
+        warranty="12 meses",
+        delivery_deadline="10 dias uteis",
+        exclusive_epp_label="Sim",
+        is_exclusive_epp=True,
+        brand_direction_model=None,
+        brand_direction_exists=False,
+        brand_direction_type=None,
+        brand_direction_justification=None,
+        technical_characteristics="VLAN e STP",
+        bi_features={"quantidade_portas": "24 Portas", "gerenciamento": "Gerenciavel"},
+        raw_payload={"descricao_original": "Switch 24 portas gerenciavel", "pagina": 8},
+    )
+
+    payload = build_crm_match_item_export(notice, product)
+
+    assert payload["processo"]["processo_id"] == "2026_09_10_2"
+    assert payload["processo"]["orgao"] == "Camara Municipal de Marialva"
+    assert payload["processo"]["portal"] == "BNC"
+    assert payload["item"]["numero"] == "1"
+    assert payload["raw"]["payload_original"]["pagina"] == 8
+    assert payload["normalized"]["categoria_especifica"]["portas_acesso_qtd"] == 24
+
+
+def test_build_crm_notice_export_contains_all_edital_items_in_one_json() -> None:
+    notice = SimpleNamespace(
+        id="notice-1",
+        analysis_document_id=12,
+        tor_id="2026_09_10_2",
+        number="2026_09_10_2",
+        bid_number="11/2026",
+        modality="Pregao Eletronico",
+        uasg=None,
+        auction_date="2026-09-17T09:00:00",
+        organ=SimpleNamespace(name="Camara Municipal de Marialva"),
+        portal=SimpleNamespace(name="BNC", url="https://bnc.org.br"),
+    )
+
+    def product(product_id: str, item_number: str, **overrides):
+        values = {
+            "id": product_id,
+            "item_number": item_number,
+            "category": "Switch",
+            "lot": "1",
+            "quantity": 2,
+            "unit": "UN",
+            "description": f"Switch item {item_number}",
+            "reference_price": 100.0,
+            "reference_total_price": 200.0,
+            "warranty": "12 meses",
+            "delivery_deadline": "10 dias uteis",
+            "exclusive_epp_label": None,
+            "is_exclusive_epp": False,
+            "brand_direction_model": None,
+            "brand_direction_exists": False,
+            "brand_direction_type": None,
+            "brand_direction_justification": None,
+            "technical_characteristics": "VLAN",
+            "bi_features": {"quantidade_portas": "24 Portas"},
+            "raw_payload": {"descricao_original": f"Switch item {item_number}"},
+        }
+        values.update(overrides)
+        return SimpleNamespace(**values)
+
+    payload = build_crm_notice_match_export(
+        notice,
+        [
+            product("product-1", "1"),
+            product("product-2", "2", quantity=3),
+            product("kit-1", "2.1", raw_payload={"kit_component": True}),
+        ],
+    )
+
+    assert payload["metadados_exportacao"]["schema"] == "tor.match-edital"
+    assert payload["processo"]["processo_id"] == "2026_09_10_2"
+    assert payload["resumo"] == {"quantidade_itens": 2, "quantidade_total": 5.0}
+    assert [entry["item"]["numero"] for entry in payload["itens"]] == ["1", "2"]
+    assert all("processo" not in entry for entry in payload["itens"])
+    assert match_notice_filename(payload) == "match_edital_2026_09_10_2.json"
