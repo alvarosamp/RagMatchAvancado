@@ -22,7 +22,7 @@
 # =============================================================================
 
 import enum
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.models import Base
@@ -69,8 +69,17 @@ class Job(Base):
         finished_at:   quando terminou (sucesso ou falha)
     """
     __tablename__ = 'jobs'
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "job_type",
+            "idempotency_key",
+            name="uq_jobs_tenant_type_idempotency",
+        ),
+    )
     id = Column(String, primary_key = True, index = True)
     correlation_id = Column(String(36), nullable=False, index=True)
+    idempotency_key = Column(String(128), nullable=True)
     job_type = Column(Enum(JobType), nullable = False)
     status = Column(Enum(JobStatus), nullable = False, default=JobStatus.PENDING, index = True)
     progress = Column(Float, default = 0.0) # 0.0 a 1.0
@@ -81,6 +90,7 @@ class Job(Base):
     payload = Column(JSON)
     result = Column(JSON)
     error_message = Column(Text)
+    failure_code = Column(String(64), nullable=True, index=True)
     attempt_count = Column(Integer, nullable=False, default=0)
     max_attempts = Column(Integer, nullable=False, default=3)
     #timestamps

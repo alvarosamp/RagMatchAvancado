@@ -68,3 +68,25 @@ reenfileirem um matching com falha. A operacao:
 - concede exatamente uma nova tentativa quando o limite foi esgotado;
 - registra quantidade e horario dos retries manuais no payload;
 - rejeita jobs ativos, concluidos, cancelados e uploads sem arquivo persistido.
+
+## Idempotencia e falhas estruturadas
+
+Os endpoints de criacao de jobs aceitam o header `Idempotency-Key`:
+
+- `POST /editais/upload`;
+- `POST /editais/{edital_id}/match`;
+- `POST /crm/notices/{notice_id}/matches/run-job`.
+
+Repetir uma chamada com a mesma chave, tenant e tipo de job retorna o
+`job_id` original e nao publica uma segunda mensagem. A restricao unica no
+banco protege inclusive contra duas requisicoes concorrentes. Chaves podem ter
+ate 128 caracteres.
+
+Falhas agora possuem `failure_code` separado da mensagem humana:
+
+- `timeout`;
+- `dependency_unavailable`;
+- `execution_error`;
+- `feature_disabled`;
+- `worker_interrupted`;
+- `cancelled`.

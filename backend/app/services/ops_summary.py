@@ -100,6 +100,7 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
                     "label": label,
                     "finished_at": finished_at.isoformat(),
                     "error_message": getattr(job, "error_message", None),
+                    "failure_code": getattr(job, "failure_code", None),
                     "attempt_count": attempt_count,
                     "max_attempts": max_attempts,
                 }

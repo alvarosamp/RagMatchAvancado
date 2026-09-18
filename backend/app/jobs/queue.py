@@ -24,7 +24,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import BackgroundTasks
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.auth.models import User
@@ -37,21 +37,97 @@ class JobCancelledError(Exception):
     pass
 
 
+def normalize_idempotency_key(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if len(normalized) > 128:
+        raise ValueError("Idempotency-Key deve ter no maximo 128 caracteres.")
+    return normalized
+
+
+def classify_job_failure(error: Exception) -> str:
+    name = type(error).__name__.lower()
+    if isinstance(error, TimeoutError) or "timeout" in name:
+        return "timeout"
+    if isinstance(error, ConnectionError) or any(token in name for token in ("connection", "redis", "http")):
+        return "dependency_unavailable"
+    return "execution_error"
+
+
+def _find_idempotent_job(
+    db: Session,
+    *,
+    tenant_id: str,
+    job_type: JobType,
+    idempotency_key: str | None,
+) -> Job | None:
+    if not idempotency_key:
+        return None
+    return (
+        db.query(Job)
+        .filter(
+            Job.tenant_id == tenant_id,
+            Job.job_type == job_type,
+            Job.idempotency_key == idempotency_key,
+        )
+        .first()
+    )
+
+
+def _persist_new_job(db: Session, job: Job) -> tuple[Job, bool]:
+    # Import lazily so lightweight unit-test stubs that do not expose the
+    # complete SQLAlchemy package can still import this module.
+    from sqlalchemy.exc import IntegrityError
+
+    db.add(job)
+    try:
+        db.commit()
+        return job, True
+    except IntegrityError:
+        db.rollback()
+        existing = _find_idempotent_job(
+            db,
+            tenant_id=job.tenant_id,
+            job_type=job.job_type,
+            idempotency_key=job.idempotency_key,
+        )
+        if existing is None:
+            raise
+        return existing, False
+
+
 def _claim_job(db: Session, job_id: str) -> bool:
     """Atomically claim a pending job so duplicate broker messages are harmless."""
-    job = db.get(Job, job_id)
-    if job is None or job.status != JobStatus.PENDING:
+    claimed_at = datetime.now(timezone.utc)
+    claimed = (
+        db.query(Job)
+        .filter(Job.id == job_id, Job.status == JobStatus.PENDING)
+        .update(
+            {
+                Job.status: JobStatus.RUNNING,
+                Job.progress: 0.05,
+                Job.started_at: claimed_at,
+                Job.finished_at: None,
+                Job.error_message: None,
+                Job.failure_code: None,
+                Job.attempt_count: func.coalesce(Job.attempt_count, 0) + 1,
+            },
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+    if claimed != 1:
         return False
 
+    job = db.get(Job, job_id)
+    if job is None:
+        return False
     payload = dict(job.payload or {})
-    job.attempt_count = int(job.attempt_count or payload.get("attempts", 0)) + 1
     payload["attempts"] = job.attempt_count
     job.payload = payload
-    job.status = JobStatus.RUNNING
-    job.progress = 0.05
-    job.started_at = datetime.now(timezone.utc)
-    job.finished_at = None
-    job.error_message = None
     db.commit()
     logger.info(
         "[Worker] Job assumido | job=%s | correlation_id=%s | tentativa=%s/%s",
@@ -98,7 +174,7 @@ def prepare_failed_job_retry(job: Job, *, now: datetime | None = None) -> None:
     """Prepara um retry manual sem apagar a trilha das tentativas anteriores."""
     if job.status != JobStatus.FAILED:
         raise ValueError("Somente jobs com falha podem ser reenfileirados.")
-    if job.error_message == "Cancelado pelo usuário":
+    if getattr(job, "failure_code", None) == "cancelled" or job.error_message == "Cancelado pelo usuário":
         raise ValueError("Jobs cancelados pelo usuario nao podem ser reenfileirados.")
     if job.job_type == JobType.UPLOAD_EDITAL:
         raise ValueError("Reenvie o arquivo para reprocessar um upload com falha.")
@@ -114,6 +190,7 @@ def prepare_failed_job_retry(job: Job, *, now: datetime | None = None) -> None:
     job.progress = 0.0
     job.result = None
     job.error_message = None
+    job.failure_code = None
     job.started_at = None
     job.finished_at = None
 
@@ -141,6 +218,7 @@ def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
         _update_job(
             db, job_id, status=JobStatus.FAILED,
             finished_at=datetime.now(timezone.utc), error_message=str(error),
+            failure_code=classify_job_failure(error),
         )
         return True
 
@@ -149,6 +227,7 @@ def _retry_or_fail(db: Session, job_id: str, error: Exception) -> bool:
     job.progress = 0.0
     job.started_at = None
     job.error_message = f"Tentativa {attempts}/{max_attempts} falhou: {error}"
+    job.failure_code = classify_job_failure(error)
     db.commit()
     logger.warning(
         "[Worker] Reenfileirando | job=%s | correlation_id=%s | tentativa=%s/%s | delay=%ss",
@@ -181,6 +260,7 @@ def recover_interrupted_jobs(db: Session) -> dict[str, int]:
                 _update_job(
                     db, job.id, status=JobStatus.FAILED, finished_at=now,
                     error_message="Job interrompido: excedeu o limite de tentativas de recuperacao.",
+                    failure_code="worker_interrupted",
                 )
                 summary["stale_failed"] += 1
             else:
@@ -217,9 +297,13 @@ def _remove_local_upload(pdf_path: str | None) -> None:
 
 
 def _remove_object_upload(object_key: str | None) -> None:
-    if object_key:
+    if not object_key:
+        return
+    try:
         from app.services.object_storage import delete
         delete(object_key)
+    except Exception:
+        logger.warning("Falha ao remover upload do object storage | key=%s", object_key, exc_info=True)
 
 
 def _is_cancelled(db: Session, job_id: str) -> bool:
@@ -264,6 +348,7 @@ class JobQueue:
         source_path:      str | None = None,
         crm_notice_id:    str | None = None,
         correlation_id:   str | None = None,
+        idempotency_key:   str | None = None,
     ) -> str:
         """
         Cria um job de upload+processamento de edital.
@@ -285,6 +370,16 @@ class JobQueue:
         # Salva o PDF em arquivo temporário persistente
         # (não podemos usar NamedTemporaryFile com delete=True porque
         # o background task roda depois que o request termina)
+        idempotency_key = normalize_idempotency_key(idempotency_key)
+        existing = _find_idempotent_job(
+            db,
+            tenant_id=tenant_id,
+            job_type=JobType.UPLOAD_EDITAL,
+            idempotency_key=idempotency_key,
+        )
+        if existing is not None:
+            return existing.id
+
         job_id   = str(uuid.uuid4())
         correlation_id = correlation_id or str(uuid.uuid4())
         object_key = None
@@ -304,6 +399,7 @@ class JobQueue:
         job = Job(
             id        = job_id,
             correlation_id=correlation_id,
+            idempotency_key=idempotency_key,
             job_type  = JobType.UPLOAD_EDITAL,
             status    = JobStatus.PENDING,
             tenant_id = tenant_id,
@@ -322,8 +418,11 @@ class JobQueue:
                 "object_key": object_key,
             },
         )
-        db.add(job)
-        db.commit()
+        persisted_job, created = _persist_new_job(db, job)
+        if not created:
+            _remove_local_upload(pdf_path)
+            _remove_object_upload(object_key)
+            return persisted_job.id
 
         logger.info(
             "[JobQueue] Job criado | id=%s | correlation_id=%s | arquivo=%s | tenant=%s",
@@ -342,6 +441,7 @@ class JobQueue:
         user_id:          int,
         db:               Session,
         correlation_id:   str | None = None,
+        idempotency_key:   str | None = None,
     ) -> str:
         """
         Cria um job de matching para um edital já processado.
@@ -356,12 +456,23 @@ class JobQueue:
         Returns:
             job_id (UUID string)
         """
+        idempotency_key = normalize_idempotency_key(idempotency_key)
+        existing = _find_idempotent_job(
+            db,
+            tenant_id=tenant_id,
+            job_type=JobType.RUN_MATCHING,
+            idempotency_key=idempotency_key,
+        )
+        if existing is not None:
+            return existing.id
+
         job_id = str(uuid.uuid4())
         correlation_id = correlation_id or str(uuid.uuid4())
 
         job = Job(
             id        = job_id,
             correlation_id=correlation_id,
+            idempotency_key=idempotency_key,
             job_type  = JobType.RUN_MATCHING,
             status    = JobStatus.PENDING,
             tenant_id = tenant_id,
@@ -372,8 +483,9 @@ class JobQueue:
                 "tenant_id": tenant_id,
             },
         )
-        db.add(job)
-        db.commit()
+        persisted_job, created = _persist_new_job(db, job)
+        if not created:
+            return persisted_job.id
 
         logger.info(
             "[JobQueue] Job matching criado | id=%s | correlation_id=%s | edital=%s",
@@ -395,16 +507,28 @@ class JobQueue:
         category: str | None = None,
         use_llm: bool = True,
         correlation_id: str | None = None,
+        idempotency_key: str | None = None,
     ) -> str:
         """
         Cria um job assíncrono de match do CRM (catalogo x itens do edital).
         """
+        idempotency_key = normalize_idempotency_key(idempotency_key)
+        existing = _find_idempotent_job(
+            db,
+            tenant_id=tenant_id,
+            job_type=JobType.CRM_NOTICE_MATCH,
+            idempotency_key=idempotency_key,
+        )
+        if existing is not None:
+            return existing.id
+
         job_id = str(uuid.uuid4())
         correlation_id = correlation_id or str(uuid.uuid4())
 
         job = Job(
             id=job_id,
             correlation_id=correlation_id,
+            idempotency_key=idempotency_key,
             job_type=JobType.CRM_NOTICE_MATCH,
             status=JobStatus.PENDING,
             tenant_id=tenant_id,
@@ -418,8 +542,9 @@ class JobQueue:
                 "use_llm": use_llm,
             },
         )
-        db.add(job)
-        db.commit()
+        persisted_job, created = _persist_new_job(db, job)
+        if not created:
+            return persisted_job.id
 
         logger.info(
             "[JobQueue] Job CRM match criado | id=%s | correlation_id=%s | notice=%s",
@@ -748,6 +873,7 @@ def _executar_job_crm_notice_match(
                 status=JobStatus.FAILED,
                 finished_at=datetime.now(timezone.utc),
                 error_message="Matching do CRM desabilitado para esta empresa.",
+                failure_code="feature_disabled",
             )
             logger.info("[Worker] CRM match bloqueado por feature flag | job=%s", job_id[:8])
             return
@@ -848,6 +974,7 @@ def _update_job(
     progress:      Optional[float]     = None,
     result:        Optional[dict]      = None,
     error_message: Optional[str]       = None,
+    failure_code:  Optional[str]       = None,
     started_at:    Optional[datetime]  = None,
     finished_at:   Optional[datetime]  = None,
 ) -> None:
@@ -866,6 +993,7 @@ def _update_job(
     if progress      is not None: job.progress      = round(progress, 2)
     if result        is not None: job.result        = result
     if error_message is not None: job.error_message = error_message
+    if failure_code  is not None: job.failure_code  = failure_code
     if started_at    is not None: job.started_at    = started_at
     if finished_at   is not None: job.finished_at   = finished_at
 

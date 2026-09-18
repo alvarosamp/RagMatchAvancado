@@ -20,7 +20,7 @@ import os
 import re
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
@@ -73,6 +73,7 @@ async def upload_edital(
     analysis_only:    bool            = Form(False, description="Processa o PDF sem avancar integracoes comerciais."),
     import_batch_id:  int | None      = Form(None),
     source_path:      str | None      = Form(None),
+    idempotency_key:  str | None      = Header(None, alias="Idempotency-Key", max_length=128),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
@@ -123,6 +124,7 @@ async def upload_edital(
         analysis_only    = analysis_only,
         import_batch_id  = import_batch_id,
         source_path      = source_path,
+        idempotency_key  = idempotency_key,
     )
 
     return JobCreatedResponse(
@@ -184,6 +186,7 @@ def add_requirements(
 @router.post("/{edital_id}/match", response_model=JobCreatedResponse, status_code=202)
 def match_edital(
     edital_id:        int,
+    idempotency_key:  str | None      = Header(None, alias="Idempotency-Key", max_length=128),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     current_user:     User            = Depends(require_role("admin", "editor")),
     db:               Session         = Depends(get_db),
@@ -217,6 +220,7 @@ def match_edital(
         tenant_id        = current_user.tenant.slug,
         user_id          = current_user.id,
         db               = db,
+        idempotency_key  = idempotency_key,
     )
 
     return JobCreatedResponse(

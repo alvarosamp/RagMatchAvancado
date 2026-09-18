@@ -54,6 +54,8 @@ class JobResponse(BaseModel):
     payload:       Optional[dict]
     result:        Optional[dict]  # preenchido quando status="done"
     error_message: Optional[str]   # preenchido quando status="failed"
+    failure_code: Optional[str]
+    idempotency_key: Optional[str]
     attempt_count: int
     max_attempts: int
     last_enqueued_at: Optional[datetime]
@@ -187,6 +189,7 @@ def cancel_job(
 
     job.status        = JobStatus.FAILED
     job.error_message = "Cancelado pelo usuário"
+    job.failure_code  = "cancelled"
     job.finished_at   = datetime.now(timezone.utc)
     db.commit()
     db.refresh(job)
@@ -275,6 +278,8 @@ def _build_response(job: Job) -> JobResponse:
         payload          = job.payload,
         result           = job.result,
         error_message    = job.error_message,
+        failure_code     = job.failure_code,
+        idempotency_key  = job.idempotency_key,
         attempt_count    = int(job.attempt_count or (job.payload or {}).get("attempts", 0)),
         max_attempts     = int(job.max_attempts or 3),
         last_enqueued_at = job.last_enqueued_at,

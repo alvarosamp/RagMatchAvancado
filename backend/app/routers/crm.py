@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import quote
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
@@ -1914,6 +1914,7 @@ def crm_run_notice_decision_intelligence(
 def crm_run_notice_matches_job(
     notice_id: str,
     background_tasks: BackgroundTasks,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key", max_length=128),
     payload: dict[str, Any] | None = Body(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -1967,6 +1968,7 @@ def crm_run_notice_matches_job(
         notice_product_id=payload.get("notice_product_id"),
         category=payload.get("category"),
         use_llm=bool(payload.get("use_llm", True)),
+        idempotency_key=idempotency_key,
     )
     return {
         "job_id": job_id,
