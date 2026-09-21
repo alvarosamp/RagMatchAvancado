@@ -90,3 +90,19 @@ Falhas agora possuem `failure_code` separado da mensagem humana:
 - `feature_disabled`;
 - `worker_interrupted`;
 - `cancelled`.
+
+## Painel operacional P1
+
+A tela de Jobs tambem funciona como painel de incidentes da IA:
+
+- identifica jobs com tentativas esgotadas (`dead_letter`);
+- separa cancelamentos de falhas operacionais;
+- agrega falhas das ultimas 24 horas por `failure_code`;
+- classifica o estado da fila como `healthy`, `degraded` ou `critical`;
+- gera alertas para jobs travados, tentativas esgotadas e dependencias indisponiveis;
+- permite filtrar dead letters pela API com `GET /jobs/?dead_letter=true`;
+- permite reprocessar jobs de matching e CRM diretamente pela interface.
+
+Uploads esgotados continuam exigindo um novo envio do arquivo, evitando retry
+com referencia temporaria indisponivel. Jobs cancelados nunca podem ser
+reenfileirados.

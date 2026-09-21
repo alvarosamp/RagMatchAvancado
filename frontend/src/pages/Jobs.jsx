@@ -5,7 +5,12 @@ import { useToast } from '../contexts/ToastContext'
 import { formatBrasiliaDateTime } from '../utils/datetime'
 
 const isCancelled = (job) =>
-  job.status === 'failed' && String(job.error_message || '').toLowerCase().startsWith('cancelado pelo usu')
+  job.status === 'failed' && (
+    job.failure_code === 'cancelled' || String(job.error_message || '').toLowerCase().startsWith('cancelado pelo usu')
+  )
+
+const isDeadLetter = (job) =>
+  job.status === 'failed' && !isCancelled(job) && Number(job.attempt_count || 0) >= Number(job.max_attempts || 3)
 
 const STATUS_CFG = {
   pending: { label: 'Aguardando', cls: 'badge-pending', barCls: 'bg-gray-500' },
@@ -21,11 +26,22 @@ const TYPE_LABELS = {
   crm_notice_match: 'CRM Match',
 }
 
+const FAILURE_LABELS = {
+  timeout: 'Tempo esgotado',
+  dependency_unavailable: 'Dependencia indisponivel',
+  execution_error: 'Erro de execucao',
+  feature_disabled: 'Recurso desabilitado',
+  worker_interrupted: 'Worker interrompido',
+  cancelled: 'Cancelado',
+  unknown: 'Falha nao classificada',
+}
+
 const FILTERS = [
   { key: 'all', label: 'Todos' },
   { key: 'running', label: 'Rodando' },
   { key: 'done', label: 'Concluidos' },
   { key: 'failed', label: 'Falhos' },
+  { key: 'dead_letter', label: 'Esgotados' },
 ]
 
 const jobLabel = (job) =>
@@ -38,11 +54,14 @@ export default function Jobs() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [cancelling, setCancelling] = useState(null)
+  const [retrying, setRetrying] = useState(null)
   const navigate = useNavigate()
   const { toast, confirm } = useToast()
 
   const load = async () => {
-    const params = filter !== 'all' ? { status: filter } : {}
+    const params = filter === 'dead_letter'
+      ? { status: 'failed', dead_letter: true, limit: 100 }
+      : filter !== 'all' ? { status: filter } : {}
     const [jobsResult, summaryResult] = await Promise.allSettled([
       jobsApi.list(params),
       jobsApi.summary(),
@@ -78,6 +97,8 @@ export default function Jobs() {
         job.id,
         job.job_type,
         job.status,
+        job.failure_code,
+        job.correlation_id,
         job.payload?.filename,
         job.result?.filename,
         job.result?.edital_id,
@@ -106,6 +127,26 @@ export default function Jobs() {
       toast({ type: 'error', title: 'Erro ao cancelar', message })
     } finally {
       setCancelling(null)
+    }
+  }
+
+  const handleRetry = async (event, jobId) => {
+    event.stopPropagation()
+    const ok = await confirm('Reprocessar este job? Uma nova tentativa sera registrada no mesmo historico.', {
+      title: 'Reprocessar job',
+    })
+    if (!ok) return
+
+    setRetrying(jobId)
+    try {
+      await jobsApi.retry(jobId)
+      toast({ type: 'success', message: 'Job reenfileirado com sucesso.' })
+      await load()
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Nao foi possivel reprocessar o job.'
+      toast({ type: 'error', title: 'Erro ao reprocessar', message })
+    } finally {
+      setRetrying(null)
     }
   }
 
@@ -146,7 +187,7 @@ export default function Jobs() {
       </div>
 
       {!loading && summary && (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <SummaryCard
             label="Ativos"
             value={summary.active_count || 0}
@@ -167,6 +208,29 @@ export default function Jobs() {
             value={summary.avg_duration_seconds ? `${Math.round(summary.avg_duration_seconds)}s` : '-'}
             sub="media dos jobs concluidos"
           />
+          <SummaryCard
+            label="Esgotados"
+            value={summary.dead_letter_count || 0}
+            sub="exigem revisao ou reprocessamento"
+          />
+        </div>
+      )}
+
+      {!loading && summary?.alerts?.length > 0 && (
+        <div className="space-y-2">
+          {summary.alerts.map((alert) => (
+            <div
+              key={alert.code}
+              className={`rounded-lg border px-4 py-3 text-sm ${
+                alert.severity === 'critical'
+                  ? 'border-red-fail/30 bg-red-fail/10 text-red-200'
+                  : 'border-amber-400/30 bg-amber-400/10 text-amber-100'
+              }`}
+            >
+              <span className="font-semibold">{alert.severity === 'critical' ? 'Incidente critico: ' : 'Atencao: '}</span>
+              {alert.message}
+            </div>
+          ))}
         </div>
       )}
 
@@ -184,6 +248,10 @@ export default function Jobs() {
                     <p className="truncate text-sm font-semibold text-white">{item.label}</p>
                     <p className="mt-1 text-xs font-body font-semibold tracking-wide text-red-fail">
                       {TYPE_LABELS[item.job_type] || item.job_type}
+                    </p>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      {FAILURE_LABELS[item.failure_code] || item.failure_code}
+                      {item.dead_letter ? ' · tentativas esgotadas' : ''}
                     </p>
                   </div>
                   <span className="text-xs font-body text-gray-500">
@@ -215,6 +283,8 @@ export default function Jobs() {
             const cfg = STATUS_CFG[cfgKey] || STATUS_CFG.pending
             const pct = Math.round((job.progress || 0) * 100)
             const canCancel = job.status === 'pending' || job.status === 'running'
+            const canRetry = job.status === 'failed' && !cancelled && ['run_matching', 'crm_notice_match'].includes(job.job_type)
+            const deadLetter = isDeadLetter(job)
 
             return (
               <div
@@ -258,20 +328,38 @@ export default function Jobs() {
                   {job.error_message && !cancelled && (
                     <p className="text-xs text-red-fail font-body mt-1 truncate">{job.error_message}</p>
                   )}
+                  {job.failure_code && !cancelled && (
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      {FAILURE_LABELS[job.failure_code] || job.failure_code}
+                      {' · tentativa '}{job.attempt_count || 0}/{job.max_attempts || 3}
+                      {deadLetter ? ' · esgotado' : ''}
+                    </p>
+                  )}
                   {job.result?.edital_id && (
                     <p className="text-xs text-gray-500 font-body mt-1">edital #{job.result.edital_id}</p>
                   )}
                 </div>
 
-                {canCancel && (
-                  <button
-                    onClick={(event) => handleCancel(event, job.id)}
-                    disabled={cancelling === job.id}
-                    className="flex-shrink-0 px-3 py-1 rounded-lg text-xs font-body font-semibold border border-red-fail/40 text-red-fail hover:bg-red-fail/10 transition-all duration-150 disabled:opacity-40"
-                  >
-                    {cancelling === job.id ? '...' : 'Cancelar'}
-                  </button>
-                )}
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {canRetry && (
+                    <button
+                      onClick={(event) => handleRetry(event, job.id)}
+                      disabled={retrying === job.id}
+                      className="px-3 py-1 rounded-lg text-xs font-body font-semibold border border-amber-400/40 text-amber-300 hover:bg-amber-400/10 transition-all duration-150 disabled:opacity-40"
+                    >
+                      {retrying === job.id ? '...' : 'Reprocessar'}
+                    </button>
+                  )}
+                  {canCancel && (
+                    <button
+                      onClick={(event) => handleCancel(event, job.id)}
+                      disabled={cancelling === job.id}
+                      className="px-3 py-1 rounded-lg text-xs font-body font-semibold border border-red-fail/40 text-red-fail hover:bg-red-fail/10 transition-all duration-150 disabled:opacity-40"
+                    >
+                      {cancelling === job.id ? '...' : 'Cancelar'}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

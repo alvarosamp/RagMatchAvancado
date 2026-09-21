@@ -44,6 +44,8 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
     stale_count = 0
     retrying_count = 0
     exhausted_count = 0
+    dead_letter_count = 0
+    failure_counts = Counter()
 
     for job in jobs:
         status = str(_enum_value(getattr(job, "status", "unknown")) or "unknown")
@@ -63,8 +65,12 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
         max_attempts = int(getattr(job, "max_attempts", 3) or 3)
         if attempt_count > 1:
             retrying_count += 1
+        failure_code = str(getattr(job, "failure_code", None) or "unknown")
+        is_cancelled = failure_code == "cancelled" or str(getattr(job, "error_message", "") or "").lower().startswith("cancelado pelo usu")
         if status == "failed" and attempt_count >= max_attempts:
             exhausted_count += 1
+            if not is_cancelled:
+                dead_letter_count += 1
         label = payload.get("filename") or result.get("filename") or f"Job {str(getattr(job, 'id', ''))[:8]}"
 
         if status in ACTIVE_JOB_STATUSES:
@@ -92,6 +98,7 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
 
         finished_at = _coerce_datetime(getattr(job, "finished_at", None))
         if status == "failed" and finished_at and (current_time - finished_at).total_seconds() <= 24 * 60 * 60:
+            failure_counts[failure_code] += 1
             recent_failures.append(
                 {
                     "id": getattr(job, "id", None),
@@ -100,7 +107,8 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
                     "label": label,
                     "finished_at": finished_at.isoformat(),
                     "error_message": getattr(job, "error_message", None),
-                    "failure_code": getattr(job, "failure_code", None),
+                    "failure_code": failure_code,
+                    "dead_letter": attempt_count >= max_attempts and not is_cancelled,
                     "attempt_count": attempt_count,
                     "max_attempts": max_attempts,
                 }
@@ -117,6 +125,41 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
         else None
     )
 
+    alerts: list[dict[str, Any]] = []
+    if stale_count:
+        alerts.append({
+            "code": "stale_jobs",
+            "severity": "critical",
+            "count": stale_count,
+            "message": f"{stale_count} job(s) em execucao ha mais de 20 minutos.",
+        })
+    if dead_letter_count:
+        alerts.append({
+            "code": "dead_letter_jobs",
+            "severity": "critical",
+            "count": dead_letter_count,
+            "message": f"{dead_letter_count} job(s) esgotaram as tentativas e precisam de revisao.",
+        })
+    dependency_failures = failure_counts.get("dependency_unavailable", 0) + failure_counts.get("timeout", 0)
+    if dependency_failures:
+        alerts.append({
+            "code": "dependency_failures",
+            "severity": "warning",
+            "count": dependency_failures,
+            "message": f"{dependency_failures} falha(s) de dependencia ou timeout nas ultimas 24 horas.",
+        })
+    elif recent_failures:
+        alerts.append({
+            "code": "recent_failures",
+            "severity": "warning",
+            "count": len(recent_failures),
+            "message": f"{len(recent_failures)} job(s) falharam nas ultimas 24 horas.",
+        })
+
+    operational_status = "critical" if any(item["severity"] == "critical" for item in alerts) else (
+        "degraded" if alerts else "healthy"
+    )
+
     return {
         "total": sum(status_counts.values()),
         "active_count": status_counts.get("pending", 0) + status_counts.get("running", 0),
@@ -124,6 +167,10 @@ def summarize_jobs(jobs: Iterable[Any], now: datetime | None = None) -> dict[str
         "failed_last_24h": len(recent_failures),
         "retrying_count": retrying_count,
         "exhausted_count": exhausted_count,
+        "dead_letter_count": dead_letter_count,
+        "operational_status": operational_status,
+        "alerts": alerts,
+        "failure_counts_24h": dict(failure_counts),
         "success_rate": round(status_counts.get("done", 0) / terminal_count, 4) if terminal_count else None,
         "avg_duration_seconds": round(sum(durations) / len(durations), 1) if durations else None,
         "p95_duration_seconds": round(p95_duration, 1) if p95_duration is not None else None,

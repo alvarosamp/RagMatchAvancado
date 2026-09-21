@@ -13,7 +13,8 @@
 #
 # =============================================================================
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -125,8 +126,10 @@ def get_job(
 @router.get("/", response_model=list[JobResponse])
 def list_jobs(
     status:       Optional[str] = None,   # filtrar por status (opcional)
-    limit:        int           = 20,     # paginação
-    offset:       int           = 0,
+    failure_code: Optional[str] = None,
+    dead_letter:  bool          = False,
+    limit:        int           = Query(20, ge=1, le=100),
+    offset:       int           = Query(0, ge=0),
     current_user: User    = Depends(get_current_user),
     db:           Session = Depends(get_db),
 ):
@@ -159,6 +162,17 @@ def list_jobs(
                 status_code=400,
                 detail=f"Status inválido: '{status}'. Use: pending, running, done, failed",
             )
+
+    if failure_code:
+        query = query.filter(Job.failure_code == failure_code)
+
+    if dead_letter:
+        query = query.filter(
+            Job.status == JobStatus.FAILED,
+            Job.attempt_count >= Job.max_attempts,
+            or_(Job.failure_code.is_(None), Job.failure_code != "cancelled"),
+            or_(Job.error_message.is_(None), ~Job.error_message.ilike("Cancelado pelo usu%")),
+        )
 
     jobs = query.offset(offset).limit(limit).all()
     return [_build_response(j) for j in jobs]

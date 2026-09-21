@@ -86,6 +86,7 @@ export const jobsApi = {
   list:   (params = {}) => api.get('/jobs/', { params }),
   summary: ()           => api.get('/jobs/summary'),
   cancel: (jobId)       => api.delete(`/jobs/${jobId}`),
+  retry:  (jobId)       => api.post(`/jobs/${jobId}/retry`),
 }
 
 export const opsApi = {

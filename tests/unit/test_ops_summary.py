@@ -52,6 +52,7 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
             started_at=now - timedelta(hours=2, minutes=50),
             finished_at=now - timedelta(hours=2),
             error_message="Erro no parser",
+            failure_code="dependency_unavailable",
         ),
         SimpleNamespace(
             id="job-done",
@@ -75,6 +76,10 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
     assert summary["failed_last_24h"] == 1
     assert summary["retrying_count"] == 2
     assert summary["exhausted_count"] == 1
+    assert summary["dead_letter_count"] == 1
+    assert summary["operational_status"] == "critical"
+    assert summary["failure_counts_24h"] == {"dependency_unavailable": 1}
+    assert {item["code"] for item in summary["alerts"]} == {"stale_jobs", "dead_letter_jobs", "dependency_failures"}
     assert summary["success_rate"] == 0.5
     assert summary["avg_duration_seconds"] == 1800.0
     assert summary["p95_duration_seconds"] == 1800.0
@@ -85,6 +90,34 @@ def test_summarize_jobs_tracks_active_stale_and_recent_failures():
     assert summary["active_jobs"][0]["attempt_count"] == 2
     assert summary["recent_failures"][0]["id"] == "job-failed"
     assert summary["recent_failures"][0]["correlation_id"] == "corr-failed"
+    assert summary["recent_failures"][0]["dead_letter"] is True
+
+
+def test_summarize_jobs_ignores_cancelled_jobs_as_dead_letters():
+    now = datetime(2026, 5, 11, 15, 0, tzinfo=timezone.utc)
+    jobs = [
+        SimpleNamespace(
+            id="job-cancelled",
+            job_type="run_matching",
+            status="failed",
+            progress=0,
+            payload={},
+            result=None,
+            attempt_count=3,
+            max_attempts=3,
+            created_at=now - timedelta(minutes=5),
+            started_at=now - timedelta(minutes=4),
+            finished_at=now - timedelta(minutes=3),
+            error_message="Cancelado pelo usuario",
+            failure_code=None,
+        )
+    ]
+
+    summary = summarize_jobs(jobs, now=now)
+
+    assert summary["exhausted_count"] == 1
+    assert summary["dead_letter_count"] == 0
+    assert summary["recent_failures"][0]["dead_letter"] is False
 
 
 def test_summarize_editais_rolls_up_chunks_and_requirements():
