@@ -298,7 +298,8 @@ function ProfileCompletionDialog({ user, onSave, onClose }) {
             <input className="input mt-1.5" type="tel" placeholder="(61) 99999-9999" value={form.phone} onChange={(event) => set('phone', event.target.value)} required />
           </label>
           <label className="sm:col-span-2 text-sm font-medium text-slate-700 dark:text-slate-200">E-mail
-            <input className="input mt-1.5" type="email" value={form.email} onChange={(event) => set('email', event.target.value)} required />
+            <input className="input mt-1.5 opacity-70" type="email" value={form.email} disabled readOnly />
+            <span className="mt-1 block text-xs text-slate-500">Para sua segurança, a troca de e-mail exige confirmação.</span>
           </label>
           {error && <p className="sm:col-span-2 text-sm text-red-600">{error}</p>}
           <div className="sm:col-span-2 flex justify-end gap-3">

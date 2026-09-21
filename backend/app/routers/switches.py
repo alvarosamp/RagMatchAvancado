@@ -2,22 +2,30 @@ from app.services.requirements_checker import check_requirements
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import get_current_user
+from app.auth.models import User
 from app.db.session import get_db
-from app.db.models import Product, MatchingResult
+from app.db.models import Edital, MatchingResult, Product, Requirement
 from app.logs.config import logger
 
 
 router = APIRouter(tags=["switches"])
 
 @router.get("/switches")
-def list_switches(db: Session = Depends(get_db)):
+def list_switches(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Retorna todos os switches do banco."""
     switches = db.query(Product).filter(Product.category == "switch").all()
     logger.info(f"Switches encontrados: {len(switches)}")
     return [{"model": p.model, "data": p.data} for p in switches]
 
 @router.get("/verify-switches")
-def verify_all_switches(db: Session = Depends(get_db)):
+def verify_all_switches(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Verifica todos os switches e seus requisitos"""
     switches = db.query(Product).filter(Product.category == "switch").all()
     
@@ -34,9 +42,18 @@ def verify_all_switches(db: Session = Depends(get_db)):
     return {"message": "Verificação completa", "switches_verified": len(switches), "results": result}
 
 @router.get("/matching-results")
-def get_matching_results(db: Session = Depends(get_db)):
+def get_matching_results(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Exibe os resultados de matching de requisitos para os switches no banco de dados.
     """
-    results = db.query(MatchingResult).all()
+    results = (
+        db.query(MatchingResult)
+        .join(Requirement, MatchingResult.requirement_id == Requirement.id)
+        .join(Edital, Requirement.edital_id == Edital.id)
+        .filter(Edital.tenant_id == current_user.tenant_id)
+        .all()
+    )
     return results

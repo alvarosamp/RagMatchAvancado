@@ -7,7 +7,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisDocument, AnalysisItem
-from app.services.analysis_normalizer import normalize_analysis_result
+from app.services.analysis_normalizer import (
+    normalize_analysis_result,
+    normalize_brand_direction,
+)
 from app.services.document_identity import edital_business_key_from_result
 
 
@@ -103,7 +106,7 @@ def persist_analysis_document(
             import_batch_id=import_batch_id,
             source_kind=source_kind,
             schema_name=schema_name or source_kind,
-            schema_version=schema_version,
+            schema_version=schema_version or result.get("schema_version"),
             source_hash=source_hash,
             business_key=business_key,
         )
@@ -112,7 +115,9 @@ def persist_analysis_document(
     else:
         document.business_key = business_key or document.business_key
         document.schema_name = schema_name or document.schema_name or source_kind
-        document.schema_version = schema_version or document.schema_version
+        document.schema_version = (
+            schema_version or result.get("schema_version") or document.schema_version
+        )
         document.import_batch_id = import_batch_id or document.import_batch_id
 
     document.source_name = source_name
@@ -137,7 +142,7 @@ def persist_analysis_document(
 
 
 def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> AnalysisItem:
-    direcionamento_marca = item.get("direcionamento_marca") or {}
+    direcionamento_marca = normalize_brand_direction(item.get("direcionamento_marca"))
     brand = _first(item, "marca", "brand") or direcionamento_marca.get("marca_modelo")
     return AnalysisItem(
         item_number=_first(item, "numero_item_edital", "numero_item", "item", "numero"),

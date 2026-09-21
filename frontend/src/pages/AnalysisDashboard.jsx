@@ -8,6 +8,7 @@ import Card from '../components/ui/Card'
 import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
 import { BreakdownGroup } from '../components/ui/MetricBar'
 import { formatBrasiliaTime } from '../utils/datetime'
+import { summarizeTechnicalFeatures } from '../utils/technicalFeatures'
 
 const PERIODS = [
   { key: 'day', label: 'Diario' },
@@ -24,6 +25,8 @@ function normalizeRisk(value) {
 
 function itemCategorization(item) {
   const bi = item.caracteristicas_bi || {}
+  const structuredSummary = summarizeTechnicalFeatures(bi)
+  if (structuredSummary) return structuredSummary
   const fields = [
     bi.quantidade_portas,
     bi.gerenciamento,

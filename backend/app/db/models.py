@@ -95,7 +95,7 @@ class Edital(Base):
     status       = Column(String, nullable=False, default="done", index=True)
     full_text    = Column(Text)                          # texto bruto extraído
     parsed_at    = Column(DateTime, server_default=func.now())
-    tenant_id    = Column(String, ForeignKey("tenants.slug"), index=True, nullable=False)
+    tenant_id    = Column(Integer, ForeignKey("tenants.id"), index=True, nullable=False)
     import_batch_id = Column(Integer, ForeignKey("import_batches.id", ondelete="SET NULL"), index=True)
     source_path  = Column(String)
     storage_key  = Column(String, index=True)

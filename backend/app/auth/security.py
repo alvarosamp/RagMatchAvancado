@@ -59,6 +59,7 @@ def create_access_token(
         tenant_slug : str,
         role : str,
         user_id : int,
+        auth_version: int = 0,
         expires_delta : Optional[timedelta] = None,
     ) -> str:
     '''
@@ -93,6 +94,7 @@ def create_access_token(
         "tenant_slug": tenant_slug, #qual tenant esse usuario pertence
         "role": role, #ID no banco (para queries diretas)
         "user_id": user_id, #papel (para autorizaçao)
+        "auth_version": auth_version,
         "exp": expire #quando expira 
     }
     #Assina e retorna o token

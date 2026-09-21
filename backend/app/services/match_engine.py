@@ -295,7 +295,7 @@ def match_all_products(
     products: list[Product],
     requirements: list[Requirement],
     edital_id: int,
-    tenant_id: str | None = None,
+    tenant_id: int | None = None,
 ) -> list[MatchReport]:
     """
     Roda run_matching() para cada produto e aciona o MLOps ao final.
@@ -366,7 +366,7 @@ def _executar_mlops(
     reports: list[MatchReport],
     edital_id: int,
     tempo_batch: float,
-    tenant_id: str | None,
+    tenant_id: int | None,
 ) -> None:
     """
     Executa todas as operações MLOps após o batch de matching.

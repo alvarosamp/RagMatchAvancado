@@ -6,6 +6,7 @@ import { formatNumber, compactDescription } from '../components/ui/format'
 import Card from '../components/ui/Card'
 import Badge, { categoryTone, riskTone } from '../components/ui/Badge'
 import { copyJsonToClipboard, filenameFromDisposition } from '../utils/jsonExport'
+import { summarizeTechnicalFeatures } from '../utils/technicalFeatures'
 
 const TABS = [
   { key: 'itens', label: 'Itens elegiveis' },
@@ -23,7 +24,7 @@ function formatMoney(value) {
 
 function itemDetails(item) {
   const bi = item.caracteristicas_bi || item.raw_payload?.caracteristicas_bi || {}
-  return Object.values(bi).filter((value) => value && value !== 'N/C').join(' / ') || '-'
+  return summarizeTechnicalFeatures(bi) || '-'
 }
 
 function InfoCard({ label, value }) {

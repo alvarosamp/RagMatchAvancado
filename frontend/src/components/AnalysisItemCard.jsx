@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react'
+import { flattenTechnicalFeatures, summarizeTechnicalFeatures } from '../utils/technicalFeatures'
 
 function Money({ value }) {
   if (value == null || value === '') return <span className="text-gray-600 font-mono text-xs">—</span>
@@ -23,10 +24,7 @@ function Money({ value }) {
 }
 
 function caracteristicasBiToString(bi) {
-  if (!bi || typeof bi !== 'object') return null
-  const values = Object.values(bi).filter((v) => v && v !== 'N/C')
-  if (!values.length) return null
-  return values.join(' · ')
+  return summarizeTechnicalFeatures(bi) || null
 }
 
 export default function AnalysisItemCard({ item }) {
@@ -36,6 +34,7 @@ export default function AnalysisItemCard({ item }) {
   const hasMarca = item.has_direcionamento_marca ?? direcionamento?.existe
   const bi = item.caracteristicas_bi || item.raw_payload?.caracteristicas_bi
   const biSummary = caracteristicasBiToString(bi)
+  const biFeatures = flattenTechnicalFeatures(bi)
   const descricaoCompleta = item.description || item.raw_payload?.descricao_original || ''
   const descricaoResumida =
     descricaoCompleta.length > 100 ? `${descricaoCompleta.slice(0, 100)}…` : descricaoCompleta
@@ -126,15 +125,15 @@ export default function AnalysisItemCard({ item }) {
             </div>
           )}
 
-          {bi && Object.keys(bi).length > 0 && (
+          {biFeatures.length > 0 && (
             <div>
               <p className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-1.5">
                 Características técnicas
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {Object.entries(bi).map(([key, value]) => (
-                  <div key={key} className="text-[10px] font-mono bg-ink-50 border border-slate-border/40 px-2 py-1.5 rounded">
-                    <p className="text-gray-600 uppercase">{key.replace(/_/g, ' ')}</p>
+                {biFeatures.map(({ path, label, value }) => (
+                  <div key={path} className="text-[10px] font-mono bg-ink-50 border border-slate-border/40 px-2 py-1.5 rounded">
+                    <p className="text-gray-600 uppercase" title={path}>{label}</p>
                     <p className="text-gray-200 mt-0.5">{value ?? '—'}</p>
                   </div>
                 ))}

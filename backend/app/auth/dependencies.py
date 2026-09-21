@@ -28,7 +28,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
-from app.db.session import get_db
+from app.db.session import get_db, set_tenant_context
 from app.auth.models import User, Tenant
 from app.auth.security import decode_access_token
 from app.logs.config import logger
@@ -109,12 +109,31 @@ def get_current_user(
         logger.warning(f"[Auth] Usuário não encontrado: {email}")
         raise credentials_exception
 
+    try:
+        token_auth_version = int(payload.get("auth_version", 0))
+    except (TypeError, ValueError):
+        raise credentials_exception
+    if token_auth_version != int(getattr(user, "auth_version", 0) or 0):
+        logger.info("[Auth] Sessao revogada para user_id=%s", user.id)
+        raise credentials_exception
+
     # Verifica se a conta está ativa
     if not user.is_active:
         raise HTTPException(
             status_code = status.HTTP_403_FORBIDDEN,
             detail      = "Conta desativada. Entre em contato com o administrador.",
         )
+
+    # Toda rota autenticada deve rejeitar imediatamente contas de empresas
+    # suspensas. Manter esta verificacao na dependency principal evita que uma
+    # rota esqueca de chamar get_current_tenant separadamente.
+    if not user.tenant or not user.tenant.is_active:
+        raise HTTPException(
+            status_code = status.HTTP_403_FORBIDDEN,
+            detail      = "Tenant desativado. Entre em contato com o suporte.",
+        )
+
+    set_tenant_context(db, user.tenant_id)
 
     return user
 

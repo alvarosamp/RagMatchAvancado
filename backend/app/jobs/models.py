@@ -59,7 +59,7 @@ class Job(Base):
         job_type:      qual pipeline vai rodar (upload ou matching)
         status:        estado atual (pending/running/done/failed)
         progress:      percentual de progresso 0.0-1.0 (para barra de progresso)
-        tenant_id:     slug do tenant dono do job (isolamento multi-tenant)
+        tenant_id:     ID numerico do tenant dono do job (isolamento multi-tenant)
         user_id:       quem criou o job
         payload:       JSON com dados de entrada (ex: path do PDF)
         result:        JSON com dados de saída (ex: edital_id, n_chunks)
@@ -74,7 +74,7 @@ class Job(Base):
     status = Column(Enum(JobStatus), nullable = False, default=JobStatus.PENDING, index = True)
     progress = Column(Float, default = 0.0) # 0.0 a 1.0
     #Multi tenant: Cada job pertence a um tenant 
-    tenant_id = Column(String, ForeignKey("tenants.slug"), index = True, nullable = False)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), index = True, nullable = False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable = False)
     #Dados do job
     payload = Column(JSON)

@@ -72,13 +72,13 @@ def test_readiness_returns_503_when_database_is_unavailable(monkeypatch):
     session.close.assert_called_once()
 
 
-def test_readiness_skips_ai_dependency_when_feature_is_disabled(monkeypatch):
+def test_readiness_does_not_depend_on_optional_ai(monkeypatch):
     session = MagicMock()
     check_ollama = MagicMock()
     monkeypatch.setattr(health, "SessionLocal", MagicMock(return_value=session))
     monkeypatch.setattr(health, "_check_ollama", check_ollama)
     monkeypatch.delenv("REDIS_URL", raising=False)
-    monkeypatch.setenv("AI_FEATURES_ENABLED", "false")
+    monkeypatch.setenv("AI_FEATURES_ENABLED", "true")
 
     response = _client().get("/health/ready")
 

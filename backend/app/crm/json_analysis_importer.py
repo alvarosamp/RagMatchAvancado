@@ -23,7 +23,10 @@ from app.crm.sales_process_importer import (
     parse_datetime_pair,
     parse_float,
 )
-from app.services.analysis_normalizer import normalize_analysis_result
+from app.services.analysis_normalizer import (
+    normalize_analysis_result,
+    normalize_brand_direction,
+)
 
 
 def sync_analysis_json_to_crm(
@@ -36,7 +39,7 @@ def sync_analysis_json_to_crm(
     analysis_document_id: int | None = None,
     notify: bool = True,
 ) -> dict[str, Any]:
-    """Upsert a schema v7.x analysis JSON into the operational CRM."""
+    """Upsert a V7/V8 analysis JSON into the operational CRM."""
     from app.crm.models import CrmNotice
     from app.services.crm_notice_sync import sync_notice_relationships
 
@@ -111,10 +114,12 @@ def sync_analysis_json_to_crm(
     }
     _apply_particularity_line_fields(notice_fields, original_result.get("particularities"))
 
-    notice = (
-        db.query(CrmNotice)
-        .filter(CrmNotice.tenant_id == context.tenant.id, CrmNotice.import_key == import_key)
-        .first()
+    notice = _find_existing_notice(
+        db,
+        CrmNotice,
+        tenant_id=context.tenant.id,
+        import_key=import_key,
+        tor_id=tor_id,
     )
     created = False
     if notice is None:
@@ -151,6 +156,44 @@ def sync_analysis_json_to_crm(
         "documents": documents,
         "import_key": import_key,
     }
+
+
+def _find_existing_notice(
+    db: Session,
+    notice_model: Any,
+    *,
+    tenant_id: int,
+    import_key: str,
+    tor_id: str,
+) -> Any | None:
+    """Find a reimport even when an older release generated another import key.
+
+    ``tor_id``/``number`` are unique per tenant and, for analysis JSONs, are
+    derived from the stable ``n_interno``. Looking only at ``import_key`` can
+    therefore miss the same notice after the key algorithm changes and make
+    the following INSERT fail on the database uniqueness constraint.
+    """
+    notice = (
+        db.query(notice_model)
+        .filter(notice_model.tenant_id == tenant_id, notice_model.import_key == import_key)
+        .first()
+    )
+    if notice is not None:
+        return notice
+
+    notice = (
+        db.query(notice_model)
+        .filter(notice_model.tenant_id == tenant_id, notice_model.tor_id == tor_id)
+        .first()
+    )
+    if notice is not None:
+        return notice
+
+    return (
+        db.query(notice_model)
+        .filter(notice_model.tenant_id == tenant_id, notice_model.number == tor_id)
+        .first()
+    )
 
 
 def _build_import_key(result: dict[str, Any], source_name: str | None) -> str:
@@ -424,13 +467,15 @@ def _upsert_products(
         )
         if not isinstance(original_features, dict):
             original_features = item.get("caracteristicas_bi") or {}
-        original_direction = (
+        original_direction = normalize_brand_direction(
             original_item.get("direcionamento_marca")
             if isinstance(original_item, dict)
             else None
         )
-        if not isinstance(original_direction, dict):
-            original_direction = item.get("direcionamento_marca") or {}
+        if not original_direction.get("existe"):
+            item_direction = normalize_brand_direction(item.get("direcionamento_marca"))
+            if item_direction.get("existe"):
+                original_direction = item_direction
         raw_item_number = _raw_item_number(item, index)
         item_number = _crm_item_number(item, index, items)
         lot = optional_meaningful_text(item.get("lote_grupo"))
@@ -472,7 +517,7 @@ def _upsert_products(
         product.item_number = item_number
         product.description = _description_for_item(item, item_number)
         product.lot = lot
-        product.product_code = optional_meaningful_text((item.get("direcionamento_marca") or {}).get("marca_modelo"))
+        product.product_code = optional_meaningful_text(original_direction.get("marca_modelo"))
         product.is_exclusive_epp = parse_bool(item.get("exclusividade_me_epp_item"))
         product.exclusive_epp_label = optional_meaningful_text(item.get("exclusividade_me_epp_item"))
         product.quantity = quantity
@@ -592,7 +637,22 @@ def _crm_item_number(item: dict[str, Any], index: int, items: list[dict[str, Any
 def _bi_feature(features: dict[str, Any], key: str) -> str | None:
     if not isinstance(features, dict):
         return None
-    return optional_meaningful_text(features.get(key))
+    direct = optional_meaningful_text(features.get(key))
+    if direct:
+        return direct
+    return optional_meaningful_text(_find_nested_feature(features, key))
+
+
+def _find_nested_feature(value: Any, key: str) -> Any:
+    if not isinstance(value, dict):
+        return None
+    if key in value and not isinstance(value[key], (dict, list)):
+        return value[key]
+    for nested in value.values():
+        found = _find_nested_feature(nested, key)
+        if found is not None:
+            return found
+    return None
 
 
 def _original_value(original_item: Any, item: dict[str, Any], key: str) -> Any:
@@ -618,7 +678,7 @@ def _item_notes(item: dict[str, Any]) -> str | None:
         ("Exclusividade ME/EPP", item.get("exclusividade_me_epp_item")),
         ("Risco associado", item.get("risco_associado")),
     ]
-    direcionamento = item.get("direcionamento_marca") or {}
+    direcionamento = normalize_brand_direction(item.get("direcionamento_marca"))
     if direcionamento:
         fields.extend(
             [

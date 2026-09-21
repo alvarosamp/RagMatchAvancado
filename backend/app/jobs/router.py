@@ -48,7 +48,7 @@ class JobResponse(BaseModel):
     job_type:      str
     status:        str
     progress:      float          # 0.0 a 1.0 — para barra de progresso
-    tenant_id:     str
+    tenant_id:     int
     payload:       Optional[dict]
     result:        Optional[dict]  # preenchido quando status="done"
     error_message: Optional[str]   # preenchido quando status="failed"
@@ -70,7 +70,7 @@ def get_jobs_summary(
 ):
     jobs = (
         db.query(Job)
-        .filter(Job.tenant_id == current_user.tenant.slug)
+        .filter(Job.tenant_id == current_user.tenant_id)
         .order_by(Job.created_at.desc())
         .all()
     )
@@ -138,7 +138,7 @@ def list_jobs(
     """
     query = (
         db.query(Job)
-        .filter(Job.tenant_id == current_user.tenant.slug)
+        .filter(Job.tenant_id == current_user.tenant_id)
         .order_by(Job.created_at.desc())
     )
 
@@ -203,7 +203,7 @@ def _get_job_do_tenant(job_id: str, current_user: User, db: Session) -> Job:
         db.query(Job)
         .filter(
             Job.id        == job_id,
-            Job.tenant_id == current_user.tenant.slug,
+            Job.tenant_id == current_user.tenant_id,
         )
         .first()
     )

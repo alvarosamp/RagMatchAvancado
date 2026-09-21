@@ -138,12 +138,30 @@ def get_dashboard(
 
 
 _BREAKDOWN_FIELDS = {
-    "Switch": ["quantidade_portas", "gerenciamento", "alimentacao_poe", "portas_acesso", "uplinks", "camada"],
-    "Access Point": ["tecnologia_wifi", "ambiente", "alimentacao"],
-    "Módulo óptico": ["formato", "velocidade", "tipo_meio", "alcance"],
-    "Modulo optico": ["formato", "velocidade", "tipo_meio", "alcance"],
-    "Transceiver": ["formato", "velocidade", "tipo_meio", "alcance"],
+    "Switch": {
+        "quantidade_portas": [("quantidade_portas",), ("switch", "interfaces", "portas_acesso_rj45_qtd")],
+        "gerenciamento": [("gerenciamento",), ("switch", "gerenciamento", "gerenciamento_local")],
+        "alimentacao_poe": [("alimentacao_poe",), ("switch", "poe", "poe_padroes")],
+        "portas_acesso": [("portas_acesso",), ("switch", "interfaces", "velocidades_porta")],
+        "uplinks": [("uplinks",), ("switch", "interfaces", "uplinks_formatos")],
+        "camada": [("camada",), ("switch", "camada_3", "protocolos_roteamento")],
+    },
+    "Access Point": {
+        "tecnologia_wifi": [("tecnologia_wifi",), ("access_point", "radio", "padroes_ieee")],
+        "ambiente": [("ambiente",), ("access_point", "identificacao", "ambiente_uso")],
+        "alimentacao": [("alimentacao",), ("access_point", "energia_fisico", "poe_padroes")],
+    },
+    "Módulo óptico": {},
+    "Modulo optico": {},
+    "Transceiver": {
+        "formato": [("formato",), ("transceiver", "identificacao", "form_factor")],
+        "velocidade": [("velocidade",), ("transceiver", "identificacao", "velocidade_nominal_gbps")],
+        "tipo_meio": [("tipo_meio",), ("transceiver", "fibra_conector", "tipo_fibra")],
+        "alcance": [("alcance",), ("transceiver", "fibra_conector", "alcance_m")],
+    },
 }
+_BREAKDOWN_FIELDS["Módulo óptico"] = _BREAKDOWN_FIELDS["Transceiver"]
+_BREAKDOWN_FIELDS["Modulo optico"] = _BREAKDOWN_FIELDS["Transceiver"]
 
 def _category_summary(items_q) -> dict[str, dict[str, Any]]:
     rows = (
@@ -175,10 +193,12 @@ def _sum_categories(values: dict[str, float], *categories: str) -> float:
 def _breakdowns_for_category(
     db: Session, doc_ids: list[int], categoria: str
 ) -> dict[str, list[dict[str, Any]]]:
-    fields = _BREAKDOWN_FIELDS.get(categoria, [])
+    fields = _BREAKDOWN_FIELDS.get(categoria, {})
     breakdowns: dict[str, list[dict[str, Any]]] = {}
-    for field in fields:
-        valor = func.json_extract_path_text(AnalysisItem.caracteristicas_bi, field).label("valor")
+    for field, paths in fields.items():
+        valor = func.coalesce(
+            *(func.json_extract_path_text(AnalysisItem.caracteristicas_bi, *path) for path in paths)
+        ).label("valor")
         rows = (
             db.query(
                 valor,

@@ -332,6 +332,7 @@ jobs:
         if: steps.gate.outputs.should_deploy == 'true'
         env:
           DEPLOY_BRANCH: main
+          IMAGE_TAG: sha-${{ github.sha }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
@@ -339,4 +340,4 @@ jobs:
         run: |
           PORT="${VPS_PORT:-22}"
           ssh -p "$PORT" "${VPS_USER}@${VPS_HOST}" \
-            "cd '${VPS_APP_DIR}' && DEPLOY_BRANCH='${DEPLOY_BRANCH}' IMAGE_TAG='sha-${GITHUB_SHA}' bash scripts/deploy-production.sh"
+            "cd '${VPS_APP_DIR}' && DEPLOY_BRANCH='${DEPLOY_BRANCH}' IMAGE_TAG='${IMAGE_TAG}' bash scripts/deploy-production.sh"

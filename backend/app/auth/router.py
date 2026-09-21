@@ -12,15 +12,21 @@
 #
 # =============================================================================
 
+import hashlib
 import os
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.auth.models import Tenant, User, UserRoleAudit
+from app.auth.models import PasswordResetToken, Tenant, User, UserRoleAudit
 from app.auth.schemas import (
+    ChangePasswordRequest,
     LoginRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     RegisterRequest,
     TenantAIFeaturesUpdate,
     TokenResponse,
@@ -39,10 +45,15 @@ from app.services.crm_workflow import ensure_not_last_active_admin
 from app.auth.dependencies import get_current_user, require_role
 from app.logs.config import logger
 from app.core.features import effective_ai_features, update_tenant_ai_features
+from app.services.auth_email import password_reset_email_configured, send_password_reset_email
+from app.services.rate_limit import rate_limit_exceeded, reset_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["autenticação"])
 AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
 COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").lower()
+PASSWORD_RESET_RESPONSE = {
+    "message": "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao."
+}
 
 
 def _register_enabled() -> bool:
@@ -79,6 +90,19 @@ def _clear_auth_cookie(response: Response) -> None:
         secure=_cookie_secure(),
         samesite=COOKIE_SAMESITE,  # type: ignore[arg-type]
     )
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+    return forwarded or (request.client.host if request.client else "unknown")
+
+
+def _enforce_rate_limit(scope: str, identity: str, *, limit: int, window_seconds: int) -> None:
+    if rate_limit_exceeded(scope, identity, limit=limit, window_seconds=window_seconds):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas. Aguarde e tente novamente.",
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -162,6 +186,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
         tenant_slug = tenant.slug,
         user_id     = user.id,
         role        = user.role,
+        auth_version = user.auth_version or 0,
     )
     _set_auth_cookie(response, token)
 
@@ -178,7 +203,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     """
     Autentica o usuário e retorna um JWT.
 
@@ -201,6 +226,9 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
             "role": "admin"
         }
     """
+    _enforce_rate_limit("login-ip", _client_ip(request), limit=30, window_seconds=900)
+    _enforce_rate_limit("login-account", payload.email, limit=10, window_seconds=900)
+
     # Busca o usuário pelo email
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -235,6 +263,7 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         tenant_slug = user.tenant.slug,
         user_id     = user.id,
         role        = user.role,
+        auth_version = user.auth_version or 0,
     )
     _set_auth_cookie(response, token)
 
@@ -311,17 +340,140 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    duplicate = db.query(User).filter(User.email == payload.email, User.id != current_user.id).first()
-    if duplicate:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este email ja esta cadastrado.")
+    if payload.email != current_user.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A troca de e-mail exige confirmacao. Entre em contato com o suporte.",
+        )
+
+    reset_rate_limit("login-account", payload.email)
 
     current_user.full_name = payload.full_name
     current_user.cpf = payload.cpf
     current_user.phone = payload.phone
-    current_user.email = payload.email
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/password/change")
+def change_password(
+    payload: ChangePasswordRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta.",
+        )
+    if verify_password(payload.new_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve ser diferente da senha atual.",
+        )
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    current_user.auth_version = int(current_user.auth_version or 0) + 1
+    db.commit()
+    _clear_auth_cookie(response)
+    logger.info("[Auth] Senha alterada e sessoes revogadas | user_id=%s", current_user.id)
+    return {"message": "Senha alterada. Entre novamente em todos os dispositivos."}
+
+
+@router.post("/password/reset/request")
+def request_password_reset(
+    payload: PasswordResetRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    _enforce_rate_limit("password-reset-ip", _client_ip(request), limit=10, window_seconds=3600)
+    _enforce_rate_limit("password-reset-account", payload.email, limit=5, window_seconds=3600)
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if (
+        user
+        and user.is_active
+        and user.tenant
+        and user.tenant.is_active
+        and password_reset_email_configured()
+    ):
+        now = datetime.now(timezone.utc)
+        for previous in db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+        ).all():
+            previous.used_at = now
+
+        raw_token = secrets.token_urlsafe(32)
+        reset = PasswordResetToken(
+            user_id=user.id,
+            token_hash=hashlib.sha256(raw_token.encode("utf-8")).hexdigest(),
+            expires_at=now + timedelta(minutes=int(os.getenv("PASSWORD_RESET_EXPIRE_MINUTES", "30"))),
+        )
+        db.add(reset)
+        db.commit()
+        try:
+            send_password_reset_email(user.email, raw_token)
+        except Exception as exc:
+            logger.error(
+                "[Auth] Falha ao enviar recuperacao de senha | user_id=%s | erro=%s",
+                user.id,
+                exc,
+            )
+
+    return PASSWORD_RESET_RESPONSE
+
+
+@router.post("/password/reset/confirm")
+def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    _enforce_rate_limit("password-reset-confirm-ip", _client_ip(request), limit=20, window_seconds=3600)
+    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
+    reset = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == token_hash)
+        .with_for_update()
+        .first()
+    )
+    invalid = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Link de recuperacao invalido ou expirado.",
+    )
+    if reset is None or reset.used_at is not None:
+        raise invalid
+    expires_at = reset.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= datetime.now(timezone.utc):
+        raise invalid
+
+    user = db.query(User).filter(User.id == reset.user_id).with_for_update().first()
+    if user is None or not user.is_active or not user.tenant or not user.tenant.is_active:
+        raise invalid
+    if verify_password(payload.new_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve ser diferente da senha atual.",
+        )
+
+    now = datetime.now(timezone.utc)
+    for token in db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).all():
+        token.used_at = now
+    user.hashed_password = hash_password(payload.new_password)
+    user.auth_version = int(user.auth_version or 0) + 1
+    db.commit()
+    _clear_auth_cookie(response)
+    logger.info("[Auth] Senha redefinida e sessoes revogadas | user_id=%s", user.id)
+    return {"message": "Senha redefinida. Voce ja pode entrar novamente."}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -2018,7 +2018,7 @@ def crm_run_notice_matches_job(
             for job in (
                 db.query(Job)
                 .filter(
-                    Job.tenant_id == current_user.tenant.slug,
+                    Job.tenant_id == current_user.tenant_id,
                     Job.job_type == JobType.CRM_NOTICE_MATCH,
                     Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING]),
                 )
@@ -2042,7 +2042,7 @@ def crm_run_notice_matches_job(
     job_id = queue.criar_job_crm_notice_match(
         background_tasks=background_tasks,
         notice_id=notice_id,
-        tenant_id=current_user.tenant.slug,
+        tenant_id=current_user.tenant_id,
         user_id=current_user.id,
         db=db,
         notice_product_id=payload.get("notice_product_id"),
@@ -2067,7 +2067,7 @@ def crm_match_jobs(
     query = (
         db.query(Job)
         .filter(
-            Job.tenant_id == current_user.tenant.slug,
+            Job.tenant_id == current_user.tenant_id,
             Job.job_type == JobType.CRM_NOTICE_MATCH,
         )
         .order_by(Job.created_at.desc())
@@ -2234,7 +2234,7 @@ def crm_run_ground_truth_matches(
     active_jobs = (
         db.query(Job)
         .filter(
-            Job.tenant_id == current_user.tenant.slug,
+            Job.tenant_id == current_user.tenant_id,
             Job.job_type == JobType.CRM_NOTICE_MATCH,
             Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING]),
         )
@@ -2251,7 +2251,7 @@ def crm_run_ground_truth_matches(
         job_ids.append(queue.criar_job_crm_notice_match(
             background_tasks=background_tasks,
             notice_id=product.notice_id,
-            tenant_id=current_user.tenant.slug,
+            tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             db=db,
             notice_product_id=product.id,
@@ -2420,7 +2420,7 @@ def crm_run_match_batch(
     active_jobs = (
         db.query(Job)
         .filter(
-            Job.tenant_id == current_user.tenant.slug,
+            Job.tenant_id == current_user.tenant_id,
             Job.job_type == JobType.CRM_NOTICE_MATCH,
             Job.status.in_([JobStatus.PENDING, JobStatus.RUNNING]),
         )
@@ -2440,7 +2440,7 @@ def crm_run_match_batch(
         job_id = queue.criar_job_crm_notice_match(
             background_tasks=background_tasks,
             notice_id=notice.id,
-            tenant_id=current_user.tenant.slug,
+            tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             db=db,
         )

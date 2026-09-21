@@ -41,7 +41,7 @@ class DocumentSchemaSpec:
 DEFAULT_DOCUMENT_SCHEMAS: dict[str, DocumentSchemaSpec] = {
     "edital": DocumentSchemaSpec(
         name="edital",
-        version="7.4",
+        version="8.0",
         title="Edital analisado",
         description="Documento de licitacao com cabecalho, itens, riscos e caracteristicas de BI.",
         required_fields=("edital",),

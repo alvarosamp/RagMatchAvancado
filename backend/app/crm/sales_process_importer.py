@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
 
 PRIMARY_EMAIL = "alvaroscareli@gmail.com"
 FALLBACK_EMAIL = "vish88@outlook.com"
-DEFAULT_PASSWORD = "Elainema157!"
 DEFAULT_TENANT_SLUG = "tor-tec"
 DEFAULT_TENANT_NAME = "Tor Tec"
 DEFAULT_USER_NAME = "Tor Tec"
@@ -193,7 +193,17 @@ def should_import_analyzed_row(row: dict[str, Any]) -> bool:
 
 def ensure_context(db) -> ImportContext:
     from app.auth.models import Tenant, User
+    from app.auth.password_policy import assert_valid_password
     from app.auth.security import hash_password
+
+    def bootstrap_password() -> str:
+        value = os.getenv("SALES_IMPORT_BOOTSTRAP_PASSWORD", "")
+        if not value:
+            raise RuntimeError(
+                "Usuario de importacao ausente. Defina SALES_IMPORT_BOOTSTRAP_PASSWORD "
+                "temporariamente ou execute a importacao com um usuario autenticado."
+            )
+        return assert_valid_password(value)
 
     primary_user = db.query(User).filter(User.email == PRIMARY_EMAIL).first()
     if primary_user:
@@ -205,7 +215,7 @@ def ensure_context(db) -> ImportContext:
         primary_user = User(
             email=PRIMARY_EMAIL,
             full_name=DEFAULT_USER_NAME,
-            hashed_password=hash_password(DEFAULT_PASSWORD),
+            hashed_password=hash_password(bootstrap_password()),
             role="admin",
             tenant_id=tenant.id,
         )
@@ -222,7 +232,7 @@ def ensure_context(db) -> ImportContext:
     primary_user = User(
         email=PRIMARY_EMAIL,
         full_name=DEFAULT_USER_NAME,
-        hashed_password=hash_password(DEFAULT_PASSWORD),
+        hashed_password=hash_password(bootstrap_password()),
         role="admin",
         tenant_id=tenant.id,
     )

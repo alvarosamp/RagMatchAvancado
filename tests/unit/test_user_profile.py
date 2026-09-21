@@ -1,7 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from app.auth.schemas import RegisterRequest, UserCreate, UserProfileUpdate
+from app.auth.schemas import (
+    ChangePasswordRequest,
+    PasswordResetConfirm,
+    RegisterRequest,
+    UserCreate,
+    UserProfileUpdate,
+)
 
 
 VALID = {
@@ -41,3 +47,11 @@ def test_profile_rejects_invalid_cpf(cpf):
 def test_profile_rejects_invalid_phone():
     with pytest.raises(ValidationError):
         UserProfileUpdate(**{**VALID, "phone": "9999-9999"})
+
+
+@pytest.mark.parametrize("password", ["curta", "somenteletras", "SemSimbolo1"])
+def test_password_change_and_reset_use_central_policy(password):
+    with pytest.raises(ValidationError):
+        ChangePasswordRequest(current_password="Senha1!x", new_password=password)
+    with pytest.raises(ValidationError):
+        PasswordResetConfirm(token="token", new_password=password)

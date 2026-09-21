@@ -138,7 +138,7 @@ def delete_import_batch(
     editais = (
         db.query(Edital)
         .filter(
-            Edital.tenant_id == current_user.tenant.slug,
+            Edital.tenant_id == current_user.tenant_id,
             Edital.import_batch_id == batch.id,
         )
         .all()

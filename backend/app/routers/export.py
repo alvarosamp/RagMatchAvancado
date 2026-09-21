@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import get_current_user
+from app.auth.models import User
 from app.db.session import get_db
 from app.db.models import Edital
 from app.services.export_service import export_xlsx, export_pdf, export_csv
@@ -27,12 +29,16 @@ router = APIRouter(prefix="/editais", tags=["exportação"])
 # Helper — monta o dict de resultados do banco
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_results_data(edital_id: int, db: Session) -> dict:
+def _build_results_data(edital_id: int, tenant_id: int, db: Session) -> dict:
     """
     Lê os MatchingResults do banco e monta o mesmo formato
     retornado pelo endpoint POST /editais/{id}/match.
     """
-    edital = db.get(Edital, edital_id)
+    edital = (
+        db.query(Edital)
+        .filter(Edital.id == edital_id, Edital.tenant_id == tenant_id)
+        .first()
+    )
     if not edital:
         raise HTTPException(404, detail="Edital não encontrado")
 
@@ -100,17 +106,28 @@ def _build_results_data(edital_id: int, db: Session) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/{edital_id}/export/xlsx")
-def download_xlsx(edital_id: int, db: Session = Depends(get_db)):
+def download_xlsx(
+    edital_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Exporta resultados de matching como planilha Excel.
     Contém aba de Resumo (ranking) e aba de Detalhes (produto × requisito).
     """
-    data     = _build_results_data(edital_id, db)
+    data     = _build_results_data(edital_id, current_user.tenant_id, db)
     filename = f"matching_edital_{edital_id}.xlsx"
 
     logger.info(f"[Export] XLSX solicitado — edital {edital_id}")
     content = export_xlsx(data)
-    _archive_export(db, edital_id, filename, content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    _archive_export(
+        db,
+        edital_id,
+        current_user.tenant_id,
+        filename,
+        content,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
     return Response(
         content     = content,
         media_type  = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -119,17 +136,21 @@ def download_xlsx(edital_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{edital_id}/export/pdf")
-def download_pdf(edital_id: int, db: Session = Depends(get_db)):
+def download_pdf(
+    edital_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Exporta relatório de matching em PDF formatado,
     pronto para anexar em processo de licitação.
     """
-    data     = _build_results_data(edital_id, db)
+    data     = _build_results_data(edital_id, current_user.tenant_id, db)
     filename = f"relatorio_edital_{edital_id}.pdf"
 
     logger.info(f"[Export] PDF solicitado — edital {edital_id}")
     content = export_pdf(data)
-    _archive_export(db, edital_id, filename, content, "application/pdf")
+    _archive_export(db, edital_id, current_user.tenant_id, filename, content, "application/pdf")
     return Response(
         content     = content,
         media_type  = "application/pdf",
@@ -138,17 +159,28 @@ def download_pdf(edital_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{edital_id}/export/csv")
-def download_csv(edital_id: int, db: Session = Depends(get_db)):
+def download_csv(
+    edital_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Exporta dados brutos de matching em CSV (separado por ;).
     Compatível com Excel BR (UTF-8 com BOM).
     """
-    data     = _build_results_data(edital_id, db)
+    data     = _build_results_data(edital_id, current_user.tenant_id, db)
     filename = f"matching_edital_{edital_id}.csv"
 
     logger.info(f"[Export] CSV solicitado — edital {edital_id}")
     content = export_csv(data)
-    _archive_export(db, edital_id, filename, content, "text/csv; charset=utf-8")
+    _archive_export(
+        db,
+        edital_id,
+        current_user.tenant_id,
+        filename,
+        content,
+        "text/csv; charset=utf-8",
+    )
     return Response(
         content     = content,
         media_type  = "text/csv; charset=utf-8",
@@ -156,10 +188,21 @@ def download_csv(edital_id: int, db: Session = Depends(get_db)):
     )
 
 
-def _archive_export(db: Session, edital_id: int, filename: str, content: bytes, content_type: str) -> None:
+def _archive_export(
+    db: Session,
+    edital_id: int,
+    tenant_id: int,
+    filename: str,
+    content: bytes,
+    content_type: str,
+) -> None:
     if not object_storage_enabled():
         return
-    edital = db.get(Edital, edital_id)
+    edital = (
+        db.query(Edital)
+        .filter(Edital.id == edital_id, Edital.tenant_id == tenant_id)
+        .first()
+    )
     if edital is None:
         return
     try:

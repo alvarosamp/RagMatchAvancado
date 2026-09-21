@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
 
+from app.services.analysis_normalizer import normalize_brand_direction
+
 SCHEMA_NAME = "tor.match-item"
 SCHEMA_VERSION = "1.0.0"
 
@@ -108,9 +110,12 @@ def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:
     stored_item = _mapping(item.raw_payload)
     raw_item = _mapping(stored_item.get("_raw_input")) or stored_item
     edital = _mapping(result.get("edital"))
-    direction = _mapping(stored_item.get("direcionamento_marca")) or _mapping(
-        raw_item.get("direcionamento_marca")
-    )
+    direction_value = stored_item.get("direcionamento_marca")
+    if direction_value is None:
+        direction_value = raw_item.get("direcionamento_marca")
+    direction = _mapping(direction_value)
+    if not direction and _value(direction_value) is not None:
+        direction = normalize_brand_direction(direction_value)
     bi = _without_nc(
         _mapping(item.caracteristicas_bi) or _mapping(stored_item.get("caracteristicas_bi"))
     )
@@ -208,16 +213,21 @@ def _atomic_requirements(
     origin: dict[str, Any],
     item_number: Any,
 ) -> list[dict[str, Any]]:
-    supplied = raw_item.get("requisitos_atomicos")
+    supplied = raw_item.get("requisitos_atomicos") or raw_item.get("requisitos_tecnicos")
     if isinstance(supplied, list) and supplied:
         return [
-            _normalize_requirement(value, index, origin, item_number)
+            _normalize_requirement(
+                value,
+                index,
+                _requirement_origin(raw_item, value, origin),
+                item_number,
+            )
             for index, value in enumerate(supplied, start=1)
             if isinstance(value, (dict, str))
         ]
 
     requirements: list[dict[str, Any]] = []
-    for field, value in bi.items():
+    for field, value in _flatten_features(bi).items():
         requirements.append(
             {
                 "id": _requirement_id(item_number, len(requirements) + 1),
@@ -265,7 +275,7 @@ def _normalize_requirement(
         "texto_original": _first(payload, "texto_original", "texto", "trecho"),
         "campo_normalizado": _first(payload, "campo_normalizado", "campo", "atributo"),
         "sujeito": _value(payload.get("sujeito")),
-        "escopo": _value(payload.get("escopo")),
+        "escopo": _value(payload.get("escopo") or payload.get("condicao")),
         "operador": _value(payload.get("operador")) or "=",
         "valor": payload.get("valor"),
         "unidade": _value(payload.get("unidade")),
@@ -312,33 +322,34 @@ def _general_obligations(result: dict[str, Any], raw_item: dict[str, Any], item:
 def _category_payload(category: str | None, bi: dict[str, Any], raw_item: dict[str, Any]) -> dict[str, Any]:
     folded = _fold(category)
     explicit = _mapping(raw_item.get("normalized"))
+    flat_bi = _flatten_features(bi)
     if "switch" in folded:
         return {
             "tipo": "switch",
-            "portas_acesso_qtd": _integer(bi.get("quantidade_portas")),
-            "portas_acesso": bi.get("portas_acesso"),
-            "gerenciavel": _managed_value(bi.get("gerenciamento")),
-            "poe": _poe_value(bi.get("alimentacao_poe")),
-            "poe_padrao": bi.get("alimentacao_poe"),
-            "uplinks": bi.get("uplinks"),
-            "camada": bi.get("camada"),
+            "portas_acesso_qtd": _integer(_feature(flat_bi, "portas_acesso_rj45_qtd", "quantidade_portas")),
+            "portas_acesso": _feature(flat_bi, "velocidades_porta", "portas_acesso"),
+            "gerenciavel": _managed_value(_feature(flat_bi, "gerenciamento_local", "gerenciamento")),
+            "poe": _poe_value(_feature(flat_bi, "poe_padroes", "alimentacao_poe")),
+            "poe_padrao": _feature(flat_bi, "poe_padroes", "alimentacao_poe"),
+            "uplinks": _feature(flat_bi, "uplinks_formatos", "uplinks"),
+            "camada": _feature(flat_bi, "protocolos_roteamento", "camada"),
             **explicit,
         }
     if "access point" in folded or folded == "ap":
         return {
             "tipo": "access_point",
-            "wifi_standard": bi.get("tecnologia_wifi"),
-            "alimentacao": bi.get("alimentacao"),
-            "ambiente": bi.get("ambiente"),
+            "wifi_standard": _feature(flat_bi, "padroes_ieee", "tecnologia_wifi"),
+            "alimentacao": _feature(flat_bi, "poe_padroes", "alimentacao"),
+            "ambiente": _feature(flat_bi, "ambiente_uso", "ambiente"),
             **explicit,
         }
     if "transceiver" in folded or "modulo optico" in folded or "modulo otico" in folded:
         return {
             "tipo": "transceiver",
-            "form_factor": bi.get("formato"),
-            "speed": bi.get("velocidade"),
-            "media_type": bi.get("tipo_meio"),
-            "distance": bi.get("alcance"),
+            "form_factor": _feature(flat_bi, "form_factor", "formato"),
+            "speed": _feature(flat_bi, "velocidade_nominal_gbps", "velocidade"),
+            "media_type": _feature(flat_bi, "tipo_fibra", "tipo_meio"),
+            "distance": _feature(flat_bi, "alcance_m", "alcance"),
             **explicit,
         }
     return {"tipo": _value(category), **explicit}
@@ -385,7 +396,59 @@ def _origin(document: Any, item: Any, raw_item: dict[str, Any]) -> dict[str, Any
 
 
 def _without_nc(values: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in values.items() if _value(value) is not None}
+    cleaned: dict[str, Any] = {}
+    for key, value in values.items():
+        if isinstance(value, dict):
+            nested = _without_nc(value)
+            if nested:
+                cleaned[key] = nested
+        elif _value(value) is not None:
+            cleaned[key] = value
+    return cleaned
+
+
+def _flatten_features(values: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+    flattened: dict[str, Any] = {}
+    for key, value in values.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict):
+            flattened.update(_flatten_features(value, path))
+        elif _value(value) is not None:
+            flattened[path] = value
+    return flattened
+
+
+def _feature(values: dict[str, Any], *names: str) -> Any:
+    for name in names:
+        if name in values:
+            return values[name]
+        suffix = f".{name}"
+        for path, value in values.items():
+            if path.endswith(suffix):
+                return value
+    return None
+
+
+def _requirement_origin(
+    raw_item: dict[str, Any], requirement: dict[str, Any] | str, default: dict[str, Any]
+) -> dict[str, Any]:
+    if not isinstance(requirement, dict):
+        return default
+    supplied = _mapping(requirement.get("origem") or requirement.get("fonte"))
+    if supplied:
+        return supplied
+    field = _value(requirement.get("campo") or requirement.get("campo_normalizado"))
+    evidences = _mapping(raw_item.get("evidencias"))
+    if field:
+        for path, entries in evidences.items():
+            if (
+                (path == field or path.endswith(f".{field}"))
+                and isinstance(entries, list)
+                and entries
+                and isinstance(entries[0], dict)
+            ):
+                return {**default, **entries[0]}
+    return default
 
 
 def _mapping(value: Any) -> dict[str, Any]:

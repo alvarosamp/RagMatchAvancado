@@ -110,9 +110,15 @@ ALLOWED_BI_VALUES = {
 
 
 def normalize_analysis_result(result: dict[str, Any]) -> dict[str, Any]:
-    """Return a v7.4-friendly analysis payload ready for DB and CRM."""
+    """Return an analysis payload ready for DB/CRM without losing V8 data."""
     normalized = copy.deepcopy(result or {})
-    normalized["schema_version"] = _text(normalized.get("schema_version"), "7.4")
+    analyzer_version = _dict(normalized.get("controle")).get("versao_analisador")
+    default_schema = "8.0" if _fold(analyzer_version) == "v8" else "7.4"
+    normalized["schema_version"] = _text(normalized.get("schema_version"), default_schema)
+    if normalized["schema_version"].startswith("8"):
+        # V8 is already a canonical, strict contract. Keep it byte-for-byte
+        # equivalent at the data level and adapt only at DB/CRM boundaries.
+        return normalized
     normalized["n_interno"] = _text(normalized.get("n_interno"))
 
     controle = _dict(normalized.get("controle"))
@@ -202,12 +208,9 @@ def _normalize_item(item: Any) -> dict[str, Any]:
         payload[key] = _text(_first(payload, *source_keys))
     payload["categoria"] = categoria
 
-    direcionamento = _dict(payload.get("direcionamento_marca"))
-    direcionamento["existe"] = bool(direcionamento.get("existe"))
-    direcionamento["marca_modelo"] = _text(direcionamento.get("marca_modelo"))
-    direcionamento["tipo"] = _text(direcionamento.get("tipo"))
-    direcionamento["justificativa"] = _text(direcionamento.get("justificativa"))
-    payload["direcionamento_marca"] = direcionamento
+    payload["direcionamento_marca"] = normalize_brand_direction(
+        payload.get("direcionamento_marca")
+    )
     payload["caracteristicas_bi"] = _normalize_bi_features(
         categoria,
         _dict(payload.get("caracteristicas_bi")),
@@ -219,6 +222,16 @@ def _normalize_item(item: Any) -> dict[str, Any]:
 
 
 def _normalize_bi_features(categoria: str, features: dict[str, Any]) -> dict[str, Any]:
+    # V8 uses a category envelope and nested technical blocks. Preserve that
+    # canonical structure; flattening/stringifying it destroys auditability.
+    category_key = {
+        "Switch": "switch",
+        "Access Point": "access_point",
+        "Transceiver": "transceiver",
+    }.get(categoria)
+    if category_key and isinstance(features.get(category_key), dict):
+        return copy.deepcopy(features)
+
     defaults = {}
     if categoria == "Switch":
         defaults = SWITCH_BI_DEFAULTS
@@ -237,21 +250,56 @@ def _normalize_auditoria(value: Any) -> dict[str, Any]:
     auditoria = _dict(value)
     for key in (
         "modo_analise",
-        "status_conferido",
         "motivo_status",
         "confianca_geral",
         "observacoes",
     ):
         auditoria[key] = _text(auditoria.get(key))
     for key in (
+        "status_conferido",
         "documentacao_extraida",
-        "fontes_consultadas",
         "anti_falso_negativo_aplicado",
         "teste_autonomia_aplicado_internamente",
         "dupla_checagem_status_vermelho",
     ):
         auditoria[key] = bool(auditoria.get(key))
+    auditoria["fontes_consultadas"] = _list(auditoria.get("fontes_consultadas"))
     return auditoria
+
+
+def normalize_brand_direction(value: Any) -> dict[str, Any]:
+    """Adapt the V8 text contract to the legacy CRM representation."""
+    if isinstance(value, dict):
+        direction = copy.deepcopy(value)
+        direction["existe"] = bool(direction.get("existe"))
+        direction["marca_modelo"] = _text(direction.get("marca_modelo"))
+        direction["tipo"] = _text(direction.get("tipo"))
+        direction["justificativa"] = _text(direction.get("justificativa"))
+        return direction
+
+    text = _text(value)
+    if text == NC or _fold(text) in {"nao identificado", "não identificado"}:
+        return {
+            "existe": False,
+            "marca_modelo": NC,
+            "tipo": NC,
+            "justificativa": NC,
+            "texto_original": text,
+        }
+
+    fields: dict[str, str] = {}
+    for part in re.split(r"\s*\|\s*", text):
+        if ":" not in part:
+            continue
+        label, content = part.split(":", 1)
+        fields[_fold(label.replace("—", " ").replace("-", " "))] = content.strip()
+    return {
+        "existe": True,
+        "marca_modelo": fields.get("sim marca/modelo") or fields.get("marca/modelo") or text,
+        "tipo": fields.get("tipo", NC),
+        "justificativa": fields.get("justificativa", NC),
+        "texto_original": text,
+    }
 
 
 def _canonical_bi_value(field: str, value: Any) -> str:

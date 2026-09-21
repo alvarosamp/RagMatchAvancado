@@ -90,7 +90,7 @@ async def upload_edital(
     pdf_bytes = await _read_upload_with_limit(file, MAX_PDF_UPLOAD_BYTES)
     if not pdf_bytes.startswith(PDF_MAGIC):
         raise HTTPException(status_code=400, detail="Arquivo invalido: o conteudo nao parece ser um PDF.")
-    tenant_id = current_user.tenant.slug
+    tenant_id = current_user.tenant_id
     source_hash = content_hash(pdf_bytes)
 
     existing = (
@@ -214,7 +214,7 @@ def match_edital(
     job_id = _queue.criar_job_matching(
         background_tasks = background_tasks,
         edital_id        = edital_id,
-        tenant_id        = current_user.tenant.slug,
+        tenant_id        = current_user.tenant_id,
         user_id          = current_user.id,
         db               = db,
     )
@@ -235,7 +235,7 @@ def list_editais(
     """Lista editais do tenant autenticado."""
     editais = (
         db.query(Edital)
-        .filter(Edital.tenant_id == current_user.tenant.slug)
+        .filter(Edital.tenant_id == current_user.tenant_id)
         .all()
     )
     return [
@@ -537,7 +537,7 @@ def _get_edital_do_tenant(edital_id: int, current_user: User, db: Session) -> Ed
         db.query(Edital)
         .filter(
             Edital.id        == edital_id,
-            Edital.tenant_id == current_user.tenant.slug,
+            Edital.tenant_id == current_user.tenant_id,
         )
         .first()
     )

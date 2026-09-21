@@ -22,13 +22,13 @@ def object_storage_enabled() -> bool:
     return os.getenv("OBJECT_STORAGE_ENABLED", "0").lower() in {"1", "true", "yes", "sim"}
 
 
-def put_upload(tenant_id: str, job_id: str, filename: str, content: bytes) -> str:
+def put_upload(tenant_id: int | str, job_id: str, filename: str, content: bytes) -> str:
     key = f"uploads/{_safe_part(tenant_id)}/{job_id}/{_safe_filename(filename)}"
     put_bytes(key, content, content_type="application/pdf")
     return key
 
 
-def put_export(tenant_id: str, edital_id: int, filename: str, content: bytes, content_type: str) -> str:
+def put_export(tenant_id: int | str, edital_id: int, filename: str, content: bytes, content_type: str) -> str:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     key = f"exports/{_safe_part(tenant_id)}/edital-{edital_id}/{timestamp}_{_safe_filename(filename)}"
     put_bytes(key, content, content_type=content_type)
@@ -100,8 +100,8 @@ def _ensure_bucket(client, bucket: str) -> None:
         client.create_bucket(Bucket=bucket)
 
 
-def _safe_part(value: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_-]", "_", value)[:100] or "default"
+def _safe_part(value: int | str) -> str:
+    return re.sub(r"[^A-Za-z0-9_-]", "_", str(value))[:100] or "default"
 
 
 def _safe_filename(value: str) -> str:

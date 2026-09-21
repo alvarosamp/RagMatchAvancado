@@ -23,4 +23,15 @@ docker run --rm --volumes-from "$MINIO_CONTAINER" alpine:3.20 \
 sha256sum "$BACKUP_DIR/postgres-$STAMP.dump" "$BACKUP_DIR/minio-$STAMP.tgz" \
   > "$BACKUP_DIR/checksums-$STAMP.sha256"
 
-echo "Backup criado em $BACKUP_DIR (PostgreSQL, MinIO e checksums)."
+if [[ "${SKIP_OFFSITE_BACKUP:-0}" == "1" ]]; then
+  echo "AVISO: copia externa ignorada por SKIP_OFFSITE_BACKUP=1." >&2
+  OFFSITE_STATUS="sem copia externa"
+else
+  docker compose "${COMPOSE_ARGS[@]}" run --rm --no-deps -T \
+    -v "$BACKUP_DIR:/backup:ro" \
+    -e BACKUP_STAMP="$STAMP" \
+    backup-uploader
+  OFFSITE_STATUS="copia externa verificada"
+fi
+
+echo "Backup criado em $BACKUP_DIR (PostgreSQL, MinIO, checksums; $OFFSITE_STATUS)."

@@ -5,7 +5,8 @@ from __future__ import annotations
 import time
 import os
 
-from app.db.session import SessionLocal
+from app.auth.models import Tenant
+from app.db.session import SessionLocal, set_tenant_context
 from app.jobs.queue import recover_interrupted_jobs
 from app.logs.config import logger
 from app.services.email_monitor import start_email_monitor_loop
@@ -20,7 +21,13 @@ def main() -> None:
     while True:
         db = SessionLocal()
         try:
-            summary = recover_interrupted_jobs(db)
+            tenant_ids = [row.id for row in db.query(Tenant).filter(Tenant.is_active.is_(True)).all()]
+            summary = {"pending_requeued": 0, "stale_requeued": 0, "stale_failed": 0}
+            for tenant_id in tenant_ids:
+                set_tenant_context(db, tenant_id)
+                tenant_summary = recover_interrupted_jobs(db)
+                for key, value in tenant_summary.items():
+                    summary[key] += value
             if any(summary.values()):
                 logger.info("[Scheduler] Recuperacao de jobs: %s", summary)
         except Exception as exc:

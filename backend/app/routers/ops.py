@@ -25,12 +25,12 @@ def ops_summary(
     editais = (
         db.query(Edital)
         .options(selectinload(Edital.chunks), selectinload(Edital.requirements))
-        .filter(Edital.tenant_id == current_user.tenant.slug)
+        .filter(Edital.tenant_id == current_user.tenant_id)
         .all()
     )
     jobs = (
         db.query(Job)
-        .filter(Job.tenant_id == current_user.tenant.slug)
+        .filter(Job.tenant_id == current_user.tenant_id)
         .order_by(Job.created_at.desc())
         .all()
     )

@@ -40,7 +40,7 @@ def overview(
       - produto com melhor performance
       - taxa de atendimento geral
     """
-    tenant_id = current_user.tenant.slug
+    tenant_id = current_user.tenant_id
 
     # Editais do tenant
     editais = db.query(Edital).filter(Edital.tenant_id == tenant_id).all()
@@ -103,7 +103,7 @@ def produtos(
       - total de matchings
       - aparições como melhor resultado
     """
-    tenant_id  = current_user.tenant.slug
+    tenant_id  = current_user.tenant_id
     edital_ids = [e.id for e in db.query(Edital).filter(Edital.tenant_id == tenant_id).all()]
 
     if not edital_ids:
@@ -165,7 +165,7 @@ def requisitos(
     Requisitos que mais produtos falham — indica gaps no catálogo.
     Ordenado do mais problemático para o menos.
     """
-    tenant_id  = current_user.tenant.slug
+    tenant_id  = current_user.tenant_id
     edital_ids = [e.id for e in db.query(Edital).filter(Edital.tenant_id == tenant_id).all()]
 
     if not edital_ids:
@@ -213,7 +213,7 @@ def evolucao(
     Score médio de cada edital processado, em ordem cronológica.
     Permite ver se a qualidade dos matchings está melhorando.
     """
-    tenant_id = current_user.tenant.slug
+    tenant_id = current_user.tenant_id
     editais   = (
         db.query(Edital)
         .filter(Edital.tenant_id == tenant_id)
@@ -261,7 +261,7 @@ def distribuicao(
     Distribuição de todos os scores em buckets de 10%.
     Ex: quantos matchings ficaram entre 0.0-0.1, 0.1-0.2, etc.
     """
-    tenant_id  = current_user.tenant.slug
+    tenant_id  = current_user.tenant_id
     edital_ids = [e.id for e in db.query(Edital).filter(Edital.tenant_id == tenant_id).all()]
 
     if not edital_ids:

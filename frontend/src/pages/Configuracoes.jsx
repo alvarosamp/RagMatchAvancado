@@ -7,6 +7,8 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { authApi } from '../api/client'
+import PasswordRequirements from '../components/PasswordRequirements'
 
 const ROLE_LABELS = {
   admin:  { label: 'Administrador', color: 'text-amber border-amber/30 bg-amber/10'           },
@@ -14,6 +16,10 @@ const ROLE_LABELS = {
   viewer: { label: 'Visualizador',  color: 'text-gray-400 border-slate-700 bg-slate-800'  },
 }
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
+
+function validPassword(value) {
+  return value.length >= 8 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value)
+}
 
 function Section({ title, description, children }) {
   return (
@@ -28,7 +34,7 @@ function Section({ title, description, children }) {
 }
 
 export default function Configuracoes() {
-  const { user }  = useAuth()
+  const { user, logout }  = useAuth()
   const { toast } = useToast()
 
   const [defaultModel, setDefaultModel]       = useState(
@@ -40,12 +46,41 @@ export default function Configuracoes() {
   const [compactMode, setCompactMode]         = useState(
     () => localStorage.getItem('compact_mode') === 'true'
   )
+  const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirmation: '' })
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
 
   const savePreferences = () => {
     localStorage.setItem('default_model',  defaultModel)
     localStorage.setItem('auto_refresh',   String(autoRefresh))
     localStorage.setItem('compact_mode',   String(compactMode))
     toast({ type: 'success', title: 'Preferências salvas', message: 'Configurações atualizadas com sucesso.' })
+  }
+
+  const changePassword = async (event) => {
+    event.preventDefault()
+    setPasswordError('')
+    if (passwordForm.new_password !== passwordForm.confirmation) {
+      setPasswordError('As novas senhas não coincidem.')
+      return
+    }
+    if (!validPassword(passwordForm.new_password)) {
+      setPasswordError('A nova senha não atende aos requisitos.')
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      await authApi.changePassword({
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+      })
+      toast({ type: 'success', title: 'Senha alterada', message: 'Entre novamente com a nova senha.' })
+      await logout()
+    } catch (error) {
+      setPasswordError(error.response?.data?.detail || 'Não foi possível alterar a senha.')
+    } finally {
+      setPasswordLoading(false)
+    }
   }
 
   const roleCfg = ROLE_LABELS[user?.role] || ROLE_LABELS.viewer
@@ -84,6 +119,23 @@ export default function Configuracoes() {
             </div>
           </div>
         </div>
+      </Section>
+
+      <Section title="Segurança" description="Alterar a senha encerra todas as sessões abertas">
+        <form onSubmit={changePassword} className="space-y-4">
+          <label className="block text-sm text-gray-300">Senha atual
+            <input className="input mt-1.5" type="password" value={passwordForm.current_password} onChange={(event) => setPasswordForm((current) => ({ ...current, current_password: event.target.value }))} required autoComplete="current-password" />
+          </label>
+          <label className="block text-sm text-gray-300">Nova senha
+            <input className="input mt-1.5" type="password" value={passwordForm.new_password} onChange={(event) => setPasswordForm((current) => ({ ...current, new_password: event.target.value }))} required autoComplete="new-password" />
+          </label>
+          <PasswordRequirements value={passwordForm.new_password} />
+          <label className="block text-sm text-gray-300">Confirmar nova senha
+            <input className="input mt-1.5" type="password" value={passwordForm.confirmation} onChange={(event) => setPasswordForm((current) => ({ ...current, confirmation: event.target.value }))} required autoComplete="new-password" />
+          </label>
+          {passwordError && <p className="text-sm text-red-400">{passwordError}</p>}
+          <button type="submit" className="btn-primary" disabled={passwordLoading}>{passwordLoading ? 'Alterando...' : 'Alterar senha'}</button>
+        </form>
       </Section>
 
       {AI_FEATURES_ENABLED && (

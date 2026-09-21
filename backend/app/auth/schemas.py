@@ -224,6 +224,40 @@ class UserProfileUpdate(BaseModel):
         return str(value).strip().lower()
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def senha_forte(cls, value: str) -> str:
+        return assert_valid_password(value)
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def normalizar_email(cls, value: str) -> str:
+        return str(value).strip().lower()
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("token")
+    @classmethod
+    def token_obrigatorio(cls, value: str) -> str:
+        return _required_text(value, "Token")
+
+    @field_validator("new_password")
+    @classmethod
+    def senha_forte(cls, value: str) -> str:
+        return assert_valid_password(value)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auth schemas (login + token)
 # ─────────────────────────────────────────────────────────────────────────────

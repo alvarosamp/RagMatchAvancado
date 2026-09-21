@@ -442,7 +442,7 @@ def _breakdown_rows(rows: list[Any]) -> list[tuple[str, str, float]]:
     counters: dict[str, Counter] = defaultdict(Counter)
     for item in rows:
         bi = item.caracteristicas_bi or {}
-        for key, value in bi.items():
+        for key, value in _feature_leaves(bi):
             text = _text(value)
             if text and text.upper() != "N/C":
                 counters[key.replace("_", " ").title()][text] += float(item.quantity or 0) or 1
@@ -515,8 +515,21 @@ def _item_classification(item: Any) -> str:
     if technical:
         return technical
     bi = item.caracteristicas_bi or {}
-    values = [str(value) for value in bi.values() if value and str(value).upper() != "N/C"]
+    values = [str(value) for _, value in _feature_leaves(bi)]
     return " - ".join(values) or _text(item.item_type) or "-"
+
+
+def _feature_leaves(value: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    if not isinstance(value, dict):
+        return []
+    leaves: list[tuple[str, Any]] = []
+    for key, nested in value.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(nested, dict):
+            leaves.extend(_feature_leaves(nested, path))
+        elif nested not in (None, "", "N/C"):
+            leaves.append((path, nested))
+    return leaves
 
 
 def _item_sort_key(item: Any) -> tuple[int, str, int]:

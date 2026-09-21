@@ -115,6 +115,56 @@ def test_build_match_export_keeps_supplied_atomic_requirements_and_provenance() 
     assert requirement["origem"]["pagina"] == 37
 
 
+def test_build_match_export_consumes_v8_nested_features_and_requirements() -> None:
+    raw = {
+        "categoria": "Transceiver",
+        "direcionamento_marca": "Não identificado",
+        "requisitos_tecnicos": [
+            {
+                "campo": "alcance_m",
+                "operador": ">=",
+                "valor": "10000",
+                "unidade": "m",
+                "condicao": "fibra monomodo",
+                "texto_original": "alcance minimo de 10 km",
+            }
+        ],
+        "evidencias": {
+            "fibra_conector.alcance_m": [
+                {"arquivo": "termo.pdf", "pagina": "12"}
+            ]
+        },
+    }
+    bi = {
+        "transceiver": {
+            "identificacao": {
+                "form_factor": "SFP+",
+                "velocidade_nominal_gbps": "10",
+            },
+            "fibra_conector": {"tipo_fibra": "Monomodo", "alcance_m": "10000"},
+        }
+    }
+    item = _item(
+        categoria="Transceiver",
+        caracteristicas_bi=bi,
+        raw_payload={"_raw_input": raw, "caracteristicas_bi": bi},
+    )
+
+    payload = build_match_item_export(_document(), item)
+    category = payload["normalized"]["categoria_especifica"]
+    requirement = payload["requisitos_atomicos"][0]
+
+    assert category["form_factor"] == "SFP+"
+    assert category["speed"] == "10"
+    assert category["media_type"] == "Monomodo"
+    assert category["distance"] == "10000"
+    assert requirement["campo_normalizado"] == "alcance_m"
+    assert requirement["escopo"] == "fibra monomodo"
+    assert requirement["origem"]["arquivo"] == "termo.pdf"
+    assert requirement["origem"]["pagina"] == "12"
+    assert payload["raw"]["direcionamento_original"]["texto_original"] == "Não identificado"
+
+
 def test_build_match_export_reports_management_conflicts() -> None:
     item = _item()
     item.raw_payload["gerenciamento"] = "Nao Gerenciavel"

@@ -679,7 +679,9 @@ def store_document(
 
     crm_sync = None
     sync_targets = payload.sync_targets if payload.sync_targets is not None else list(schema.sync_targets)
-    if not is_duplicate and payload.document_type.strip().lower() == "edital" and "crm" in sync_targets:
+    # CRM sync is an idempotent upsert. Run it for a repeated analysis too:
+    # the analysis row may still exist after its CRM notice was deleted.
+    if payload.document_type.strip().lower() == "edital" and "crm" in sync_targets:
         crm_sync = sync_analysis_json_to_crm(
             db,
             build_import_context_for_user(current_user),

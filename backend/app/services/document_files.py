@@ -10,7 +10,7 @@ from typing import BinaryIO
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.models import Tenant, User
+from app.auth.models import User
 from app.crm.models import CrmCatalogProduct, CrmNotice, CrmNoticeDocument, CrmNoticeProductDatasheet
 from app.db.models import (
     DocumentFile,
@@ -409,9 +409,10 @@ def _get_tenant_catalog_product(db: Session, tenant_id: int, catalog_product_id:
 
 
 def _get_tenant_edital(db: Session, tenant_id: int, edital_id: int) -> Edital:
-    edital = db.query(Edital).filter(Edital.id == edital_id).first()
-    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-    tenant_slug = tenant.slug if tenant else None
-    if edital is None or (tenant_slug and edital.tenant_id != tenant_slug):
+    edital = db.query(Edital).filter(
+        Edital.id == edital_id,
+        Edital.tenant_id == tenant_id,
+    ).first()
+    if edital is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital nao encontrado.")
     return edital

@@ -30,7 +30,7 @@ def test_edital_usa_schema_padrao_e_preserva_outro():
     normalized = normalize_document_payload("edital", payload)
 
     assert schema.name == "edital"
-    assert schema.version == "7.4"
+    assert schema.version == "8.0"
     assert normalized["itens_elegiveis"][0]["categoria"] == "Outro"
 
 

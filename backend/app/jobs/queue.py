@@ -26,7 +26,7 @@ from typing import Optional
 from fastapi import BackgroundTasks
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
+from app.db.session import SessionLocal, set_tenant_context
 from app.auth.models import User
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger
@@ -199,7 +199,7 @@ class JobQueue:
             background_tasks = background_tasks,
             pdf_bytes        = pdf_bytes,
             filename         = file.filename,
-            tenant_id        = current_user.tenant.slug,
+            tenant_id        = current_user.tenant_id,
             user_id          = current_user.id,
         )
         return {"job_id": job_id}
@@ -210,7 +210,7 @@ class JobQueue:
         background_tasks: BackgroundTasks,
         pdf_bytes:        bytes,
         filename:         str,
-        tenant_id:        str,
+        tenant_id:        int,
         user_id:          int,
         db:               Session,
         source_hash:      str | None = None,
@@ -229,7 +229,7 @@ class JobQueue:
             background_tasks: injeção do FastAPI para rodar em background
             pdf_bytes:        conteúdo binário do PDF
             filename:         nome original do arquivo
-            tenant_id:        slug do tenant
+            tenant_id:        ID numerico do tenant
             user_id:          ID do usuário que fez o upload
             db:               sessão do banco (para criar o Job)
 
@@ -286,7 +286,7 @@ class JobQueue:
         self,
         background_tasks: BackgroundTasks,
         edital_id:        int,
-        tenant_id:        str,
+        tenant_id:        int,
         user_id:          int,
         db:               Session,
     ) -> str:
@@ -296,7 +296,7 @@ class JobQueue:
         Args:
             background_tasks: injeção do FastAPI
             edital_id:        ID do edital a fazer matching
-            tenant_id:        slug do tenant
+            tenant_id:        ID numerico do tenant
             user_id:          ID do usuário que disparou
             db:               sessão do banco
 
@@ -329,7 +329,7 @@ class JobQueue:
         self,
         background_tasks: BackgroundTasks,
         notice_id:         str,
-        tenant_id:         str,
+        tenant_id:         int,
         user_id:           int,
         db:                Session,
         notice_product_id: str | None = None,
@@ -379,7 +379,7 @@ def _executar_job_upload(
     job_id:    str,
     pdf_path:  str | None,
     filename:  str,
-    tenant_id: str,
+    tenant_id: int,
     source_hash: str | None = None,
     analysis_only: bool = False,
     import_batch_id: int | None = None,
@@ -399,6 +399,7 @@ def _executar_job_upload(
     # Cada handler abre sua própria sessão de banco.
     # A sessão do request original já foi fechada quando chegamos aqui.
     db = SessionLocal()
+    tenant_id = set_tenant_context(db, tenant_id)
 
     try:
         # ── Marca como RUNNING ────────────────────────────────────────────────
@@ -559,7 +560,7 @@ def _executar_job_upload(
 def _executar_job_matching(
     job_id:    str,
     edital_id: int,
-    tenant_id: str,
+    tenant_id: int,
 ) -> None:
     """
     Handler do job de matching — roda em background thread.
@@ -570,6 +571,7 @@ def _executar_job_matching(
         3. Salva resultado                           (progress: 1.0)
     """
     db = SessionLocal()
+    tenant_id = set_tenant_context(db, tenant_id)
 
     try:
         if not _claim_job(db, job_id):
@@ -643,7 +645,7 @@ def _executar_job_matching(
 def _executar_job_crm_notice_match(
     job_id: str,
     notice_id: str,
-    tenant_id: str,
+    tenant_id: int,
     user_id: int,
 ) -> None:
     """
@@ -655,6 +657,7 @@ def _executar_job_crm_notice_match(
         3. Salva o resumo do match                    (progress: 1.0)
     """
     db = SessionLocal()
+    tenant_id = set_tenant_context(db, tenant_id)
 
     try:
         if not _claim_job(db, job_id):

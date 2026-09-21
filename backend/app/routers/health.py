@@ -8,10 +8,6 @@ from app.logs.config import logger
 router = APIRouter(tags=["health"])
 
 
-def _is_enabled(name: str) -> bool:
-    return os.getenv(name, "0").strip().lower() in {"1", "true", "yes", "sim"}
-
-
 def _check_ollama() -> None:
     """Ensure the models required by enabled AI features are available."""
     try:
@@ -50,7 +46,11 @@ def live():
 
 @router.get("/health/ready")
 def ready():
-    """Readiness probe: dependencies needed to handle CRM requests work."""
+    """Readiness probe for core API dependencies.
+
+    Optional AI degradation must not remove the whole API from the load balancer.
+    AI availability belongs in component monitoring instead of this probe.
+    """
     db = None
     try:
         db = SessionLocal()
@@ -62,8 +62,6 @@ def ready():
                 Redis.from_url(redis_url, socket_connect_timeout=1, socket_timeout=1).ping()
             except Exception as exc:
                 raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Redis indisponivel.") from exc
-        if _is_enabled("AI_FEATURES_ENABLED"):
-            _check_ollama()
     except HTTPException:
         raise
     except Exception as exc:

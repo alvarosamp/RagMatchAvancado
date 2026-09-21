@@ -11,8 +11,9 @@ Analogia : Um predio comercial .
     - Cada escritorio tem sua propria chave - nao tem acesso vizinho
 
 No banco de dados, isolamente é feito pelo id_tenant:
-    - Edital.tenant_id = 'empresa_abc' -> so a empresa abc pode acessar seus editais
-    - QUando a empresa_abc faz login, o JWT carrega o tenant_id 'empresa_abc' -> todas as rotas usam esse tenant_id para filtrar os dados
+    - Edital.tenant_id = Tenant.id -> so a empresa dona pode acessar seus editais
+    - Quando a empresa faz login, a sessao do banco recebe o ID numerico do tenant
+      e as politicas RLS reforcam o filtro aplicado pelas rotas
     - Cada query filtra automaticamente pelo tenant_id
 
 Vocabulário:
@@ -90,6 +91,7 @@ class User(Base):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    auth_version = Column(Integer, nullable=False, default=0, server_default="0")
 
     # Cada usuário pertence a um tenant
     tenant = relationship("Tenant", back_populates="users")
@@ -113,5 +115,18 @@ class UserRoleAudit(Base):
     previous_role = Column(String, nullable=False)
     new_role = Column(String, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class PasswordResetToken(Base):
+    """Single-use password reset token; only its SHA-256 digest is persisted."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

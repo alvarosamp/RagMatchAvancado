@@ -25,7 +25,7 @@ def executive_report(
 ):
     editais = (
         db.query(Edital)
-        .filter(Edital.tenant_id == current_user.tenant.slug)
+        .filter(Edital.tenant_id == current_user.tenant_id)
         .all()
     )
     notices = (
