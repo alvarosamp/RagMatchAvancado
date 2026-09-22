@@ -181,6 +181,7 @@ class TenantAIFeaturesUpdate(BaseModel):
     edital_chat: bool | None = None
     datasheet_extraction: bool | None = None
     crm_matching: bool | None = None
+    crm_manual_examples: bool | None = None
     crm_embeddings: bool | None = None
     crm_llm_rerank: bool | None = None
 

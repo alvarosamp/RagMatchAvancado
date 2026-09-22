@@ -21,14 +21,20 @@ from app.crm.models import (
 from app.pipeline.embedder import embed_texts_batch
 from app.logs.config import logger
 from app.services.catalog_embeddings import ensure_catalog_embeddings
+from app.services.crm_match_examples import (
+    ManualMatchExample, manual_examples_prompt, similar_manual_examples,
+    summarize_manual_retrieval_trials,
+)
 from app.services.crm_match_scoring import (
     MatchScore,
+    THRESHOLD_ATENDE,
     build_match_summary,
     combine_scores,
     cosine_similarity,
     _has_hard_category_conflict,
     lexical_similarity,
     normalize_text,
+    score_to_level,
     technical_compatibility_score,
     try_llm_rerank,
 )
@@ -75,7 +81,11 @@ def run_notice_item_match(
 
     embedding_cache: dict[str, list[float]] = {}
     best_scores: list[dict[str, Any]] = []
-    reusable_matches = _build_reusable_match_index(db, current_user)
+    reusable_matches = _build_reusable_match_index(db, current_user, exclude_notice_id=notice_id)
+    manual_examples = (
+        _load_manual_examples(db, current_user, exclude_notice_id=notice_id)
+        if ai_feature_enabled("crm_manual_examples", tenant) else []
+    )
     notice_products = notice.notice_products
     if notice_product_id:
         notice_products = [p for p in notice_products if p.id == notice_product_id]
@@ -116,6 +126,8 @@ def run_notice_item_match(
 
     for product in notice_products:
         reused_catalog = _find_reusable_catalog_product(product, reusable_matches)
+        if reused_catalog is not None and product.catalog_product_id not in (None, reused_catalog.id):
+            reused_catalog = None
         if reused_catalog is not None:
             reused_match = CrmNoticeProductMatch(
                 tenant_id=current_user.tenant_id,
@@ -155,6 +167,7 @@ def run_notice_item_match(
             embedding_cache=embedding_cache,
             use_llm=use_llm,
             use_embeddings=ai_feature_enabled("crm_embeddings", tenant),
+            manual_examples=manual_examples,
         )
         matches: list[CrmNoticeProductMatch] = []
         for rank, candidate in enumerate(ranked[:SUGGESTIONS_PER_ITEM], start=1):
@@ -646,15 +659,23 @@ def _rank_candidates(
     embedding_cache: dict[str, list[float]],
     use_llm: bool,
     use_embeddings: bool | None = None,
+    manual_examples: list[ManualMatchExample] | None = None,
 ) -> list[dict[str, Any]]:
     notice_text = _notice_product_text(product)
-    candidates = [
-        {
+    example_matches = similar_manual_examples(
+        _manual_example_text(product), manual_examples or [],
+        notice_id=getattr(product, "notice_id", ""), item_id=product.id,
+    )
+    candidates = []
+    for catalog in catalog_products:
+        catalog_text = _catalog_product_text(catalog)
+        candidates.append({
             "catalog": catalog,
-            "lexical_score": lexical_similarity(notice_text, _catalog_product_text(catalog)),
-        }
-        for catalog in catalog_products
-    ]
+            "catalog_text": catalog_text,
+            "hard_conflict": _has_hard_category_conflict(notice_text, catalog_text),
+            "lexical_score": lexical_similarity(notice_text, catalog_text),
+            "manual_examples": example_matches.get(catalog.id, []),
+        })
 
     # None preserva compatibilidade para chamadas internas/testes antigos.
     # O fluxo principal sempre envia a decisao ja resolvida por tenant.
@@ -667,24 +688,29 @@ def _rank_candidates(
     # diferente do item do edital.
     hybrid_ranked = sorted(
         candidates,
-        key=lambda item: combine_scores(
-            item["lexical_score"],
-            item.get("semantic_score"),
-            None,
-        ).overall_score,
+        key=lambda item: max(
+            combine_scores(item["lexical_score"], item.get("semantic_score"), None).overall_score,
+            min(0.85, 0.25 + 0.75 * item["manual_examples"][0][0])
+            if item["manual_examples"] and not item["hard_conflict"] else 0.0,
+        ),
         reverse=True,
     )[:PRESELECT_LIMIT]
     ranked: list[dict[str, Any]] = []
     for candidate in hybrid_ranked:
         llm_payload = None
-        if use_llm and (candidate.get("semantic_score") or candidate["lexical_score"]) >= 0.5 and len(ranked) < 2:
+        has_strong_precedent = bool(candidate["manual_examples"] and candidate["manual_examples"][0][0] >= 0.40)
+        if use_llm and not candidate["hard_conflict"] and (
+            max(candidate.get("semantic_score") or 0.0, candidate["lexical_score"]) >= 0.5
+            or has_strong_precedent
+        ) and len(ranked) < 2:
             llm_payload = try_llm_rerank(
                 notice_text=notice_text,
                 candidate_title=_catalog_title(candidate["catalog"]),
-                candidate_text=_catalog_product_text(candidate["catalog"]),
+                candidate_text=candidate["catalog_text"],
+                manual_precedents=manual_examples_prompt(candidate["manual_examples"]),
             )
 
-        technical = technical_compatibility_score(notice_text, _catalog_product_text(candidate["catalog"]))
+        technical = technical_compatibility_score(notice_text, candidate["catalog_text"])
         semantic_score = candidate.get("semantic_score")
         if technical is not None:
             semantic_score = max(semantic_score or 0.0, technical.score)
@@ -706,7 +732,7 @@ def _rank_candidates(
                 matched_features=tuple(llm_payload.get("matched_features") or ()),
                 conflicts=tuple(llm_payload.get("conflicts") or ()),
             )
-        if _has_hard_category_conflict(notice_text, _catalog_product_text(candidate["catalog"])):
+        if candidate["hard_conflict"]:
             score = MatchScore(
                 lexical_score=score.lexical_score,
                 semantic_score=score.semantic_score,
@@ -729,6 +755,23 @@ def _rank_candidates(
                 rationale=score.rationale,
                 matched_features=(*score.matched_features, *technical.matched_features),
                 conflicts=(*score.conflicts, *technical.conflicts),
+            )
+        precedent_similarity = candidate["manual_examples"][0][0] if candidate["manual_examples"] else 0.0
+        if (
+            not llm_payload and precedent_similarity >= 0.40
+            and 0.25 <= score.overall_score < THRESHOLD_ATENDE and not score.conflicts
+        ):
+            boosted = min(THRESHOLD_ATENDE - 0.01, score.overall_score + 0.12 * precedent_similarity)
+            score = MatchScore(
+                lexical_score=score.lexical_score,
+                semantic_score=score.semantic_score,
+                llm_score=score.llm_score,
+                overall_score=round(boosted, 4),
+                level=score_to_level(boosted),
+                source_method=f"{score.source_method}_manual_examples",
+                rationale="Vinculo manual semelhante; compatibilidade tecnica ainda requer verificacao.",
+                matched_features=(*score.matched_features, "precedente humano semelhante"),
+                conflicts=score.conflicts,
             )
         ranked.append({
             "catalog": candidate["catalog"],
@@ -824,6 +867,101 @@ def _notice_product_text(product: CrmNoticeProduct) -> str:
         product.notes,
     ]
     return " | ".join(part for part in parts if part)
+
+
+def _manual_example_text(product: CrmNoticeProduct) -> str:
+    return " | ".join(
+        str(part) for part in (
+            product.description, product.product_code,
+            getattr(product, "category", None), getattr(product, "technical_characteristics", None),
+        ) if part
+    )
+
+
+def _load_manual_examples(
+    db: Session, current_user: User, *, exclude_notice_id: str | None = None,
+) -> list[ManualMatchExample]:
+    query = (
+        db.query(CrmNoticeProduct)
+        .options(joinedload(CrmNoticeProduct.catalog_product))
+        .filter(
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+            CrmNoticeProduct.catalog_match_source == "manual_confirmed",
+            CrmNoticeProduct.catalog_product_id.isnot(None),
+        )
+    )
+    if exclude_notice_id:
+        query = query.filter(CrmNoticeProduct.notice_id != exclude_notice_id)
+    rows = query.order_by(CrmNoticeProduct.catalog_match_confirmed_at.desc().nullslast()).limit(2000).all()
+    return [
+        ManualMatchExample(
+            notice_id=row.notice_id,
+            item_id=row.id,
+            catalog_id=row.catalog_product_id,
+            item_text=_manual_example_text(row),
+            catalog_title=_catalog_title(row.catalog_product),
+        )
+        for row in rows
+        if row.catalog_product is not None
+        and row.catalog_product.is_active
+        and row.match_review_verdict in (None, "ATENDE")
+        and _manual_example_text(row)
+    ]
+
+
+def evaluate_manual_example_retrieval(
+    db: Session, current_user: User, *, limit: int = 200,
+) -> dict[str, Any]:
+    """Read-only, leave-one-notice-out lexical benchmark over active catalog."""
+    products = (
+        db.query(CrmNoticeProduct)
+        .filter(
+            CrmNoticeProduct.tenant_id == current_user.tenant_id,
+            CrmNoticeProduct.catalog_match_source == "manual_confirmed",
+            CrmNoticeProduct.catalog_product_id.isnot(None),
+        )
+        .order_by(CrmNoticeProduct.catalog_match_confirmed_at.desc())
+        .limit(limit)
+        .all()
+    )
+    catalog = (
+        db.query(CrmCatalogProduct)
+        .filter(
+            CrmCatalogProduct.tenant_id == current_user.tenant_id,
+            CrmCatalogProduct.is_active.is_(True),
+        )
+        .all()
+    )
+    active_ids = {item.id for item in catalog}
+    examples = _load_manual_examples(db, current_user)
+    trials: list[tuple[str, list[str], list[str]]] = []
+    skipped_inactive = 0
+    for product in products:
+        if product.catalog_product_id not in active_ids or product.match_review_verdict == "NAO_ATENDE":
+            skipped_inactive += 1
+            continue
+        baseline = _rank_candidates(
+            product, catalog, embedding_cache={}, use_llm=False,
+            use_embeddings=False, manual_examples=[],
+        )
+        assisted = _rank_candidates(
+            product, catalog, embedding_cache={}, use_llm=False,
+            use_embeddings=False, manual_examples=examples,
+        )
+        def suggestions(ranked):
+            return [
+                candidate["catalog"].id for candidate in ranked[:SUGGESTIONS_PER_ITEM]
+                if candidate["score"].overall_score >= MIN_SUGGESTION_SCORE
+            ]
+        trials.append((product.catalog_product_id, suggestions(baseline), suggestions(assisted)))
+    return {
+        "method": "leave_one_notice_out_lexical_no_llm_no_embeddings",
+        "sampled_items": len(products),
+        "skipped_inactive_or_rejected": skipped_inactive,
+        "catalog_size": len(catalog),
+        "example_pool_size": len(examples),
+        **summarize_manual_retrieval_trials(trials),
+    }
 
 
 def _reference_value(product: CrmNoticeProduct) -> float:
@@ -1079,7 +1217,9 @@ def build_product_reuse_signature(description: str | None, product_code: str | N
     return "||".join(part for part in parts if part)
 
 
-def _build_reusable_match_index(db: Session, current_user: User) -> dict[str, CrmCatalogProduct]:
+def _build_reusable_match_index(
+    db: Session, current_user: User, *, exclude_notice_id: str,
+) -> dict[str, CrmCatalogProduct]:
     confirmed_matches = (
         db.query(CrmNoticeProductMatch)
         .options(
@@ -1088,22 +1228,37 @@ def _build_reusable_match_index(db: Session, current_user: User) -> dict[str, Cr
         )
         .filter(
             CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
+            CrmNoticeProductMatch.notice_id != exclude_notice_id,
             CrmNoticeProductMatch.status == CrmNoticeProductMatchStatus.CONFIRMED,
         )
         .all()
     )
 
+    return _index_reusable_matches(confirmed_matches)
+
+
+def _index_reusable_matches(
+    confirmed_matches: list[CrmNoticeProductMatch],
+) -> dict[str, CrmCatalogProduct]:
     reusable: dict[str, CrmCatalogProduct] = {}
+    ambiguous: set[str] = set()
     for match in confirmed_matches:
         if not match.notice_product or not match.catalog_product:
             continue
         if not match.catalog_product.is_active:
             continue
+        if match.notice_product.catalog_match_source not in {"manual_confirmed", "match_confirmed"}:
+            continue
         signature = build_product_reuse_signature(
             match.notice_product.description,
             match.notice_product.product_code,
         )
-        if signature and signature not in reusable:
+        if not signature or signature in ambiguous:
+            continue
+        if signature in reusable and reusable[signature].id != match.catalog_product.id:
+            ambiguous.add(signature)
+            reusable.pop(signature, None)
+        else:
             reusable[signature] = match.catalog_product
     return reusable
 

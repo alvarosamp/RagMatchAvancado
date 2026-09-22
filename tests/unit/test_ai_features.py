@@ -31,6 +31,7 @@ def test_tenant_can_disable_one_feature_without_affecting_others(monkeypatch):
 def test_crm_matching_keeps_deterministic_fallback_when_ai_is_off(monkeypatch):
     monkeypatch.setattr(features, "AI_FEATURES_ENABLED", False)
     assert features.ai_feature_enabled("crm_matching", tenant()) is True
+    assert features.ai_feature_enabled("crm_manual_examples", tenant()) is True
     assert features.ai_feature_enabled("crm_embeddings", tenant()) is False
     assert features.ai_feature_enabled("crm_llm_rerank", tenant()) is False
 
@@ -39,6 +40,13 @@ def test_update_can_set_and_clear_an_override():
     company = tenant({"matching": False})
     features.update_tenant_ai_features(company, {"edital_chat": False, "matching": None})
     assert company.ai_features == {"edital_chat": False}
+
+
+def test_tenant_can_disable_manual_precedents_without_disabling_matching(monkeypatch):
+    monkeypatch.setattr(features, "AI_FEATURES_ENABLED", False)
+    company = tenant({"crm_manual_examples": False})
+    assert features.ai_feature_enabled("crm_matching", company) is True
+    assert features.ai_feature_enabled("crm_manual_examples", company) is False
 
 
 def test_unknown_feature_is_rejected():

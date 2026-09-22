@@ -91,6 +91,43 @@ Sugestões marcadas como rejeitadas depois da confirmação de outro produto nã
 
 ## Avaliação offline
 
+### Precedentes manuais no matching
+
+O matching consulta vinculos `manual_confirmed` do proprio tenant, com produto
+ativo e sem veredito tecnico ou com veredito `ATENDE`. Vinculos `manual_kit`,
+`VERIFICAR` e `NAO_ATENDE` nao sao usados como exemplos.
+O administrador pode desativar esta etapa para a empresa com
+`PATCH /api/auth/tenant/ai-features` enviando
+`{"crm_manual_examples": false}`; o matching base continua disponivel.
+Para cada item, busca descricoes semelhantes de **outros editais** e associa
+os precedentes ao produto do catalogo escolhido pela pessoa. Esses precedentes
+ajudam a pre-selecionar candidatos e, se o reranker LLM estiver habilitado,
+entram no prompt (ate tres exemplos por candidato). O prompt deixa explicito
+que uma escolha humana nao prova atendimento tecnico; o modelo precisa
+justificar compatibilidades e conflitos. Sem LLM, o bonus de score e pequeno
+e nunca eleva sozinho um candidato a `strong`.
+
+Para comparar a recuperacao antes e depois dos exemplos sem gravar matches nem
+chamar provedor, administradores e editores podem consultar:
+
+```http
+GET /api/crm/matches/manual-examples/evaluation?limit=100
+```
+
+O relatorio devolve Top-1/3/5/10 da busca lexical/deterministica no catalogo
+ativo, uma vez sem e outra com precedentes. Cada item avaliado exclui todos os
+exemplos do seu edital (`leave-one-notice-out`). Itens cujo produto escolhido
+esta inativo ou foi rejeitado tecnicamente sao excluidos e contados. Essa
+comparacao **nao mede o LLM**: serve para verificar se os precedentes ajudam
+o produto escolhido a aparecer nas primeiras sugestoes, sem vazamento do
+proprio edital. A resposta retorna apenas agregados, nao descricoes de editais.
+
+Para medir o fluxo completo com LLM, rode os matches dos itens rotulados com
+`POST /api/crm/matches/ground-truth/run` (com `use_llm=true` apenas se o
+recurso estiver habilitado) e consulte `GET /api/crm/matches/ground-truth/report`.
+Esse passo cria jobs e sugestoes persistidas. Nao interprete taxas com
+`evaluated_items=0` como desempenho do modelo.
+
 Salve a resposta do endpoint em um arquivo JSON e rode:
 
 ```bash

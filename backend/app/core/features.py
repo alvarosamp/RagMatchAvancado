@@ -20,12 +20,13 @@ AI_FEATURE_DEFAULTS: dict[str, bool] = {
     "edital_chat": True,
     "datasheet_extraction": True,
     "crm_matching": True,
+    "crm_manual_examples": True,
     "crm_embeddings": True,
     "crm_llm_rerank": True,
 }
-# O matching base do CRM possui fallback lexical completo e nao depende de
-# provedor de IA. Embeddings e reranking continuam protegidos pelo master switch.
-_DETERMINISTIC_FEATURES = {"crm_matching"}
+# O matching base e a busca de precedentes manuais sao deterministicos e nao
+# dependem de provedor. Embeddings e reranking usam o master switch.
+_DETERMINISTIC_FEATURES = {"crm_matching", "crm_manual_examples"}
 
 
 def _tenant_overrides(tenant: Any | None) -> dict[str, bool]:

@@ -50,6 +50,7 @@ from app.jobs.queue import JobQueue
 from app.services.crm_item_matcher import (
     build_attached_products_llm_report,
     build_match_ground_truth_report,
+    evaluate_manual_example_retrieval,
     confirm_notice_item_match,
     flatten_attached_products_report_items,
     get_notice_item_match_payload,
@@ -2033,6 +2034,16 @@ def crm_match_ground_truth_report(
         limit=limit,
         include_unmarked=include_unmarked,
     )
+
+
+@router.get("/matches/manual-examples/evaluation")
+def crm_manual_examples_evaluation(
+    limit: int = Query(default=100, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Compare retrieval with/without manual precedents; no provider or DB writes."""
+    return evaluate_manual_example_retrieval(db, current_user, limit=limit)
 
 
 @router.get("/matches/evaluation-dataset")

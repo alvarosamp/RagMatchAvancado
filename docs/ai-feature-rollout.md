@@ -20,6 +20,7 @@ lexical/deterministico. Embeddings e reranking continuam desligados.
 | `edital_chat` | chat RAG por edital | sim |
 | `datasheet_extraction` | extracao de datasheet | sim |
 | `crm_matching` | ranking base do CRM | nao; fallback deterministico |
+| `crm_manual_examples` | precedentes de vinculos manuais no matching CRM | nao; recuperacao deterministica |
 | `crm_embeddings` | busca semantica no CRM | sim |
 | `crm_llm_rerank` | reranking por LLM | sim |
 

@@ -183,7 +183,10 @@ def build_match_summary(best_scores: list[dict[str, Any]], total_reference_value
     }
 
 
-def try_llm_rerank(*, notice_text: str, candidate_title: str, candidate_text: str) -> dict[str, Any] | None:
+def try_llm_rerank(
+    *, notice_text: str, candidate_title: str, candidate_text: str,
+    manual_precedents: str = "",
+) -> dict[str, Any] | None:
     if os.environ.get("CRM_MATCH_USE_LLM", "1") in {"0", "false", "False"}:
         return None
     if _has_hard_category_conflict(notice_text, candidate_text):
@@ -216,6 +219,8 @@ ITEM DO EDITAL:
 PRODUTO DO CATALOGO:
 Titulo: {candidate_title}
 Detalhes: {candidate_text}
+
+{manual_precedents}
 """.strip()
         response = measured_provider_call(
             "ollama", LLM_MODEL,
@@ -333,6 +338,10 @@ def _optical_technical_score(notice: str, candidate: str) -> TechnicalScore:
 
 
 def _is_optical_text(text: str) -> bool:
+    # Switches often list SFP uplink slots; that does not make the switch an
+    # optical transceiver. Keep device family classification ahead of terms.
+    if _is_switch_device_text(text, candidate_is_optical=False):
+        return False
     return any(term in text for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
 
 
@@ -392,11 +401,11 @@ def _has_hard_category_conflict(notice_text: str | None, candidate_text: str | N
         return False
 
     notice_is_ap = any(term in notice for term in ("access point", "wifi", "wi fi", "802 11", "ruckus r650"))
-    candidate_is_optical = any(term in candidate for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
+    candidate_is_optical = _is_optical_text(candidate)
     if notice_is_ap and candidate_is_optical:
         return True
 
-    notice_is_optical = any(term in notice for term in ("sfp", "transceiver", "transceptor", "fibra", "monomodo", "multimodo"))
+    notice_is_optical = _is_optical_text(notice)
     candidate_is_ap = any(term in candidate for term in ("access point", "wifi", "wi fi", "802 11", "ruckus r650"))
     if notice_is_optical and candidate_is_ap:
         return True
