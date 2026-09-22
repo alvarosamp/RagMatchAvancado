@@ -112,6 +112,28 @@ PYTHONPATH=backend python mlops/scripts/evaluate_match_dataset.py dataset.json -
 
 Itens do mesmo edital possuem o mesmo `split_group`. Ao formar treino/teste, divida por esse campo para impedir que itens quase idênticos do mesmo edital apareçam dos dois lados.
 
+### Gate de qualidade reproduzivel
+
+O comando abaixo retorna codigo de saida 1 se a amostra revisada for pequena,
+se faltar snapshot, ou se recall e taxa de falso aceite violarem os limites:
+
+```bash
+PYTHONPATH=backend python mlops/scripts/gate_match_dataset.py dataset.json \
+  --min-records 30 --min-recall-at-1 0.75 --min-recall-at-3 0.9 \
+  --min-decision-records 20 --max-false-accept-rate 0.05
+```
+
+Somente `manual_confirmed` e `match_confirmed` com `review_ready=true` entram
+no gate. `record_id` e `split_group` sao obrigatorios. O limiar de decisao
+tambem exige exemplos humanos de `ATENDE` e `NAO_ATENDE`.
+
+O CI executa o mesmo comando em um fixture **sintetico** para verificar o
+contrato do avaliador sem banco ou provedor. Isso nao mede qualidade real do
+matcher: o fixture contem snapshots fixos. Antes de usar o gate para liberar
+modelo/threshold em producao, exporte dados reais do tenant piloto, revise
+os labels humanos, congele uma amostra fora de treino e rode o comando com
+limiares acordados. Nao coloque editais ou dados sensiveis reais no repositorio.
+
 ## Recuperação híbrida e embeddings do catálogo
 
 O matching do CRM agora persiste um embedding para cada produto do catálogo. A atualização é incremental: um hash SHA-256 representa apenas os campos pesquisáveis (nome, marca, modelo, MPN, SKU, categoria, especificação, descrição, palavras-chave, equivalências e notas). Preço ou margem não provocam reprocessamento.

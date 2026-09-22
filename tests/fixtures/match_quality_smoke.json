@@ -1,0 +1,30 @@
+{
+  "dataset_version": "match_eval_dataset_v1",
+  "schema_version": "1.0.0",
+  "records": [
+    {
+      "record_id": "smoke-1",
+      "split_group": "notice-1",
+      "label": {"catalog_product_id": "switch-24p", "source": "manual_confirmed", "review_ready": true, "technical_verdict": "ATENDE"},
+      "prediction_snapshot": {"predicted_verdict": "ATENDE", "candidates": [{"catalog_product_id": "switch-24p", "rank": 1}, {"catalog_product_id": "switch-48p", "rank": 2}]}
+    },
+    {
+      "record_id": "smoke-2",
+      "split_group": "notice-1",
+      "label": {"catalog_product_id": "switch-48p", "source": "match_confirmed", "review_ready": true, "technical_verdict": "VERIFICAR"},
+      "prediction_snapshot": {"predicted_verdict": "VERIFICAR", "candidates": [{"catalog_product_id": "switch-48p", "rank": 1}, {"catalog_product_id": "switch-24p", "rank": 2}]}
+    },
+    {
+      "record_id": "smoke-3",
+      "split_group": "notice-2",
+      "label": {"catalog_product_id": "router-1", "source": "manual_confirmed", "review_ready": true, "technical_verdict": "NAO_ATENDE"},
+      "prediction_snapshot": {"predicted_verdict": "NAO_ATENDE", "candidates": [{"catalog_product_id": "router-1", "rank": 1}, {"catalog_product_id": "switch-24p", "rank": 2}]}
+    },
+    {
+      "record_id": "smoke-4",
+      "split_group": "notice-3",
+      "label": {"catalog_product_id": "ap-1", "source": "manual_confirmed", "review_ready": true, "technical_verdict": "ATENDE"},
+      "prediction_snapshot": {"predicted_verdict": "ATENDE", "candidates": [{"catalog_product_id": "ap-2", "rank": 1}, {"catalog_product_id": "ap-1", "rank": 2}]}
+    }
+  ]
+}
