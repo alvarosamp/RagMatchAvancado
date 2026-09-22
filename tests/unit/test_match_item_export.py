@@ -133,6 +133,58 @@ def test_v8_match_export_does_not_turn_bi_classification_into_a_requirement() ->
     assert build_match_item_export(document, item)["requisitos_atomicos"] == []
 
 
+def test_current_v8_criteria_use_item_evidence_without_bi_fallback() -> None:
+    evidence = {"arquivo": "termo.pdf", "pagina": "47"}
+    raw = {
+        "criterios_comparacao": [{
+            "campo": "interfaces.portas_acesso_rj45_qtd",
+            "operador": ">=", "valor": "24", "unidade": "portas",
+            "condicao": "N/C", "texto_original": "mínimo 24 portas",
+        }],
+        "evidencias": {"interfaces.portas_acesso_rj45_qtd": [evidence]},
+    }
+    document = _document(result={"schema_version": "8.0", "edital": {}})
+    item = _item(raw_payload=raw, caracteristicas_bi={
+        "switch": {"interfaces": {"portas_acesso_rj45_qtd": "24", "uplinks_qtd": "4"}}
+    })
+
+    exported = build_match_item_export(document, item)
+
+    assert len(exported["requisitos_atomicos"]) == 1
+    assert exported["requisitos_atomicos"][0]["campo_normalizado"] == "interfaces.portas_acesso_rj45_qtd"
+    assert exported["requisitos_atomicos"][0]["evidencias"] == [evidence]
+    assert exported["requisitos_atomicos"][0]["origem"]["pagina"] == "47"
+    assert exported["requisitos_atomicos"][0]["operador"] == ">="
+
+
+def test_current_v8_empty_criteria_do_not_create_bi_requirements() -> None:
+    document = _document(result={"schema_version": "8.0", "edital": {}})
+    item = _item(raw_payload={"criterios_comparacao": []})
+    assert build_match_item_export(document, item)["requisitos_atomicos"] == []
+
+
+def test_crm_v8_export_preserves_empty_criteria_without_bi_inference() -> None:
+    notice = SimpleNamespace(
+        id="n1", analysis_document_id=1, tor_id="edital-v8", number="edital-v8",
+        bid_number=None, modality=None, uasg=None, auction_date=None,
+        organ=None, portal=None,
+    )
+    product = SimpleNamespace(
+        id="p1", item_number="1", category="Switch", lot=None, quantity=2,
+        unit="UN", description="Switch 24 portas", reference_price=None,
+        reference_total_price=None, warranty=None, delivery_deadline=None,
+        exclusive_epp_label=None, is_exclusive_epp=None,
+        brand_direction_model=None, brand_direction_exists=False,
+        brand_direction_type=None, brand_direction_justification=None,
+        technical_characteristics=None,
+        bi_features={"switch": {"interfaces": {"portas_acesso_rj45_qtd": "24"}}},
+        raw_payload={"criterios_comparacao": [], "descricao_original": "Switch 24 portas"},
+    )
+    exported = build_crm_match_item_export(notice, product)
+    assert exported["requisitos_atomicos"] == []
+    assert exported["normalized"]["caracteristicas_bi"]["switch"]["interfaces"]["portas_acesso_rj45_qtd"] == "24"
+
+
 def test_build_match_export_keeps_supplied_atomic_requirements_and_provenance() -> None:
     item = _item()
     item.raw_payload["requisitos_atomicos"] = [

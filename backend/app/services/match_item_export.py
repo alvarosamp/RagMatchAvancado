@@ -57,6 +57,12 @@ def match_notice_filename(payload: dict[str, Any]) -> str:
 def build_crm_match_item_export(notice: Any, product: Any) -> dict[str, Any]:
     """Adapt a CRM notice item to the same contract used by analysis items."""
     raw = _mapping(product.raw_payload)
+    bi_features = _mapping(product.bi_features)
+    v8_item = (
+        "criterios_comparacao" in raw
+        or "requisitos_tecnicos" in raw
+        or any(key in bi_features for key in ("switch", "access_point", "transceiver"))
+    )
     portal = getattr(notice, "portal", None)
     organ = getattr(notice, "organ", None)
     document = SimpleNamespace(
@@ -65,6 +71,7 @@ def build_crm_match_item_export(notice: Any, product: Any) -> dict[str, Any]:
         source_name=_first(raw, "arquivo", "source_name", "documento_principal"),
         source_path=_first(raw, "source_path", "caminho_origem"),
         result={
+            "schema_version": "8.0" if v8_item else "7.4",
             "n_interno": notice.tor_id or notice.number,
             "edital": {
                 "numero_pregao": notice.bid_number or notice.number,
@@ -219,7 +226,13 @@ def _atomic_requirements(
     item_number: Any,
     allow_bi_fallback: bool = True,
 ) -> list[dict[str, Any]]:
-    supplied = raw_item.get("requisitos_atomicos") or raw_item.get("requisitos_tecnicos")
+    # V8 atual usa criterios_comparacao; o nome anterior continua aceito para
+    # analises ja armazenadas, sem fabricar requisitos a partir do BI.
+    supplied = (
+        raw_item.get("criterios_comparacao")
+        if "criterios_comparacao" in raw_item
+        else raw_item.get("requisitos_atomicos") or raw_item.get("requisitos_tecnicos")
+    )
     if isinstance(supplied, list) and supplied:
         return [
             _normalize_requirement(
@@ -227,6 +240,7 @@ def _atomic_requirements(
                 index,
                 _requirement_origin(raw_item, value, origin),
                 item_number,
+                _requirement_evidences(raw_item, value),
             )
             for index, value in enumerate(supplied, start=1)
             if isinstance(value, (dict, str))
@@ -276,9 +290,11 @@ def _normalize_requirement(
     index: int,
     default_origin: dict[str, Any],
     item_number: Any,
+    item_evidences: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     payload = requirement if isinstance(requirement, dict) else {"texto_original": requirement}
     direct_evidences = payload.get("evidencias") if isinstance(payload.get("evidencias"), list) else []
+    requirement_evidences = direct_evidences or item_evidences or []
     source = _mapping(payload.get("origem") or payload.get("fonte")) or (
         {**default_origin, **direct_evidences[0]} if direct_evidences and isinstance(direct_evidences[0], dict)
         else default_origin
@@ -296,7 +312,7 @@ def _normalize_requirement(
         "valores": payload.get("valores"),
         "operador_logico": _value(payload.get("logica") or payload.get("operador_logico")) or "E",
         "grupo_logico": _value(payload.get("grupo_logico")),
-        "evidencias": direct_evidences,
+        "evidencias": requirement_evidences,
         "obrigatorio": payload.get("obrigatorio") is not False,
         "origem": source,
         "derivado_de": _value(payload.get("derivado_de")) or "extracao_original",
@@ -444,28 +460,36 @@ def _feature(values: dict[str, Any], *names: str) -> Any:
     return None
 
 
+def _requirement_evidences(
+    raw_item: dict[str, Any], requirement: dict[str, Any] | str
+) -> list[dict[str, Any]]:
+    if not isinstance(requirement, dict):
+        return []
+    direct = requirement.get("evidencias")
+    if isinstance(direct, list) and direct:
+        return [entry for entry in direct if isinstance(entry, dict)]
+    field = _value(requirement.get("campo") or requirement.get("campo_normalizado"))
+    if not isinstance(field, str):
+        return []
+    sources = _mapping(raw_item.get("evidencias"))
+    entries = sources.get(field)
+    if not isinstance(entries, list):
+        matches = [value for key, value in sources.items() if key.endswith(f".{field}") and isinstance(value, list)]
+        entries = matches[0] if len(matches) == 1 else []
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
 def _requirement_origin(
     raw_item: dict[str, Any], requirement: dict[str, Any] | str, default: dict[str, Any]
 ) -> dict[str, Any]:
     if not isinstance(requirement, dict):
         return default
-    direct_evidences = requirement.get("evidencias")
-    if isinstance(direct_evidences, list) and direct_evidences and isinstance(direct_evidences[0], dict):
-        return {**default, **direct_evidences[0]}
+    evidences = _requirement_evidences(raw_item, requirement)
+    if evidences:
+        return {**default, **evidences[0]}
     supplied = _mapping(requirement.get("origem") or requirement.get("fonte"))
     if supplied:
         return supplied
-    field = _value(requirement.get("campo") or requirement.get("campo_normalizado"))
-    evidences = _mapping(raw_item.get("evidencias"))
-    if field:
-        for path, entries in evidences.items():
-            if (
-                (path == field or path.endswith(f".{field}"))
-                and isinstance(entries, list)
-                and entries
-                and isinstance(entries[0], dict)
-            ):
-                return {**default, **entries[0]}
     return default
 
 

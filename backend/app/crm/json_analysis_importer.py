@@ -27,6 +27,7 @@ from app.services.analysis_normalizer import (
     normalize_analysis_result,
     normalize_brand_direction,
 )
+from app.services.analysis_contract_values import display_contract_term
 
 
 def sync_analysis_json_to_crm(
@@ -521,9 +522,9 @@ def _upsert_products(
         product.is_exclusive_epp = parse_bool(item.get("exclusividade_me_epp_item"))
         product.exclusive_epp_label = optional_meaningful_text(item.get("exclusividade_me_epp_item"))
         product.quantity = quantity
-        product.unit = optional_meaningful_text(item.get("unidade"))
-        product.warranty = optional_meaningful_text(item.get("garantia"))
-        product.delivery_deadline = optional_meaningful_text(item.get("prazo_entrega"))
+        product.unit = optional_meaningful_text(item.get("unidade_fornecimento") or item.get("unidade"))
+        product.warranty = optional_meaningful_text(display_contract_term(item.get("garantia")))
+        product.delivery_deadline = optional_meaningful_text(display_contract_term(item.get("prazo_entrega")))
         product.category = optional_meaningful_text(item.get("categoria"))
         product.technical_characteristics = optional_meaningful_text(
             _original_value(original_item, item, "caracteristicas_tecnicas")

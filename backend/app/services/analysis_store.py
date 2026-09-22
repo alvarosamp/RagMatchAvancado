@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisDocument, AnalysisItem
+from app.services.analysis_contract_values import display_contract_term
 from app.services.analysis_normalizer import (
     normalize_analysis_result,
     normalize_brand_direction,
@@ -158,7 +159,7 @@ def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> Anal
         brand=brand,
         model=_first(item, "modelo", "model"),
         quantity=_to_float(_first(item, "quantidade", "qtd")),
-        unit=_first(item, "unidade", "unit"),
+        unit=_first(item, "unidade_fornecimento", "unidade", "unit"),
         unit_value=_to_float(_first(item, "valor_unitario", "preco_unitario")),
         total_value=_to_float(_first(item, "valor_total", "total", "valor_total_item")),
         supplier=_first(item, "fornecedor", "empresa"),
@@ -168,8 +169,8 @@ def _build_analysis_item(item: dict[str, Any], *, uf: str | None = None) -> Anal
         categoria=item.get("categoria"),
         uf=uf,
         lote_grupo=item.get("lote_grupo"),
-        garantia=item.get("garantia"),
-        prazo_entrega=item.get("prazo_entrega"),
+        garantia=display_contract_term(item.get("garantia")),
+        prazo_entrega=display_contract_term(item.get("prazo_entrega")),
         caracteristicas_tecnicas=item.get("caracteristicas_tecnicas"),
         exclusividade_me_epp_item=item.get("exclusividade_me_epp_item"),
         risco_associado=item.get("risco_associado"),
