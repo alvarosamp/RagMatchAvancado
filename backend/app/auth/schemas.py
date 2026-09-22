@@ -28,7 +28,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.auth.password_policy import assert_valid_password
 
@@ -183,6 +183,11 @@ class TenantAIFeaturesUpdate(BaseModel):
     crm_matching: bool | None = None
     crm_embeddings: bool | None = None
     crm_llm_rerank: bool | None = None
+
+
+class TenantAIJobQuotaUpdate(BaseModel):
+    """NULL remove o limite; zero bloqueia novos jobs."""
+    monthly_job_limit: int | None = Field(ge=0, le=1_000_000)
 
 
 class UserRoleUpdate(BaseModel):

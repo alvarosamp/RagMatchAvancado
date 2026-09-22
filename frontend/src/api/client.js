@@ -53,6 +53,10 @@ export const authApi = {
   updateProfile: (data) => api.patch('/auth/me/profile', data),
   createUser: (data) => api.post('/auth/users', data),
   listUsers:  ()    => api.get('/auth/users'),
+  getAiJobQuota: () => api.get('/auth/tenant/ai-job-quota'),
+  updateAiJobQuota: (monthlyJobLimit) => api.patch('/auth/tenant/ai-job-quota', {
+    monthly_job_limit: monthlyJobLimit,
+  }),
 }
 
 export const editaisApi = {

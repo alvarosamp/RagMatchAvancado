@@ -23,11 +23,11 @@ import uuid
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
-from app.auth.models import User
+from app.auth.models import Tenant, User
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger
 
@@ -35,6 +35,17 @@ from app.logs.config import logger
 class JobCancelledError(Exception):
     """Raised when a running job is cancelled externally."""
     pass
+
+
+def monthly_quota_reached(limit: int | None, used: int) -> bool:
+    return limit is not None and used >= limit
+
+
+def _month_bounds_utc(now: datetime) -> tuple[datetime, datetime]:
+    month_start = datetime(now.year, now.month, 1)
+    if now.month == 12:
+        return month_start, datetime(now.year + 1, 1, 1)
+    return month_start, datetime(now.year, now.month + 1, 1)
 
 
 def normalize_idempotency_key(value: str | None) -> str | None:
@@ -81,6 +92,34 @@ def _persist_new_job(db: Session, job: Job) -> tuple[Job, bool]:
     # Import lazily so lightweight unit-test stubs that do not expose the
     # complete SQLAlchemy package can still import this module.
     from sqlalchemy.exc import IntegrityError
+
+    # Serializa a admissao por empresa. A segunda requisicao revalida a
+    # idempotencia depois do lock, antes de consumir uma vaga da quota.
+    tenant = db.query(Tenant).filter(Tenant.slug == job.tenant_id).with_for_update().one()
+    existing = _find_idempotent_job(
+        db,
+        tenant_id=job.tenant_id,
+        job_type=job.job_type,
+        idempotency_key=job.idempotency_key,
+    )
+    if existing is not None:
+        db.rollback()
+        return existing, False
+
+    limit = tenant.ai_monthly_job_limit
+    if limit is not None:
+        start, end = _month_bounds_utc(datetime.now(timezone.utc))
+        used = (
+            db.query(func.count(Job.id))
+            .filter(Job.tenant_id == job.tenant_id, Job.created_at >= start, Job.created_at < end)
+            .scalar()
+        ) or 0
+        if monthly_quota_reached(limit, used):
+            db.rollback()
+            raise HTTPException(
+                status_code=429,
+                detail=f"Limite mensal de jobs atingido ({used}/{limit}). Novo periodo inicia em {end.date().isoformat()} UTC.",
+            )
 
     db.add(job)
     try:
@@ -418,7 +457,12 @@ class JobQueue:
                 "object_key": object_key,
             },
         )
-        persisted_job, created = _persist_new_job(db, job)
+        try:
+            persisted_job, created = _persist_new_job(db, job)
+        except Exception:
+            _remove_local_upload(pdf_path)
+            _remove_object_upload(object_key)
+            raise
         if not created:
             _remove_local_upload(pdf_path)
             _remove_object_upload(object_key)

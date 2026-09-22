@@ -13,9 +13,11 @@
 # =============================================================================
 
 import os
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.db.session import get_db
 from app.auth.models import Tenant, User, UserRoleAudit
@@ -23,6 +25,7 @@ from app.auth.schemas import (
     LoginRequest,
     RegisterRequest,
     TenantAIFeaturesUpdate,
+    TenantAIJobQuotaUpdate,
     TokenResponse,
     UserCreate,
     UserResponse,
@@ -39,6 +42,8 @@ from app.services.crm_workflow import ensure_not_last_active_admin
 from app.auth.dependencies import get_current_user, require_role
 from app.logs.config import logger
 from app.core.features import effective_ai_features, update_tenant_ai_features
+from app.jobs.models import Job
+from app.jobs.queue import _month_bounds_utc
 
 router = APIRouter(prefix="/auth", tags=["autenticação"])
 AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
@@ -303,6 +308,47 @@ def patch_tenant_ai_features(
         "overrides": dict(current_user.tenant.ai_features or {}),
         "features": effective_ai_features(current_user.tenant),
     }
+
+
+@router.get("/tenant/ai-job-quota")
+def get_tenant_ai_job_quota(
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    """Consulta o uso do mes UTC e o limite de novos jobs do tenant."""
+    start, end = _month_bounds_utc(datetime.now(timezone.utc))
+    used = db.query(func.count(Job.id)).filter(
+        Job.tenant_id == current_user.tenant.slug,
+        Job.created_at >= start,
+        Job.created_at < end,
+    ).scalar() or 0
+    limit = current_user.tenant.ai_monthly_job_limit
+    return {
+        "tenant_slug": current_user.tenant.slug,
+        "monthly_job_limit": limit,
+        "jobs_created": used,
+        "remaining": max(limit - used, 0) if limit is not None else None,
+        "period_start_utc": start.isoformat() + "Z",
+        "resets_at_utc": end.isoformat() + "Z",
+    }
+
+
+@router.patch("/tenant/ai-job-quota")
+def patch_tenant_ai_job_quota(
+    payload: TenantAIJobQuotaUpdate,
+    current_user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    current_user.tenant.ai_monthly_job_limit = payload.monthly_job_limit
+    db.add(current_user.tenant)
+    db.commit()
+    db.refresh(current_user.tenant)
+    logger.info(
+        "[AI Quota] Limite atualizado | tenant=%s | limite=%s",
+        current_user.tenant.slug,
+        payload.monthly_job_limit,
+    )
+    return get_tenant_ai_job_quota(current_user=current_user, db=db)
 
 
 @router.patch("/me/profile", response_model=UserResponse)

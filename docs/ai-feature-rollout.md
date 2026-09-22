@@ -106,3 +106,22 @@ A tela de Jobs tambem funciona como painel de incidentes da IA:
 Uploads esgotados continuam exigindo um novo envio do arquivo, evitando retry
 com referencia temporaria indisponivel. Jobs cancelados nunca podem ser
 reenfileirados.
+
+## Quota mensal de jobs por empresa
+
+O administrador configura `monthly_job_limit` em
+`PATCH /auth/tenant/ai-job-quota`; `GET` no mesmo caminho informa uso,
+restante e inicio do proximo periodo. `null` significa sem limite (padrao),
+enquanto `0` bloqueia novos jobs. A tela de Configuracoes exibe e altera o
+limite.
+
+A quota conta novos jobs de upload/OCR, matching legado e matching CRM criados
+no mes UTC, independentemente do resultado. Requisicoes com a mesma chave de
+idempotencia reutilizam o job existente sem consumir outra vaga. A admissao e
+serializada por tenant no PostgreSQL, evitando ultrapassar a quota em chamadas
+concorrentes. Ao esgotar o limite, a API retorna HTTP 429. Retry do mesmo job
+nao cria uma nova unidade e nao conta novamente.
+
+Esta quota limita volume de processamento, **nao** mede tokens, custo de API
+ou chamadas de chat/embeddings fora destes jobs. Medicao de consumo por
+provedor e politica de custo monetario permanecem para uma etapa posterior.

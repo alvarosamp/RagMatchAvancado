@@ -55,6 +55,8 @@ class Tenant(Base):
     # Overrides de rollout por empresa. Ausencia de uma chave significa
     # herdar o padrao do ambiente.
     ai_features = Column(JSON, nullable=False, default=dict)
+    # Limite de novos jobs de processamento por mes UTC; NULL = sem limite.
+    ai_monthly_job_limit = Column(Integer, nullable=True)
 
     # Um tenant tem muitos usuários
     users = relationship("User", back_populates="tenant", cascade="all, delete-orphan")

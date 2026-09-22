@@ -4,7 +4,8 @@
  * Preferencias de conta, modelo padrao e informacoes do tenant.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { authApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
@@ -40,6 +41,38 @@ export default function Configuracoes() {
   const [compactMode, setCompactMode]         = useState(
     () => localStorage.getItem('compact_mode') === 'true'
   )
+  const [quota, setQuota] = useState(null)
+  const [quotaInput, setQuotaInput] = useState('')
+  const [quotaSaving, setQuotaSaving] = useState(false)
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return
+    authApi.getAiJobQuota()
+      .then(({ data }) => {
+        setQuota(data)
+        setQuotaInput(data.monthly_job_limit == null ? '' : String(data.monthly_job_limit))
+      })
+      .catch(() => toast({ type: 'error', message: 'Nao foi possivel carregar a quota de jobs.' }))
+  }, [user?.role])
+
+  const saveQuota = async () => {
+    const value = quotaInput.trim()
+    const parsed = value === '' ? null : Number(value)
+    if (parsed !== null && (!Number.isInteger(parsed) || parsed < 0 || parsed > 1_000_000)) {
+      toast({ type: 'error', message: 'Informe um inteiro entre 0 e 1.000.000, ou deixe vazio para sem limite.' })
+      return
+    }
+    setQuotaSaving(true)
+    try {
+      const { data } = await authApi.updateAiJobQuota(parsed)
+      setQuota(data)
+      toast({ type: 'success', message: 'Limite mensal atualizado.' })
+    } catch (error) {
+      toast({ type: 'error', message: error.response?.data?.detail || 'Nao foi possivel atualizar o limite.' })
+    } finally {
+      setQuotaSaving(false)
+    }
+  }
 
   const savePreferences = () => {
     localStorage.setItem('default_model',  defaultModel)
@@ -85,6 +118,37 @@ export default function Configuracoes() {
           </div>
         </div>
       </Section>
+
+      {user?.role === 'admin' && (
+        <Section title="Limite mensal de processamento" description="Controla novos jobs assíncronos desta empresa; periodo em UTC">
+          {quota && (
+            <p className="text-sm text-gray-300">
+              Usados: <span className="font-semibold text-white">{quota.jobs_created}</span>
+              {quota.monthly_job_limit != null ? ` / ${quota.monthly_job_limit}` : ' · sem limite'}
+              {quota.remaining != null ? ` · restantes: ${quota.remaining}` : ''}
+            </p>
+          )}
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="text-xs text-gray-400">
+              Novos jobs por mês
+              <input
+                type="number"
+                min="0"
+                max="1000000"
+                step="1"
+                value={quotaInput}
+                onChange={(event) => setQuotaInput(event.target.value)}
+                placeholder="Sem limite"
+                className="input mt-1 block w-44 text-sm"
+              />
+            </label>
+            <button onClick={saveQuota} disabled={quotaSaving || !quota} className="btn-primary px-4 py-2 disabled:opacity-40">
+              {quotaSaving ? 'Salvando...' : 'Salvar limite'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">Vazio = sem limite; 0 = bloquear novos jobs. Reenvios idempotentes e retries do mesmo job não contam novamente.</p>
+        </Section>
+      )}
 
       {AI_FEATURES_ENABLED && (
         <Section title="Modelo" description="Modelo padrao usado no ChatBot">
