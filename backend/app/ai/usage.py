@@ -78,18 +78,35 @@ def _nonnegative_int(value: Any) -> int | None:
     return value
 
 
+def classify_provider_failure(error: Exception) -> str:
+    """Use coarse, non-sensitive codes; never persist exception text."""
+    if isinstance(error, TimeoutError) or "timeout" in type(error).__name__.lower():
+        return "timeout"
+    if isinstance(error, ConnectionError) or "connection" in type(error).__name__.lower():
+        return "dependency_unavailable"
+    status = getattr(error, "status_code", None)
+    if status == 429:
+        return "rate_limited"
+    if isinstance(status, int) and 500 <= status <= 599:
+        return "dependency_unavailable"
+    return "provider_error"
+
+
 def record_provider_usage(
     *, provider: str, model: str, response: Any, duration_ms: int,
+    failure_code: str | None = None,
 ) -> None:
     """Best-effort independent write so telemetry never breaks inference."""
     context = _usage_context.get()
     if context is None:
         return
-    input_tokens, output_tokens = extract_token_counts(response, provider)
     try:
         from app.ai.usage_models import AIUsageEvent
         from app.db.session import SessionLocal
 
+        input_tokens, output_tokens = (
+            extract_token_counts(response, provider) if failure_code is None else (None, None)
+        )
         with SessionLocal() as db:
             db.add(AIUsageEvent(
                 id=str(uuid.uuid4()),
@@ -101,6 +118,8 @@ def record_provider_usage(
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 duration_ms=max(0, duration_ms),
+                succeeded=failure_code is None,
+                failure_code=failure_code,
             ))
             db.commit()
     except Exception:
@@ -111,9 +130,19 @@ def record_provider_usage(
 
 
 def measured_provider_call(provider: str, model: str, call):
-    """Measure one successful provider call without changing its response."""
+    """Measure provider outcome without changing response or exception semantics."""
     started = time.perf_counter()
-    response = call()
+    try:
+        response = call()
+    except Exception as error:
+        record_provider_usage(
+            provider=provider,
+            model=model,
+            response=None,
+            duration_ms=round((time.perf_counter() - started) * 1000),
+            failure_code=classify_provider_failure(error),
+        )
+        raise
     record_provider_usage(
         provider=provider,
         model=model,

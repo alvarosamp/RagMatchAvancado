@@ -34,11 +34,16 @@ def ai_usage_summary(
             AIUsageEvent.provider.label("provider"),
             AIUsageEvent.model.label("model"),
             AIUsageEvent.operation.label("operation"),
-            func.count(AIUsageEvent.id).label("calls"),
+            func.sum(case((AIUsageEvent.succeeded.is_(True), 1), else_=0)).label("calls"),
+            func.sum(case((AIUsageEvent.succeeded.is_(False), 1), else_=0)).label("failed_calls"),
             func.sum(AIUsageEvent.input_tokens).label("input_tokens"),
             func.sum(AIUsageEvent.output_tokens).label("output_tokens"),
             func.sum(case(
-                ((AIUsageEvent.input_tokens.is_(None) | AIUsageEvent.output_tokens.is_(None)), 1),
+                (
+                    AIUsageEvent.succeeded.is_(True)
+                    & (AIUsageEvent.input_tokens.is_(None) | AIUsageEvent.output_tokens.is_(None)),
+                    1,
+                ),
                 else_=0,
             )).label("calls_without_token_counts"),
             func.sum(AIUsageEvent.duration_ms).label("total_duration_ms"),

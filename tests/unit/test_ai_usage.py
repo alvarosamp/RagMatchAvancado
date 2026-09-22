@@ -40,7 +40,7 @@ def test_usage_scope_is_restored_after_nested_scope_and_error(monkeypatch):
     assert usage._usage_context.get() is None
 
 
-def test_measured_call_preserves_response_and_does_not_record_failed_call(monkeypatch):
+def test_measured_call_preserves_response_and_exception(monkeypatch):
     captured = []
     monkeypatch.setattr(usage, "record_provider_usage", lambda **kwargs: captured.append(kwargs))
     response = {"eval_count": 3}
@@ -48,7 +48,22 @@ def test_measured_call_preserves_response_and_does_not_record_failed_call(monkey
     assert captured[0]["duration_ms"] >= 0
     with pytest.raises(RuntimeError):
         usage.measured_provider_call("ollama", "model", lambda: (_ for _ in ()).throw(RuntimeError()))
-    assert len(captured) == 1
+    assert len(captured) == 2
+    assert captured[1]["response"] is None
+    assert captured[1]["failure_code"] == "provider_error"
+
+
+def test_provider_failures_use_coarse_codes_only():
+    assert usage.classify_provider_failure(TimeoutError("sensitive")) == "timeout"
+    assert usage.classify_provider_failure(ConnectionError("sensitive")) == "dependency_unavailable"
+    assert usage.classify_provider_failure(SimpleNamespaceError(429)) == "rate_limited"
+    assert usage.classify_provider_failure(SimpleNamespaceError(503)) == "dependency_unavailable"
+    assert usage.classify_provider_failure(SimpleNamespaceError(400)) == "provider_error"
+
+
+class SimpleNamespaceError(Exception):
+    def __init__(self, status_code):
+        self.status_code = status_code
 
 
 def test_user_scope_uses_tenant_and_preserves_existing_job_scope():
@@ -69,15 +84,16 @@ def test_user_scope_uses_tenant_and_preserves_existing_job_scope():
 
 def test_summary_aggregates_reported_usage_and_marks_missing_counts():
     rows = [
-        SimpleNamespace(provider="ollama", model="m", operation="matching", calls=3,
+        SimpleNamespace(provider="ollama", model="m", operation="matching", calls=3, failed_calls=2,
                         input_tokens=20, output_tokens=10, calls_without_token_counts=1,
                         total_duration_ms=120),
-        SimpleNamespace(provider="openai", model="n", operation="chat", calls=1,
+        SimpleNamespace(provider="openai", model="n", operation="chat", calls=1, failed_calls=0,
                         input_tokens=None, output_tokens=None, calls_without_token_counts=1,
                         total_duration_ms=30),
     ]
     result = build_ai_usage_summary(rows, datetime(2026, 9, 1), datetime(2026, 10, 1))
     assert result["total_calls"] == 4
+    assert result["total_failed_calls"] == 2
     assert result["input_tokens_reported"] == 20
     assert result["output_tokens_reported"] == 10
     assert result["calls_without_token_counts"] == 2

@@ -167,6 +167,9 @@ export default function Configuracoes() {
             <div className="space-y-3">
               <p className="text-sm text-gray-300">
                 <span className="font-semibold text-white">{aiUsage.total_calls}</span> chamadas ·{' '}
+                <span className={aiUsage.total_failed_calls ? 'text-red-400' : ''}>
+                  {aiUsage.total_failed_calls} falhas
+                </span> ·{' '}
                 {aiUsage.input_tokens_reported.toLocaleString('pt-BR')} tokens de entrada ·{' '}
                 {aiUsage.output_tokens_reported.toLocaleString('pt-BR')} tokens de saída
               </p>
@@ -182,7 +185,9 @@ export default function Configuracoes() {
                   {aiUsage.groups.map((group) => (
                     <div key={`${group.provider}:${group.model}:${group.operation}`} className="flex justify-between gap-2 text-gray-400">
                       <span className="truncate">{group.operation} · {group.provider}/{group.model}</span>
-                      <span className="shrink-0 text-white">{group.calls} chamadas</span>
+                      <span className="shrink-0 text-white">
+                        {group.calls} concluídas{group.failed_calls ? ` · ${group.failed_calls} falhas` : ''}
+                      </span>
                     </div>
                   ))}
                 </div>

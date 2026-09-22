@@ -1,6 +1,6 @@
 """Persistence model for privacy-preserving provider usage telemetry."""
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
 
 from app.db.models import Base
@@ -18,4 +18,6 @@ class AIUsageEvent(Base):
     input_tokens = Column(Integer, nullable=True)
     output_tokens = Column(Integer, nullable=True)
     duration_ms = Column(Integer, nullable=False)
+    succeeded = Column(Boolean, nullable=False, default=True)
+    failure_code = Column(String(32), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)

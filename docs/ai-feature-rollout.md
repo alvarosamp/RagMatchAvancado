@@ -127,7 +127,8 @@ custo monetario.
 
 ## Telemetria de consumo dos provedores
 
-A migration `20260921_02` cria `ai_usage_events`. Cada chamada **concluida**
+A migration `20260921_02` cria `ai_usage_events`; `20260922_01` acrescenta
+resultado e codigo de falha. Cada chamada **concluida**
 de OpenAI ou Ollama dentro de um contexto de empresa grava provedor, modelo,
 operacao, `correlation_id` de job quando disponivel, duracao e contagens de
 tokens fornecidas pelo proprio provedor. Prompts, respostas e dados do cliente
@@ -141,8 +142,13 @@ fora desses fluxos nao sao incluidas no painel. A persistencia e best-effort
 e usa sessao independente para que falhas de telemetria nao quebrem a inferencia
 ou sejam revertidas por rollback do job.
 
+Falhas de chamada ao provedor sao registradas separadamente com um codigo
+generico (`timeout`, `dependency_unavailable`, `rate_limited` ou
+`provider_error`). A excecao original continua sendo propagada, mas sua
+mensagem nao e salva na telemetria. Falhas nao sao contabilizadas como tokens
+consumidos, pois a resposta do provedor pode nao informar uso parcial.
+
 `GET /ops/ai-usage` exige papel `admin`, filtra pelo tenant autenticado e
 resume o mes UTC por provedor, modelo e operacao. A tela Configuracoes exibe
-os totais e destaca chamadas sem contagem completa. Falhas de chamada ao
-provedor nao entram na contagem; a observabilidade de falhas continua no
-painel de Jobs. Esta medicao ainda nao aplica limite de tokens ou custos.
+chamadas concluidas, falhas e totais reportados, destacando chamadas sem
+contagem completa. A medicao ainda nao aplica limite de tokens ou custos.
