@@ -11,6 +11,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.models import User
 from app.db.models import AnalysisDocument, AnalysisItem
 from app.db.session import get_db
+from app.services.analysis_intelligence import BREAKDOWN_FIELDS, aggregate_feature_breakdowns
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -137,32 +138,6 @@ def get_dashboard(
     return {"period": period, "kpis": kpis, "categories": categories, "series": series}
 
 
-_BREAKDOWN_FIELDS = {
-    "Switch": {
-        "quantidade_portas": [("quantidade_portas",), ("switch", "interfaces", "portas_acesso_rj45_qtd")],
-        "gerenciamento": [("gerenciamento",), ("switch", "gerenciamento", "gerenciamento_local")],
-        "alimentacao_poe": [("alimentacao_poe",), ("switch", "poe", "poe_padroes")],
-        "portas_acesso": [("portas_acesso",), ("switch", "interfaces", "velocidades_porta")],
-        "uplinks": [("uplinks",), ("switch", "interfaces", "uplinks_formatos")],
-        "camada": [("camada",), ("switch", "camada_3", "protocolos_roteamento")],
-    },
-    "Access Point": {
-        "tecnologia_wifi": [("tecnologia_wifi",), ("access_point", "radio", "padroes_ieee")],
-        "ambiente": [("ambiente",), ("access_point", "identificacao", "ambiente_uso")],
-        "alimentacao": [("alimentacao",), ("access_point", "energia_fisico", "poe_padroes")],
-    },
-    "Módulo óptico": {},
-    "Modulo optico": {},
-    "Transceiver": {
-        "formato": [("formato",), ("transceiver", "identificacao", "form_factor")],
-        "velocidade": [("velocidade",), ("transceiver", "identificacao", "velocidade_nominal_gbps")],
-        "tipo_meio": [("tipo_meio",), ("transceiver", "fibra_conector", "tipo_fibra")],
-        "alcance": [("alcance",), ("transceiver", "fibra_conector", "alcance_m")],
-    },
-}
-_BREAKDOWN_FIELDS["Módulo óptico"] = _BREAKDOWN_FIELDS["Transceiver"]
-_BREAKDOWN_FIELDS["Modulo optico"] = _BREAKDOWN_FIELDS["Transceiver"]
-
 def _category_summary(items_q) -> dict[str, dict[str, Any]]:
     rows = (
         items_q.with_entities(
@@ -193,28 +168,18 @@ def _sum_categories(values: dict[str, float], *categories: str) -> float:
 def _breakdowns_for_category(
     db: Session, doc_ids: list[int], categoria: str
 ) -> dict[str, list[dict[str, Any]]]:
-    fields = _BREAKDOWN_FIELDS.get(categoria, {})
-    breakdowns: dict[str, list[dict[str, Any]]] = {}
-    for field, paths in fields.items():
-        valor = func.coalesce(
-            *(func.json_extract_path_text(AnalysisItem.caracteristicas_bi, *path) for path in paths)
-        ).label("valor")
-        rows = (
-            db.query(
-                valor,
-                func.count(AnalysisItem.id),
-            )
-            .filter(
-                AnalysisItem.analysis_id.in_(doc_ids),
-                AnalysisItem.categoria == categoria,
-            )
-            .group_by("valor")
-            .all()
+    fields = BREAKDOWN_FIELDS.get(categoria, {})
+    if not fields:
+        return {}
+    rows = (
+        db.query(AnalysisItem.analysis_id, AnalysisItem.quantity, AnalysisItem.caracteristicas_bi)
+        .filter(
+            AnalysisItem.analysis_id.in_(doc_ids),
+            AnalysisItem.categoria == categoria,
         )
-        breakdowns[field] = [
-            {"valor": valor, "unidades": count} for valor, count in rows if valor is not None
-        ]
-    return breakdowns
+        .all()
+    )
+    return aggregate_feature_breakdowns(rows, fields)
 
 
 def _uf_breakdown_for_category(

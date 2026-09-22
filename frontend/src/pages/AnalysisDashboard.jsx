@@ -45,9 +45,22 @@ function itemCategorization(item) {
 }
 
 function CategoryPanel({ category }) {
+  const [rankingMetric, setRankingMetric] = useState('unidades')
   const breakdownEntries = Object.entries(category.breakdowns || {})
-  const primaryRows = breakdownEntries.slice(0, 3)
   const ufRows = (category.ufs || []).map((row) => ({ valor: row.uf, unidades: row.unidades }))
+  const metricLabels = { unidades: 'Unidades', itens: 'Itens', editais: 'Editais' }
+  const fieldLabels = {
+    quantidade_portas: 'Portas RJ45', portas_acesso: 'Velocidade de acesso',
+    alimentacao_poe: 'Padrões PoE', potencia_poe_w: 'Potência PoE (W)',
+    uplinks: 'Tipos de uplink', quantidade_uplinks: 'Quantidade de uplinks',
+    capacidade_comutacao_gbps: 'Capacidade de comutação (Gbps)',
+    vlan: 'VLAN', roteamento: 'Roteamento', empilhamento: 'Empilhamento',
+    gerenciamento_local: 'Gerenciamento local', gerenciamento_remoto: 'Gerenciamento remoto',
+    gerenciamento: 'Gerenciamento (legado)', camada: 'Camada / classe (legado)',
+    classe: 'Classe declarada', garantia_meses: 'Garantia (meses)',
+    tecnologia_wifi: 'Tecnologia Wi-Fi', ambiente: 'Ambiente', alimentacao: 'Alimentação',
+    formato: 'Formato', velocidade: 'Velocidade', tipo_meio: 'Tipo de meio', alcance: 'Alcance',
+  }
 
   return (
     <Card className="p-6">
@@ -72,11 +85,22 @@ function CategoryPanel({ category }) {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        {primaryRows.map(([field, rows]) => (
-          <BreakdownGroup key={field} title={field.replace(/_/g, ' ')} rows={rows} />
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-slate-500 dark:text-slate-400">Ordenar por:</span>
+        {Object.entries(metricLabels).map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setRankingMetric(key)}
+            aria-pressed={rankingMetric === key}
+            className={`rounded-md px-3 py-1.5 ${rankingMetric === key ? 'bg-brand text-white' : 'border border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'}`}>
+            {label}
+          </button>
         ))}
-        <BreakdownGroup title="UFs com mais unidades" rows={ufRows} />
+        <span className="text-slate-500 dark:text-slate-400">Valores N/C ficam fora. Dados históricos preservam a classificação original.</span>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        {breakdownEntries.map(([field, rows]) => (
+          <BreakdownGroup key={field} title={fieldLabels[field] || field.replace(/_/g, ' ')} rows={rows} metric={rankingMetric} />
+        ))}
+        <BreakdownGroup title="UFs com mais unidades" rows={ufRows} metric="unidades" />
       </div>
     </Card>
   )

@@ -93,6 +93,46 @@ def test_build_match_export_preserves_raw_and_builds_normalized_contract() -> No
     assert any(req["campo_normalizado"] == "quantidade_portas" for req in payload["requisitos_atomicos"])
 
 
+def test_v8_match_export_uses_direct_evidence_and_general_clauses() -> None:
+    evidence = {"arquivo": "TR-v2.pdf", "pagina": "47", "secao": "Item 17"}
+    raw = {
+        "numero_item_edital": "67",
+        "descricao_original": "Switch 24 portas",
+        "requisitos_tecnicos": [{
+            "campo": "interfaces.portas_acesso_rj45_qtd",
+            "operador": ">=", "valor": "24", "unidade": "portas",
+            "condicao": "RJ45", "texto_original": "mínimo 24 portas RJ45",
+            "logica": "E", "grupo_logico": "G1", "evidencias": [evidence],
+        }],
+        "requisitos_gerais_aplicaveis": [{
+            "tipo": "garantia", "texto_original": "Garantia mínima de 12 meses",
+            "aplica_a": "Todos os itens", "evidencias": [evidence],
+        }],
+        "evidencias": {"interfaces.portas_acesso_rj45_qtd": [evidence]},
+    }
+    document = _document(result={
+        "schema_version": "8.0", "n_interno": "PE-16-2026", "edital": {},
+        "auditoria": {"conflitos_documentais": [{"campo": "item.garantia", "resolvido": False}]},
+    })
+    item = _item(raw_payload=raw, caracteristicas_bi={"switch": {"interfaces": {"portas_acesso_rj45_qtd": "24"}}})
+
+    exported = build_match_item_export(document, item)
+
+    assert exported["requisitos_atomicos"][0]["origem"]["arquivo"] == "TR-v2.pdf"
+    assert exported["requisitos_atomicos"][0]["operador_logico"] == "E"
+    assert exported["requisitos_atomicos"][0]["grupo_logico"] == "G1"
+    assert exported["requisitos_atomicos"][0]["evidencias"] == [evidence]
+    assert exported["requisitos_gerais_aplicaveis"] == raw["requisitos_gerais_aplicaveis"]
+    assert exported["conflitos_documentais"][0]["campo"] == "item.garantia"
+
+
+def test_v8_match_export_does_not_turn_bi_classification_into_a_requirement() -> None:
+    document = _document(result={"schema_version": "8.0", "edital": {}})
+    item = _item(raw_payload={"descricao_original": "Switch 24 portas", "requisitos_tecnicos": []})
+
+    assert build_match_item_export(document, item)["requisitos_atomicos"] == []
+
+
 def test_build_match_export_keeps_supplied_atomic_requirements_and_provenance() -> None:
     item = _item()
     item.raw_payload["requisitos_atomicos"] = [

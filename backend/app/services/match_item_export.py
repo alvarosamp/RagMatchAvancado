@@ -122,7 +122,10 @@ def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:
     category = _value(item.categoria) or _value(stored_item.get("categoria"))
     origin = _origin(document, item, raw_item)
 
-    requirements = _atomic_requirements(raw_item, bi, origin, item.item_number)
+    requirements = _atomic_requirements(
+        raw_item, bi, origin, item.item_number,
+        allow_bi_fallback=result.get("schema_version") != "8.0",
+    )
     divergences = _document_divergences(raw_item, bi)
 
     return {
@@ -191,6 +194,8 @@ def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:
             or _value(item.direcionamento_marca_justificativa),
         },
         "requisitos_atomicos": requirements,
+        "requisitos_gerais_aplicaveis": raw_item.get("requisitos_gerais_aplicaveis") or [],
+        "conflitos_documentais": _mapping(result.get("auditoria")).get("conflitos_documentais") or [],
         "normalized": {
             "categoria": category,
             "caracteristicas_bi": bi,
@@ -212,6 +217,7 @@ def _atomic_requirements(
     bi: dict[str, Any],
     origin: dict[str, Any],
     item_number: Any,
+    allow_bi_fallback: bool = True,
 ) -> list[dict[str, Any]]:
     supplied = raw_item.get("requisitos_atomicos") or raw_item.get("requisitos_tecnicos")
     if isinstance(supplied, list) and supplied:
@@ -225,6 +231,9 @@ def _atomic_requirements(
             for index, value in enumerate(supplied, start=1)
             if isinstance(value, (dict, str))
         ]
+
+    if not allow_bi_fallback:
+        return []
 
     requirements: list[dict[str, Any]] = []
     for field, value in _flatten_features(bi).items():
@@ -269,7 +278,11 @@ def _normalize_requirement(
     item_number: Any,
 ) -> dict[str, Any]:
     payload = requirement if isinstance(requirement, dict) else {"texto_original": requirement}
-    source = _mapping(payload.get("origem") or payload.get("fonte")) or default_origin
+    direct_evidences = payload.get("evidencias") if isinstance(payload.get("evidencias"), list) else []
+    source = _mapping(payload.get("origem") or payload.get("fonte")) or (
+        {**default_origin, **direct_evidences[0]} if direct_evidences and isinstance(direct_evidences[0], dict)
+        else default_origin
+    )
     return {
         "id": _value(payload.get("id")) or _requirement_id(item_number, index),
         "texto_original": _first(payload, "texto_original", "texto", "trecho"),
@@ -281,7 +294,9 @@ def _normalize_requirement(
         "unidade": _value(payload.get("unidade")),
         "alternativas": payload.get("alternativas"),
         "valores": payload.get("valores"),
-        "operador_logico": _value(payload.get("operador_logico")) or "E",
+        "operador_logico": _value(payload.get("logica") or payload.get("operador_logico")) or "E",
+        "grupo_logico": _value(payload.get("grupo_logico")),
+        "evidencias": direct_evidences,
         "obrigatorio": payload.get("obrigatorio") is not False,
         "origem": source,
         "derivado_de": _value(payload.get("derivado_de")) or "extracao_original",
@@ -434,6 +449,9 @@ def _requirement_origin(
 ) -> dict[str, Any]:
     if not isinstance(requirement, dict):
         return default
+    direct_evidences = requirement.get("evidencias")
+    if isinstance(direct_evidences, list) and direct_evidences and isinstance(direct_evidences[0], dict):
+        return {**default, **direct_evidences[0]}
     supplied = _mapping(requirement.get("origem") or requirement.get("fonte"))
     if supplied:
         return supplied
