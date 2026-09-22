@@ -28,6 +28,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.auth.models import Tenant, User
+from app.ai.usage import reset_ai_usage_context, set_ai_usage_context
 from app.jobs.models import Job, JobStatus, JobType
 from app.logs.config import logger
 
@@ -634,6 +635,7 @@ def _executar_job_upload(
     # Cada handler abre sua própria sessão de banco.
     # A sessão do request original já foi fechada quando chegamos aqui.
     db = SessionLocal()
+    usage_token = set_ai_usage_context(tenant_id, "document_processing", job_id)
 
     try:
         # ── Marca como RUNNING ────────────────────────────────────────────────
@@ -788,6 +790,7 @@ def _executar_job_upload(
             _remove_object_upload(object_key)
 
     finally:
+        reset_ai_usage_context(usage_token)
         db.close()
 
 
@@ -805,6 +808,7 @@ def _executar_job_matching(
         3. Salva resultado                           (progress: 1.0)
     """
     db = SessionLocal()
+    usage_token = set_ai_usage_context(tenant_id, "matching", job_id)
 
     try:
         if not _claim_job(db, job_id):
@@ -872,6 +876,7 @@ def _executar_job_matching(
         _retry_or_fail(db, job_id, e)
 
     finally:
+        reset_ai_usage_context(usage_token)
         db.close()
 
 
@@ -890,6 +895,7 @@ def _executar_job_crm_notice_match(
         3. Salva o resumo do match                    (progress: 1.0)
     """
     db = SessionLocal()
+    usage_token = set_ai_usage_context(tenant_id, "crm_matching", job_id)
 
     try:
         if not _claim_job(db, job_id):
@@ -977,6 +983,7 @@ def _executar_job_crm_notice_match(
         _retry_or_fail(db, job_id, e)
 
     finally:
+        reset_ai_usage_context(usage_token)
         db.close()
 
 

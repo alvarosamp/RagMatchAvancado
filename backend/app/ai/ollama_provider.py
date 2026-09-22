@@ -4,6 +4,7 @@ import time
 from typing import Any
 
 from app.ai.embedding_provider import EmbeddingIdentity
+from app.ai.usage import measured_provider_call
 from app.logs.config import logger
 
 
@@ -34,7 +35,10 @@ class OllamaEmbeddingProvider:
             for attempt in range(self.max_attempts):
                 try:
                     batch_vectors = [
-                        list(self.client.embeddings(model=self.model, prompt=text)["embedding"])
+                        list(measured_provider_call(
+                            "ollama", self.model,
+                            lambda text=text: self.client.embeddings(model=self.model, prompt=text),
+                        )["embedding"])
                         for text in batch
                     ]
                     self._validate(batch_vectors)

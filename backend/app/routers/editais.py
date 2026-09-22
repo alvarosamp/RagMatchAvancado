@@ -29,6 +29,7 @@ from app.db.models import Edital, Requirement, Product
 from app.auth.models import User
 from app.auth.dependencies import get_current_user, require_role
 from app.jobs.queue import JobQueue
+from app.ai.usage import ai_usage_scope, measured_provider_call
 from app.logs.config import logger
 from app.core.features import require_ai_enabled
 from app.services.edital_analysis import (
@@ -430,9 +431,9 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
             from openai import OpenAI
             client = OpenAI()
             model_name = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
+            response = measured_provider_call(
+                "openai", model_name,
+                lambda: client.chat.completions.create(model=model_name, messages=messages),
             )
             return response.choices[0].message.content.strip(), model_name
         except Exception as e:
@@ -447,14 +448,20 @@ def _call_llm_chat(messages: list[dict], model: str) -> tuple[str, str]:
             client = ollama.Client(host=ollama_host)
 
             try:
-                resp = client.chat(model=ollama_model, messages=messages)
+                resp = measured_provider_call(
+                    "ollama", ollama_model,
+                    lambda: client.chat(model=ollama_model, messages=messages),
+                )
             except ollama.ResponseError as e:
                 if e.status_code == 404:
                     # Modelo não encontrado — tenta puxar e reinicia uma vez.
                     logger.info("[Chat] Modelo '%s' não encontrado, iniciando pull...", ollama_model)
                     client.pull(ollama_model)
                     logger.info("[Chat] Pull concluído, tentando novamente.")
-                    resp = client.chat(model=ollama_model, messages=messages)
+                    resp = measured_provider_call(
+                        "ollama", ollama_model,
+                        lambda: client.chat(model=ollama_model, messages=messages),
+                    )
                 else:
                     raise
 
@@ -517,7 +524,8 @@ def chat_edital(
     messages.append({"role": "user", "content": req.question})
 
     # 4. Chama o LLM
-    answer, model_used = _call_llm_chat(messages, req.model)
+    with ai_usage_scope(current_user.tenant.slug, "edital_chat"):
+        answer, model_used = _call_llm_chat(messages, req.model)
 
     logger.info(
         "[Chat] edital=%s | modelo=%s | chunks=%s | pergunta=%.60s",

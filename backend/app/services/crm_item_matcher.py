@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
+from app.ai.usage import track_user_ai_usage
 from app.core.features import AI_FEATURES_ENABLED, CRM_MATCH_USE_LLM, ai_feature_enabled
 from app.crm.models import (
     CrmCatalogProduct,
@@ -46,6 +47,7 @@ def _remember_lpu_version(product: CrmNoticeProduct, catalog: CrmCatalogProduct)
     product.catalog_lpu_version = getattr(catalog, "lpu_version", None)
 
 
+@track_user_ai_usage("crm_matching")
 def run_notice_item_match(
     db: Session,
     current_user: User,

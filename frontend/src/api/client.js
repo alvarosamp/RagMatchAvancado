@@ -95,6 +95,7 @@ export const jobsApi = {
 
 export const opsApi = {
   summary: () => api.get('/ops/summary'),
+  aiUsage: () => api.get('/ops/ai-usage'),
 }
 
 export const reportsApi = {

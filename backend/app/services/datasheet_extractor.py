@@ -16,6 +16,7 @@ import os
 import re
 
 import ollama
+from app.ai.usage import measured_provider_call
 
 try:
     from json_repair import repair_json
@@ -112,13 +113,16 @@ def extract_specs_from_pdf(pdf_bytes: bytes, filename: str = "datasheet.pdf") ->
         return result
 
     try:
-        response = _ollama_client.chat(
-            model=_OLLAMA_MODEL,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": f"Texto do datasheet ({filename}):\n\n{text}"},
-            ],
-            options={"temperature": 0.1},
+        response = measured_provider_call(
+            "ollama", _OLLAMA_MODEL,
+            lambda: _ollama_client.chat(
+                model=_OLLAMA_MODEL,
+                messages=[
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Texto do datasheet ({filename}):\n\n{text}"},
+                ],
+                options={"temperature": 0.1},
+            ),
         )
         raw = response["message"]["content"].strip()
         match = re.search(r"\{.*\}", raw, re.DOTALL)

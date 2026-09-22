@@ -122,6 +122,27 @@ serializada por tenant no PostgreSQL, evitando ultrapassar a quota em chamadas
 concorrentes. Ao esgotar o limite, a API retorna HTTP 429. Retry do mesmo job
 nao cria uma nova unidade e nao conta novamente.
 
-Esta quota limita volume de processamento, **nao** mede tokens, custo de API
-ou chamadas de chat/embeddings fora destes jobs. Medicao de consumo por
-provedor e politica de custo monetario permanecem para uma etapa posterior.
+Esta quota limita volume de processamento; nao e uma quota de tokens ou de
+custo monetario.
+
+## Telemetria de consumo dos provedores
+
+A migration `20260921_02` cria `ai_usage_events`. Cada chamada **concluida**
+de OpenAI ou Ollama dentro de um contexto de empresa grava provedor, modelo,
+operacao, `correlation_id` de job quando disponivel, duracao e contagens de
+tokens fornecidas pelo proprio provedor. Prompts, respostas e dados do cliente
+nao sao persistidos nessa tabela. Se o provedor nao informar tokens, os campos
+ficam nulos; nao ha estimativa artificial nem conversao automatica em dinheiro.
+
+O contexto cobre jobs de upload/processamento, matching legado, matching CRM,
+chat de edital, extracao de datasheet e matching CRM sincrono. A contagem de
+embeddings Ollama depende de o retorno do provedor incluir contadores. Chamadas
+fora desses fluxos nao sao incluidas no painel. A persistencia e best-effort
+e usa sessao independente para que falhas de telemetria nao quebrem a inferencia
+ou sejam revertidas por rollback do job.
+
+`GET /ops/ai-usage` exige papel `admin`, filtra pelo tenant autenticado e
+resume o mes UTC por provedor, modelo e operacao. A tela Configuracoes exibe
+os totais e destaca chamadas sem contagem completa. Falhas de chamada ao
+provedor nao entram na contagem; a observabilidade de falhas continua no
+painel de Jobs. Esta medicao ainda nao aplica limite de tokens ou custos.

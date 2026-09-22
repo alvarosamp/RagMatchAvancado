@@ -28,6 +28,7 @@ from app.auth.models import User
 from app.db.models import Product
 from app.db.session import get_db
 from app.core.features import require_ai_enabled
+from app.ai.usage import ai_usage_scope
 from app.logs.config import logger
 from app.services.attribute_parsers import compare_product_specs
 from app.services.competitive_intelligence import build_competitive_intelligence
@@ -52,7 +53,8 @@ async def extract_datasheet(
     pdf_bytes = await file.read()
     logger.info("[Datasheets] Extraindo specs | arquivo=%s | tenant=%s", file.filename, current_user.tenant_id)
 
-    extracted = extract_specs_from_pdf(pdf_bytes, filename=file.filename)
+    with ai_usage_scope(current_user.tenant.slug, "datasheet_extraction"):
+        extracted = extract_specs_from_pdf(pdf_bytes, filename=file.filename)
     if not extracted["specs"]:
         raise HTTPException(
             status_code=422,
@@ -74,7 +76,8 @@ async def preview_tor_datasheet(
 
     pdf_bytes = await file.read()
     logger.info("[Datasheets] Gerando preview TOR | arquivo=%s | tenant=%s", file.filename, current_user.tenant_id)
-    extracted = extract_specs_from_pdf(pdf_bytes, filename=file.filename)
+    with ai_usage_scope(current_user.tenant.slug, "datasheet_extraction"):
+        extracted = extract_specs_from_pdf(pdf_bytes, filename=file.filename)
     preview = build_tor_datasheet_preview(extracted, pn_tor=pn_tor, category=category)
     return {"preview": preview, "extracted": extracted}
 

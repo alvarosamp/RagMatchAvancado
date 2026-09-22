@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 from app.core.ml_config import get_ml_config
+from app.ai.usage import measured_provider_call
 from app.logs.config import logger
 
 STOPWORDS = {
@@ -216,7 +217,10 @@ PRODUTO DO CATALOGO:
 Titulo: {candidate_title}
 Detalhes: {candidate_text}
 """.strip()
-        response = client.generate(model=LLM_MODEL, prompt=prompt, options={"temperature": 0.0})
+        response = measured_provider_call(
+            "ollama", LLM_MODEL,
+            lambda: client.generate(model=LLM_MODEL, prompt=prompt, options={"temperature": 0.0}),
+        )
         raw = response.get("response") if isinstance(response, dict) else getattr(response, "response", "")
         if not raw:
             return None

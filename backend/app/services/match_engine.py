@@ -36,6 +36,7 @@ _OLLAMA_HOST   = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 _ollama_client = ollama.Client(host=_OLLAMA_HOST)
 
 from app.db.models import MatchingResult, MatchStatus, Product, Requirement
+from app.ai.usage import measured_provider_call
 from app.vector.pgvector_store import search_similar
 from app.logs.config import logger
 from app.services.attribute_parsers import classify_field, compare_attribute, extract_number
@@ -626,13 +627,16 @@ Avalie se o produto atende ao requisito e retorne o JSON solicitado.
 """
 
     try:
-        response = _ollama_client.chat(
-            model    = LLM_MODEL,
-            messages = [
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user",   "content": user_msg},
-            ],
-            options = {"temperature": 0.1},   # temperatura baixa = respostas mais determinísticas
+        response = measured_provider_call(
+            "ollama", LLM_MODEL,
+            lambda: _ollama_client.chat(
+                model    = LLM_MODEL,
+                messages = [
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_msg},
+                ],
+                options = {"temperature": 0.1},   # temperatura baixa = respostas mais determinísticas
+            ),
         )
         raw = response["message"]["content"].strip()
 

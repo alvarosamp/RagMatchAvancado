@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { authApi } from '../api/client'
+import { authApi, opsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 
@@ -44,6 +44,8 @@ export default function Configuracoes() {
   const [quota, setQuota] = useState(null)
   const [quotaInput, setQuotaInput] = useState('')
   const [quotaSaving, setQuotaSaving] = useState(false)
+  const [aiUsage, setAiUsage] = useState(null)
+  const [aiUsageError, setAiUsageError] = useState(false)
 
   useEffect(() => {
     if (user?.role !== 'admin') return
@@ -53,6 +55,13 @@ export default function Configuracoes() {
         setQuotaInput(data.monthly_job_limit == null ? '' : String(data.monthly_job_limit))
       })
       .catch(() => toast({ type: 'error', message: 'Nao foi possivel carregar a quota de jobs.' }))
+  }, [user?.role])
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return
+    opsApi.aiUsage()
+      .then(({ data }) => setAiUsage(data))
+      .catch(() => setAiUsageError(true))
   }, [user?.role])
 
   const saveQuota = async () => {
@@ -147,6 +156,40 @@ export default function Configuracoes() {
             </button>
           </div>
           <p className="text-xs text-gray-500">Vazio = sem limite; 0 = bloquear novos jobs. Reenvios idempotentes e retries do mesmo job não contam novamente.</p>
+        </Section>
+      )}
+
+      {user?.role === 'admin' && (
+        <Section title="Consumo de IA" description="Chamadas concluídas no mês UTC, somente desta empresa">
+          {aiUsageError && <p className="text-xs text-red-400">Não foi possível carregar o consumo de IA.</p>}
+          {!aiUsage && !aiUsageError && <p className="text-xs text-gray-500">Carregando consumo...</p>}
+          {aiUsage && (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-300">
+                <span className="font-semibold text-white">{aiUsage.total_calls}</span> chamadas ·{' '}
+                {aiUsage.input_tokens_reported.toLocaleString('pt-BR')} tokens de entrada ·{' '}
+                {aiUsage.output_tokens_reported.toLocaleString('pt-BR')} tokens de saída
+              </p>
+              {aiUsage.calls_without_token_counts > 0 && (
+                <p className="text-xs text-amber-400">
+                  {aiUsage.calls_without_token_counts} chamada(s) sem contagem completa de tokens; os totais podem estar incompletos.
+                </p>
+              )}
+              {aiUsage.groups.length === 0 ? (
+                <p className="text-xs text-gray-500">Nenhuma chamada registrada neste mês.</p>
+              ) : (
+                <div className="space-y-1 text-xs font-mono">
+                  {aiUsage.groups.map((group) => (
+                    <div key={`${group.provider}:${group.model}:${group.operation}`} className="flex justify-between gap-2 text-gray-400">
+                      <span className="truncate">{group.operation} · {group.provider}/{group.model}</span>
+                      <span className="shrink-0 text-white">{group.calls} chamadas</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-500">Sem estimativa de custo. Tokens ausentes não são estimados.</p>
+            </div>
+          )}
         </Section>
       )}
 
