@@ -846,13 +846,16 @@ def run_import(path: Path, *, context_override: ImportContext | None = None) -> 
     if not path.exists():
         raise FileNotFoundError(f"Planilha nao encontrada em {path}")
 
-    from app.db.init_db import init_db
-    from app.db.session import SessionLocal
+    from app.db.session import SessionLocal, set_tenant_context
 
     db = SessionLocal()
     try:
-        init_db(db)
+        if os.getenv("APP_ENV", "development").lower() not in {"prod", "production"}:
+            from app.db.init_db import init_db
+
+            init_db(db)
         context = context_override or ensure_context(db)
+        set_tenant_context(db, context.tenant.id)
         analyzed_sheet = detect_analyzed_sheet_rows(path)
         if analyzed_sheet is not None:
             sheet_name, rows = analyzed_sheet

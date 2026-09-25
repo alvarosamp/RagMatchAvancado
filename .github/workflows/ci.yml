@@ -122,6 +122,15 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Build embedded CRM from the pinned revision
+        run: |
+          CRM_COMMIT="$(git rev-parse HEAD:bid-buddy)"
+          git clone https://github.com/LuizH-Paiva/bid-buddy.git /tmp/bid-buddy
+          git -C /tmp/bid-buddy checkout --detach "$CRM_COMMIT"
+          npm ci --prefix /tmp/bid-buddy
+          npm run build:embed --prefix /tmp/bid-buddy
+          rm -rf frontend/public/crm
+          cp -a /tmp/bid-buddy/dist-embed frontend/public/crm
       - name: Check embedded CRM assets
         run: test -f frontend/public/crm/index.html
       - name: Install frontend dependencies
@@ -221,6 +230,22 @@ jobs:
             dockerfile: ./mlflow/Dockerfile
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: matrix.image_name == 'ragmatch-frontend'
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build embedded CRM from the pinned revision
+        if: matrix.image_name == 'ragmatch-frontend'
+        run: |
+          CRM_COMMIT="$(git rev-parse HEAD:bid-buddy)"
+          git clone https://github.com/LuizH-Paiva/bid-buddy.git /tmp/bid-buddy
+          git -C /tmp/bid-buddy checkout --detach "$CRM_COMMIT"
+          npm ci --prefix /tmp/bid-buddy
+          npm run build:embed --prefix /tmp/bid-buddy
+          rm -rf frontend/public/crm
+          cp -a /tmp/bid-buddy/dist-embed frontend/public/crm
       - uses: docker/setup-buildx-action@v3
       - name: Validate Docker Hub secrets
         run: |

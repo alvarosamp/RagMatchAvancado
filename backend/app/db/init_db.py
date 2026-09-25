@@ -15,6 +15,7 @@ def init_db(db: Session) -> dict:
     import app.auth.models  # noqa: F401
     import app.crm.models  # noqa: F401
     import app.jobs.models  # noqa: F401
+    import app.integrations.bling.models  # noqa: F401
 
     try:
         ensure_pgvector_extension(db)

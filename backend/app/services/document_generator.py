@@ -16,7 +16,13 @@ from docx.oxml import OxmlElement
 from docx.table import Table
 from docx.oxml.ns import qn
 
-from app.services.proposal_generator import DEFAULT_COMPANY, build_notice_proposal_docx, proposal_line_products, proposal_line_unit_price
+from app.services.proposal_generator import (
+    DEFAULT_COMPANY,
+    build_notice_proposal_docx,
+    proposal_line_products,
+    proposal_line_quantity,
+    proposal_line_unit_price,
+)
 
 
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
@@ -84,7 +90,7 @@ def generation_preview(notice: Any, template_id: str, company: dict[str, Any], o
     ]
     if template_id in {"commercial_proposal", "feasibility_declaration"}:
         for product in proposal_line_products(notice):
-            if getattr(product, "quantity", None) is None:
+            if proposal_line_quantity(notice, product) is None:
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.quantity")
             if template_id == "commercial_proposal" and proposal_line_unit_price(notice, product) is None:
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.unit_price")

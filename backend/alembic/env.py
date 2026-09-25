@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import app.auth.models
+import app.crm.models
+import app.jobs.models  # noqa: F401
+import app.integrations.bling.models  # noqa: F401
 from alembic import context
 from app.db.models import Base
 from app.db.session import engine

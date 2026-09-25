@@ -23,18 +23,18 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+      DB_USER: ${APP_DB_USER:-ragmatch_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_NAME: ${POSTGRES_DB:-edital_matcher}
       AUTH_TYPE: scram-sha-256
       POOL_MODE: transaction
       DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
       MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
     depends_on:
-      db:
-        condition: service_healthy
+      db-bootstrap:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-edital_matcher}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${APP_DB_USER:-ragmatch_app} -d ${POSTGRES_DB:-edital_matcher}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,7 +50,8 @@ services:
     expose:
       - "8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@pgbouncer:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
       REDIS_URL: redis://redis:6379/0
@@ -84,6 +85,8 @@ services:
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-1}
       SMTP_USE_SSL: ${SMTP_USE_SSL:-0}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15}
+      SMTP_LOCAL_HOSTNAME: ${SMTP_LOCAL_HOSTNAME:-}
       PASSWORD_RESET_URL_BASE: ${PASSWORD_RESET_URL_BASE:-}
       PASSWORD_RESET_EXPIRE_MINUTES: ${PASSWORD_RESET_EXPIRE_MINUTES:-30}
       MAX_PDF_UPLOAD_BYTES: ${MAX_PDF_UPLOAD_BYTES:-52428800}
@@ -94,6 +97,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
       mlflow:
         condition: service_started
       redis:
@@ -103,6 +108,8 @@ services:
       ollama-setup:
         condition: service_completed_successfully
       migrate:
+        condition: service_completed_successfully
+      db-bootstrap:
         condition: service_completed_successfully
     labels:
       - "traefik.enable=true"
@@ -124,7 +131,8 @@ services:
       - ./data:/data
       - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
       REDIS_URL: redis://redis:6379/0
@@ -154,6 +162,8 @@ services:
         condition: service_completed_successfully
       migrate:
         condition: service_completed_successfully
+      db-bootstrap:
+        condition: service_completed_successfully
     command: dramatiq app.jobs.tasks --queues edital-processing,matching --processes 1 --threads ${WORKER_THREADS:-2}
     networks:
       - app-internal
@@ -165,7 +175,8 @@ services:
       - ./data:/data
       - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
       REDIS_URL: redis://redis:6379/0
@@ -192,6 +203,8 @@ services:
         condition: service_completed_successfully
       migrate:
         condition: service_completed_successfully
+      db-bootstrap:
+        condition: service_completed_successfully
     command: dramatiq app.jobs.tasks --queues ai-inference --processes ${AI_WORKER_PROCESSES:-1} --threads ${AI_WORKER_THREADS:-1}
     networks:
       - app-internal
@@ -200,7 +213,8 @@ services:
     image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
       PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
       EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
@@ -212,8 +226,8 @@ services:
       JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
       JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
     depends_on:
-      db:
-        condition: service_healthy
+      db-bootstrap:
+        condition: service_completed_successfully
     command: python -m app.scheduler
     networks:
       - app-internal
@@ -278,11 +292,27 @@ services:
     image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
     depends_on:
       db:
         condition: service_healthy
-    command: alembic upgrade head
+    command: python scripts/migrate_database.py
+    networks:
+      - app-internal
+
+  db-bootstrap:
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+      APP_DB_USER: ${APP_DB_USER:-ragmatch_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: python scripts/provision_app_role.py
     networks:
       - app-internal
 

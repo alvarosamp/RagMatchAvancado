@@ -4,17 +4,45 @@ import os
 import threading
 import time
 
-from sqlalchemy.orm import Session
-
 from app.core.features import AI_FEATURES_ENABLED
 from app.logs.config import logger
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 
 def register_startup_tasks(app) -> None:
     @app.on_event("startup")
     def on_startup():
-        _init_database()
+        if os.getenv("APP_ENV", "development").lower() in {"prod", "production"}:
+            _validate_production_database()
+        else:
+            _init_database()
         _start_warmup_thread()
+
+
+def _validate_production_database() -> None:
+    """Fail closed if migrations, RLS, or the runtime role are misconfigured."""
+    from app.db.rls import RLS_TABLES
+    from app.db.session import engine
+
+    with engine.connect() as connection:
+        role = connection.execute(text(
+            "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user"
+        )).one()
+        if role.rolsuper or role.rolbypassrls:
+            raise RuntimeError("Conta da aplicação ignora RLS; use APP_DB_USER sem privilégios administrativos.")
+
+        tables = connection.execute(text(
+            "SELECT relname, relrowsecurity, relforcerowsecurity "
+            "FROM pg_class WHERE relnamespace = 'public'::regnamespace "
+            "AND relname = ANY(:tables)"
+        ), {"tables": list(RLS_TABLES)}).all()
+        if {row.relname for row in tables} != set(RLS_TABLES) or any(
+            not row.relrowsecurity or not row.relforcerowsecurity for row in tables
+        ):
+            raise RuntimeError("Migração de isolamento incompleta: RLS das tabelas de tenant não está ativo.")
+
+    logger.info("Banco de produção validado: conta restrita e RLS ativo.")
 
 
 def _init_database() -> None:

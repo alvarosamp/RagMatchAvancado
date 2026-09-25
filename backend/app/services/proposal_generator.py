@@ -163,17 +163,57 @@ def _components_by_parent(products: list[Any]) -> dict[str, list[Any]]:
 
 def proposal_line_products(notice: Any) -> list[Any]:
     """Products that represent one proposal line; kit components never become extra lines."""
+    products = list(getattr(notice, "notice_products", []) or [])
+    products_by_id = {getattr(product, "id", None): product for product in products}
+    won_products = [
+        products_by_id.get(getattr(result, "notice_product_id", None))
+        or getattr(result, "notice_product", None)
+        for result in getattr(notice, "notice_item_results", []) or []
+        if getattr(getattr(result, "winner_type", None), "value", getattr(result, "winner_type", None)) == "us"
+    ]
+    candidates = won_products or [
+        product
+        for product in products
+        if getattr(product, "id", None) not in {
+            getattr(result, "notice_product_id", None)
+            for result in getattr(notice, "notice_item_results", []) or []
+            if getattr(getattr(result, "winner_type", None), "value", getattr(result, "winner_type", None)) != "us"
+        }
+    ]
     return [
         product
-        for product in getattr(notice, "notice_products", []) or []
+        for product in candidates
+        if product is not None
         if not _is_kit_component(product) and getattr(product, "selected_for_dispute", True) is not False
     ]
 
 
 def proposal_line_unit_price(notice: Any, product: Any) -> Any:
+    result = _our_result_for_product(notice, product)
+    if result is not None and getattr(result, "winning_price", None) is not None:
+        return getattr(result, "winning_price")
     products = list(getattr(notice, "notice_products", []) or [])
     components = _components_by_parent(products).get(str(getattr(product, "id", "")), [])
     return composition_unit_price(product, components)
+
+
+def proposal_line_quantity(notice: Any, product: Any) -> Any:
+    result = _our_result_for_product(notice, product)
+    if result is not None and getattr(result, "winning_quantity", None) is not None:
+        return getattr(result, "winning_quantity")
+    return getattr(product, "quantity", None)
+
+
+def _our_result_for_product(notice: Any, product: Any) -> Any | None:
+    product_id = getattr(product, "id", None)
+    for result in getattr(notice, "notice_item_results", []) or []:
+        winner_type = getattr(result, "winner_type", None)
+        if (
+            getattr(winner_type, "value", winner_type) == "us"
+            and getattr(result, "notice_product_id", None) == product_id
+        ):
+            return result
+    return None
 
 
 def composition_unit_price(product: Any, components: list[Any] | None = None) -> Any:

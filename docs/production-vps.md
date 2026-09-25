@@ -3,12 +3,12 @@
 Este guia considera a VPS Hostinger atual, que já usa Docker Compose e Traefik.
 O Traefik é o único serviço público nas portas 80/443; não instale Caddy.
 
-## Primeiro deploy
+## Atualização da VPS existente
 
-1. Faça um snapshot no hPanel antes de qualquer mudança.
+1. Faça um snapshot no hPanel antes de qualquer mudança em uma base existente.
 2. No diretório `/docker/sistemator`, mantenha as variáveis existentes e adicione
-   as novas variáveis do `.env.prod.example`. `APP_DOMAIN`, `APP_SUBDOMAIN` e
-   `APP_INTERNAL_NETWORK=sistemator_app-internal` preservam o roteamento atual.
+   as novas variáveis do `.env.prod.example`. Confira `APP_DOMAIN`, `API_DOMAIN`
+   e a rede externa `traefik-proxy` antes de substituir o Compose atual.
 3. Atualize o `docker-compose.yml` com a versão de produção e valide com
    `docker compose config -q`.
 4. Execute `docker compose pull` e depois `docker compose up -d --remove-orphans`.
@@ -16,7 +16,7 @@ O Traefik é o único serviço público nas portas 80/443; não instale Caddy.
 
 O frontend não publica portas no host: o Traefik o acessa pela rede externa
 `traefik-proxy`. PostgreSQL, Redis, MinIO, MLflow e Ollama não têm portas
-públicas. O serviço `ollama-init` baixa
+públicas. O serviço `ollama-setup` baixa
 `nomic-embed-text` e `llama3.2:1b` uma única vez no volume persistente antes de
 API e workers iniciarem.
 
@@ -30,6 +30,8 @@ Configure `SMTP_*` e `PASSWORD_RESET_URL_BASE` antes de disponibilizar a
 recuperação de senha. O link expira em 30 minutos por padrão, é de uso único e
 somente o hash do token fica no banco. Alterar ou redefinir a senha incrementa a
 versão de autenticação do usuário e invalida todas as sessões anteriores.
+Para Google Workspace, siga o procedimento de relay por IP e o teste operacional
+em `docs/google-workspace-smtp-relay.md`.
 
 O importador legado não contém mais senha padrão. Se ele precisar criar a conta
 técnica durante uma migração, defina `SALES_IMPORT_BOOTSTRAP_PASSWORD` apenas
@@ -53,9 +55,36 @@ a migration e suba todos com a mesma versão logo depois.
 As tabelas `editais` e `jobs` usam `FORCE ROW LEVEL SECURITY`. A autenticação grava
 o ID do tenant na transação PostgreSQL e o contexto é reaplicado depois de cada
 commit, inclusive com PgBouncer em modo `transaction`. Sem esse contexto, consultas
-e gravações nessas tabelas não retornam nem aceitam linhas. As tabelas CRM continuam
-com os filtros explícitos atuais e devem receber RLS em uma migration posterior,
-depois de adaptar cada rotina global/scheduler.
+e gravações nessas tabelas não retornam nem aceitam linhas. A migration
+`20260922_01` aplica a mesma política às 20 tabelas CRM com `tenant_id`; a revisão
+`20260922_02` cobre outras sete tabelas de documentos, importação, decisões e
+auditoria. O monitor de e-mails agendado agora processa cada tenant em seu próprio
+contexto; a execução manual pela API permanece restrita ao tenant autenticado e
+não marca mensagens como lidas na caixa compartilhada. Tabelas filhas sem
+`tenant_id` direto ainda exigem auditoria de acesso por vínculo com o registro-pai.
+`users` e tokens de recuperação também permanecem fora do RLS, pois a autenticação
+precisa resolver o usuário antes de definir o contexto do tenant.
+
+Defina `APP_DB_USER` e `APP_DB_PASSWORD` no `.env.prod`, com credenciais diferentes
+de `POSTGRES_USER`/`POSTGRES_PASSWORD`. No Compose de produção, `migrate` usa a conta
+administrativa; `db-bootstrap` cria/atualiza a conta restrita após a migration e
+concede apenas DML nas tabelas e uso das sequências. API, PgBouncer, workers e
+scheduler usam a conta restrita. Não execute esses processos com `postgres` nem
+conceda `SUPERUSER` ou `BYPASSRLS` à conta da aplicação. O startup da API agora
+verifica esses atributos e o RLS e falha se estiverem incorretos; ele não modifica
+mais o esquema em produção. Em desenvolvimento, a inicialização automática atual
+continua disponível. A senha é passada por `PGPASSWORD`, sem interpolação na
+`DATABASE_URL`; use uma senha forte com caracteres especiais normalmente.
+
+O serviço `migrate` distingue banco existente de banco totalmente vazio. No banco
+existente, executa `alembic upgrade head`. No vazio, cria o esquema a partir do
+snapshot atual dos modelos, habilita as políticas RLS e marca a revisão
+`20260922_02`. Esse caminho é deliberadamente fixado nessa revisão: quando uma
+nova migration virar `head`, o bootstrap recusará um banco vazio até o snapshot
+ser atualizado e testado. Não aponte o bootstrap para um banco parcialmente
+inicializado. O RLS também não substitui autorização na API: quem consegue executar
+SQL arbitrário com a conta da aplicação pode definir o parâmetro de tenant da
+própria transação.
 
 ## Backups
 

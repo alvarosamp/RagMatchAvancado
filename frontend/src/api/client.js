@@ -140,6 +140,20 @@ export const marketApi = {
   profile: () => api.get('/market/profile'),
 }
 
+export const blingApi = {
+  status: () => api.get('/integrations/bling/status'),
+  saveCredentials: (payload) => api.put('/integrations/bling/credentials', payload),
+  disconnect: () => api.delete('/integrations/bling/credentials'),
+  startOAuth: () => api.post('/integrations/bling/oauth/start'),
+  createSalesOrder: (payload) => api.post('/integrations/bling/sales-orders', payload),
+  createInvoiceFromOrder: (orderId) =>
+    api.post(`/integrations/bling/sales-orders/${orderId}/invoice`),
+  authorizeInvoice: (invoiceId, sendEmail = false) =>
+    api.post(`/integrations/bling/invoices/${invoiceId}/authorize`, null, {
+      params: { sendEmail },
+    }),
+}
+
 export const bidRobotApi = {
   listSessions: () => api.get('/bid-robot/sessions'),
   createSession: (payload) => api.post('/bid-robot/sessions', payload),

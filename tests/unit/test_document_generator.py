@@ -93,6 +93,32 @@ def test_preview_reports_missing_quantity_without_turning_it_into_zero():
     assert "items.1.quantity" in preview["missing_fields"]
 
 
+def test_preview_validates_only_won_items_and_uses_result_values():
+    notice, company, options = _fixture()
+    won_product = notice.notice_products[0]
+    won_product.quantity = None
+    won_product.unit_price = None
+    lost_product = SimpleNamespace(
+        id="p2", item_number="2", description="Item perdido", quantity=None,
+        unit="UN", unit_price=None, selected_for_dispute=True, catalog_product=None,
+    )
+    notice.notice_products.append(lost_product)
+    notice.notice_item_results = [
+        SimpleNamespace(
+            notice_product_id="p1", notice_product=won_product, winner_type="us",
+            winning_quantity=3, winning_price=175.0,
+        ),
+        SimpleNamespace(
+            notice_product_id="p2", notice_product=lost_product, winner_type="competitor",
+            winning_quantity=None, winning_price=None,
+        ),
+    ]
+
+    preview = generation_preview(notice, "commercial_proposal", company, options)
+
+    assert preview["missing_fields"] == []
+
+
 def test_selected_signer_overrides_the_default_representative_in_a_proposal():
     notice, _, options = _fixture()
     options["signer"] = {"name": "Joana Oliveira", "cpf": "987.654.321-00", "role": "Diretora Comercial"}

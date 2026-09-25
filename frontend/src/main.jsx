@@ -34,6 +34,7 @@ const OpportunityRadar = lazy(() => import('./pages/OpportunityRadar'))
 const CompetitiveIntelligence = lazy(() => import('./pages/CompetitiveIntelligence'))
 const BidRobot = lazy(() => import('./pages/BidRobot'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const BlingIntegration = lazy(() => import('./pages/BlingIntegration'))
 const CrmHub = lazy(() => import('./pages/CrmHub'))
 const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
@@ -83,7 +84,8 @@ createRoot(document.getElementById('root')).render(
             <Route path="/robo-lances"            element={<PrivateRoute><BidRobot /></PrivateRoute>} />
             <Route path="/pos-vitoria"            element={<PrivateRoute><ProcurementExpansion moduleId="post_award" /></PrivateRoute>} />
             <Route path="/onboarding-planos"      element={<PrivateRoute><ProcurementExpansion moduleId="onboarding_plans" /></PrivateRoute>} />
-            <Route path="/integracoes"            element={<PrivateRoute><ProcurementExpansion moduleId="integrations" /></PrivateRoute>} />
+            <Route path="/integracoes"            element={<PrivateRoute><BlingIntegration /></PrivateRoute>} />
+            <Route path="/integracoes/bling"      element={<PrivateRoute><BlingIntegration /></PrivateRoute>} />
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />
             <Route path="/jobs"                   element={AI_FEATURES_ENABLED ? <PrivateRoute><Jobs /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
             <Route path="/analytics"              element={<PrivateRoute><Analytics     /></PrivateRoute>} />

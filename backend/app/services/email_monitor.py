@@ -12,8 +12,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.auth.models import Tenant
 from app.crm.models import CrmNotice, CrmNoticeHistory
-from app.db.session import SessionLocal
+from app.db.session import SessionLocal, set_tenant_context
 from app.logs.config import logger
 
 
@@ -30,7 +31,8 @@ def run_email_monitor_once(db: Session, *, limit: int | None = None) -> dict[str
     only_unseen = os.getenv("EMAIL_MONITOR_ONLY_UNSEEN", "1").lower() in {"1", "true", "yes", "sim"}
     processed = 0
     matched = 0
-    notices = _load_candidate_notices(db)
+    messages: list[Message] = []
+    processed_ids: list[bytes] = []
 
     with _connect_imap() as client:
         client.select(mailbox)
@@ -39,19 +41,36 @@ def run_email_monitor_once(db: Session, *, limit: int | None = None) -> dict[str
             return {"configured": True, "processed": 0, "matched": 0, "message": "Nao foi possivel buscar mensagens no IMAP."}
         ids = (data[0] or b"").split()[-limit:]
         for message_id in ids:
-            status, payload = client.fetch(message_id, "(RFC822)")
+            status, payload = client.fetch(message_id, "(BODY.PEEK[])")
             if status != "OK" or not payload:
                 continue
             raw = next((part[1] for part in payload if isinstance(part, tuple)), None)
             if not raw:
                 continue
             processed += 1
-            msg = email.message_from_bytes(raw)
-            match = _match_message_to_notice(db, msg, notices)
-            if match is not None:
-                matched += 1
-                _record_message(db, match, msg)
-    db.commit()
+            processed_ids.append(message_id)
+            messages.append(email.message_from_bytes(raw))
+        scoped_tenant_id = db.info.get("tenant_id")
+        tenant_ids = (
+            [scoped_tenant_id]
+            if scoped_tenant_id is not None
+            else [row.id for row in db.query(Tenant).filter(Tenant.is_active.is_(True)).all()]
+        )
+        for tenant_id in tenant_ids:
+            set_tenant_context(db, tenant_id)
+            notices = _load_candidate_notices(db)
+            for msg in messages:
+                match = _match_message_to_notice(db, msg, notices)
+                if match is not None:
+                    matched += 1
+                    _record_message(db, match, msg)
+            db.commit()
+
+        # Manual runs are scoped to one tenant and must not consume messages
+        # before the scheduler has checked the other tenants.
+        if scoped_tenant_id is None and tenant_ids and only_unseen:
+            for message_id in processed_ids:
+                client.store(message_id, "+FLAGS", "\\Seen")
     return {"configured": True, "processed": processed, "matched": matched}
 
 
