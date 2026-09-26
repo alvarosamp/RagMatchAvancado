@@ -110,13 +110,21 @@ class ConlicitacaoClient:
         return self._validate(ConlicitacaoBulletin, body)
 
     async def get_monitored_biddings(
-        self, *, page: int = 1, per_page: int = 15, correlation_id: str | None = None
+        self,
+        *,
+        page: int = 1,
+        per_page: int = 15,
+        trading_status: int | None = None,
+        correlation_id: str | None = None,
     ) -> dict[str, Any]:
+        params: dict[str, int] = {"page": page, "per_page": per_page}
+        if trading_status is not None:
+            params["trading_status"] = trading_status
         return await self._request(
             "GET",
             "/api/monitored_biddings",
             "monitored_biddings",
-            params={"page": page, "per_page": per_page},
+            params=params,
             correlation_id=correlation_id,
         )
 

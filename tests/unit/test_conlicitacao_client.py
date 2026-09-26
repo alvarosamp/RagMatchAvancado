@@ -51,6 +51,65 @@ async def test_filters_use_auth_and_correlation_headers(caplog):
 
 
 @pytest.mark.asyncio
+async def test_all_documented_operations_follow_the_provider_contract():
+    filters = json.loads((FIXTURES / "filters.json").read_text(encoding="utf-8"))
+    bulletins = json.loads((FIXTURES / "bulletins.json").read_text(encoding="utf-8"))
+    bulletin = json.loads((FIXTURES / "bulletin.json").read_text(encoding="utf-8"))
+    captured: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.append(request)
+        responses = {
+            "/api/filtros": filters,
+            "/api/filtro/115425/boletins": bulletins,
+            "/api/boletim/44657477": bulletin,
+            "/api/monitored_biddings": {"electronics_trading": []},
+            "/api/monitored_biddings/messages": {"trading_messages": []},
+            "/api/users": {"users": []},
+            "/api/monitored_biddings/add": {"message": "Licitação monitorada!"},
+        }
+        if request.method == "DELETE":
+            return httpx.Response(200, json={"message": "Monitoramento desativado!"})
+        return httpx.Response(200, json=responses[request.url.path])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = ConlicitacaoClient(_settings(), client=http_client)
+        await client.get_filters(correlation_id="contract-test")
+        await client.list_bulletins(115425, page=2, per_page=5, order="asc")
+        await client.get_bulletin(44657477)
+        await client.get_monitored_biddings(page=3, per_page=20, trading_status=3)
+        await client.get_messages(11732752, page=4, per_page=50)
+        await client.get_users()
+        await client.start_monitoring(11732752, 564486)
+        await client.stop_monitoring(11732752, 564486)
+
+    assert [(request.method, request.url.path) for request in captured] == [
+        ("GET", "/api/filtros"),
+        ("GET", "/api/filtro/115425/boletins"),
+        ("GET", "/api/boletim/44657477"),
+        ("GET", "/api/monitored_biddings"),
+        ("GET", "/api/monitored_biddings/messages"),
+        ("GET", "/api/users"),
+        ("POST", "/api/monitored_biddings/add"),
+        ("DELETE", "/api/monitored_biddings/11732752"),
+    ]
+    assert dict(captured[1].url.params) == {"page": "2", "per_page": "5", "order": "asc"}
+    assert dict(captured[3].url.params) == {
+        "page": "3",
+        "per_page": "20",
+        "trading_status": "3",
+    }
+    assert dict(captured[4].url.params) == {
+        "bidding_id": "11732752",
+        "page": "4",
+        "per_page": "50",
+    }
+    assert json.loads(captured[6].content) == {"bidding_id": 11732752, "user_id": 564486}
+    assert dict(captured[7].url.params) == {"user_id": "564486"}
+    assert all(request.headers["x-auth-token"] == "top-secret-token" for request in captured)
+
+
+@pytest.mark.asyncio
 async def test_rate_limit_retries_with_retry_after():
     attempts = 0
     delays = []
