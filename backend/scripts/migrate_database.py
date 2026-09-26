@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.db.rls import RLS_TABLES
 from app.db.session import SessionLocal, engine
 
-BOOTSTRAP_REVISION = "20260924_01"
+BOOTSTRAP_REVISION = "20260926_01"
 
 
 def _bootstrap_empty_database(config: Config) -> None:

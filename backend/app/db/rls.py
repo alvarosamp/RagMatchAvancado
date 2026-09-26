@@ -30,6 +30,8 @@ OTHER_TENANT_RLS_TABLES = (
     "document_signature_requests",
     "import_batches",
     "opportunity_decisions",
+    "tenders",
+    "tender_sync_checkpoints",
     "user_role_audit",
 )
 

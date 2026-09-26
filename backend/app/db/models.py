@@ -1,13 +1,27 @@
-from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text,
-    Index, UniqueConstraint,
-)
-from sqlalchemy.orm import declarative_base, relationship, synonym
-from sqlalchemy.sql import func
-from pgvector.sqlalchemy import Vector
 import enum
 
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import declarative_base, relationship, synonym
+from sqlalchemy.sql import func
+
 Base = declarative_base()
+JSON_PAYLOAD = JSON().with_variant(JSONB, "postgresql")
 
 EMBEDDING_DIM = 768  # nomic-embed-text via Ollama
 
@@ -344,6 +358,75 @@ class DocumentSignatureRequest(Base):
         foreign_keys=[document_id],
     )
     signed_document = relationship("DocumentFile", foreign_keys=[signed_document_id])
+
+
+# ──────────────────────────────────────────
+# Oportunidades normalizadas de provedores externos
+# ──────────────────────────────────────────
+
+class Tender(Base):
+    """Licitação normalizada, independente do provedor de origem."""
+
+    __tablename__ = "tenders"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "provider", "external_id",
+            name="uq_tenders_tenant_provider_external_id",
+        ),
+        Index("ix_tenders_tenant_opening_at", "tenant_id", "opening_at"),
+        Index("ix_tenders_tenant_status", "tenant_id", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider = Column(String(50), nullable=False, index=True)
+    external_id = Column(String(255), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    object = Column(Text)
+    status = Column(String(100), index=True)
+    edital_number = Column(String(255), index=True)
+    process_number = Column(String(255), index=True)
+    uasg = Column(String(100), index=True)
+    public_body_name = Column(String(500), index=True)
+    public_body_city = Column(String(255), index=True)
+    public_body_state = Column(String(10), index=True)
+    opening_at = Column(DateTime)
+    proposal_deadline_at = Column(DateTime)
+    estimated_value = Column(Numeric(18, 2))
+    source_url = Column(Text)
+    raw_payload = Column(JSON_PAYLOAD, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class TenderSyncCheckpoint(Base):
+    """Último boletim concluído por tenant/filtro de um provedor."""
+
+    __tablename__ = "tender_sync_checkpoints"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "provider", "external_filter_id",
+            name="uq_tender_sync_checkpoint_tenant_provider_filter",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider = Column(String(50), nullable=False, index=True)
+    external_filter_id = Column(String(255), nullable=False)
+    last_bulletin_id = Column(String(255))
+    last_bulletin_closed_at = Column(DateTime)
+    last_synced_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 # ──────────────────────────────────────────

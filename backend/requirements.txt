@@ -32,6 +32,8 @@ reportlab
 pydantic[email]
 python-dotenv
 requests>=2.31.0
+httpx>=0.27.0
+prometheus-client>=0.20.0
 cryptography>=42.0.0
 
 # ── MLOps ─────────────────────────────────────────────────────────────────────

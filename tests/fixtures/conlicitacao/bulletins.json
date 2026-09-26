@@ -1,0 +1,7 @@
+{
+  "parameters": {"current_page": 1, "per_page": 100, "order": "desc", "total_boletins_current_page": 1},
+  "filtro": {"id": 115425, "descricao": "Filtro inicial", "total_boletins": 1},
+  "boletins": [
+    {"id": 44657477, "filtro_id": 115425, "numero_edicao": 21, "datahora_fechamento": "2020-11-12 13:01:19 -03:00"}
+  ]
+}

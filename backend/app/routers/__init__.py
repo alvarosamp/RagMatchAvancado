@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from app.auth.router import router as auth_router
-from app.jobs.router import router as jobs_router
 from app.integrations.bling.router import router as bling_router
+from app.integrations.conlicitacao.router import router as conlicitacao_router
+from app.jobs.router import router as jobs_router
 from app.routers.analysis import router as analysis_router
 from app.routers.analysis_dashboard import router as analysis_dashboard_router
 from app.routers.analytics import router as analytics_router
@@ -22,11 +23,11 @@ from app.routers.pncp import router as pncp_router
 from app.routers.reports import router as reports_router
 from app.routers.switches import router as switches_router
 
-
 ROUTERS = (
     health_router,
     auth_router,
     bling_router,
+    conlicitacao_router,
     crm_router,
     jobs_router,
     ops_router,

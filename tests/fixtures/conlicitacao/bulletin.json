@@ -1,0 +1,40 @@
+{
+  "boletim": {
+    "id": 44657477,
+    "datahora_fechamento": "2020-11-12 13:01:19 -03:00",
+    "numero_edicao": 21,
+    "quantidade_licitacoes": 1,
+    "quantidade_acompanhamentos": 0
+  },
+  "licitacoes": [
+    {
+      "orgao": {
+        "nome": "Prefeitura Municipal de Exemplo",
+        "codigo": "987683",
+        "cidade": "Cidade Exemplo",
+        "uf": "PR",
+        "endereco": "Endereco sanitizado",
+        "telefone": [],
+        "site": "https://compras.example.test"
+      },
+      "objeto": "Aquisicao de equipamentos de rede.",
+      "situacao": "NOVA",
+      "datahora_abertura": "2020-11-26 08:30:00",
+      "datahora_documento": "2020-11-25 17:00:00",
+      "datahora_retirada": "",
+      "datahora_visita": "",
+      "datahora_prazo": "",
+      "edital": "PE/118/2020",
+      "documento": [
+        {"filename": "edital.zip", "url": "/boletim_web/public/api/download?auth=token-sanitizado"}
+      ],
+      "processo": "123/2020",
+      "observacao": "Fixture sanitizada.",
+      "item": "Switches gerenciaveis",
+      "preco_edital": 0.0,
+      "valor_estimado": 125000.5,
+      "id": 13157470
+    }
+  ],
+  "acompanhamentos": []
+}

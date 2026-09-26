@@ -93,7 +93,7 @@ def test_compose_uses_restricted_role_for_all_runtime_processes():
 
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
-    assert 'BOOTSTRAP_REVISION = "20260924_01"' in bootstrap
+    assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap
     assert set(RLS_TABLES) == {
         "editais",
         "jobs",
@@ -122,10 +122,16 @@ def test_other_tenant_tables_have_rls_migration():
     migration = (ROOT / "backend/alembic/versions/20260922_02_other_tenant_rls.py").read_text(
         encoding="utf-8"
     )
-    assert len(OTHER_TENANT_RLS_TABLES) == 7
+    assert len(OTHER_TENANT_RLS_TABLES) == 9
     assert 'down_revision = "20260922_01"' in migration
     assert "for table in OTHER_TENANT_RLS_TABLES" in migration
     assert "FORCE ROW LEVEL SECURITY" in migration
+
+    conlicitacao_migration = (
+        ROOT / "backend/alembic/versions/20260926_01_conlicitacao_tenders.py"
+    ).read_text(encoding="utf-8")
+    assert '_enable_rls("tenders")' in conlicitacao_migration
+    assert '_enable_rls("tender_sync_checkpoints")' in conlicitacao_migration
 
 
 def test_bling_credentials_have_dedicated_rls_migration():

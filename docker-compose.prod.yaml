@@ -67,6 +67,9 @@ services:
       AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
       DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
       CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
@@ -209,6 +212,29 @@ services:
     networks:
       - app-internal
 
+  worker-conlicitacao:
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-5}
+      REDIS_URL: redis://redis:6379/0
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_BASE_URL: ${CONLICITACAO_BASE_URL:-https://consultaonline.conlicitacao.com.br}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TIMEOUT_SECONDS: ${CONLICITACAO_TIMEOUT_SECONDS:-15}
+      CONLICITACAO_SYNC_MAX_PAGES: ${CONLICITACAO_SYNC_MAX_PAGES:-10}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: dramatiq app.jobs.tasks --queues conlicitacao-sync --processes 1 --threads 1
+    networks:
+      - app-internal
+
   scheduler:
     image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
     restart: unless-stopped
@@ -225,6 +251,10 @@ services:
       JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
       JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
       JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+      REDIS_URL: redis://redis:6379/0
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
+      CONLICITACAO_SYNC_INTERVAL_SECONDS: ${CONLICITACAO_SYNC_INTERVAL_SECONDS:-300}
     depends_on:
       db-bootstrap:
         condition: service_completed_successfully

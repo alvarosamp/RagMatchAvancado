@@ -246,6 +246,44 @@ worker.executar_matching_com_tracking(edital_id="42", resultados_matching=result
 
 ## API Endpoints
 
+### Integração ConLicitação (fases 1 e 2)
+
+A integração é opcional e importa filtros/boletins para a entidade normalizada
+`Tender`. O worker dedicado usa a fila `conlicitacao-sync`; o scheduler somente
+enfileira tenants explicitamente autorizados em `CONLICITACAO_TENANT_IDS`.
+
+Variáveis principais:
+
+```env
+CONLICITACAO_ENABLED=0
+CONLICITACAO_BASE_URL=https://consultaonline.conlicitacao.com.br
+CONLICITACAO_TOKEN=
+CONLICITACAO_TIMEOUT_SECONDS=15
+CONLICITACAO_TENANT_IDS=1
+CONLICITACAO_SYNC_INTERVAL_SECONDS=300
+CONLICITACAO_SYNC_MAX_PAGES=10
+```
+
+Após aplicar `alembic upgrade head`, suba API, scheduler, Redis e o worker com:
+
+```bash
+docker compose up -d db redis migrate api scheduler worker-conlicitacao
+```
+
+Com um JWT de `admin` ou `editor`, uma sincronização manual pode ser enfileirada:
+
+```bash
+curl -X POST http://localhost:8000/integrations/conlicitacao/sync \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
+Consulta das oportunidades importadas:
+
+```bash
+curl "http://localhost:8000/integrations/tenders?provider=conlicitacao" \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
 ### Autenticação e Multi-tenant
 - **POST** `/auth/register` — cria tenant + usuário admin e retorna JWT
 - **POST** `/auth/login` — autenticação com JWT

@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,53 @@ class Settings(BaseSettings):
     postgres_host: str | None = Field(default=None, validation_alias="POSTGRES_HOST")
     postgres_port: str | None = Field(default=None, validation_alias="POSTGRES_PORT")
     market_profile: str = Field(default="public_procurement", validation_alias="MARKET_PROFILE")
+
+    # Integracao opcional com a ConLicitacao. O token permanece apenas no
+    # ambiente do processo e SecretStr evita exposicao acidental em repr/logs.
+    conlicitacao_enabled: bool = Field(
+        default=False, validation_alias="CONLICITACAO_ENABLED"
+    )
+    conlicitacao_base_url: str = Field(
+        default="https://consultaonline.conlicitacao.com.br",
+        validation_alias="CONLICITACAO_BASE_URL",
+    )
+    conlicitacao_token: SecretStr | None = Field(
+        default=None, validation_alias="CONLICITACAO_TOKEN"
+    )
+    conlicitacao_timeout_seconds: float = Field(
+        default=15.0, validation_alias="CONLICITACAO_TIMEOUT_SECONDS"
+    )
+    conlicitacao_poll_active_seconds: int = Field(
+        default=30, validation_alias="CONLICITACAO_POLL_ACTIVE_SECONDS"
+    )
+    conlicitacao_poll_idle_seconds: int = Field(
+        default=300, validation_alias="CONLICITACAO_POLL_IDLE_SECONDS"
+    )
+    conlicitacao_poll_upcoming_seconds: int = Field(
+        default=120, validation_alias="CONLICITACAO_POLL_UPCOMING_SECONDS"
+    )
+    conlicitacao_sync_interval_seconds: int = Field(
+        default=300, validation_alias="CONLICITACAO_SYNC_INTERVAL_SECONDS"
+    )
+    conlicitacao_sync_max_pages: int = Field(
+        default=10, validation_alias="CONLICITACAO_SYNC_MAX_PAGES"
+    )
+    conlicitacao_tenant_ids: str = Field(
+        default="", validation_alias="CONLICITACAO_TENANT_IDS"
+    )
+
+    @property
+    def conlicitacao_sync_tenant_ids(self) -> tuple[int, ...]:
+        values: list[int] = []
+        for raw in self.conlicitacao_tenant_ids.split(","):
+            raw = raw.strip()
+            if not raw:
+                continue
+            value = int(raw)
+            if value <= 0:
+                raise ValueError("CONLICITACAO_TENANT_IDS aceita apenas IDs positivos.")
+            values.append(value)
+        return tuple(dict.fromkeys(values))
 
     @property
     def sqlalchemy_database_url(self) -> str:

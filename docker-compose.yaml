@@ -59,6 +59,9 @@ services:
       OLLAMA_AUTO_PULL: "1"
       AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-1}
       CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
       WATCHFILES_FORCE_POLLING: "true"
       MLFLOW_TRACKING_URI: http://mlflow:5000
       SECRET_KEY: ${SECRET_KEY:-dev-secret-troque-em-producao}
@@ -146,6 +149,27 @@ services:
         condition: service_completed_successfully
     command: dramatiq app.jobs.tasks --queues ai-inference --processes 1 --threads ${AI_WORKER_THREADS:-1}
 
+  worker-conlicitacao:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/edital_matcher
+      REDIS_URL: redis://redis:6379/0
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_BASE_URL: ${CONLICITACAO_BASE_URL:-https://consultaonline.conlicitacao.com.br}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TIMEOUT_SECONDS: ${CONLICITACAO_TIMEOUT_SECONDS:-15}
+      CONLICITACAO_SYNC_MAX_PAGES: ${CONLICITACAO_SYNC_MAX_PAGES:-10}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues conlicitacao-sync --processes 1 --threads 1
+
   scheduler:
     build: ./backend
     volumes:
@@ -163,6 +187,9 @@ services:
       JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
       JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
       JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
+      CONLICITACAO_SYNC_INTERVAL_SECONDS: ${CONLICITACAO_SYNC_INTERVAL_SECONDS:-300}
     depends_on:
       db:
         condition: service_healthy

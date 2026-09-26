@@ -41,6 +41,7 @@ for mod_name in [
     "reportlab", "reportlab.lib", "reportlab.platypus",
     "sqlalchemy", "sqlalchemy.orm", "sqlalchemy.ext",
     "sqlalchemy.ext.declarative", "sqlalchemy.sql",
+    "sqlalchemy.dialects", "sqlalchemy.dialects.postgresql",
 ]:
     sys.modules.setdefault(mod_name, MagicMock())
 

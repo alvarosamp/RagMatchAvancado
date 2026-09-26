@@ -1,0 +1,15 @@
+{
+  "cliente": {"id": 2982, "razao_social": "Cliente Sanitizado Ltda."},
+  "filtros": [
+    {
+      "id": 115425,
+      "descricao": "Filtro inicial",
+      "periodos": {"manha": true, "tarde": true, "noite": true},
+      "ultimo_boletim": {
+        "id": 44657477,
+        "datahora_fechamento": "2020-11-12 13:01:19 -03:00",
+        "numero_edicao": 21
+      }
+    }
+  ]
+}
