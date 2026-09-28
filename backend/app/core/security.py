@@ -12,7 +12,7 @@ UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def configure_security(app: FastAPI) -> None:
-    allowed_hosts = [
+    configured_hosts = [
         host.strip()
         for host in os.getenv("ALLOWED_HOSTS", "").split(",")
         if host.strip()
@@ -22,6 +22,15 @@ def configure_security(app: FastAPI) -> None:
         for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
         if origin.strip()
     }
+    # Same-origin /api requests arrive through the frontend proxy with the
+    # frontend hostname. Keep older production compose files compatible by
+    # trusting the hostnames of the already-approved CSRF origins as well.
+    origin_hosts = {
+        urlparse(origin).netloc
+        for origin in trusted_origins
+        if urlparse(origin).netloc
+    }
+    allowed_hosts = list(dict.fromkeys([*configured_hosts, *sorted(origin_hosts)]))
 
     if allowed_hosts:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
