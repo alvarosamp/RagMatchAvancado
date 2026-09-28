@@ -91,6 +91,17 @@ def test_compose_uses_restricted_role_for_all_runtime_processes():
     assert "command: python scripts/migrate_database.py" in compose
 
 
+def test_production_proxy_allows_frontend_and_api_hosts():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    env_example = (ROOT / ".env.prod.example").read_text(encoding="utf-8")
+
+    assert "ALLOWED_HOSTS: ${ALLOWED_HOSTS:?" in compose
+    assert (
+        "ALLOWED_HOSTS=ragmatch.srv1934808.hstgr.cloud,"
+        "api.ragmatch.srv1934808.hstgr.cloud"
+    ) in env_example
+
+
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
     assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap

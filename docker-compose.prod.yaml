@@ -75,7 +75,9 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       REGISTER_ENABLED: ${REGISTER_ENABLED:-0}
       APP_ENV: ${APP_ENV:-production}
-      ALLOWED_HOSTS: ${API_DOMAIN:?API_DOMAIN obrigatorio}
+      # O frontend encaminha /api mantendo APP_DOMAIN no header Host; a API
+      # tambem pode ser acessada diretamente por API_DOMAIN.
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS obrigatorio (inclua APP_DOMAIN e API_DOMAIN)}
       CSRF_TRUSTED_ORIGINS: https://${APP_DOMAIN:?APP_DOMAIN obrigatorio}
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-access_token}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-1}
