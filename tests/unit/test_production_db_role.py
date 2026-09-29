@@ -118,6 +118,17 @@ def test_minio_uses_accessible_pinned_mirror_and_preserves_volume():
     assert "- minio_data:/data" in minio_service
 
 
+def test_ollama_model_download_does_not_block_production_startup():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^  ollama-setup:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|\Z)", compose)
+    assert match is not None
+    setup_service = match.group(1)
+
+    assert 'ollama pull "$$OLLAMA_EMBED_MODEL" ||' in setup_service
+    assert 'ollama pull "$$OLLAMA_MODEL" ||' in setup_service
+    assert "exit 0" in setup_service
+
+
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
     assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap
