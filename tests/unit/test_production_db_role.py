@@ -90,6 +90,12 @@ def test_compose_uses_restricted_role_for_all_runtime_processes():
     assert "command: python scripts/provision_app_role.py" in compose
     assert "command: python scripts/migrate_database.py" in compose
 
+    api_service = re.split(
+        r"\n  [a-z][a-z0-9-]*:\n", compose.split("  api:\n", 1)[1], maxsplit=1
+    )[0]
+    assert "@db:5432/" in api_service
+    assert "@pgbouncer:5432/" not in api_service
+
 
 def test_production_proxy_allows_frontend_and_api_hosts():
     compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")

@@ -50,7 +50,7 @@ services:
     expose:
       - "8000"
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@pgbouncer:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
@@ -101,8 +101,6 @@ services:
       TOR_DOCUMENTS_ROOT: /documents
     depends_on:
       db:
-        condition: service_healthy
-      pgbouncer:
         condition: service_healthy
       mlflow:
         condition: service_started
