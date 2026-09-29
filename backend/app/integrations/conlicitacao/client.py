@@ -7,10 +7,11 @@ import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
-from typing import Any, Self
+from typing import Any
 
 import httpx
 from pydantic import SecretStr
+from typing_extensions import Self
 
 from app.core.config import settings as app_settings
 from app.integrations.conlicitacao import metrics
