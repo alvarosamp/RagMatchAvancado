@@ -108,6 +108,16 @@ def test_production_proxy_allows_frontend_and_api_hosts():
     ) in env_example
 
 
+def test_minio_uses_accessible_pinned_mirror_and_preserves_volume():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^  minio:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|\Z)", compose)
+    assert match is not None
+    minio_service = match.group(1)
+
+    assert "alvarocareli/ragmatch-minio:RELEASE.2025-09-07T16-13-09Z" in minio_service
+    assert "- minio_data:/data" in minio_service
+
+
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
     assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap
