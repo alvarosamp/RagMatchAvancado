@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from app.integrations.conlicitacao.client import ConlicitacaoClient
@@ -209,7 +209,7 @@ async def run_readonly_diagnostics(
     return {
         "provider": "conlicitacao",
         "mode": "read_only",
-        "generated_at": datetime.now(UTC).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "correlation_id": correlation_id,
         "summary": {
             "total": len(results),
