@@ -208,6 +208,10 @@ export default function BlingIntegration() {
         eyebrow="Integrações"
         title="Bling ERP"
         description="Conecte a conta da empresa e execute o fluxo de pedido de venda até a emissão da NF-e."
+        secondaryAction={isAdmin ? {
+          label: 'Abrir ConLicitação',
+          onClick: () => navigate('/integracoes/conlicitacao'),
+        } : undefined}
       >
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium ${status.connected ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'}`}>

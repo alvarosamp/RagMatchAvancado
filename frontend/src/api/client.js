@@ -154,6 +154,22 @@ export const blingApi = {
     }),
 }
 
+export const conlicitacaoApi = {
+  status: () => api.get('/integrations/conlicitacao/status'),
+  diagnostics: (payload = {}) => api.post('/integrations/conlicitacao/diagnostics', payload, {
+    timeout: 120_000,
+  }),
+  sync: () => api.post('/integrations/conlicitacao/sync'),
+  startMonitoring: (biddingId, userId) => api.post('/integrations/conlicitacao/monitoring/start', {
+    bidding_id: biddingId,
+    user_id: userId,
+  }),
+  stopMonitoring: (biddingId, userId) => api.delete(
+    `/integrations/conlicitacao/monitoring/${biddingId}`,
+    { params: { user_id: userId } },
+  ),
+}
+
 export const bidRobotApi = {
   listSessions: () => api.get('/bid-robot/sessions'),
   createSession: (payload) => api.post('/bid-robot/sessions', payload),

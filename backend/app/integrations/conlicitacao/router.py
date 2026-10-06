@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user, require_role
@@ -11,12 +12,29 @@ from app.auth.models import User
 from app.core.config import settings
 from app.db.models import Tender
 from app.db.session import get_db
+from app.integrations.conlicitacao.client import ConlicitacaoClient
+from app.integrations.conlicitacao.diagnostics import run_readonly_diagnostics
+from app.integrations.conlicitacao.exceptions import (
+    ConlicitacaoAPIError,
+    ConlicitacaoConfigurationError,
+)
 from app.integrations.conlicitacao.metrics import render_metrics
 
 router = APIRouter(tags=["tender-integrations"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 EditorUser = Annotated[User, Depends(require_role("admin", "editor"))]
+AdminUser = Annotated[User, Depends(require_role("admin"))]
 Database = Annotated[Session, Depends(get_db)]
+
+
+class ConlicitacaoDiagnosticsRequest(BaseModel):
+    filter_id: int | None = Field(default=None, gt=0)
+    bulletin_id: int | None = Field(default=None, gt=0)
+
+
+class ConlicitacaoMonitoringRequest(BaseModel):
+    bidding_id: int = Field(gt=0)
+    user_id: int = Field(gt=0)
 
 
 @router.get("/integrations/conlicitacao/status")
@@ -24,7 +42,8 @@ def conlicitacao_status(current_user: CurrentUser) -> dict[str, bool]:
     authorized = current_user.tenant_id in settings.conlicitacao_sync_tenant_ids
     return {
         "enabled": settings.conlicitacao_enabled,
-        "configured": settings.conlicitacao_enabled and bool(settings.conlicitacao_token),
+        "configured": settings.conlicitacao_enabled
+        and bool(settings.conlicitacao_token),
         "authorized": authorized,
     }
 
@@ -50,6 +69,84 @@ def enqueue_conlicitacao_sync(
     return {"status": "queued", "correlation_id": correlation_id}
 
 
+def _ensure_conlicitacao_access(current_user: User) -> None:
+    if not settings.conlicitacao_enabled or not settings.conlicitacao_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Integração ConLicitação não configurada neste ambiente.",
+        )
+    if current_user.tenant_id not in settings.conlicitacao_sync_tenant_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant não autorizado a usar a assinatura ConLicitação configurada.",
+        )
+
+
+def _provider_http_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, ConlicitacaoAPIError):
+        # Never emit an upstream 401: the frontend correctly interprets a local
+        # 401 as an expired RagMatch session and would sign the administrator out.
+        code = (
+            status.HTTP_429_TOO_MANY_REQUESTS
+            if exc.status_code == 429
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        return HTTPException(status_code=code, detail=exc.detail)
+    return HTTPException(status_code=503, detail=str(exc))
+
+
+@router.post("/integrations/conlicitacao/diagnostics")
+async def conlicitacao_diagnostics(
+    payload: ConlicitacaoDiagnosticsRequest,
+    current_user: AdminUser,
+) -> dict[str, Any]:
+    _ensure_conlicitacao_access(current_user)
+    try:
+        async with ConlicitacaoClient() as client:
+            return await run_readonly_diagnostics(
+                client,
+                filter_id=payload.filter_id,
+                bulletin_id=payload.bulletin_id,
+            )
+    except ConlicitacaoConfigurationError as exc:
+        raise _provider_http_error(exc) from exc
+
+
+@router.post("/integrations/conlicitacao/monitoring/start")
+async def start_conlicitacao_monitoring(
+    payload: ConlicitacaoMonitoringRequest,
+    current_user: AdminUser,
+) -> dict[str, Any]:
+    _ensure_conlicitacao_access(current_user)
+    correlation_id = str(uuid.uuid4())
+    try:
+        async with ConlicitacaoClient() as client:
+            await client.start_monitoring(
+                payload.bidding_id, payload.user_id, correlation_id=correlation_id
+            )
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        raise _provider_http_error(exc) from exc
+    return {"status": "started", "correlation_id": correlation_id}
+
+
+@router.delete("/integrations/conlicitacao/monitoring/{bidding_id}")
+async def stop_conlicitacao_monitoring(
+    bidding_id: int,
+    current_user: AdminUser,
+    user_id: int = Query(gt=0),
+) -> dict[str, Any]:
+    _ensure_conlicitacao_access(current_user)
+    correlation_id = str(uuid.uuid4())
+    try:
+        async with ConlicitacaoClient() as client:
+            await client.stop_monitoring(
+                bidding_id, user_id, correlation_id=correlation_id
+            )
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        raise _provider_http_error(exc) from exc
+    return {"status": "stopped", "correlation_id": correlation_id}
+
+
 @router.get("/integrations/tenders")
 def list_tenders(
     current_user: CurrentUser,
@@ -65,7 +162,12 @@ def list_tenders(
     if tender_status:
         query = query.filter(Tender.status == tender_status)
     total = query.count()
-    rows = query.order_by(Tender.opening_at.desc(), Tender.id.desc()).offset(offset).limit(limit).all()
+    rows = (
+        query.order_by(Tender.opening_at.desc(), Tender.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return {
         "items": [_serialize_tender(row, include_raw=False) for row in rows],
         "total": total,
@@ -97,10 +199,25 @@ def conlicitacao_metrics() -> Response:
 
 def _serialize_tender(row: Tender, *, include_raw: bool) -> dict:
     fields = (
-        "id", "tenant_id", "provider", "external_id", "title", "object", "status",
-        "edital_number", "process_number", "uasg", "public_body_name",
-        "public_body_city", "public_body_state", "opening_at", "proposal_deadline_at",
-        "estimated_value", "source_url", "created_at", "updated_at",
+        "id",
+        "tenant_id",
+        "provider",
+        "external_id",
+        "title",
+        "object",
+        "status",
+        "edital_number",
+        "process_number",
+        "uasg",
+        "public_body_name",
+        "public_body_city",
+        "public_body_state",
+        "opening_at",
+        "proposal_deadline_at",
+        "estimated_value",
+        "source_url",
+        "created_at",
+        "updated_at",
     )
     payload = {field: getattr(row, field) for field in fields}
     if include_raw:
