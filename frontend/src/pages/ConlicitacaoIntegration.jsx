@@ -7,7 +7,7 @@ import PageHeader from '../components/ui/PageHeader'
 import SectionCard from '../components/ui/SectionCard'
 import { useToast } from '../contexts/ToastContext'
 
-const EMPTY_STATUS = { enabled: false, configured: false, authorized: false }
+const EMPTY_STATUS = { enabled: false, configured: false, read_only_available: false, authorized: false }
 
 function apiError(error, fallback) {
   const detail = error.response?.data?.detail
@@ -80,7 +80,8 @@ export default function ConlicitacaoIntegration() {
   const [diagnostics, setDiagnostics] = useState(null)
   const [ids, setIds] = useState({ filterId: '', bulletinId: '', biddingId: '', userId: '' })
 
-  const ready = status.enabled && status.configured && status.authorized
+  const readOnlyReady = status.read_only_available || (status.enabled && status.configured)
+  const writeReady = readOnlyReady && status.authorized
 
   const loadStatus = async () => {
     setLoadingStatus(true)
@@ -181,31 +182,41 @@ export default function ConlicitacaoIntegration() {
         <div className="flex flex-wrap gap-2">
           <StatusPill active={status.enabled}>Habilitada</StatusPill>
           <StatusPill active={status.configured}>Token configurado</StatusPill>
-          <StatusPill active={status.authorized}>Empresa autorizada</StatusPill>
+          <StatusPill active={readOnlyReady}>Leitura disponível</StatusPill>
+          <StatusPill active={status.authorized}>Sincronização autorizada</StatusPill>
           {loadingStatus && <span className="text-xs text-slate-500">Consultando...</span>}
         </div>
       </PageHeader>
 
-      {!ready && !loadingStatus && (
+      {!readOnlyReady && !loadingStatus && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          Na VPS, configure <code>CONLICITACAO_ENABLED=1</code>, o token e o ID numérico desta empresa em <code>CONLICITACAO_TENANT_IDS</code>. O IP autorizado deve ser o IP público de saída da VPS.
+          Na VPS, configure <code>CONLICITACAO_ENABLED=1</code> e o token. O IP autorizado deve ser o IP público de saída da VPS.
+        </div>
+      )}
+
+      {readOnlyReady && !status.authorized && !loadingStatus && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+          O diagnóstico somente leitura está disponível. Sincronização e acompanhamento permanecem bloqueados até o ID da empresa ser incluído em <code>CONLICITACAO_TENANT_IDS</code>.
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <SectionCard title="Diagnóstico somente leitura" description="Consulta filtros, boletins, licitações, acompanhamentos, mensagens e usuários. Nenhum valor de resposta é devolvido ao navegador.">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
-              ID do filtro (opcional)
-              <input className="input mt-1.5" type="number" min="1" value={ids.filterId} onChange={updateId('filterId')} placeholder="Detectar automaticamente" />
-            </label>
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
-              ID do boletim (opcional)
-              <input className="input mt-1.5" type="number" min="1" value={ids.bulletinId} onChange={updateId('bulletinId')} placeholder="Detectar automaticamente" />
-            </label>
-          </div>
+        <SectionCard title="Diagnóstico somente leitura" description="Consulta automaticamente filtros, boletins, licitações, acompanhamentos, mensagens e usuários. Nenhum preenchimento é necessário e valores sensíveis não são devolvidos ao navegador.">
+          <details className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-600 dark:text-slate-300">Opções avançadas (IDs opcionais)</summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                ID do filtro
+                <input className="input mt-1.5" type="number" min="1" value={ids.filterId} onChange={updateId('filterId')} placeholder="Detectar automaticamente" />
+              </label>
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                ID do boletim
+                <input className="input mt-1.5" type="number" min="1" value={ids.bulletinId} onChange={updateId('bulletinId')} placeholder="Detectar automaticamente" />
+              </label>
+            </div>
+          </details>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" className="btn-primary flex items-center gap-2" disabled={!ready || Boolean(busy)} onClick={runDiagnostics}>
+            <button type="button" className="btn-primary flex items-center gap-2" disabled={!readOnlyReady || Boolean(busy)} onClick={runDiagnostics}>
               {busy === 'diagnostics' ? <RefreshCw size={16} className="animate-spin" /> : <Activity size={16} />}
               {busy === 'diagnostics' ? 'Testando...' : 'Testar todos os GETs'}
             </button>
@@ -219,7 +230,7 @@ export default function ConlicitacaoIntegration() {
           <div className="rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
             <ShieldCheck size={17} className="mb-2" /> O processamento ocorre no worker dedicado e mantém o isolamento por empresa.
           </div>
-          <button type="button" className="btn-primary mt-4 w-full" disabled={!ready || Boolean(busy)} onClick={sync}>
+          <button type="button" className="btn-primary mt-4 w-full" disabled={!writeReady || Boolean(busy)} onClick={sync}>
             {busy === 'sync' ? 'Enfileirando...' : 'Sincronizar agora'}
           </button>
         </SectionCard>
@@ -246,10 +257,10 @@ export default function ConlicitacaoIntegration() {
           </label>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" className="btn-primary flex items-center gap-2" disabled={!ready || Boolean(busy)} onClick={() => monitoring('start')}>
+          <button type="button" className="btn-primary flex items-center gap-2" disabled={!writeReady || Boolean(busy)} onClick={() => monitoring('start')}>
             <Play size={15} /> Iniciar acompanhamento
           </button>
-          <button type="button" className="btn-ghost flex items-center gap-2" disabled={!ready || Boolean(busy)} onClick={() => monitoring('stop')}>
+          <button type="button" className="btn-ghost flex items-center gap-2" disabled={!writeReady || Boolean(busy)} onClick={() => monitoring('stop')}>
             <Square size={15} /> Parar acompanhamento
           </button>
         </div>

@@ -39,11 +39,12 @@ class ConlicitacaoMonitoringRequest(BaseModel):
 
 @router.get("/integrations/conlicitacao/status")
 def conlicitacao_status(current_user: CurrentUser) -> dict[str, bool]:
+    configured = settings.conlicitacao_enabled and bool(settings.conlicitacao_token)
     authorized = current_user.tenant_id in settings.conlicitacao_sync_tenant_ids
     return {
         "enabled": settings.conlicitacao_enabled,
-        "configured": settings.conlicitacao_enabled
-        and bool(settings.conlicitacao_token),
+        "configured": configured,
+        "read_only_available": configured,
         "authorized": authorized,
     }
 
@@ -69,12 +70,16 @@ def enqueue_conlicitacao_sync(
     return {"status": "queued", "correlation_id": correlation_id}
 
 
-def _ensure_conlicitacao_access(current_user: User) -> None:
+def _ensure_conlicitacao_configured() -> None:
     if not settings.conlicitacao_enabled or not settings.conlicitacao_token:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Integração ConLicitação não configurada neste ambiente.",
         )
+
+
+def _ensure_conlicitacao_access(current_user: User) -> None:
+    _ensure_conlicitacao_configured()
     if current_user.tenant_id not in settings.conlicitacao_sync_tenant_ids:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -100,7 +105,10 @@ async def conlicitacao_diagnostics(
     payload: ConlicitacaoDiagnosticsRequest,
     current_user: AdminUser,
 ) -> dict[str, Any]:
-    _ensure_conlicitacao_access(current_user)
+    # Diagnóstico é estritamente somente leitura, sanitiza valores retornados
+    # e exige papel de administrador. A allowlist de tenant continua obrigatória
+    # para sincronização e operações de acompanhamento que alteram estado.
+    _ensure_conlicitacao_configured()
     try:
         async with ConlicitacaoClient() as client:
             return await run_readonly_diagnostics(

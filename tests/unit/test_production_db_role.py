@@ -124,6 +124,7 @@ def test_ollama_model_download_does_not_block_production_startup():
     assert match is not None
     setup_service = match.group(1)
 
+    assert 'entrypoint: ["/bin/sh", "-c"]' in setup_service
     assert 'ollama pull "$$OLLAMA_EMBED_MODEL" ||' in setup_service
     assert 'ollama pull "$$OLLAMA_MODEL" ||' in setup_service
     assert "exit 0" in setup_service
