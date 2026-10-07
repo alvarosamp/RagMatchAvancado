@@ -3,6 +3,7 @@ import { Activity, Download, FileText, Play, RefreshCw, Search, ShieldCheck, Squ
 import { useNavigate } from 'react-router-dom'
 
 import { conlicitacaoApi } from '../api/client'
+import ConlicitacaoLab from '../components/conlicitacao/ConlicitacaoLab'
 import PageHeader from '../components/ui/PageHeader'
 import SectionCard from '../components/ui/SectionCard'
 import { useToast } from '../contexts/ToastContext'
@@ -258,6 +259,8 @@ export default function ConlicitacaoIntegration() {
           O diagnóstico somente leitura está disponível. Sincronização e acompanhamento permanecem bloqueados até o ID da empresa ser incluído em <code>CONLICITACAO_TENANT_IDS</code>.
         </div>
       )}
+
+      <ConlicitacaoLab enabled={readOnlyReady && !loadingStatus} />
 
       <SectionCard
         title="Consultar uma licitação"

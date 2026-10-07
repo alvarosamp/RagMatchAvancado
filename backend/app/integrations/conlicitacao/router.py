@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import time
 import uuid
 from typing import Annotated, Any
 
@@ -18,6 +20,11 @@ from app.integrations.conlicitacao.exceptions import (
     ConlicitacaoAPIError,
     ConlicitacaoConfigurationError,
 )
+from app.integrations.conlicitacao.lab import (
+    find_monitored,
+    summarize_bulletin,
+    trace_bidding,
+)
 from app.integrations.conlicitacao.metrics import render_metrics
 from app.integrations.conlicitacao.service import (
     ConlicitacaoLookupResult,
@@ -30,6 +37,7 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 EditorUser = Annotated[User, Depends(require_role("admin", "editor"))]
 AdminUser = Annotated[User, Depends(require_role("admin"))]
 Database = Annotated[Session, Depends(get_db)]
+LAB_DOCUMENT_MAX_BYTES = int(os.getenv("MAX_DOCUMENT_UPLOAD_BYTES", str(50 * 1024 * 1024)))
 
 
 class ConlicitacaoDiagnosticsRequest(BaseModel):
@@ -245,6 +253,136 @@ async def stop_conlicitacao_monitoring(
     except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
         raise _provider_http_error(exc) from exc
     return {"status": "stopped", "correlation_id": correlation_id}
+
+
+# ── Laboratório de avaliação ──────────────────────────────────────────────
+# Rotas somente leitura que devolvem valores reais ao administrador para
+# avaliar a assinatura. Links assinados de documentos nunca saem da API.
+
+
+async def _lab_call(call) -> dict[str, Any]:
+    _ensure_conlicitacao_configured()
+    started = time.perf_counter()
+    try:
+        async with ConlicitacaoClient() as client:
+            payload = await call(client, str(uuid.uuid4()))
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        raise _provider_http_error(exc) from exc
+    if isinstance(payload, BaseModel):
+        payload = payload.model_dump(mode="json")
+    return {"latency_ms": round((time.perf_counter() - started) * 1000, 1), "data": payload}
+
+
+@router.get("/integrations/conlicitacao/lab/filters")
+async def lab_filters(current_user: AdminUser) -> dict[str, Any]:
+    return await _lab_call(lambda c, cid: c.get_filters(correlation_id=cid))
+
+
+@router.get("/integrations/conlicitacao/lab/filters/{filter_id}/bulletins")
+async def lab_bulletins(
+    filter_id: int,
+    current_user: AdminUser,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+    order: str = Query(default="desc", pattern="^(asc|desc)$"),
+) -> dict[str, Any]:
+    return await _lab_call(
+        lambda c, cid: c.list_bulletins(
+            filter_id, page=page, per_page=per_page, order=order, correlation_id=cid
+        )
+    )
+
+
+@router.get("/integrations/conlicitacao/lab/bulletins/{bulletin_id}")
+async def lab_bulletin(bulletin_id: int, current_user: AdminUser) -> dict[str, Any]:
+    async def call(client: ConlicitacaoClient, cid: str) -> dict[str, Any]:
+        return summarize_bulletin(await client.get_bulletin(bulletin_id, correlation_id=cid))
+
+    return await _lab_call(call)
+
+
+@router.get("/integrations/conlicitacao/lab/biddings/{bidding_id}/trace")
+async def lab_trace_bidding(
+    bidding_id: int,
+    current_user: AdminUser,
+    max_bulletins: int = Query(default=15, ge=1, le=60),
+) -> dict[str, Any]:
+    async def call(client: ConlicitacaoClient, cid: str) -> dict[str, Any]:
+        result = await trace_bidding(
+            client, bidding_id, max_bulletins=max_bulletins, correlation_id=cid
+        )
+        result["monitored"] = await find_monitored(client, bidding_id, correlation_id=cid)
+        return result
+
+    return await _lab_call(call)
+
+
+@router.get(
+    "/integrations/conlicitacao/lab/bulletins/{bulletin_id}/tenders/{tender_id}/documents/{index}"
+)
+async def lab_download_document(
+    bulletin_id: int,
+    tender_id: int,
+    index: int,
+    current_user: AdminUser,
+) -> Response:
+    _ensure_conlicitacao_configured()
+    correlation_id = str(uuid.uuid4())
+    try:
+        async with ConlicitacaoClient() as client:
+            # O link expira em 24 h: relê o boletim para obter um link novo.
+            bulletin = await client.get_bulletin(bulletin_id, correlation_id=correlation_id)
+            row = next((r for r in bulletin.licitacoes if r.id == tender_id), None)
+            documents = [d for d in (row.documento if row else []) if d.url]
+            if row is None or not 0 <= index < len(documents):
+                raise HTTPException(status_code=404, detail="Documento não encontrado neste boletim.")
+            document = documents[index]
+            content, content_type = await client.download_document(
+                document.url,
+                max_bytes=LAB_DOCUMENT_MAX_BYTES,
+                correlation_id=correlation_id,
+            )
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        raise _provider_http_error(exc) from exc
+    filename = (document.filename or f"documento-{index + 1}").replace('"', "")
+    return Response(
+        content=content,
+        media_type=content_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/integrations/conlicitacao/lab/users")
+async def lab_users(current_user: AdminUser) -> dict[str, Any]:
+    return await _lab_call(lambda c, cid: c.get_users(correlation_id=cid))
+
+
+@router.get("/integrations/conlicitacao/lab/monitored")
+async def lab_monitored(
+    current_user: AdminUser,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=15, ge=1, le=100),
+    trading_status: int | None = Query(default=None, ge=0),
+) -> dict[str, Any]:
+    return await _lab_call(
+        lambda c, cid: c.get_monitored_biddings(
+            page=page, per_page=per_page, trading_status=trading_status, correlation_id=cid
+        )
+    )
+
+
+@router.get("/integrations/conlicitacao/lab/monitored/{bidding_id}/messages")
+async def lab_monitored_messages(
+    bidding_id: int,
+    current_user: AdminUser,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=100),
+) -> dict[str, Any]:
+    return await _lab_call(
+        lambda c, cid: c.get_messages(
+            bidding_id, page=page, per_page=per_page, correlation_id=cid
+        )
+    )
 
 
 @router.get("/integrations/tenders")

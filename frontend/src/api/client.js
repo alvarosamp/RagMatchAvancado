@@ -169,6 +169,29 @@ export const conlicitacaoApi = {
     { timeout: 120_000 },
   ),
   sync: () => api.post('/integrations/conlicitacao/sync'),
+  labFilters: () => api.get('/integrations/conlicitacao/lab/filters'),
+  labBulletins: (filterId, params = {}) => api.get(
+    `/integrations/conlicitacao/lab/filters/${filterId}/bulletins`,
+    { params },
+  ),
+  labBulletin: (bulletinId) => api.get(
+    `/integrations/conlicitacao/lab/bulletins/${bulletinId}`,
+    { timeout: 120_000 },
+  ),
+  labTrace: (biddingId, maxBulletins = 15) => api.get(
+    `/integrations/conlicitacao/lab/biddings/${biddingId}/trace`,
+    { params: { max_bulletins: maxBulletins }, timeout: 300_000 },
+  ),
+  labDocument: (bulletinId, tenderId, index) => api.get(
+    `/integrations/conlicitacao/lab/bulletins/${bulletinId}/tenders/${tenderId}/documents/${index}`,
+    { responseType: 'blob', timeout: 300_000 },
+  ),
+  labUsers: () => api.get('/integrations/conlicitacao/lab/users'),
+  labMonitored: (params = {}) => api.get('/integrations/conlicitacao/lab/monitored', { params }),
+  labMessages: (biddingId, params = {}) => api.get(
+    `/integrations/conlicitacao/lab/monitored/${biddingId}/messages`,
+    { params },
+  ),
   startMonitoring: (biddingId, userId) => api.post('/integrations/conlicitacao/monitoring/start', {
     bidding_id: biddingId,
     user_id: userId,

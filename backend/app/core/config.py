@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     conlicitacao_timeout_seconds: float = Field(
         default=15.0, validation_alias="CONLICITACAO_TIMEOUT_SECONDS"
     )
+    conlicitacao_bulletin_timeout_seconds: float = Field(
+        default=60.0, validation_alias="CONLICITACAO_BULLETIN_TIMEOUT_SECONDS"
+    )
     conlicitacao_poll_active_seconds: int = Field(
         default=30, validation_alias="CONLICITACAO_POLL_ACTIVE_SECONDS"
     )
