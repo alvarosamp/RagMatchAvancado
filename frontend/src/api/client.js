@@ -159,6 +159,15 @@ export const conlicitacaoApi = {
   diagnostics: (payload = {}) => api.post('/integrations/conlicitacao/diagnostics', payload, {
     timeout: 120_000,
   }),
+  previewOpportunity: (externalId) => api.get(
+    `/integrations/conlicitacao/opportunities/${externalId}/preview`,
+    { timeout: 120_000 },
+  ),
+  importOpportunity: (externalId) => api.post(
+    `/integrations/conlicitacao/opportunities/${externalId}/import`,
+    {},
+    { timeout: 120_000 },
+  ),
   sync: () => api.post('/integrations/conlicitacao/sync'),
   startMonitoring: (biddingId, userId) => api.post('/integrations/conlicitacao/monitoring/start', {
     bidding_id: biddingId,

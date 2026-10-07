@@ -56,8 +56,14 @@ class Settings(BaseSettings):
     conlicitacao_sync_max_pages: int = Field(
         default=10, validation_alias="CONLICITACAO_SYNC_MAX_PAGES"
     )
+    conlicitacao_lookup_max_bulletins: int = Field(
+        default=30, validation_alias="CONLICITACAO_LOOKUP_MAX_BULLETINS"
+    )
     conlicitacao_tenant_ids: str = Field(
         default="", validation_alias="CONLICITACAO_TENANT_IDS"
+    )
+    conlicitacao_allowed_admin_emails: str = Field(
+        default="", validation_alias="CONLICITACAO_ALLOWED_ADMIN_EMAILS"
     )
 
     @property
@@ -72,6 +78,16 @@ class Settings(BaseSettings):
                 raise ValueError("CONLICITACAO_TENANT_IDS aceita apenas IDs positivos.")
             values.append(value)
         return tuple(dict.fromkeys(values))
+
+    @property
+    def conlicitacao_manual_import_admin_emails(self) -> tuple[str, ...]:
+        return tuple(
+            dict.fromkeys(
+                value.strip().casefold()
+                for value in self.conlicitacao_allowed_admin_emails.split(",")
+                if value.strip()
+            )
+        )
 
     @property
     def sqlalchemy_database_url(self) -> str:

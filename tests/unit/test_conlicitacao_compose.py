@@ -24,3 +24,11 @@ def test_conlicitacao_worker_receives_tenant_allowlist_in_all_environments():
         assert "CONLICITACAO_ENABLED" in worker
         assert "CONLICITACAO_TOKEN" in worker
         assert "CONLICITACAO_TENANT_IDS" in worker
+
+
+def test_production_api_receives_lookup_and_manual_import_settings():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    api = _service(compose, "api")
+
+    assert "CONLICITACAO_LOOKUP_MAX_BULLETINS" in api
+    assert "CONLICITACAO_ALLOWED_ADMIN_EMAILS" in api

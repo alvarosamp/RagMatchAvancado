@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, Download, Play, RefreshCw, ShieldCheck, Square } from 'lucide-react'
+import { Activity, Download, FileText, Play, RefreshCw, Search, ShieldCheck, Square } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { conlicitacaoApi } from '../api/client'
@@ -7,7 +7,13 @@ import PageHeader from '../components/ui/PageHeader'
 import SectionCard from '../components/ui/SectionCard'
 import { useToast } from '../contexts/ToastContext'
 
-const EMPTY_STATUS = { enabled: false, configured: false, read_only_available: false, authorized: false }
+const EMPTY_STATUS = {
+  enabled: false,
+  configured: false,
+  read_only_available: false,
+  authorized: false,
+  manual_import_authorized: false,
+}
 
 function apiError(error, fallback) {
   const detail = error.response?.data?.detail
@@ -26,6 +32,17 @@ function StatusPill({ active, children }) {
       {children}: {active ? 'sim' : 'não'}
     </span>
   )
+}
+
+function formatMoney(value) {
+  if (value == null || value === '') return 'Não informado'
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
+}
+
+function formatDate(value) {
+  if (!value) return 'Não informada'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString('pt-BR')
 }
 
 function ResultCard({ result }) {
@@ -78,10 +95,13 @@ export default function ConlicitacaoIntegration() {
   const [loadingStatus, setLoadingStatus] = useState(true)
   const [busy, setBusy] = useState('')
   const [diagnostics, setDiagnostics] = useState(null)
+  const [lookupId, setLookupId] = useState('')
+  const [preview, setPreview] = useState(null)
   const [ids, setIds] = useState({ filterId: '', bulletinId: '', biddingId: '', userId: '' })
 
   const readOnlyReady = status.read_only_available || (status.enabled && status.configured)
   const writeReady = readOnlyReady && status.authorized
+  const importReady = readOnlyReady && (status.manual_import_authorized || status.authorized)
 
   const loadStatus = async () => {
     setLoadingStatus(true)
@@ -129,6 +149,44 @@ export default function ConlicitacaoIntegration() {
     anchor.download = `conlicitacao-diagnostico-${new Date().toISOString().replaceAll(':', '-')}.json`
     anchor.click()
     URL.revokeObjectURL(url)
+  }
+
+  const lookupOpportunity = async () => {
+    const externalId = Number(lookupId)
+    if (!Number.isInteger(externalId) || externalId <= 0) {
+      toast({ type: 'warning', title: 'Número inválido', message: 'Informe o número ConLicitação.' })
+      return
+    }
+    setBusy('lookup')
+    setPreview(null)
+    try {
+      const response = await conlicitacaoApi.previewOpportunity(externalId)
+      setPreview(response.data)
+      toast({ type: 'success', title: 'Licitação encontrada', message: 'Dados consultados pela VPS.' })
+    } catch (error) {
+      toast({ type: 'error', title: 'Consulta', message: apiError(error, 'Não foi possível localizar a licitação.') })
+    } finally {
+      setBusy('')
+    }
+  }
+
+  const importOpportunity = async () => {
+    const externalId = Number(preview?.opportunity?.external_id)
+    if (!externalId) return
+    setBusy('import')
+    try {
+      const response = await conlicitacaoApi.importOpportunity(externalId)
+      const created = response.data.created
+      toast({
+        type: 'success',
+        title: created ? 'Licitação importada' : 'Licitação atualizada',
+        message: `Registro interno: ${response.data.tender.id}`,
+      })
+    } catch (error) {
+      toast({ type: 'error', title: 'Importação', message: apiError(error, 'Não foi possível importar a licitação.') })
+    } finally {
+      setBusy('')
+    }
   }
 
   const sync = async () => {
@@ -183,6 +241,7 @@ export default function ConlicitacaoIntegration() {
           <StatusPill active={status.enabled}>Habilitada</StatusPill>
           <StatusPill active={status.configured}>Token configurado</StatusPill>
           <StatusPill active={readOnlyReady}>Leitura disponível</StatusPill>
+          <StatusPill active={importReady}>Importação manual</StatusPill>
           <StatusPill active={status.authorized}>Sincronização autorizada</StatusPill>
           {loadingStatus && <span className="text-xs text-slate-500">Consultando...</span>}
         </div>
@@ -199,6 +258,82 @@ export default function ConlicitacaoIntegration() {
           O diagnóstico somente leitura está disponível. Sincronização e acompanhamento permanecem bloqueados até o ID da empresa ser incluído em <code>CONLICITACAO_TENANT_IDS</code>.
         </div>
       )}
+
+      <SectionCard
+        title="Consultar uma licitação"
+        description="Informe somente o número ConLicitação. A VPS localiza automaticamente o filtro e o boletim, sem expor o token ao navegador."
+      >
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <label className="flex-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+            Número ConLicitação
+            <input
+              className="input mt-1.5"
+              type="number"
+              min="1"
+              value={lookupId}
+              onChange={(event) => setLookupId(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && lookupOpportunity()}
+              placeholder="Ex.: 19399420"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-primary self-end sm:mb-0"
+            disabled={!readOnlyReady || Boolean(busy)}
+            onClick={lookupOpportunity}
+          >
+            {busy === 'lookup' ? <RefreshCw size={16} className="animate-spin" /> : <Search size={16} />}
+            {busy === 'lookup' ? 'Localizando...' : 'Consultar pela VPS'}
+          </button>
+        </div>
+
+        {preview && (() => {
+          const opportunity = preview.opportunity
+          const documents = opportunity.documents || []
+          return (
+            <article className="mt-5 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">ConLicitação {opportunity.external_id}</p>
+                  <h3 className="mt-1 text-base font-semibold text-slate-900 dark:text-white">{opportunity.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">{opportunity.object || 'Objeto não informado.'}</p>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm dark:bg-slate-900 dark:text-slate-200">
+                  {opportunity.status || 'Status não informado'}
+                </span>
+              </div>
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div><dt className="text-xs text-slate-500">Edital</dt><dd className="font-medium">{opportunity.edital_number || 'Não informado'}</dd></div>
+                <div><dt className="text-xs text-slate-500">Órgão</dt><dd className="font-medium">{opportunity.public_body_name || 'Não informado'}</dd></div>
+                <div><dt className="text-xs text-slate-500">Local</dt><dd className="font-medium">{[opportunity.public_body_city, opportunity.public_body_state].filter(Boolean).join(' / ') || 'Não informado'}</dd></div>
+                <div><dt className="text-xs text-slate-500">Valor estimado</dt><dd className="font-medium">{formatMoney(opportunity.estimated_value)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Abertura</dt><dd className="font-medium">{formatDate(opportunity.opening_at)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Prazo</dt><dd className="font-medium">{formatDate(opportunity.proposal_deadline_at)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Boletim</dt><dd className="font-medium">{preview.bulletin_number || preview.bulletin_id}</dd></div>
+                <div><dt className="text-xs text-slate-500">Documentos</dt><dd className="font-medium">{documents.length}</dd></div>
+              </dl>
+              {documents.length > 0 && (
+                <details className="mt-4 rounded-lg border border-blue-200 bg-white p-3 dark:border-blue-900 dark:bg-slate-950">
+                  <summary className="cursor-pointer text-xs font-semibold text-blue-700 dark:text-blue-300">Ver documentos encontrados</summary>
+                  <ul className="mt-3 space-y-2">
+                    {documents.map((document, index) => (
+                      <li key={`${document.filename}-${index}`} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-200">
+                        <FileText size={14} /> {document.filename || `Documento ${index + 1}`}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="button" className="btn-primary" disabled={!importReady || Boolean(busy)} onClick={importOpportunity}>
+                  {busy === 'import' ? 'Importando...' : 'Importar para o RagMatch'}
+                </button>
+                {!importReady && <span className="text-xs text-amber-700 dark:text-amber-300">A prévia funciona, mas o administrador precisa estar autorizado para gravar.</span>}
+              </div>
+            </article>
+          )
+        })()}
+      </SectionCard>
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <SectionCard title="Diagnóstico somente leitura" description="Consulta automaticamente filtros, boletins, licitações, acompanhamentos, mensagens e usuários. Nenhum preenchimento é necessário e valores sensíveis não são devolvidos ao navegador.">

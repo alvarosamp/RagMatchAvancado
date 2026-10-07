@@ -19,6 +19,11 @@ from app.integrations.conlicitacao.exceptions import (
     ConlicitacaoConfigurationError,
 )
 from app.integrations.conlicitacao.metrics import render_metrics
+from app.integrations.conlicitacao.service import (
+    ConlicitacaoLookupResult,
+    ConlicitacaoService,
+)
+from app.integrations.tenders.repository import TenderRepository
 
 router = APIRouter(tags=["tender-integrations"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -41,11 +46,13 @@ class ConlicitacaoMonitoringRequest(BaseModel):
 def conlicitacao_status(current_user: CurrentUser) -> dict[str, bool]:
     configured = settings.conlicitacao_enabled and bool(settings.conlicitacao_token)
     authorized = current_user.tenant_id in settings.conlicitacao_sync_tenant_ids
+    manual_import_authorized = authorized or _manual_import_user_authorized(current_user)
     return {
         "enabled": settings.conlicitacao_enabled,
         "configured": configured,
         "read_only_available": configured,
         "authorized": authorized,
+        "manual_import_authorized": manual_import_authorized,
     }
 
 
@@ -87,6 +94,23 @@ def _ensure_conlicitacao_access(current_user: User) -> None:
         )
 
 
+def _manual_import_user_authorized(current_user: User) -> bool:
+    email = (current_user.email or "").strip().casefold()
+    return bool(email) and email in settings.conlicitacao_manual_import_admin_emails
+
+
+def _ensure_conlicitacao_manual_import_access(current_user: User) -> None:
+    _ensure_conlicitacao_configured()
+    if (
+        current_user.tenant_id not in settings.conlicitacao_sync_tenant_ids
+        and not _manual_import_user_authorized(current_user)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrador não autorizado para importar dados da ConLicitação.",
+        )
+
+
 def _provider_http_error(exc: Exception) -> HTTPException:
     if isinstance(exc, ConlicitacaoAPIError):
         # Never emit an upstream 401: the frontend correctly interprets a local
@@ -118,6 +142,74 @@ async def conlicitacao_diagnostics(
             )
     except ConlicitacaoConfigurationError as exc:
         raise _provider_http_error(exc) from exc
+
+
+@router.get("/integrations/conlicitacao/opportunities/{external_id}/preview")
+async def preview_conlicitacao_opportunity(
+    external_id: int,
+    current_user: AdminUser,
+) -> dict[str, Any]:
+    _ensure_conlicitacao_configured()
+    correlation_id = str(uuid.uuid4())
+    try:
+        async with ConlicitacaoClient() as client:
+            lookup = await ConlicitacaoService(client).find_opportunity(
+                str(external_id),
+                correlation_id=correlation_id,
+                max_bulletins=settings.conlicitacao_lookup_max_bulletins,
+            )
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        raise _provider_http_error(exc) from exc
+    if lookup is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Licitação não encontrada nos "
+                f"{settings.conlicitacao_lookup_max_bulletins} boletins mais recentes."
+            ),
+        )
+    return _serialize_lookup(lookup, correlation_id=correlation_id)
+
+
+@router.post("/integrations/conlicitacao/opportunities/{external_id}/import")
+async def import_conlicitacao_opportunity(
+    external_id: int,
+    current_user: EditorUser,
+    db: Database,
+) -> dict[str, Any]:
+    _ensure_conlicitacao_manual_import_access(current_user)
+    correlation_id = str(uuid.uuid4())
+    try:
+        async with ConlicitacaoClient() as client:
+            lookup = await ConlicitacaoService(client).find_opportunity(
+                str(external_id),
+                correlation_id=correlation_id,
+                max_bulletins=settings.conlicitacao_lookup_max_bulletins,
+            )
+        if lookup is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=(
+                    "Licitação não encontrada nos "
+                    f"{settings.conlicitacao_lookup_max_bulletins} boletins mais recentes."
+                ),
+            )
+        row, created = TenderRepository(db, current_user.tenant_id).upsert(
+            lookup.opportunity
+        )
+        db.commit()
+    except (ConlicitacaoAPIError, ConlicitacaoConfigurationError) as exc:
+        db.rollback()
+        raise _provider_http_error(exc) from exc
+    except Exception:
+        db.rollback()
+        raise
+    return {
+        "status": "imported" if created else "updated",
+        "created": created,
+        "correlation_id": correlation_id,
+        "tender": _serialize_tender(row, include_raw=False),
+    }
 
 
 @router.post("/integrations/conlicitacao/monitoring/start")
@@ -231,3 +323,22 @@ def _serialize_tender(row: Tender, *, include_raw: bool) -> dict:
     if include_raw:
         payload["raw_payload"] = row.raw_payload
     return payload
+
+
+def _serialize_lookup(
+    lookup: ConlicitacaoLookupResult,
+    *,
+    correlation_id: str,
+) -> dict[str, Any]:
+    opportunity = lookup.opportunity.model_dump(
+        mode="json",
+        exclude={"raw_payload"},
+    )
+    return {
+        "correlation_id": correlation_id,
+        "filter_id": lookup.filter_id,
+        "bulletin_id": lookup.bulletin_id,
+        "bulletin_number": lookup.bulletin_number,
+        "bulletin_closed_at": lookup.bulletin_closed_at,
+        "opportunity": opportunity,
+    }
