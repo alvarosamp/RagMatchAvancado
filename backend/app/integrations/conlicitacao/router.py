@@ -22,6 +22,7 @@ from app.integrations.conlicitacao.exceptions import (
 )
 from app.integrations.conlicitacao.lab import (
     find_monitored,
+    preview_documents,
     summarize_bulletin,
     trace_bidding,
 )
@@ -470,8 +471,10 @@ def _serialize_lookup(
 ) -> dict[str, Any]:
     opportunity = lookup.opportunity.model_dump(
         mode="json",
-        exclude={"raw_payload"},
+        exclude={"raw_payload", "documents"},
     )
+    # Signed provider URLs contain credentials; downloads use the admin proxy.
+    opportunity["documents"] = preview_documents(lookup.opportunity.raw_payload)
     return {
         "correlation_id": correlation_id,
         "filter_id": lookup.filter_id,

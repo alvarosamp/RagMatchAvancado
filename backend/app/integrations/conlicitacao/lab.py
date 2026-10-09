@@ -98,16 +98,20 @@ def analyze_follow_up(sintese: str | None) -> dict[str, Any]:
     }
 
 
-def _tender_row(row: dict[str, Any]) -> dict[str, Any]:
+def preview_documents(row: dict[str, Any]) -> list[dict[str, Any]]:
     documents = row.get("documento") or []
     if isinstance(documents, str):
         documents = [{"filename": "documento", "url": documents}]
-    safe = {key: value for key, value in row.items() if key != "documento"}
-    safe["documentos"] = [
+    return [
         {"index": index, "filename": (doc or {}).get("filename") or f"documento-{index + 1}"}
         for index, doc in enumerate(documents)
         if isinstance(doc, dict) and doc.get("url")
     ]
+
+
+def _tender_row(row: dict[str, Any]) -> dict[str, Any]:
+    safe = {key: value for key, value in row.items() if key != "documento"}
+    safe["documentos"] = preview_documents(row)
     return safe
 
 

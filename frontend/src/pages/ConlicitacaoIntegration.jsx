@@ -7,6 +7,7 @@ import ConlicitacaoLab from '../components/conlicitacao/ConlicitacaoLab'
 import PageHeader from '../components/ui/PageHeader'
 import SectionCard from '../components/ui/SectionCard'
 import { useToast } from '../contexts/ToastContext'
+import { tenderExportJson } from '../utils/conlicitacaoTenderExport'
 
 const EMPTY_STATUS = {
   enabled: false,
@@ -102,7 +103,6 @@ export default function ConlicitacaoIntegration() {
 
   const readOnlyReady = status.read_only_available || (status.enabled && status.configured)
   const writeReady = readOnlyReady && status.authorized
-  const importReady = readOnlyReady && (status.manual_import_authorized || status.authorized)
 
   const loadStatus = async () => {
     setLoadingStatus(true)
@@ -171,23 +171,46 @@ export default function ConlicitacaoIntegration() {
     }
   }
 
-  const importOpportunity = async () => {
+  const exportOpportunity = async () => {
     const externalId = Number(preview?.opportunity?.external_id)
     if (!externalId) return
-    setBusy('import')
+    setBusy('export')
     try {
-      const response = await conlicitacaoApi.importOpportunity(externalId)
-      const created = response.data.created
+      const response = await conlicitacaoApi.labBulletin(preview.bulletin_id)
+      const source = response.data.data.licitacoes.find(item => Number(item.id) === externalId)
+      const blob = new Blob([tenderExportJson(preview, source)], { type: 'application/json;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `conlicitacao-edital-${externalId}.json`
+      anchor.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
       toast({
         type: 'success',
-        title: created ? 'Licitação importada' : 'Licitação atualizada',
-        message: `Registro interno: ${response.data.tender.id}`,
+        title: 'JSON exportado',
+        message: 'Dados originais e campos do edital prontos para análise.',
       })
     } catch (error) {
-      toast({ type: 'error', title: 'Importação', message: apiError(error, 'Não foi possível importar a licitação.') })
+      toast({ type: 'error', title: 'Exportação', message: apiError(error, 'Não foi possível exportar os dados do edital.') })
     } finally {
       setBusy('')
     }
+  }
+
+  const downloadDocument = async (document, index) => {
+    setBusy(`download-${index}`)
+    try {
+      const response = await conlicitacaoApi.labDocument(preview.bulletin_id, preview.opportunity.external_id, document.index ?? index)
+      const url = URL.createObjectURL(response.data)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = (document.filename || `documento-${index + 1}`).split(/[\\/]/).pop()
+      anchor.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast({ type: 'success', title: 'Documento baixado', message: document.filename })
+    } catch {
+      toast({ type: 'error', title: 'Download', message: 'Não foi possível baixar o arquivo. Confira o acesso da VPS à ConLicitação.' })
+    } finally { setBusy('') }
   }
 
   const sync = async () => {
@@ -263,7 +286,7 @@ export default function ConlicitacaoIntegration() {
       <ConlicitacaoLab enabled={readOnlyReady && !loadingStatus} />
 
       <SectionCard
-        title="Consultar uma licitação"
+        title="Teste: baixar edital e exportar dados"
         description="Informe somente o número ConLicitação. A VPS localiza automaticamente o filtro e o boletim, sem expor o token ao navegador."
       >
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -322,16 +345,19 @@ export default function ConlicitacaoIntegration() {
                     {documents.map((document, index) => (
                       <li key={`${document.filename}-${index}`} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-200">
                         <FileText size={14} /> {document.filename || `Documento ${index + 1}`}
+                        <button type="button" className="btn-ghost" disabled={Boolean(busy)} onClick={() => downloadDocument(document, index)}>
+                          <Download size={14} /> {busy === `download-${index}` ? 'Baixando…' : 'Baixar arquivo'}
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </details>
               )}
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button type="button" className="btn-primary" disabled={!importReady || Boolean(busy)} onClick={importOpportunity}>
-                  {busy === 'import' ? 'Importando...' : 'Importar para o RagMatch'}
+                <button type="button" className="btn-primary" disabled={!readOnlyReady || Boolean(busy)} onClick={exportOpportunity}>
+                  <Download size={16} /> {busy === 'export' ? 'Exportando…' : 'Exportar JSON do edital'}
                 </button>
-                {!importReady && <span className="text-xs text-amber-700 dark:text-amber-300">A prévia funciona, mas o administrador precisa estar autorizado para gravar.</span>}
+                <span className="text-xs text-slate-500">Exporta os campos da API e do edital, sem criar um registro no CRM.</span>
               </div>
             </article>
           )
