@@ -17,13 +17,6 @@ if [[ ! "$IMAGE_TAG" =~ ^sha-[0-9a-f]{40}$ ]]; then
   exit 1
 fi
 
-# Persiste a versao implantada para que reinicios futuros da stack usem a
-# mesma imagem, mesmo quando ocorrerem fora desta sessao SSH do CI.
-if grep -q '^IMAGE_TAG=' .env.prod; then
-  sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env.prod
-else
-  printf '\nIMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env.prod
-fi
 export IMAGE_TAG
 
 COMPOSE_ARGS=(--env-file .env.prod "${COMPOSE_ARGS[@]}")
@@ -35,5 +28,13 @@ git pull --ff-only origin "$DEPLOY_BRANCH"
 # Valida variaveis obrigatorias e a composicao antes de trocar containers.
 docker compose "${COMPOSE_ARGS[@]}" config -q
 docker compose "${COMPOSE_ARGS[@]}" pull
-docker compose "${COMPOSE_ARGS[@]}" up -d --remove-orphans
+# Nao remover outros containers do mesmo projeto (ex.: CRM da VPS).
+docker compose "${COMPOSE_ARGS[@]}" up -d
+
+# So persiste a tag depois de o Compose aceitar a atualizacao.
+if grep -q '^IMAGE_TAG=' .env.prod; then
+  sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG}/" .env.prod
+else
+  printf '\nIMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env.prod
+fi
 docker compose "${COMPOSE_ARGS[@]}" ps

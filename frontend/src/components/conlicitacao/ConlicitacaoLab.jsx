@@ -4,6 +4,7 @@ import { Download, MessageSquareText, Play, RefreshCw, Route, Search, Square, Ta
 import { conlicitacaoApi } from '../../api/client'
 import { useToast } from '../../contexts/ToastContext'
 import SectionCard from '../ui/SectionCard'
+import { collectConlicitacaoExport, conlicitacaoExportJson } from '../../utils/conlicitacaoExport'
 
 const TABS = [
   { key: 'bulletins', label: 'Boletins', icon: Table2 },
@@ -539,6 +540,24 @@ function ChatTab({ watchId }) {
 }
 
 export default function ConlicitacaoLab({ enabled }) {
+  const { toast } = useToast()
+  const [exporting, setExporting] = useState(false)
+  const [progress, setProgress] = useState('')
+  const cancelExport = useRef(false)
+  const exportAll = async () => {
+    cancelExport.current = false
+    setExporting(true)
+    try {
+      const report = await collectConlicitacaoExport(conlicitacaoApi, setProgress, () => cancelExport.current)
+      const url = URL.createObjectURL(new Blob([conlicitacaoExportJson(report)], { type: 'application/json;charset=utf-8' }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `conlicitacao-completo-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+      anchor.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast({ type: report.complete ? 'success' : 'warning', title: 'JSON exportado', message: `${report.responses.length} respostas; ${report.errors.length} falhas ou interrupções registradas.` })
+    } finally { setExporting(false); setProgress('') }
+  }
   const [tab, setTab] = useState('bulletins')
   const [traceId, setTraceId] = useState('')
   const [watchId, setWatchId] = useState(null)
@@ -553,6 +572,12 @@ export default function ConlicitacaoLab({ enabled }) {
 
   return (
     <SectionCard title="Avaliação da API (dados reais)" description="Consultas somente leitura feitas pela VPS. Os valores aparecem só para administradores; os links assinados dos documentos nunca saem do servidor.">
+      <div className="mb-4 space-y-2">
+        <button type="button" className="btn-ghost" disabled={exporting} onClick={exportAll}>{exporting ? 'Coletando respostas…' : 'Coletar e exportar JSON completo da API'}</button>
+        {exporting && <button type="button" className="btn-ghost" onClick={() => { cancelExport.current = true }}>Interromper e exportar o coletado</button>}
+        <p className="text-xs text-slate-500">Percorre todos os boletins disponíveis nos filtros da assinatura e consulta os chats já monitorados. Mantenha a página aberta; a coleta pode levar vários minutos. Falhas ficam identificadas no JSON.</p>
+        {progress && <p className="text-xs text-slate-500">Consultando: {progress}</p>}
+      </div>
       <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button key={key} type="button" onClick={() => setTab(key)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${tab === key ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}`}>

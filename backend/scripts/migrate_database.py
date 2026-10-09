@@ -17,6 +17,7 @@ from sqlalchemy import inspect, text
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.db.rls import RLS_TABLES
 from app.db.session import SessionLocal, engine
+from app.core.data_preservation import require_explicit_empty_database_bootstrap
 
 BOOTSTRAP_REVISION = "20260926_01"
 
@@ -53,6 +54,7 @@ def main() -> None:
     fresh = not (tables - {"alembic_version"})
 
     if fresh:
+        require_explicit_empty_database_bootstrap()
         if head != BOOTSTRAP_REVISION:
             raise RuntimeError(
                 f"Bootstrap de banco vazio está fixado em {BOOTSTRAP_REVISION}; "

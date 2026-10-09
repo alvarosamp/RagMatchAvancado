@@ -40,6 +40,14 @@ def _to_float(value: str | None) -> float | None:
 
 def _infer_type(text: str) -> str | None:
     lowered = text.lower()
+    if re.match(r"\s*switch\b", lowered):
+        return "switch"
+    if re.search(r"\b(?:dac|direct attach|twinax)\b", lowered):
+        return "Cabo DAC"
+    if re.search(r"\b(?:aoc|active optical cable)\b", lowered):
+        return "Cabo óptico AOC"
+    if re.search(r"(?:cabo|cord[aã]o|patch cord).*(?:[oó]pti[cç]|[oó]ti[cç]|fibra)", lowered):
+        return "Cabo óptico"
     if "switch" in lowered:
         return "switch"
     if "roteador" in lowered or "router" in lowered:

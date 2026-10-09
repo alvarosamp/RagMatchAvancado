@@ -34,6 +34,16 @@ CATEGORY_ALIASES = {
     "access point": "Access Point",
     "ap": "Access Point",
     "transceiver": "Transceiver",
+    "dac": "Cabo DAC",
+    "cabo dac": "Cabo DAC",
+    "cabos dac": "Cabo DAC",
+    "direct attach cable": "Cabo DAC",
+    "cabo optico": "Cabo óptico",
+    "cabo otico": "Cabo óptico",
+    "cabos opticos": "Cabo óptico",
+    "cabo de fibra optica": "Cabo óptico",
+    "aoc": "Cabo óptico AOC",
+    "cabo aoc": "Cabo óptico AOC",
     "modulo optico": "Modulo optico",
     "modulo otico": "Modulo optico",
     "módulo óptico": "Modulo optico",
@@ -240,7 +250,10 @@ def _normalize_bi_features(categoria: str, features: dict[str, Any]) -> dict[str
     elif categoria in ("Transceiver", "Modulo optico"):
         defaults = OPTICAL_BI_DEFAULTS
 
-    normalized = {key: _canonical_bi_value(key, value) for key, value in features.items()}
+    normalized = {
+        key: copy.deepcopy(value) if isinstance(value, (dict, list)) else _canonical_bi_value(key, value)
+        for key, value in features.items()
+    }
     for key, default_value in defaults.items():
         normalized[key] = _canonical_bi_value(key, normalized.get(key, default_value))
     return normalized

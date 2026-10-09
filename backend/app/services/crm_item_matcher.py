@@ -46,6 +46,19 @@ def _remember_lpu_version(product: CrmNoticeProduct, catalog: CrmCatalogProduct)
     product.catalog_lpu_version = getattr(catalog, "lpu_version", None)
 
 
+def _has_validated_match(product: CrmNoticeProduct) -> bool:
+    return bool(
+        getattr(product, "catalog_match_confirmed_at", None)
+        or getattr(product, "catalog_match_confirmed_by", None)
+        or getattr(product, "catalog_match_source", None) in {"manual_confirmed", "match_confirmed"}
+        or getattr(product, "match_reviewed_at", None)
+        or any(
+            match.status == CrmNoticeProductMatchStatus.CONFIRMED
+            for match in getattr(product, "product_matches", ())
+        )
+    )
+
+
 def run_notice_item_match(
     db: Session,
     current_user: User,
@@ -89,8 +102,19 @@ def run_notice_item_match(
         if not catalog_products_filtered:
             raise ValueError("Nenhum produto ativo encontrado no catalogo para a categoria selecionada.")
 
+    # A retry or a new analysis must never replace a human validation. Preserve
+    # the original match IDs, review evidence, catalog attachment and pricing.
+    protected_products = [p for p in notice_products if _has_validated_match(p)]
+    pending_products = [p for p in notice_products if not _has_validated_match(p)]
+    for product in protected_products:
+        best_scores.append({
+            "notice_product_id": product.id,
+            "best_score": max((m.overall_score or 0.0 for m in product.product_matches), default=0.0),
+            "reference_value": _reference_value(product),
+        })
+
     embedding_stats: dict[str, Any] | None = None
-    if ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
+    if pending_products and ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
         try:
             embedding_stats = ensure_catalog_embeddings(db, catalog_products_filtered)
         except Exception as exc:
@@ -98,21 +122,16 @@ def run_notice_item_match(
             # indisponibilidade do provider em score semantico artificial.
             logger.warning("[CRM Match] Embeddings persistidos indisponiveis; usando lexical: %s", exc)
 
-    if notice_product_id:
+    if pending_products:
         db.query(CrmNoticeProductMatch).filter(
             CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
             CrmNoticeProductMatch.notice_id == notice_id,
-            CrmNoticeProductMatch.notice_product_id == notice_product_id,
-        ).delete(synchronize_session=False)
-        db.flush()
-    else:
-        db.query(CrmNoticeProductMatch).filter(
-            CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
-            CrmNoticeProductMatch.notice_id == notice_id,
+            CrmNoticeProductMatch.notice_product_id.in_([p.id for p in pending_products]),
+            CrmNoticeProductMatch.status != CrmNoticeProductMatchStatus.CONFIRMED,
         ).delete(synchronize_session=False)
         db.flush()
 
-    for product in notice_products:
+    for product in pending_products:
         reused_catalog = _find_reusable_catalog_product(product, reusable_matches)
         if reused_catalog is not None:
             reused_match = CrmNoticeProductMatch(
@@ -197,6 +216,7 @@ def run_notice_item_match(
             action="Match catalogo x edital executado",
             details={
                 **summary,
+                "validated_items_preserved": len(protected_products),
                 "embedding": embedding_stats or {"status": "lexical_fallback"},
             },
         )
