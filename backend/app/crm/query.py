@@ -5,7 +5,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, func as sa_func
+from fastapi import HTTPException
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, text
+from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
@@ -18,9 +20,9 @@ from app.crm.models import (
     CrmNoticeDocument,
     CrmNoticeHistory,
     CrmNoticeItemResult,
-    CrmNoticeProductMatch,
     CrmNoticeOutcome,
     CrmNoticeProduct,
+    CrmNoticeProductMatch,
     CrmNoticeSession,
     CrmNoticeStage,
     CrmOrgan,
@@ -134,6 +136,25 @@ def ensure_default_template(db: Session, current_user: User) -> None:
     existing = (
         db.query(CrmChecklistTemplate)
         .filter(CrmChecklistTemplate.tenant_id == current_user.tenant_id, CrmChecklistTemplate.is_default.is_(True))
+        .first()
+    )
+    if existing:
+        return
+
+    # Parallel dashboard reads may all bootstrap a new tenant. Serialize only
+    # that first creation and recheck after acquiring the transaction lock.
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(17061009, :tenant_id)"),
+            {"tenant_id": current_user.tenant_id},
+        )
+    existing = (
+        db.query(CrmChecklistTemplate)
+        .filter(
+            CrmChecklistTemplate.tenant_id == current_user.tenant_id,
+            (CrmChecklistTemplate.is_default.is_(True))
+            | (CrmChecklistTemplate.name == "Habilitacao Padrao"),
+        )
         .first()
     )
     if existing:
@@ -461,6 +482,14 @@ def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, e
         values["user_id"] = current_user.id
 
     if model is CrmCatalogProduct:
+        from app.market_intelligence.domain import gtin, tax_id, valid_cnpj
+
+        for field, validator in [("gtin", gtin), ("supplier_tax_id", lambda value: tax_id(value) if valid_cnpj(value) else None)]:
+            if values.get(field):
+                identifier = validator(values[field])
+                if not identifier:
+                    raise HTTPException(status_code=422, detail=f"Identificador inválido: {field}.")
+                values[field] = identifier
         brand = values.get("brand") or getattr(existing, "brand", None)
         model_name = values.get("model") or getattr(existing, "model", None)
         specification = values.get("specification") or getattr(existing, "specification", None)
@@ -736,7 +765,6 @@ def _delete_virtual_table(db: Session, current_user: User, table_name: str, filt
         raise PermissionError("Remocao nao suportada para esta tabela virtual.")
     # O CRM faz delete + insert para trocar papel. Aqui o delete e um no-op
     # para evitar estado intermediario sem permissao.
-    return None
 
 
 def _first_filter_value(filters: list[dict[str, Any]], column_name: str) -> Any:

@@ -78,10 +78,11 @@ continua disponível. A senha é passada por `PGPASSWORD`, sem interpolação na
 
 O serviço `migrate` distingue banco existente de banco totalmente vazio. No banco
 existente, executa `alembic upgrade head`. No vazio, cria o esquema a partir do
-snapshot atual dos modelos, habilita as políticas RLS e marca a revisão
-`20260922_02`. Esse caminho é deliberadamente fixado nessa revisão: quando uma
-nova migration virar `head`, o bootstrap recusará um banco vazio até o snapshot
-ser atualizado e testado. Não aponte o bootstrap para um banco parcialmente
+snapshot operacional dos modelos, habilita as políticas RLS e marca a revisão
+`20260926_01`. Em seguida aplica a migração analítica `20261009_01`, que usa
+metadados próprios e não faz parte do snapshot operacional. Em produção, um banco
+vazio exige `ALLOW_EMPTY_DATABASE_BOOTSTRAP=1`. Heads futuras não validadas são
+recusadas até que o bootstrap seja atualizado e testado. Não aponte o bootstrap para um banco parcialmente
 inicializado. O RLS também não substitui autorização na API: quem consegue executar
 SQL arbitrário com a conta da aplicação pode definir o parâmetro de tenant da
 própria transação.

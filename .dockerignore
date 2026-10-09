@@ -21,3 +21,9 @@ tests
 backend/__pycache__
 backend/app/__pycache__
 **/__pycache__
+analytics/.venv-dbt
+analytics/.dbt-runtime
+analytics/*.log
+analytics/dbt/target
+analytics/dbt/logs
+analytics/.validation/

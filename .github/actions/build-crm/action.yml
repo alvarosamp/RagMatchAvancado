@@ -1,0 +1,17 @@
+name: Build embedded CRM
+description: Build the pinned CRM source and include it in the frontend image
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: bid-buddy/package-lock.json
+    - shell: bash
+      working-directory: bid-buddy
+      run: npm ci && npm run build:embed
+    - shell: bash
+      run: |
+        mkdir -p frontend/public/crm
+        cp -a bid-buddy/dist-embed/. frontend/public/crm/

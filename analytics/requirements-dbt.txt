@@ -1,0 +1,3 @@
+# Separate CLI environment keeps dbt's transitive pins independent of models.
+dbt-postgres==1.9.1
+dbt-core==1.9.10

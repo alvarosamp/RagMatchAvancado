@@ -1,0 +1,109 @@
+# Isolated local integration environment. Contains only fictitious test data.
+# Build CRM: npm --prefix bid-buddy run build:embed
+# Build worker: python -m analytics.build_image
+# Start: docker compose -p ragmatch-market-test -f docker-compose.analytics.test.yaml up -d
+x-api-code: &api-code
+  image: ${MARKET_TEST_API_IMAGE:-alvarocareli/ragmatch-api:sha-97a06d2e21c0ae69ecc971a7f42d7f76147a703a}
+  volumes:
+    - ./backend/app:/app/app:ro
+    - ./backend/scripts:/app/scripts:ro
+    - ./backend/alembic:/app/alembic:ro
+    - ./backend/alembic.ini:/app/alembic.ini:ro
+  environment: &api-environment
+    DATABASE_URL: postgresql://market_test_runtime:runtime-local-test-only@db:5432/market_local_test
+    MARKET_INTELLIGENCE_ENABLED: ${MARKET_INTELLIGENCE_ENABLED:-true}
+    MARKET_BLING_ANALYTICS_ENABLED: ${MARKET_BLING_ANALYTICS_ENABLED:-false}
+    SECRET_KEY: market-local-integration-test-only-secret-key
+    APP_ENV: production
+    BACKEND_LOG_DIR: /tmp/backend-logs
+    PYTHONUNBUFFERED: "1"
+    AI_FEATURES_ENABLED: "0"
+    OBJECT_STORAGE_ENABLED: "0"
+    AUTH_COOKIE_SECURE: "0"
+    AUTH_TOKEN_IN_BODY: "1"
+    REGISTER_ENABLED: "0"
+    ALLOWED_HOSTS: localhost,127.0.0.1,api
+    CSRF_TRUSTED_ORIGINS: http://localhost:3088,http://127.0.0.1:3088
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: market_local_test
+      POSTGRES_PASSWORD: database-local-test-only
+    volumes: [market_test_data:/var/lib/postgresql/data]
+    ports: ["127.0.0.1:65441:5432"]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U postgres -d market_local_test]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    mem_limit: 512m
+  migrate:
+    <<: *api-code
+    environment:
+      <<: *api-environment
+      DATABASE_URL: postgresql://postgres:database-local-test-only@db:5432/market_local_test
+      ALLOW_EMPTY_DATABASE_BOOTSTRAP: "1"
+    command: [python, scripts/migrate_database.py]
+    depends_on:
+      db: {condition: service_healthy}
+  db-bootstrap:
+    <<: *api-code
+    environment:
+      <<: *api-environment
+      DATABASE_URL: postgresql://postgres:database-local-test-only@db:5432/market_local_test
+      APP_DB_USER: market_test_runtime
+      APP_DB_PASSWORD: runtime-local-test-only
+    command: [python, scripts/provision_app_role.py]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  api:
+    <<: *api-code
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, "8000"]
+    ports: ["127.0.0.1:8088:8000"]
+    depends_on:
+      db-bootstrap: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    mem_limit: 2g
+  worker-data:
+    image: ${MARKET_WORKER_IMAGE:-ragmatch-market-worker:local}
+    volumes:
+      - ./backend/app:/workspace/backend/app:ro
+      - ./analytics:/workspace/analytics:ro
+    environment:
+      MARKET_INTELLIGENCE_ENABLED: ${MARKET_INTELLIGENCE_ENABLED:-true}
+      MARKET_BLING_ANALYTICS_ENABLED: ${MARKET_BLING_ANALYTICS_ENABLED:-false}
+      DATABASE_URL: postgresql://market_test_runtime:runtime-local-test-only@db:5432/market_local_test
+      SECRET_KEY: market-local-integration-test-only-secret-key
+      MARKET_TENANT_IDS: "1,2"
+      PREFECT_HOME: /tmp/.prefect
+    depends_on:
+      db-bootstrap: {condition: service_completed_successfully}
+    read_only: true
+    tmpfs: ["/tmp:size=512m,uid=10001,gid=10001"]
+    mem_limit: 2g
+  seed-demo:
+    <<: *api-code
+    profiles: [local-test-tools]
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./analytics:/app/analytics:ro
+    command: [python, -m, analytics.local_demo]
+    depends_on:
+      db-bootstrap: {condition: service_completed_successfully}
+  frontend:
+    image: ${MARKET_TEST_FRONTEND_IMAGE:-alvarocareli/ragmatch-frontend:sha-97a06d2e21c0ae69ecc971a7f42d7f76147a703a}
+    volumes:
+      - ./bid-buddy/dist-embed:/usr/share/nginx/html/crm:ro
+    ports: ["127.0.0.1:3088:80"]
+    depends_on:
+      api: {condition: service_healthy}
+
+volumes:
+  market_test_data:

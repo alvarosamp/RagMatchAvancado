@@ -1,0 +1,39 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: records
+  - name: ledger
+    schema: core
+    tables:
+      - name: facts
+      - name: entities
+      - name: product_suppliers
+models:
+  - name: stg_latest_records
+    columns:
+      - name: tenant_id
+        data_tests: [not_null]
+      - name: source_id
+        data_tests: [not_null]
+  - name: mart_assortment
+    columns:
+      - name: metric_key
+        data_tests: [not_null]
+      - name: tenant_id
+        data_tests: [not_null]
+  - name: mart_supplier
+    columns:
+      - name: metric_key
+        data_tests: [not_null]
+  - name: mart_brand
+    columns:
+      - name: metric_key
+        data_tests: [not_null]
+  - name: mart_pricing
+    columns:
+      - name: price_type
+        data_tests:
+          - accepted_values:
+              values: [reference_price, supplier_cost, minimum_viable_price, offered_price, winning_price, sales_price, list_price]

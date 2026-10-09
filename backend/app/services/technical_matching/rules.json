@@ -1,0 +1,19 @@
+{
+  "categories": {
+    "switch": ["switch", "switches"],
+    "access_point": ["access point", "access points", "ap", "ponto de acesso"],
+    "transceiver": ["transceiver", "transceivers", "transceptor"]
+  },
+  "attributes": {
+    "portas_rj45": {"type": "number", "aliases": ["Portas RJ45", "rj45_ports"]},
+    "poe_budget_w": {"type": "number", "unit": "W", "aliases": ["Budget PoE (W)", "potencia_poe", "poe_budget", "orçamento PoE"]},
+    "portas_sfp_plus": {"type": "number", "aliases": ["Portas SFP+", "sfp_plus_ports"]},
+    "portas_sfp": {"type": "number", "aliases": ["Portas SFP", "sfp_ports"]},
+    "velocidade_uplink_mbps": {"type": "number", "unit": "Mbps", "aliases": ["velocidade_uplink", "uplink_speed_mbps"]},
+    "capacidade_comutacao_gbps": {"type": "number", "unit": "Gbps", "aliases": ["Capacidade de Comutação", "switching_capacity_gbps"]},
+    "gerenciavel": {"type": "boolean", "aliases": ["gerenciável", "managed"]},
+    "poe": {"type": "boolean", "aliases": ["PoE", "suporte_poe"]},
+    "alcance_m": {"type": "number", "unit": "m", "aliases": ["alcance", "reach_m"]},
+    "conector": {"type": "string", "aliases": ["connector"]}
+  }
+}

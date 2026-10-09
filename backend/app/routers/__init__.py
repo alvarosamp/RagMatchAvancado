@@ -18,6 +18,7 @@ from app.routers.edital_locks import router as edital_locks_router
 from app.routers.export import router as export_router
 from app.routers.health import router as health_router
 from app.routers.market import router as market_router
+from app.routers.market_intelligence import router as market_intelligence_router
 from app.routers.ops import router as ops_router
 from app.routers.pncp import router as pncp_router
 from app.routers.reports import router as reports_router
@@ -37,6 +38,7 @@ ROUTERS = (
     documents_router,
     switches_router,
     market_router,
+    market_intelligence_router,
     bid_robot_router,
     editais_router,
     edital_locks_router,

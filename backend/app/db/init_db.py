@@ -171,6 +171,8 @@ def _ensure_crm_schema_updates() -> None:
             "category": "VARCHAR",
             "min_price": "DOUBLE PRECISION",
             "manufacturer_part_number": "VARCHAR",
+            "gtin": "VARCHAR(14)",
+            "supplier_tax_id": "VARCHAR(14)",
             "lpu_version": "VARCHAR",
             "lpu_drive_url": "TEXT",
             "supplier_name": "VARCHAR",
@@ -179,6 +181,7 @@ def _ensure_crm_schema_updates() -> None:
             "equivalent_skus": "TEXT",
         },
     )
+    _ensure_columns(inspector, "crm_notice_item_results", {"competitor_tax_id": "VARCHAR(14)"})
     _ensure_indexes(
         [
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_tor_id ON crm_notices (tenant_id, tor_id)",

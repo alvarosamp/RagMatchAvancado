@@ -1,0 +1,25 @@
+name: ragmatch_market
+version: '1.0.0'
+config-version: 2
+profile: ragmatch_market
+model-paths: [models]
+macro-paths: [macros]
+test-paths: [tests]
+models:
+  ragmatch_market:
+    +pre-hook: "select set_config('app.current_tenant_id', '{{ env_var('MARKET_TENANT_ID') | int }}', true)"
+    staging:
+      +schema: staging
+      +materialized: view
+      +post-hook: "alter view {{ this }} set (security_invoker = true)"
+    core:
+      +schema: core
+      +materialized: view
+      +post-hook: "alter view {{ this }} set (security_invoker = true)"
+    marts:
+      +full_refresh: false
+      +schema: mart
+      +materialized: incremental
+      +incremental_strategy: delete+insert
+      +unique_key: [tenant_id, metric_key]
+      +post-hook: "{{ secure_mart(this) }}"

@@ -1,0 +1,29 @@
+name: CRM commercial intelligence
+on:
+  push:
+    paths: ['bid-buddy', 'bid-buddy/**', '.gitmodules', '.github/workflows/crm-commercial.yml']
+  pull_request:
+    paths: ['bid-buddy', 'bid-buddy/**', '.gitmodules', '.github/workflows/crm-commercial.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  crm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: bid-buddy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: bid-buddy/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit -p tsconfig.app.json
+      - run: npm run test
+      - run: npm run build:embed

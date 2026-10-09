@@ -20,6 +20,7 @@ from app.db.session import SessionLocal, engine
 from app.core.data_preservation import require_explicit_empty_database_bootstrap
 
 BOOTSTRAP_REVISION = "20260926_01"
+SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261009_01"}
 
 
 def _bootstrap_empty_database(config: Config) -> None:
@@ -55,13 +56,17 @@ def main() -> None:
 
     if fresh:
         require_explicit_empty_database_bootstrap()
-        if head != BOOTSTRAP_REVISION:
+        if head != BOOTSTRAP_REVISION and head not in SUPPORTED_POST_BOOTSTRAP_HEADS:
             raise RuntimeError(
                 f"Bootstrap de banco vazio está fixado em {BOOTSTRAP_REVISION}; "
                 f"a migration head atual é {head}. Atualize e valide o snapshot antes de implantar."
             )
         print("Banco vazio detectado; criando snapshot inicial e políticas RLS.")
         _bootstrap_empty_database(config)
+        # Operational models represent the pinned snapshot. Analytical tables
+        # belong to separate metadata and must be created by their migration.
+        if head != BOOTSTRAP_REVISION:
+            command.upgrade(config, "head")
     else:
         print("Banco existente detectado; aplicando migrations Alembic.")
         command.upgrade(config, "head")

@@ -1,0 +1,17 @@
+# Layer over the isolated demo compose to validate packaged images, without code mounts.
+services:
+  migrate:
+    image: alvarocareli/ragmatch-api:${MARKET_RELEASE_TAG:-commercial-20261009-v4}
+    volumes: !reset []
+  db-bootstrap:
+    image: alvarocareli/ragmatch-api:${MARKET_RELEASE_TAG:-commercial-20261009-v4}
+    volumes: !reset []
+  api:
+    image: alvarocareli/ragmatch-api:${MARKET_RELEASE_TAG:-commercial-20261009-v4}
+    volumes: !reset []
+  frontend:
+    image: alvarocareli/ragmatch-frontend:${MARKET_RELEASE_TAG:-commercial-20261009-v4}
+    volumes: !reset []
+  worker-data:
+    image: alvarocareli/ragmatch-market-worker:${MARKET_RELEASE_TAG:-commercial-20261009-v4}
+    volumes: !reset []

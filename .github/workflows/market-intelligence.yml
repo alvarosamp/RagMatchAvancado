@@ -1,0 +1,75 @@
+name: Market intelligence
+permissions:
+  contents: read
+on:
+  push:
+    paths: ['backend/app/market_intelligence/**', 'backend/app/routers/market_intelligence.py', 'backend/scripts/migrate_database.py', 'backend/alembic/**', 'analytics/**', 'docker-compose.analytics*.yaml', '.github/workflows/market-intelligence.yml']
+  pull_request:
+    paths: ['backend/app/market_intelligence/**', 'backend/app/routers/market_intelligence.py', 'backend/scripts/migrate_database.py', 'backend/alembic/**', 'analytics/**', 'docker-compose.analytics*.yaml', '.github/workflows/market-intelligence.yml']
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: market_analytics_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test-only
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_MARKET_PG_URL: postgresql://postgres:test-only@localhost:5432/market_analytics_test
+      DATABASE_URL: postgresql://postgres:test-only@localhost:5432/market_analytics_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r analytics/requirements.txt pytest ruff alembic fastapi python-jose[cryptography] bcrypt python-multipart
+      - run: python -m pytest analytics/tests -q
+      - run: ruff check backend/app/market_intelligence backend/app/routers/market_intelligence.py backend/app/crm/query.py analytics backend/alembic/versions/20261009_01_market_intelligence.py backend/alembic/versions/20261009_02_procurement.py
+      - run: python -m venv /tmp/dbt && /tmp/dbt/bin/pip install -r analytics/requirements-dbt.txt
+      - run: /tmp/dbt/bin/dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt
+        env:
+          MARKET_TENANT_ID: '1'
+          MARKET_DB_HOST: localhost
+          PGOPTIONS: '-c app.current_tenant_id=1'
+          MARKET_DB_USER: market_transform_test
+          MARKET_DB_PASSWORD: test-only
+          MARKET_DB_NAME: market_analytics_test
+      - run: /tmp/dbt/bin/dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt
+        env:
+          MARKET_TENANT_ID: '2'
+          PGOPTIONS: '-c app.current_tenant_id=2'
+          MARKET_DB_HOST: localhost
+          MARKET_DB_USER: market_transform_test
+          MARKET_DB_PASSWORD: test-only
+          MARKET_DB_NAME: market_analytics_test
+      - run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          with create_engine(os.environ['TEST_MARKET_PG_URL']).connect() as db:
+              assert set(db.execute(text('select tenant_id from mart.mart_assortment')).scalars()) == {1, 2}
+          PY
+      - name: Build and smoke test read-only analytics image
+        run: |
+          python -m analytics.build_image --tag market-worker:test
+          docker run --rm --read-only --tmpfs /tmp:size=512m,uid=10001,gid=10001 -e DATABASE_URL -e SECRET_KEY=ci-test-only market-worker:test python -m app.market_intelligence.worker --help
+          docker run --rm --read-only --tmpfs /tmp:size=512m,uid=10001,gid=10001 market-worker:test python -m analytics.flows.pipeline --help
+      - name: Rebuild deleted tenant slice through Prefect without changing other tenant
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          with create_engine(os.environ['TEST_MARKET_PG_URL']).begin() as db:
+              db.execute(text("update core.facts set active=false where tenant_id=1 and id='d1'"))
+          PY
+          docker run --rm --network host --read-only --tmpfs /tmp:size=512m,uid=10001,gid=10001 -e PREFECT_SERVER_ANALYTICS_ENABLED=false -e MARKET_DB_HOST=localhost -e MARKET_DB_USER=market_transform_test -e MARKET_DB_PASSWORD=test-only -e MARKET_DB_NAME=market_analytics_test market-worker:test python -m analytics.flows.pipeline --tenant 1 --dbt
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          with create_engine(os.environ['TEST_MARKET_PG_URL']).connect() as db:
+              assert set(db.execute(text('select tenant_id from mart.mart_assortment')).scalars()) == {2}
+          PY

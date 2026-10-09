@@ -1,0 +1,15 @@
+# Production overlay, after docker-compose.prod.yaml and docker-compose.analytics.yaml.
+# Reuse the operational database network and wait for runtime role grants.
+services:
+  worker-data:
+    networks: [app-internal]
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+  data-scheduler:
+    networks: [app-internal]
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+  metabase-market:
+    networks: [app-internal]
