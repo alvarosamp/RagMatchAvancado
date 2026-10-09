@@ -265,7 +265,7 @@ export default function ConlicitacaoIntegration() {
           <StatusPill active={status.enabled}>Habilitada</StatusPill>
           <StatusPill active={status.configured}>Token configurado</StatusPill>
           <StatusPill active={readOnlyReady}>Leitura disponível</StatusPill>
-          <StatusPill active={importReady}>Importação manual</StatusPill>
+          <StatusPill active={readOnlyReady}>Download e exportação</StatusPill>
           <StatusPill active={status.authorized}>Sincronização autorizada</StatusPill>
           {loadingStatus && <span className="text-xs text-slate-500">Consultando...</span>}
         </div>
