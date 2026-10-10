@@ -7,6 +7,8 @@ services:
       db-bootstrap:
         condition: service_completed_successfully
   data-scheduler:
+    # CRM dashboards and supplier views follow portal updates automatically.
+    profiles: !reset []
     networks: [app-internal]
     depends_on:
       db-bootstrap:

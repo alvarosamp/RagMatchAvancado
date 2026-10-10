@@ -244,6 +244,17 @@ class Feedback(TenantRow, WarehouseBase):
     )
 
 
+class SupplierPresentationLink(TenantRow, WarehouseBase):
+    __tablename__ = "supplier_presentation_links"
+    __table_args__ = ({"schema": "core"},)
+    supplier_id = Column(String(36), nullable=False)
+    token_hash = Column(String(64), nullable=False)
+    scope = Column(JSON_PAYLOAD, nullable=False, default=dict)
+    user_id = Column(Integer, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True))
+
+
 class ModelRun(TenantRow, WarehouseBase):
     __tablename__ = "model_runs"
     __table_args__ = ({"schema": "mart"},)

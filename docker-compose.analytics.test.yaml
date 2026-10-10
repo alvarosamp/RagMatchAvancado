@@ -88,6 +88,13 @@ services:
     read_only: true
     tmpfs: ["/tmp:size=512m,uid=10001,gid=10001"]
     mem_limit: 2g
+  data-scheduler:
+    extends:
+      service: worker-data
+    command: [python, -m, analytics.flows.pipeline, --schedule]
+    environment:
+      MARKET_SCHEDULE_SECONDS: "300"
+      MARKET_SCHEDULE_SOURCES: crm
   seed-demo:
     <<: *api-code
     profiles: [local-test-tools]

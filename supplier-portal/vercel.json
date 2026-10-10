@@ -1,0 +1,4 @@
+{
+  "rewrites": [{"source":"/api/supplier-view","destination":"https://ragmatch.srv1934808.hstgr.cloud/api/crm/market-intelligence/shared-presentation"}],
+  "headers": [{"source":"/(.*)","headers":[{"key":"Referrer-Policy","value":"no-referrer"},{"key":"Cache-Control","value":"no-store"},{"key":"X-Robots-Tag","value":"noindex, nofollow"},{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"}]}]
+}

@@ -4,7 +4,7 @@ import json
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -21,6 +21,7 @@ from app.market_intelligence.models import (
     Feedback,
     ModelRun,
     Review,
+    SupplierPresentationLink,
     SyncRun,
 )
 from app.market_intelligence.procurement_schemas import (
@@ -44,6 +45,7 @@ from app.market_intelligence.schemas import (
     SyncRequest,
 )
 from app.market_intelligence.service import as_dict, diagnostic, fact_query, report
+from app.market_intelligence.sharing import ShareInput
 
 
 def require_market_enabled():
@@ -98,6 +100,65 @@ def filters(
 
 
 Filters = Annotated[dict, Depends(filters)]
+
+
+@router.post("/supplier-presentations", status_code=201)
+def create_supplier_presentation(payload: "ShareInput", user: Writer, db: Database):
+    from app.market_intelligence.sharing import create_share
+
+    return create_share(db, user, payload)
+
+
+@router.get("/supplier-presentations")
+def list_supplier_presentations(user: Writer, db: Database):
+    rows = (
+        scoped(db, SupplierPresentationLink, user.tenant_id)
+        .order_by(SupplierPresentationLink.created_at.desc())
+        .limit(100)
+        .all()
+    )
+    suppliers = {
+        row.id: row.name
+        for row in scoped(db, Entity, user.tenant_id).filter_by(kind="supplier").all()
+    }
+    return [
+        {
+            "id": row.id,
+            "supplier": suppliers.get(row.supplier_id, "Fornecedor indisponível"),
+            "expires_at": row.expires_at,
+            "revoked_at": row.revoked_at,
+        }
+        for row in rows
+    ]
+
+
+@router.delete("/supplier-presentations/{link_id}", status_code=204)
+def revoke_supplier_presentation(link_id: str, user: Writer, db: Database):
+    row = (
+        scoped(db, SupplierPresentationLink, user.tenant_id)
+        .filter_by(id=link_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(404, "Link não encontrado nesta empresa.")
+    row.revoked_at = now()
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/shared-presentation")
+def get_shared_presentation(
+    db: Database,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+):
+    from app.market_intelligence.sharing import shared_payload
+
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Link de apresentação necessário.")
+    return shared_payload(db, authorization[7:])
 
 
 @router.get("/diagnostic")
