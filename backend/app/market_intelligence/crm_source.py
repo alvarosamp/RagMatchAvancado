@@ -205,6 +205,37 @@ def reconcile_crm(db, tenant_id, run_id):
             "technical_attributes": technical_attributes(
                 item.technical_characteristics or item.description
             ),
+            "requested_bi_features": {
+                **(
+                    payload.get("caracteristicas_bi")
+                    if isinstance(payload.get("caracteristicas_bi"), dict)
+                    else {}
+                ),
+                **(item.bi_features if isinstance(item.bi_features, dict) else {}),
+                **{
+                    column.key.removeprefix("bi_feature_"): getattr(item, column.key)
+                    for column in inspect(item).mapper.column_attrs
+                    if column.key.startswith("bi_feature_")
+                    and getattr(item, column.key) is not None
+                },
+            },
+            "notice_context": {
+                "title": notice.title,
+                "auction_date": notice.auction_date.isoformat()
+                if notice.auction_date
+                else None,
+                "risk_identified": notice.bi_risk_identified,
+                "risk_operational": notice.bi_risk_operational,
+                "risk_documental": notice.bi_risk_documental,
+            },
+            "item_context": {
+                "technical_characteristics": item.technical_characteristics,
+                "risk_associated": item.risk_associated,
+                "warranty": item.warranty,
+                "delivery_deadline": item.delivery_deadline,
+                "brand_direction_exists": item.brand_direction_exists,
+                "brand_direction_model": item.brand_direction_model,
+            },
             "split_group": notice.id,
             "event_date_basis": "notice_created_at",
             "reviewed_at": timestamp(item.match_reviewed_at).isoformat()

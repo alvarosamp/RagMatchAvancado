@@ -23,11 +23,11 @@ from app.crm.sales_process_importer import (
     parse_datetime_pair,
     parse_float,
 )
+from app.services.analysis_contract_values import display_contract_term
 from app.services.analysis_normalizer import (
     normalize_analysis_result,
     normalize_brand_direction,
 )
-from app.services.analysis_contract_values import display_contract_term
 
 
 def sync_analysis_json_to_crm(
@@ -130,12 +130,7 @@ def sync_analysis_json_to_crm(
         created = True
     else:
         _apply_particularity_line_fields(notice_fields, getattr(notice, "particularities", None), only_missing=True)
-        for field_name, value in notice_fields.items():
-            if field_name == "particularities":
-                setattr(notice, field_name, None)
-                continue
-            if value is not None or getattr(notice, field_name) is None:
-                setattr(notice, field_name, value)
+        _update_imported_notice(notice, notice_fields)
 
     sync_notice_relationships(db, notice, created_by=context.user.id)
     _ensure_auction_session(db, context, notice, auction_date, result)
@@ -157,6 +152,15 @@ def sync_analysis_json_to_crm(
         "documents": documents,
         "import_key": import_key,
     }
+
+
+def _update_imported_notice(notice: Any, fields: dict[str, Any]) -> None:
+    """Refresh extraction data without resetting commercial work or authorship."""
+    for field_name, value in fields.items():
+        if field_name in {"particularities", "stage", "outcome", "owner_id", "created_by", "sales_status"}:
+            continue
+        if value is not None or getattr(notice, field_name) is None:
+            setattr(notice, field_name, value)
 
 
 def _find_existing_notice(
@@ -440,7 +444,7 @@ def _notify_telegram_notice(notice: Any, products_count: int) -> None:
             data=data,
             timeout=8,
         ).read()
-    except Exception:
+    except (OSError, ValueError):
         # Notificacao nao pode quebrar importacao.
         return
 
@@ -458,7 +462,6 @@ def _upsert_products(
 
     imported = 0
     original_items = original_items or []
-    imported_product_ids: set[str] = set()
     for index, item in enumerate(items, start=1):
         original_item = _matching_original_item(item, original_items, index) or item
         original_features = (
@@ -515,8 +518,17 @@ def _upsert_products(
             db.add(product)
             db.flush()
 
+        previous = {column.key: getattr(product, column.key) for column in product.__mapper__.column_attrs}
+        quantity = quantity if quantity is not None else previous.get("quantity")
+        if unit_value is None and total_value is not None and quantity not in (None, 0):
+            unit_value = round(total_value / quantity, 4)
+        if unit_value is None and total_value is None:
+            unit_value = previous.get("reference_price")
+        if total_value is None and unit_value is not None and quantity is not None:
+            total_value = round(unit_value * quantity, 4)
         product.item_number = item_number
-        product.description = _description_for_item(item, item_number)
+        if has_meaningful_value(item.get("descricao_original")) or not previous.get("description"):
+            product.description = _description_for_item(item, item_number)
         product.lot = lot
         product.product_code = optional_meaningful_text(original_direction.get("marca_modelo"))
         product.is_exclusive_epp = parse_bool(item.get("exclusividade_me_epp_item"))
@@ -556,28 +568,20 @@ def _upsert_products(
         product.notes = _item_notes(item)
         product.sort_order = index - 1
 
+        # Missing extraction fields do not erase an earlier valid observation.
+        for field_name, value in previous.items():
+            if getattr(product, field_name) is None and value is not None:
+                setattr(product, field_name, value)
+        if previous.get("raw_payload"):
+            product.raw_payload = {**previous["raw_payload"], **(product.raw_payload or {})}
+        if previous.get("bi_features"):
+            product.bi_features = {**previous["bi_features"], **(product.bi_features or {})}
+        if previous.get("notes"):
+            product.notes = previous["notes"]
         sync_notice_from_product(db, product, created_by=context.user.id)
-        imported_product_ids.add(product.id)
         imported += 1
-    _remove_stale_imported_products(db, notice, imported_product_ids)
+    # Reimports are additive: omission from a partial JSON is not a deletion request.
     return imported
-
-
-def _remove_stale_imported_products(db: Session, notice: Any, imported_product_ids: set[str]) -> None:
-    """Remove old JSON-imported items that are no longer present in the current payload."""
-    if not imported_product_ids:
-        return
-    from app.crm.models import CrmNoticeProduct
-
-    stale_products = (
-        db.query(CrmNoticeProduct)
-        .filter(CrmNoticeProduct.notice_id == notice.id)
-        .filter(CrmNoticeProduct.raw_payload.is_not(None))
-        .all()
-    )
-    for product in stale_products:
-        if product.id not in imported_product_ids:
-            db.delete(product)
 
 
 def _matching_original_item(item: dict[str, Any], original_items: list[Any], index: int) -> dict[str, Any] | None:
