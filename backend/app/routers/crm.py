@@ -95,6 +95,16 @@ router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
 
 
+@router.get("/dashboard-data")
+def crm_dashboard_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.crm.dashboard import dashboard_snapshot
+
+    return dashboard_snapshot(db, current_user.tenant_id)
+
+
 @router.get("/notices/{notice_id}/match-json")
 def export_crm_notice_match_json(
     notice_id: str,
