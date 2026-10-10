@@ -43,9 +43,11 @@ def main():
     root = Path(__file__).resolve().parents[1]
     if not (root / "bid-buddy/dist-embed/index.html").is_file():
         parser.error("Build the CRM with npm run build:embed first.")
+    if not (root / "frontend/dist/index.html").is_file():
+        parser.error("Build the frontend with npm run build first.")
     components = {
         "api": (API_BASE, ["backend/app", "backend/scripts", "backend/alembic", "backend/alembic.ini"], 'COPY backend/app /app/app\nCOPY backend/scripts /app/scripts\nCOPY backend/alembic /app/alembic\nCOPY backend/alembic.ini /app/alembic.ini\nCMD ["uvicorn","app.main:app","--host","0.0.0.0","--port","8000"]'),
-        "frontend": (WEB_BASE, ["bid-buddy/dist-embed"], "COPY bid-buddy/dist-embed /usr/share/nginx/html/crm"),
+        "frontend": (WEB_BASE, ["frontend/dist", "bid-buddy/dist-embed"], "RUN rm -rf /usr/share/nginx/html/*\nCOPY frontend/dist /usr/share/nginx/html\nCOPY bid-buddy/dist-embed /usr/share/nginx/html/crm"),
         "market-worker": (args.worker_base, ["backend/app", "analytics"], "COPY --chown=10001:10001 backend/app /workspace/backend/app\nCOPY --chown=10001:10001 analytics /workspace/analytics"),
     }
     manifest = {"tag": args.tag, "images": {}, "source": "tested working tree; includes uncommitted implementation"}

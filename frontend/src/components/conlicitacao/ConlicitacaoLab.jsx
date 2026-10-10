@@ -5,6 +5,7 @@ import { conlicitacaoApi } from '../../api/client'
 import { useToast } from '../../contexts/ToastContext'
 import SectionCard from '../ui/SectionCard'
 import { collectConlicitacaoExport, conlicitacaoExportJson } from '../../utils/conlicitacaoExport'
+import { classifyChatMessage, filterChatMessages, parseSelectedLots } from '../../utils/conlicitacaoChatFilter'
 
 const TABS = [
   { key: 'bulletins', label: 'Boletins', icon: Table2 },
@@ -432,7 +433,7 @@ function TraceTab({ initialId, users, onWatchChat }) {
   )
 }
 
-function ChatTab({ watchId }) {
+export function ChatTab({ watchId }) {
   const { toast } = useToast()
   const [monitored, setMonitored] = useState(null)
   const [selected, setSelected] = useState(watchId || null)
@@ -440,6 +441,14 @@ function ChatTab({ watchId }) {
   const [meta, setMeta] = useState(null)
   const [auto, setAuto] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [preferences, setPreferences] = useState({})
+  const preference = preferences[selected] || { lots: '', showAll: false }
+  const selection = parseSelectedLots(preference.lots)
+  const updatePreference = (patch) => setPreferences(current => ({
+    ...current, [selected]: { ...(current[selected] || { lots: '', showAll: false }), ...patch },
+  }))
+  const visibleMessages = filterChatMessages(messages, selection.lots, preference.showAll || !selection.valid)
+  const requestVersion = useRef(0)
   const seen = useRef(new Map())
   const primed = useRef(false)
 
@@ -458,9 +467,11 @@ function ChatTab({ watchId }) {
 
   const loadMessages = async (biddingId = selected) => {
     if (!biddingId) return
+    const version = ++requestVersion.current
     setLoading(true)
     try {
       const { data } = await conlicitacaoApi.labMessages(biddingId, { per_page: 100 })
+      if (version !== requestVersion.current) return
       const now = Date.now()
       // A primeira leitura só registra o histórico; depois, ids novos são
       // destacados e o atraso de detecção é medido.
@@ -474,22 +485,25 @@ function ChatTab({ watchId }) {
       setMessages(rows)
       setMeta({ latency: data.latency_ms, pagination: data.data.pagination, at: new Date() })
     } catch (error) {
+      if (version !== requestVersion.current) return
       toast({ type: 'error', title: 'Mensagens', message: apiError(error, 'Falha ao ler o chat.') })
-    } finally { setLoading(false) }
+    } finally { if (version === requestVersion.current) setLoading(false) }
   }
 
   useEffect(() => {
     seen.current = new Map()
     primed.current = false
     setMessages([])
+    setMeta(null)
     loadMessages(selected)
+    return () => { requestVersion.current += 1 }
   }, [selected])
 
   useEffect(() => {
-    if (!auto || !selected) return undefined
+    if (!auto || !selected || loading) return undefined
     const timer = setInterval(() => loadMessages(selected), 30_000)
     return () => clearInterval(timer)
-  }, [auto, selected])
+  }, [auto, selected, loading])
 
   const list = monitored?.data?.electronics_trading || []
 
@@ -520,19 +534,34 @@ function ChatTab({ watchId }) {
           <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={auto} onChange={(event) => setAuto(event.target.checked)} /> Atualizar a cada 30 s</label>
         </div>
         {meta && <p className="text-[11px] text-slate-500">{meta.pagination?.total_entries ?? messages.length} mensagens · resposta <Latency ms={meta.latency} /> · verificado {meta.at.toLocaleTimeString('pt-BR')}</p>}
+        {selected && (
+          <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+            <label className="block text-xs font-medium">
+              Meus itens/lotes nesta licitação
+              <input className="input mt-1" value={preference.lots} placeholder="Ex.: 12, 15, 20" onChange={event => updatePreference({ lots: event.target.value })} aria-invalid={!selection.valid} />
+            </label>
+            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={preference.showAll} onChange={event => updatePreference({ showAll: event.target.checked })} /> Mostrar também mensagens dos outros itens</label>
+            {!selection.valid && <p role="alert" className="text-xs text-rose-700">Informe números positivos separados por vírgula, espaço ou ponto e vírgula. Todos os itens estão visíveis até corrigir.</p>}
+            <p className="text-xs text-slate-600 dark:text-slate-300">{visibleMessages.length} de {messages.length} mensagens carregadas visíveis · {messages.length - visibleMessages.length} ocultas pelo filtro. Sem itens escolhidos, aparecem somente mensagens sem item identificado.</p>
+            <p className="text-[11px] text-slate-500">Usa o campo lote da API e referências explícitas a item/lote no texto. Mensagens sem identificação continuam visíveis por segurança e podem não ser gerais. O número é o do portal, não o código do produto. O filtro vale para as mensagens carregadas; não altera o monitoramento na ConLicitação.</p>
+          </div>
+        )}
         <ol className="max-h-[32rem] space-y-2 overflow-auto">
-          {messages.map((message) => {
+          {visibleMessages.map((message) => {
+            const classification = classifyChatMessage(message)
             const fresh = message.firstSeen && !message.firstSeen.initial
             const delay = fresh ? Math.round((message.firstSeen.at - new Date(message.message_time).getTime()) / 1000) : null
             return (
               <li key={message.id} className={`rounded-lg border p-3 text-xs ${fresh ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' : 'border-slate-200 dark:border-slate-700'}`}>
                 <p className="font-semibold">{message.message_holder} <span className="font-normal text-slate-500">· {dateTime(message.message_time)}{message.lot != null && ` · lote ${message.lot}`}</span></p>
                 <p className="mt-1 whitespace-pre-wrap">{message.message_highlight}</p>
+                <p className="mt-1 text-[11px] text-slate-500">{classification.kind === 'unassigned' ? 'Geral / sem item identificado' : `${classification.kind === 'text' ? 'Item/lote citado no texto' : 'Item/lote da API'}: ${classification.lots.join(', ')}`}</p>
                 {delay != null && <p className="mt-1 text-[11px] text-amber-700">Nova · detectada {delay}s após a hora da mensagem</p>}
               </li>
             )
           })}
           {selected && !messages.length && !loading && <li className="text-xs text-slate-500">Nenhuma mensagem ainda.</li>}
+          {selected && messages.length > 0 && !visibleMessages.length && <li className="text-xs text-slate-500">Nenhuma mensagem carregada corresponde aos seus itens. Marque a opção acima para conferir todos.</li>}
         </ol>
       </div>
     </div>
