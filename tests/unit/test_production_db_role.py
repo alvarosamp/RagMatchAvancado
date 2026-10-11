@@ -24,11 +24,12 @@ SPEC.loader.exec_module(provision_app_role)
 
 
 class FakeCursor:
-    def __init__(self, *, superuser=True, role_exists=False):
+    def __init__(self, *, superuser=True, role_exists=False, analytics_schemas=False):
         self.answers = iter([
             ("postgres", "edital_matcher"),
             (superuser,),
             (1,) if role_exists else None,
+            *[(1,) if analytics_schemas else None for _ in range(4)],
         ])
         self.statements = []
 
@@ -73,6 +74,16 @@ def test_runtime_role_is_created_without_rls_bypass_and_granted_only_dml():
 def test_provisioning_rejects_admin_role_as_runtime_role():
     with pytest.raises(ValueError, match="diferente"):
         provision_app_role.provision(FakeConnection(), "postgres", "secret")
+
+
+def test_existing_analytics_schemas_receive_runtime_dml_without_ddl():
+    connection = FakeConnection(analytics_schemas=True)
+    provision_app_role.provision(connection, "ragmatch_app", "secret")
+    queries = "\n".join(str(statement) for statement, _ in connection.fake_cursor.statements)
+    for schema in ("raw", "core", "mart", "staging"):
+        assert f"Identifier('{schema}')" in queries
+    assert "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA" in queries
+    assert "GRANT CREATE" not in queries
 
 
 def test_provisioning_requires_admin_connection():

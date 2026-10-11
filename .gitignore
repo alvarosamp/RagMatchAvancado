@@ -42,6 +42,9 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
+.validation/
+test-results/
+.deploy.lock
 .cache
 nosetests.xml
 coverage.xml

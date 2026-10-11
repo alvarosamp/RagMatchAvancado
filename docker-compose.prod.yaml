@@ -8,7 +8,7 @@ x-production-defaults: &production-defaults
 
 services:
 
-  db:
+  db:  
     <<: *production-defaults
     image: pgvector/pgvector:pg16
     restart: unless-stopped

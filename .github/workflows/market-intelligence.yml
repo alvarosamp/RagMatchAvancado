@@ -2,6 +2,7 @@ name: Market intelligence
 permissions:
   contents: read
 on:
+  workflow_call:
   push:
     paths: ['backend/app/market_intelligence/**', 'backend/app/routers/market_intelligence.py', 'backend/scripts/migrate_database.py', 'backend/alembic/**', 'analytics/**', 'docker-compose.analytics*.yaml', '.github/workflows/market-intelligence.yml']
   pull_request:
@@ -27,7 +28,14 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r analytics/requirements.txt pytest ruff alembic fastapi python-jose[cryptography] bcrypt python-multipart
-      - run: python -m pytest analytics/tests -q
+      - run: pip install 'coverage>=7.10,<8'
+      - run: python -m coverage run --source=backend/app --data-file=.coverage.analytics -m pytest analytics/tests -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analytics-coverage
+          include-hidden-files: true
+          path: .coverage.analytics
+          if-no-files-found: error
       - run: ruff check backend/app/market_intelligence backend/app/routers/market_intelligence.py backend/app/crm/query.py analytics backend/alembic/versions/20261009_01_market_intelligence.py backend/alembic/versions/20261009_02_procurement.py
       - run: python -m venv /tmp/dbt && /tmp/dbt/bin/pip install -r analytics/requirements-dbt.txt
       - run: /tmp/dbt/bin/dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt

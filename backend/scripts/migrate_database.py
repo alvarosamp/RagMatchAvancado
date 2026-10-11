@@ -20,7 +20,7 @@ from app.db.session import SessionLocal, engine
 from app.core.data_preservation import require_explicit_empty_database_bootstrap
 
 BOOTSTRAP_REVISION = "20260926_01"
-SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261009_01"}
+SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261009_01", "20261009_02", "20261010_03"}
 
 
 def _bootstrap_empty_database(config: Config) -> None:

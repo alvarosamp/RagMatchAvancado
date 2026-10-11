@@ -104,7 +104,18 @@ def get_current_user(
         logger.warning(f"[Auth] JWT inválido: {e}")
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == int(user_id)).first() if user_id else db.query(User).filter(User.email == email).first()
+    if user_id is not None:
+        try:
+            if isinstance(user_id, bool) or not isinstance(user_id, (int, str)):
+                raise ValueError("Invalid user identifier")
+            normalized_user_id = int(user_id)
+            if normalized_user_id <= 0:
+                raise ValueError("Invalid user identifier")
+        except (TypeError, ValueError):
+            raise credentials_exception
+        user = db.query(User).filter(User.id == normalized_user_id).first()
+    else:
+        user = db.query(User).filter(User.email == email).first()
     if not user:
         logger.warning(f"[Auth] Usuário não encontrado: {email}")
         raise credentials_exception
