@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -30,12 +31,14 @@ class LpuImportSummary:
     skipped_duplicates: int = 0
     duplicate_updates: int = 0
     removed_stale: int = 0
+    reference_sheets: list[str] = field(default_factory=list)
     lpu_version: str = ""
     lpu_drive_url: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "sheets": self.sheets,
+            "reference_sheets": self.reference_sheets,
             "items": self.processed,
             "total_items": self.processed,
             "processed": self.processed,
@@ -73,8 +76,11 @@ def import_lpu_catalog(
         header_row, header = _find_header(sheet)
         if not any(header):
             continue
-        summary.sheets += 1
         normalized_header = [_norm(value) for value in header]
+        if "disponibilidade" not in normalized_header:
+            summary.reference_sheets.append(sheet.title)
+            continue
+        summary.sheets += 1
 
         for row in sheet.iter_rows(min_row=header_row + 1, values_only=True):
             if not _row_has_values(row):
@@ -102,8 +108,23 @@ def import_lpu_catalog(
                 )
                 .first()
             )
+            if existing is None and "switch" in _norm(sheet.title):
+                # Keep IDs and attached evidence from previous imports whose SKU
+                # mistakenly included the whole commercial description.
+                columns = {normalized_header[i]: row[i] for i in range(min(len(row), len(header)))}
+                pn = _clean_text(_get(columns, "pn tor"))
+                text = _clean_text(_get(columns, "description", "descricao"))
+                legacy_sku = _safe_sku(f"{pn}-{text}")[:255]
+                if pn and text and legacy_sku != record["sku"]:
+                    existing = db.query(CrmCatalogProduct).filter(
+                        CrmCatalogProduct.tenant_id == tenant_id,
+                        CrmCatalogProduct.sku == legacy_sku,
+                    ).first()
             if existing:
                 for key, value in record.items():
+                    # A commercial price update must preserve a reviewed technical sheet.
+                    if key == "specification" and _has_technical_sheet(existing.specification):
+                        continue
                     setattr(existing, key, value)
                 db.add(existing)
                 summary.updated += 1
@@ -177,14 +198,9 @@ def _row_to_record(
         return None
     cost = _to_float(_get(values, "custo final", "custo", "preco", "preco final", "preço", "preço final", "price"))
     minimum_price = _to_float_or_none(_get(values, "preco minimo", "preco mínimo", "preço minimo", "preço mínimo"))
-    category = _category_from_sheet(sheet_name)
-
-    if category == "switch":
-        model = description_value or pn_tor
-        description = _clean_text(_get(values, "vig")) or model
-    else:
-        description = description_value
-        model = pn_tor or description
+    category = _category_from_sheet(sheet_name, description_value)
+    model = manufacturer_part_number or pn_tor or description_value
+    description = description_value or model
 
     sku = _build_sku(
         pn_tor=pn_tor,
@@ -222,6 +238,7 @@ def _row_to_record(
         "sku": sku[:255],
         "keywords": keywords,
         "unit": "UN",
+        "supplier_name": _clean_text(_get(values, "forn", "fornecedor")) or None,
         "cost": cost,
         "min_price": minimum_price,
         "tax_percent": 0.0,
@@ -292,7 +309,8 @@ def _find_header(sheet) -> tuple[int, list[str]]:
     for row_index, row in enumerate(sheet.iter_rows(min_row=1, max_row=min(sheet.max_row, 12), values_only=True), start=1):
         header = [str(value or "").strip() for value in row]
         normalized = {_norm(value) for value in header if value}
-        if {"marca", "modelo"}.issubset(normalized) or {"item", "marca"}.issubset(normalized):
+        if ({"marca", "modelo"}.issubset(normalized) or {"item", "marca"}.issubset(normalized)
+                or {"marca", "pn tor"}.issubset(normalized)):
             return row_index, header
     first = next(sheet.iter_rows(max_row=1, values_only=True))
     return 1, [str(value or "").strip() for value in first]
@@ -339,8 +357,6 @@ def _build_sku(*, pn_tor: str, part_no: str, model: str, category: str) -> str:
     pn = _valid_sku(pn_tor)
     part = _valid_sku(part_no)
     model_value = _valid_sku(model)
-    if category == "switch" and pn and model_value and pn != model_value:
-        return _safe_sku(f"{pn}-{model_value}")
     return _safe_sku(pn or part or model_value)
 
 
@@ -390,8 +406,15 @@ def _to_float_or_none(value: Any) -> float | None:
         return None
 
 
-def _category_from_sheet(sheet_name: str) -> str:
+def _category_from_sheet(sheet_name: str, description: str = "") -> str:
     normalized = _norm(sheet_name)
+    text = _norm(description)
+    if "power supply module" in text or text.startswith("fonte "):
+        return "fonte"
+    if "access point" in text:
+        return "access_point"
+    if "switch" in text:
+        return "switch"
     if "switch" in normalized:
         return "switch"
     if "cabo" in normalized:
@@ -416,3 +439,11 @@ def _is_blocked_pn(value: Any) -> bool:
         "-",
         "xwdm nao vender",
     }
+
+
+def _has_technical_sheet(value: Any) -> bool:
+    try:
+        payload = json.loads(value) if isinstance(value, str) else value
+        return isinstance(payload, dict) and isinstance(payload.get("atributos"), dict)
+    except (TypeError, ValueError):
+        return False

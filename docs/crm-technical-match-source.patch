@@ -68,6 +68,134 @@ index ebc10bd..468dbac 100644
            {datasheetHistory.length > 0 && (
              <div className="sm:col-span-2 rounded-md border p-3 space-y-1.5">
                <p className="text-sm font-medium">Historico de datasheets</p>
+diff --git a/src/components/catalog/TechnicalSheetEditor.tsx b/src/components/catalog/TechnicalSheetEditor.tsx
+new file mode 100644
+index 0000000..232c0fb
+--- /dev/null
++++ b/src/components/catalog/TechnicalSheetEditor.tsx
+@@ -0,0 +1,79 @@
++import { useEffect, useState } from 'react';
++import { Button } from '@/components/ui/button';
++import { crmFetch } from '@/integrations/supabase/client';
++import { listCatalogDatasheets, CatalogDatasheet } from '@/lib/document-files';
++import { toast } from 'sonner';
++
++type Row = {name: string; value: string; unit: string; documentId: string; page: string; reviewed: boolean; fiber: string};
++const blank = (): Row => ({name:'', value:'', unit:'', documentId:'', page:'', reviewed:false, fiber:''});
++export function TechnicalSheetEditor({productId, category, specification, onSaved}: {productId:string; category:string; specification:string; onSaved:(value:string)=>void}) {
++  const [rows, setRows] = useState<Row[]>([blank()]);
++  const [documents, setDocuments] = useState<CatalogDatasheet[]>([]);
++  const [revision, setRevision] = useState('');
++  const [variant, setVariant] = useState('');
++  const [draftDocument, setDraftDocument] = useState('');
++  const [busy, setBusy] = useState(false);
++  useEffect(() => {
++    let live = true;
++    listCatalogDatasheets(productId).then(value => {if(live) setDocuments(value)}).catch(() => {if(live) setDocuments([])});
++    try {
++      const sheet = JSON.parse(specification);
++      if (sheet.atributos) {
++        setRevision(sheet.revisao || ''); setVariant(sheet.variante || '');
++        setRows(Object.entries(sheet.atributos).flatMap(([name, attribute]:[string, any]) => (attribute.variantes || [attribute]).map((value:any) => ({name, value:JSON.stringify(value?.valor ?? value), unit:value?.unidade || '', documentId:value?.evidencias?.[0]?.documento_id || '', page:String(value?.evidencias?.[0]?.pagina || ''), reviewed:value?.evidencias?.[0]?.revisado === true, fiber:value?.escopo?.tipo_fibra || ''}))));
++      }
++    } catch { setRows([blank()]); }
++    return () => {live = false};
++  }, [productId]);
++  function edit(index:number, patch:Partial<Row>) {setRows(previous => previous.map((row, i) => i === index ? {...row,...patch} : row))}
++  async function suggest() {
++    setBusy(true);
++    try {
++      const response = await crmFetch(`/api/crm/catalog-products/${productId}/technical-sheet/draft`, {method:'POST', body:JSON.stringify({documento_id:draftDocument})});
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível extrair sugestões');
++      const added = Object.entries(response.payload.atributos).map(([name,value]:[string,any]) => ({name, value:JSON.stringify(value.valor), unit:value.unidade || '', documentId:draftDocument, page:String(value.evidencias[0].pagina), reviewed:false, fiber:''}));
++      setRows(previous => [...previous.filter(r=>r.name.trim()), ...added.filter(r=>!rows.some(old=>old.name===r.name))]);
++      toast.info(`${added.length} sugestões para revisão; ${response.payload.conflitos.length} conflitos no documento`);
++    } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
++  }
++  async function save() {
++    setBusy(true);
++    try {
++      const attributes: Record<string, any> = {};
++      for (const row of rows) {
++        if (!row.name.trim()) continue;
++        if (!row.value.trim()) throw new Error('Informe o valor de cada atributo');
++        let value; try {value=JSON.parse(row.value)} catch {value=row.value.trim()}
++        const entry = {valor:value, ...(row.fiber ? {escopo:{tipo_fibra:row.fiber}} : {}), ...(row.unit ? {unidade:row.unit} : {}), evidencias:row.documentId ? [{documento_id:row.documentId, pagina:Number(row.page), revisado:row.reviewed}] : []};
++        const key=row.name.trim();
++        if (!attributes[key]) attributes[key]=entry;
++        else {
++          const variants=attributes[key].variantes || [attributes[key]];
++          if (!row.fiber || variants.some((v:any)=>!v.escopo?.tipo_fibra || v.escopo.tipo_fibra===row.fiber)) throw new Error("Atributos repetidos exigem condições de fibra diferentes");
++          attributes[key]={variantes:[...variants,entry]};
++        }
++      }
++      const response = await crmFetch(`/api/crm/catalog-products/${productId}/technical-sheet`, {method:'PUT', body:JSON.stringify({categoria:category, revisao:revision, variante:variant, atributos:attributes})});
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível salvar');
++      onSaved(JSON.stringify(response.payload.technical_sheet));
++      toast.success('Ficha técnica salva');
++    } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
++  }
++  return <section className="space-y-3 rounded border p-3"><h3 className="font-semibold">Ficha técnica documentada</h3>
++    <p className="text-xs text-muted-foreground">Informe números, textos, listas ou faixas como valores. Marque como revisado após conferir a página do datasheet.</p>
++    <div className="flex gap-2"><select aria-label="PDF para sugestões" className="max-w-[65%] rounded border bg-background p-2" value={draftDocument} onChange={e=>setDraftDocument(e.target.value)}><option value="">Selecionar PDF</option>{documents.filter(d=>d.original_filename.toLowerCase().endsWith('.pdf')).map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select><Button type="button" variant="outline" disabled={busy || !draftDocument} onClick={suggest}>Sugerir atributos do PDF</Button></div>
++    <div className="flex gap-2"><label className="text-xs">Revisão<input className="block w-full rounded border p-2" value={revision} onChange={e=>setRevision(e.target.value)}/></label><label className="text-xs">Variante<input className="block w-full rounded border p-2" value={variant} onChange={e=>setVariant(e.target.value)}/></label></div>
++    {rows.map((row,i)=><div key={i} className="grid gap-2 border-t pt-2 sm:grid-cols-2">
++      <input aria-label={`Atributo ${i+1}`} className="rounded border bg-background p-2" placeholder="poe_budget_w" value={row.name} onChange={e=>edit(i,{name:e.target.value})}/>
++      <input aria-label={`Valor ${i+1}`} className="rounded border bg-background p-2" placeholder='410 ou {"min":-10,"max":50}' value={row.value} onChange={e=>edit(i,{value:e.target.value})}/>
++      <input aria-label={`Unidade ${i+1}`} className="rounded border bg-background p-2" placeholder="Unidade (W, Gbps, m, nm, C)" value={row.unit} onChange={e=>edit(i,{unit:e.target.value})}/>
++      <select aria-label={`Documento ${i+1}`} className="rounded border bg-background p-2" value={row.documentId} onChange={e=>edit(i,{documentId:e.target.value})}><option value="">Sem evidência</option>{documents.map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select>
++      <label className="text-xs">Condição de fibra<select className="block rounded border bg-background p-2" value={row.fiber} onChange={e=>edit(i,{fiber:e.target.value})}><option value="">Sem condição</option>{['OM1','OM2','OM3','OM4','OM5','SMF','MMF'].map(f=><option key={f} value={f}>{f}</option>)}</select></label>
++      <input aria-label={`Página ${i+1}`} className="rounded border bg-background p-2" type="number" min={1} placeholder="Página" value={row.page} onChange={e=>edit(i,{page:e.target.value})}/>
++      <label className="text-sm"><input type="checkbox" checked={row.reviewed} onChange={e=>edit(i,{reviewed:e.target.checked})}/> Valor conferido no documento</label>
++      <Button type="button" variant="ghost" onClick={()=>setRows(previous=>previous.filter((_,j)=>j!==i))}>Remover atributo</Button>
++    </div>)}
++    <Button type="button" variant="outline" onClick={()=>setRows(previous=>[...previous,blank()])}>Adicionar atributo</Button>{' '}
++    <Button type="button" disabled={busy} onClick={save}>{busy?'Salvando…':'Salvar ficha revisada'}</Button>
++  </section>;
++}
+diff --git a/src/components/notices/NoticeMatchTab.test.tsx b/src/components/notices/NoticeMatchTab.test.tsx
+new file mode 100644
+index 0000000..5e947f1
+--- /dev/null
++++ b/src/components/notices/NoticeMatchTab.test.tsx
+@@ -0,0 +1,37 @@
++import '@testing-library/jest-dom/vitest';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
++import { MemoryRouter } from 'react-router-dom';
++import { NoticeMatchTab } from './NoticeMatchTab';
++import { crmFetch } from '@/integrations/supabase/client';
++
++vi.mock('@/integrations/supabase/client', () => ({crmFetch:vi.fn()}));
++vi.mock('sonner', () => ({toast:{success:vi.fn(),error:vi.fn(),info:vi.fn()}}));
++afterEach(() => {cleanup();vi.clearAllMocks()});
++const mockFetch = vi.mocked(crmFetch);
++function response(status='ATENDE') {
++  return {summary:{total_items:1},items:[{notice_product:{id:'item', description:'Switch do edital'},matches:[{
++    id:'match',catalog_product_id:'catalog',catalog_product:{name:'Switch documentado'},status:'suggested',technical_status:status,
++    technical_result:{status,cobertura:1,detalhes:[{id:'poe',atributo:'poe_budget_w',exigido:370,encontrado:410,status,operador:'>=',motivo:'Comparação determinística',fontes:[{valor:{evidencias:[{documento_id:'doc',pagina:3,versao_documento:1}]}}]}]},
++  }]}]};
++}
++function mount(status='ATENDE') {
++  mockFetch.mockImplementation(async (url:any) => ({ok:true,status:200,payload:url.includes('/matches/jobs') ? {jobs:[]} : url.includes('match-facets') ? {categoria:'switch',total:1,filtered_total:1,facets:{},catalog_product_ids:['catalog']} : response(status)}) as any);
++  render(<MemoryRouter><NoticeMatchTab noticeId="notice" productsCount={1} canEdit onChanged={()=>{}} /></MemoryRouter>);
++}
++describe('comparação técnica no edital', () => {
++  it('apresenta matriz e fonte documental', async () => {
++    mount();
++    expect(await screen.findByText('Decisão técnica: ATENDE')).toBeInTheDocument();
++    expect(screen.getByText('Documento v1, página 3')).toHaveAttribute('href','/api/crm/catalog-datasheets/doc/download#page=3');
++  });
++  it('impede confirmar uma pendência técnica', async () => {
++    mount('VERIFICAR');
++    expect(await screen.findByText('Confirmar vínculo')).toBeDisabled();
++  });
++  it('executa apenas o item selecionado no modo rules', async () => {
++    mount();
++    fireEvent.click(await screen.findByText('Comparar este item'));
++    await waitFor(()=>expect(mockFetch).toHaveBeenCalledWith('/api/crm/notices/notice/matches/run-job',expect.objectContaining({method:'POST',body:JSON.stringify({mode:'rules',notice_product_id:'item'})})));
++  });
++});
 diff --git a/src/components/notices/NoticeMatchTab.tsx b/src/components/notices/NoticeMatchTab.tsx
 index 0cdddb3..2d15248 100644
 --- a/src/components/notices/NoticeMatchTab.tsx
@@ -230,6 +358,211 @@ index 0cdddb3..2d15248 100644
                                >
                                  {updatingId === match.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
                                  Confirmar vínculo
+diff --git a/src/components/notices/NoticeMetadataExport.test.tsx b/src/components/notices/NoticeMetadataExport.test.tsx
+new file mode 100644
+index 0000000..9ff41a5
+--- /dev/null
++++ b/src/components/notices/NoticeMetadataExport.test.tsx
+@@ -0,0 +1,44 @@
++import '@testing-library/jest-dom/vitest';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
++import { crmFetch } from '@/integrations/supabase/client';
++import { NoticeMetadataExport } from './NoticeMetadataExport';
++import { toast } from 'sonner';
++
++vi.mock('@/integrations/supabase/client', () => ({ crmFetch: vi.fn() }));
++vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
++afterEach(() => { cleanup(); vi.clearAllMocks(); });
++
++describe('extrator de metadados', () => {
++  it('extrai dados mesmo sem itens, com texto desabilitado por padrão', async () => {
++    vi.mocked(crmFetch).mockResolvedValue({ ok: true, payload: { edital: { number: '123/2026' }, diagnostico: { quantidade_itens: 0, itens_com_criterios: 0, quantidade_documentos: 0 } } } as any);
++    render(<NoticeMetadataExport noticeId="notice" />);
++    fireEvent.click(screen.getByText('Extrair metadados'));
++    expect(screen.getByText('Baixar JSON')).toBeDisabled();
++    fireEvent.click(screen.getByText('Gerar extração'));
++    await waitFor(() => expect(crmFetch).toHaveBeenCalledWith('/api/crm/notices/notice/metadata-json?include_text=false'));
++    expect(await screen.findByText(/123\/2026/)).toBeInTheDocument();
++    expect(screen.getByText('Baixar JSON')).toBeEnabled();
++  });
++
++  it('incluir texto exige nova extração', async () => {
++    vi.mocked(crmFetch).mockResolvedValue({ ok: true, payload: { diagnostico: { quantidade_itens: 1, itens_com_criterios: 0, quantidade_documentos: 0 } } } as any);
++    render(<NoticeMetadataExport noticeId="n" />);
++    fireEvent.click(screen.getByText('Extrair metadados'));
++    fireEvent.click(screen.getByText('Gerar extração'));
++    await waitFor(() => expect(screen.getByText('Baixar JSON')).toBeEnabled());
++    fireEvent.click(screen.getByRole('checkbox'));
++    expect(screen.getByText('Baixar JSON')).toBeDisabled();
++    fireEvent.click(screen.getByText('Gerar extração'));
++    await waitFor(() => expect(crmFetch).toHaveBeenCalledWith('/api/crm/notices/n/metadata-json?include_text=true'));
++  });
++
++  it('apresenta erro da API sem habilitar download', async () => {
++    vi.mocked(crmFetch).mockResolvedValue({ ok: false, payload: { detail: 'Edital não encontrado' } } as any);
++    render(<NoticeMetadataExport noticeId="missing" />);
++    fireEvent.click(screen.getByText('Extrair metadados'));
++    fireEvent.click(screen.getByText('Gerar extração'));
++    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Edital não encontrado'));
++    expect(screen.getByText('Baixar JSON')).toBeDisabled();
++  });
++});
+diff --git a/src/components/notices/NoticeMetadataExport.tsx b/src/components/notices/NoticeMetadataExport.tsx
+new file mode 100644
+index 0000000..aa418d8
+--- /dev/null
++++ b/src/components/notices/NoticeMetadataExport.tsx
+@@ -0,0 +1,67 @@
++import { useState } from 'react';
++import { Download, FileText, Loader2 } from 'lucide-react';
++import { crmFetch } from '@/integrations/supabase/client';
++import { Button } from '@/components/ui/button';
++import { Checkbox } from '@/components/ui/checkbox';
++import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
++import { toast } from 'sonner';
++
++export function NoticeMetadataExport({ noticeId }: { noticeId: string }) {
++  const [open, setOpen] = useState(false);
++  const [includeText, setIncludeText] = useState(false);
++  const [busy, setBusy] = useState(false);
++  const [payload, setPayload] = useState<any>(null);
++
++  async function extract() {
++    setBusy(true);
++    try {
++      const response = await crmFetch(`/api/crm/notices/${noticeId}/metadata-json?include_text=${includeText}`);
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível extrair os metadados.');
++      setPayload(response.payload);
++    } catch (error: any) {
++      toast.error(error.message || 'Não foi possível extrair os metadados.');
++    } finally { setBusy(false); }
++  }
++
++  function download() {
++    if (!payload) return;
++    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' }));
++    const anchor = document.createElement('a');
++    anchor.href = url;
++    anchor.download = `metadados_edital_${noticeId}.json`;
++    document.body.appendChild(anchor);
++    anchor.click();
++    anchor.remove();
++    setTimeout(() => URL.revokeObjectURL(url), 1000);
++  }
++
++  return <>
++    <Button variant="outline" size="sm" onClick={() => { setPayload(null); setOpen(true); }}>
++      <FileText className="h-4 w-4" />Extrair metadados
++    </Button>
++    <Dialog open={open} onOpenChange={setOpen}>
++      <DialogContent className="max-w-3xl">
++        <DialogHeader>
++          <DialogTitle>Metadados do edital</DialogTitle>
++          <DialogDescription>Reúne os dados salvos na triagem, itens, documentos e JSON de análise original. O arquivo pode ser anexado nesta conversa para revisão.</DialogDescription>
++        </DialogHeader>
++        <label className="flex items-center gap-2 text-sm">
++          <Checkbox checked={includeText} disabled={busy} onCheckedChange={(checked) => { setIncludeText(checked === true); setPayload(null); }} />
++          Incluir texto dos PDFs já extraído, quando disponível
++        </label>
++        <div className="flex gap-2">
++          <Button onClick={extract} disabled={busy}>
++            {busy && <Loader2 className="h-4 w-4 animate-spin" />}Gerar extração
++          </Button>
++          <Button variant="outline" disabled={!payload || busy} onClick={download}>
++            <Download className="h-4 w-4" />Baixar JSON
++          </Button>
++        </div>
++        {payload && <>
++          <p className="text-sm text-muted-foreground">{payload.diagnostico.quantidade_itens} itens · {payload.diagnostico.itens_com_criterios} com critérios estruturados · {payload.diagnostico.quantidade_documentos} documentos</p>
++          <pre className="max-h-[45vh] overflow-auto whitespace-pre-wrap break-all rounded-md border bg-muted p-3 text-xs">{JSON.stringify(payload, null, 2)}</pre>
++        </>}
++      </DialogContent>
++    </Dialog>
++  </>;
++}
+diff --git a/src/components/notices/TechnicalMatchDetails.tsx b/src/components/notices/TechnicalMatchDetails.tsx
+new file mode 100644
+index 0000000..1010b72
+--- /dev/null
++++ b/src/components/notices/TechnicalMatchDetails.tsx
+@@ -0,0 +1,76 @@
++import { useEffect, useState } from 'react';
++import { crmFetch } from '@/integrations/supabase/client';
++import { Badge } from '@/components/ui/badge';
++
++function valueLabel(value: any): string {
++  if (value == null) return 'Não informado';
++  if (typeof value === 'object' && 'valor' in value) return valueLabel(value.valor) + (value.unidade ? ` ${value.unidade}` : '');
++  return typeof value === 'object' ? JSON.stringify(value) : String(value);
++}
++
++export function TechnicalMatchDetails({result, humanStatus}: {result: any; humanStatus: string}) {
++  if (!result) return null;
++  return <section className="space-y-3">
++    <div className="flex flex-wrap gap-2"><Badge variant="outline">Decisão técnica: {result.status}</Badge>
++      <Badge variant="secondary">Cobertura {Math.round(result.cobertura * 100)}%</Badge><Badge variant="outline">Seleção: {humanStatus}</Badge></div>
++    <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>
++      {['Requisito', 'Exigido', 'Produto', 'Decisão', 'Evidência / motivo'].map(label => <th key={label} className="p-2">{label}</th>)}
++    </tr></thead><tbody>{result.detalhes.map((row: any, index: number) => <tr key={index} className="border-t">
++      <td className="p-2">{row.id} {row.texto_original || row.atributo}{row.grupo_logico && <small className="block">Grupo {row.grupo_logico} ({row.operador_logico})</small>}</td>
++      <td className="p-2">{row.operador} {valueLabel(row.exigido)}{row.escopo && <small className="block">Condição: {valueLabel(row.escopo)}</small>}</td>
++      <td className="p-2">{valueLabel(row.encontrado)}</td><td className="p-2">{row.status}</td>
++      <td className="p-2">{row.motivo}{(row.fontes || []).flatMap((source: any) => source.valor?.evidencias || []).map((e: any, i: number) =>
++        <a key={i} className="block underline" href={`/api/crm/catalog-datasheets/${encodeURIComponent(e.documento_id)}/download#page=${e.pagina}`} target="_blank" rel="noreferrer">Documento v{e.versao_documento || '—'}, página {e.pagina}</a>)}
++      </td></tr>)}</tbody></table></div>
++    {(result.grupos || []).map((g: any) => <p key={g.atributo} className="text-xs">{g.atributo}: {g.status}</p>)}
++    <p className="text-xs text-muted-foreground">Regras {result.versao_regras} · Revisão {result.revisao_produto || '—'} · Variante {result.variante_produto || '—'}</p>
++  </section>;
++}
++
++export function ItemTechnicalFilters({noticeId, itemId, onChange}: {noticeId: string; itemId: string; onChange: (ids: string[] | null, filters: Record<string, any[]>) => void}) {
++  const [filters, setFilters] = useState<Record<string, any[]>>({});
++  const [data, setData] = useState<any>(null);
++  const [error, setError] = useState('');
++  useEffect(() => {
++    let live = true;
++    setError('');
++    crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-facets?filters=${encodeURIComponent(JSON.stringify(filters))}`)
++      .then(response => {
++        if (!live) return;
++        if (!response.ok) { setError(response.payload?.detail || 'Não foi possível carregar os filtros'); onChange(null, filters); return; }
++        setData(response.payload);
++        onChange(Object.values(filters).some(v => v.length) ? response.payload.catalog_product_ids : null, filters);
++      }).catch(() => { if (live) setError('Não foi possível carregar os filtros'); });
++    return () => { live = false; };
++    // onChange is a parent state setter closure, excluded to avoid re-fetch loops.
++  }, [noticeId, itemId, filters]);
++  if (error) return <p className="text-xs text-muted-foreground">{error}</p>;
++  if (!data) return <p className="text-xs">Carregando características…</p>;
++  return <div className="space-y-2"><p className="text-sm">Categoria {data.categoria || 'não informada'}: {data.filtered_total} de {data.total} produtos no catálogo</p>
++    <div className="flex flex-wrap gap-3">{Object.entries(data.facets).map(([name, options]: [string, any]) => <label key={name} className="text-xs">
++      {name}<select className="block rounded border bg-background p-2" value={filters[name]?.length ? JSON.stringify(filters[name][0]) : ''} onChange={e => setFilters(previous => ({...previous, [name]: e.target.value ? [JSON.parse(e.target.value)] : []}))}>
++        <option value="">Todos</option>{options.map((o: any) => <option key={JSON.stringify(o.value)} value={JSON.stringify(o.value)}>{valueLabel(o.value)} ({o.count})</option>)}
++      </select></label>)}</div>
++    <p className="text-xs text-muted-foreground">Os filtros selecionam produtos do catálogo; a decisão técnica está na matriz de cada candidato.</p>
++  </div>;
++}
++
++export function TechnicalHistory({matchId}:{matchId:string}) {
++  const [history,setHistory] = useState<any[] | null>(null);
++  const [error,setError] = useState('');
++  async function load() {
++    setError('');
++    try {
++      const response = await crmFetch(`/api/crm/matches/${matchId}/technical-history`);
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível carregar o histórico');
++      setHistory(response.payload.history);
++    } catch(e:any) {setError(e.message)}
++  }
++  return <details onToggle={e=>{if(e.currentTarget.open && history===null) load()}}><summary className="cursor-pointer text-sm">Histórico de reavaliações</summary>
++    {error && <p role="alert">{error}</p>}
++    {history?.length===0 && <p className="text-xs">Nenhuma reavaliação registrada.</p>}
++    {history?.map((event:any,index:number)=><section key={index} className="mt-2 rounded border p-2"><p className="text-xs">{new Date(event.created_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})} · Revisor {event.user_id}</p>
++      <p className="text-sm">Decisão anterior: {event.previous_result?.status || 'Sem matriz'} → {event.technical_result?.status}</p>
++      {event.previous_result && <TechnicalMatchDetails result={event.previous_result} humanStatus={event.human_status}/>}</section>)}
++  </details>;
++}
 diff --git a/src/pages/CatalogProducts.tsx b/src/pages/CatalogProducts.tsx
 index 5c34c02..841b7ce 100644
 --- a/src/pages/CatalogProducts.tsx
@@ -320,213 +653,23 @@ index b6bbe02..a7a786e 100644
            </CardContent>
          </Card>
        ) : (
-diff --git a/src/components/catalog/TechnicalSheetEditor.tsx b/src/components/catalog/TechnicalSheetEditor.tsx
-new file mode 100644
-index 0000000..232c0fb
---- /dev/null
-+++ b/src/components/catalog/TechnicalSheetEditor.tsx
-@@ -0,0 +1,79 @@
-+import { useEffect, useState } from 'react';
-+import { Button } from '@/components/ui/button';
-+import { crmFetch } from '@/integrations/supabase/client';
-+import { listCatalogDatasheets, CatalogDatasheet } from '@/lib/document-files';
-+import { toast } from 'sonner';
-+
-+type Row = {name: string; value: string; unit: string; documentId: string; page: string; reviewed: boolean; fiber: string};
-+const blank = (): Row => ({name:'', value:'', unit:'', documentId:'', page:'', reviewed:false, fiber:''});
-+export function TechnicalSheetEditor({productId, category, specification, onSaved}: {productId:string; category:string; specification:string; onSaved:(value:string)=>void}) {
-+  const [rows, setRows] = useState<Row[]>([blank()]);
-+  const [documents, setDocuments] = useState<CatalogDatasheet[]>([]);
-+  const [revision, setRevision] = useState('');
-+  const [variant, setVariant] = useState('');
-+  const [draftDocument, setDraftDocument] = useState('');
-+  const [busy, setBusy] = useState(false);
-+  useEffect(() => {
-+    let live = true;
-+    listCatalogDatasheets(productId).then(value => {if(live) setDocuments(value)}).catch(() => {if(live) setDocuments([])});
-+    try {
-+      const sheet = JSON.parse(specification);
-+      if (sheet.atributos) {
-+        setRevision(sheet.revisao || ''); setVariant(sheet.variante || '');
-+        setRows(Object.entries(sheet.atributos).flatMap(([name, attribute]:[string, any]) => (attribute.variantes || [attribute]).map((value:any) => ({name, value:JSON.stringify(value?.valor ?? value), unit:value?.unidade || '', documentId:value?.evidencias?.[0]?.documento_id || '', page:String(value?.evidencias?.[0]?.pagina || ''), reviewed:value?.evidencias?.[0]?.revisado === true, fiber:value?.escopo?.tipo_fibra || ''}))));
-+      }
-+    } catch { setRows([blank()]); }
-+    return () => {live = false};
-+  }, [productId]);
-+  function edit(index:number, patch:Partial<Row>) {setRows(previous => previous.map((row, i) => i === index ? {...row,...patch} : row))}
-+  async function suggest() {
-+    setBusy(true);
-+    try {
-+      const response = await crmFetch(`/api/crm/catalog-products/${productId}/technical-sheet/draft`, {method:'POST', body:JSON.stringify({documento_id:draftDocument})});
-+      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível extrair sugestões');
-+      const added = Object.entries(response.payload.atributos).map(([name,value]:[string,any]) => ({name, value:JSON.stringify(value.valor), unit:value.unidade || '', documentId:draftDocument, page:String(value.evidencias[0].pagina), reviewed:false, fiber:''}));
-+      setRows(previous => [...previous.filter(r=>r.name.trim()), ...added.filter(r=>!rows.some(old=>old.name===r.name))]);
-+      toast.info(`${added.length} sugestões para revisão; ${response.payload.conflitos.length} conflitos no documento`);
-+    } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
-+  }
-+  async function save() {
-+    setBusy(true);
-+    try {
-+      const attributes: Record<string, any> = {};
-+      for (const row of rows) {
-+        if (!row.name.trim()) continue;
-+        if (!row.value.trim()) throw new Error('Informe o valor de cada atributo');
-+        let value; try {value=JSON.parse(row.value)} catch {value=row.value.trim()}
-+        const entry = {valor:value, ...(row.fiber ? {escopo:{tipo_fibra:row.fiber}} : {}), ...(row.unit ? {unidade:row.unit} : {}), evidencias:row.documentId ? [{documento_id:row.documentId, pagina:Number(row.page), revisado:row.reviewed}] : []};
-+        const key=row.name.trim();
-+        if (!attributes[key]) attributes[key]=entry;
-+        else {
-+          const variants=attributes[key].variantes || [attributes[key]];
-+          if (!row.fiber || variants.some((v:any)=>!v.escopo?.tipo_fibra || v.escopo.tipo_fibra===row.fiber)) throw new Error("Atributos repetidos exigem condições de fibra diferentes");
-+          attributes[key]={variantes:[...variants,entry]};
-+        }
-+      }
-+      const response = await crmFetch(`/api/crm/catalog-products/${productId}/technical-sheet`, {method:'PUT', body:JSON.stringify({categoria:category, revisao:revision, variante:variant, atributos:attributes})});
-+      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível salvar');
-+      onSaved(JSON.stringify(response.payload.technical_sheet));
-+      toast.success('Ficha técnica salva');
-+    } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
-+  }
-+  return <section className="space-y-3 rounded border p-3"><h3 className="font-semibold">Ficha técnica documentada</h3>
-+    <p className="text-xs text-muted-foreground">Informe números, textos, listas ou faixas como valores. Marque como revisado após conferir a página do datasheet.</p>
-+    <div className="flex gap-2"><select aria-label="PDF para sugestões" className="max-w-[65%] rounded border bg-background p-2" value={draftDocument} onChange={e=>setDraftDocument(e.target.value)}><option value="">Selecionar PDF</option>{documents.filter(d=>d.original_filename.toLowerCase().endsWith('.pdf')).map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select><Button type="button" variant="outline" disabled={busy || !draftDocument} onClick={suggest}>Sugerir atributos do PDF</Button></div>
-+    <div className="flex gap-2"><label className="text-xs">Revisão<input className="block w-full rounded border p-2" value={revision} onChange={e=>setRevision(e.target.value)}/></label><label className="text-xs">Variante<input className="block w-full rounded border p-2" value={variant} onChange={e=>setVariant(e.target.value)}/></label></div>
-+    {rows.map((row,i)=><div key={i} className="grid gap-2 border-t pt-2 sm:grid-cols-2">
-+      <input aria-label={`Atributo ${i+1}`} className="rounded border bg-background p-2" placeholder="poe_budget_w" value={row.name} onChange={e=>edit(i,{name:e.target.value})}/>
-+      <input aria-label={`Valor ${i+1}`} className="rounded border bg-background p-2" placeholder='410 ou {"min":-10,"max":50}' value={row.value} onChange={e=>edit(i,{value:e.target.value})}/>
-+      <input aria-label={`Unidade ${i+1}`} className="rounded border bg-background p-2" placeholder="Unidade (W, Gbps, m, nm, C)" value={row.unit} onChange={e=>edit(i,{unit:e.target.value})}/>
-+      <select aria-label={`Documento ${i+1}`} className="rounded border bg-background p-2" value={row.documentId} onChange={e=>edit(i,{documentId:e.target.value})}><option value="">Sem evidência</option>{documents.map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select>
-+      <label className="text-xs">Condição de fibra<select className="block rounded border bg-background p-2" value={row.fiber} onChange={e=>edit(i,{fiber:e.target.value})}><option value="">Sem condição</option>{['OM1','OM2','OM3','OM4','OM5','SMF','MMF'].map(f=><option key={f} value={f}>{f}</option>)}</select></label>
-+      <input aria-label={`Página ${i+1}`} className="rounded border bg-background p-2" type="number" min={1} placeholder="Página" value={row.page} onChange={e=>edit(i,{page:e.target.value})}/>
-+      <label className="text-sm"><input type="checkbox" checked={row.reviewed} onChange={e=>edit(i,{reviewed:e.target.checked})}/> Valor conferido no documento</label>
-+      <Button type="button" variant="ghost" onClick={()=>setRows(previous=>previous.filter((_,j)=>j!==i))}>Remover atributo</Button>
-+    </div>)}
-+    <Button type="button" variant="outline" onClick={()=>setRows(previous=>[...previous,blank()])}>Adicionar atributo</Button>{' '}
-+    <Button type="button" disabled={busy} onClick={save}>{busy?'Salvando…':'Salvar ficha revisada'}</Button>
-+  </section>;
-+}
-diff --git a/src/components/notices/NoticeMatchTab.test.tsx b/src/components/notices/NoticeMatchTab.test.tsx
-new file mode 100644
-index 0000000..5e947f1
---- /dev/null
-+++ b/src/components/notices/NoticeMatchTab.test.tsx
-@@ -0,0 +1,37 @@
-+import '@testing-library/jest-dom/vitest';
-+import { afterEach, describe, expect, it, vi } from 'vitest';
-+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-+import { MemoryRouter } from 'react-router-dom';
-+import { NoticeMatchTab } from './NoticeMatchTab';
-+import { crmFetch } from '@/integrations/supabase/client';
-+
-+vi.mock('@/integrations/supabase/client', () => ({crmFetch:vi.fn()}));
-+vi.mock('sonner', () => ({toast:{success:vi.fn(),error:vi.fn(),info:vi.fn()}}));
-+afterEach(() => {cleanup();vi.clearAllMocks()});
-+const mockFetch = vi.mocked(crmFetch);
-+function response(status='ATENDE') {
-+  return {summary:{total_items:1},items:[{notice_product:{id:'item', description:'Switch do edital'},matches:[{
-+    id:'match',catalog_product_id:'catalog',catalog_product:{name:'Switch documentado'},status:'suggested',technical_status:status,
-+    technical_result:{status,cobertura:1,detalhes:[{id:'poe',atributo:'poe_budget_w',exigido:370,encontrado:410,status,operador:'>=',motivo:'Comparação determinística',fontes:[{valor:{evidencias:[{documento_id:'doc',pagina:3,versao_documento:1}]}}]}]},
-+  }]}]};
-+}
-+function mount(status='ATENDE') {
-+  mockFetch.mockImplementation(async (url:any) => ({ok:true,status:200,payload:url.includes('/matches/jobs') ? {jobs:[]} : url.includes('match-facets') ? {categoria:'switch',total:1,filtered_total:1,facets:{},catalog_product_ids:['catalog']} : response(status)}) as any);
-+  render(<MemoryRouter><NoticeMatchTab noticeId="notice" productsCount={1} canEdit onChanged={()=>{}} /></MemoryRouter>);
-+}
-+describe('comparação técnica no edital', () => {
-+  it('apresenta matriz e fonte documental', async () => {
-+    mount();
-+    expect(await screen.findByText('Decisão técnica: ATENDE')).toBeInTheDocument();
-+    expect(screen.getByText('Documento v1, página 3')).toHaveAttribute('href','/api/crm/catalog-datasheets/doc/download#page=3');
-+  });
-+  it('impede confirmar uma pendência técnica', async () => {
-+    mount('VERIFICAR');
-+    expect(await screen.findByText('Confirmar vínculo')).toBeDisabled();
-+  });
-+  it('executa apenas o item selecionado no modo rules', async () => {
-+    mount();
-+    fireEvent.click(await screen.findByText('Comparar este item'));
-+    await waitFor(()=>expect(mockFetch).toHaveBeenCalledWith('/api/crm/notices/notice/matches/run-job',expect.objectContaining({method:'POST',body:JSON.stringify({mode:'rules',notice_product_id:'item'})})));
-+  });
-+});
-diff --git a/src/components/notices/TechnicalMatchDetails.tsx b/src/components/notices/TechnicalMatchDetails.tsx
-new file mode 100644
-index 0000000..1010b72
---- /dev/null
-+++ b/src/components/notices/TechnicalMatchDetails.tsx
-@@ -0,0 +1,76 @@
-+import { useEffect, useState } from 'react';
-+import { crmFetch } from '@/integrations/supabase/client';
-+import { Badge } from '@/components/ui/badge';
-+
-+function valueLabel(value: any): string {
-+  if (value == null) return 'Não informado';
-+  if (typeof value === 'object' && 'valor' in value) return valueLabel(value.valor) + (value.unidade ? ` ${value.unidade}` : '');
-+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
-+}
-+
-+export function TechnicalMatchDetails({result, humanStatus}: {result: any; humanStatus: string}) {
-+  if (!result) return null;
-+  return <section className="space-y-3">
-+    <div className="flex flex-wrap gap-2"><Badge variant="outline">Decisão técnica: {result.status}</Badge>
-+      <Badge variant="secondary">Cobertura {Math.round(result.cobertura * 100)}%</Badge><Badge variant="outline">Seleção: {humanStatus}</Badge></div>
-+    <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>
-+      {['Requisito', 'Exigido', 'Produto', 'Decisão', 'Evidência / motivo'].map(label => <th key={label} className="p-2">{label}</th>)}
-+    </tr></thead><tbody>{result.detalhes.map((row: any, index: number) => <tr key={index} className="border-t">
-+      <td className="p-2">{row.id} {row.texto_original || row.atributo}{row.grupo_logico && <small className="block">Grupo {row.grupo_logico} ({row.operador_logico})</small>}</td>
-+      <td className="p-2">{row.operador} {valueLabel(row.exigido)}{row.escopo && <small className="block">Condição: {valueLabel(row.escopo)}</small>}</td>
-+      <td className="p-2">{valueLabel(row.encontrado)}</td><td className="p-2">{row.status}</td>
-+      <td className="p-2">{row.motivo}{(row.fontes || []).flatMap((source: any) => source.valor?.evidencias || []).map((e: any, i: number) =>
-+        <a key={i} className="block underline" href={`/api/crm/catalog-datasheets/${encodeURIComponent(e.documento_id)}/download#page=${e.pagina}`} target="_blank" rel="noreferrer">Documento v{e.versao_documento || '—'}, página {e.pagina}</a>)}
-+      </td></tr>)}</tbody></table></div>
-+    {(result.grupos || []).map((g: any) => <p key={g.atributo} className="text-xs">{g.atributo}: {g.status}</p>)}
-+    <p className="text-xs text-muted-foreground">Regras {result.versao_regras} · Revisão {result.revisao_produto || '—'} · Variante {result.variante_produto || '—'}</p>
-+  </section>;
-+}
-+
-+export function ItemTechnicalFilters({noticeId, itemId, onChange}: {noticeId: string; itemId: string; onChange: (ids: string[] | null, filters: Record<string, any[]>) => void}) {
-+  const [filters, setFilters] = useState<Record<string, any[]>>({});
-+  const [data, setData] = useState<any>(null);
-+  const [error, setError] = useState('');
-+  useEffect(() => {
-+    let live = true;
-+    setError('');
-+    crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-facets?filters=${encodeURIComponent(JSON.stringify(filters))}`)
-+      .then(response => {
-+        if (!live) return;
-+        if (!response.ok) { setError(response.payload?.detail || 'Não foi possível carregar os filtros'); onChange(null, filters); return; }
-+        setData(response.payload);
-+        onChange(Object.values(filters).some(v => v.length) ? response.payload.catalog_product_ids : null, filters);
-+      }).catch(() => { if (live) setError('Não foi possível carregar os filtros'); });
-+    return () => { live = false; };
-+    // onChange is a parent state setter closure, excluded to avoid re-fetch loops.
-+  }, [noticeId, itemId, filters]);
-+  if (error) return <p className="text-xs text-muted-foreground">{error}</p>;
-+  if (!data) return <p className="text-xs">Carregando características…</p>;
-+  return <div className="space-y-2"><p className="text-sm">Categoria {data.categoria || 'não informada'}: {data.filtered_total} de {data.total} produtos no catálogo</p>
-+    <div className="flex flex-wrap gap-3">{Object.entries(data.facets).map(([name, options]: [string, any]) => <label key={name} className="text-xs">
-+      {name}<select className="block rounded border bg-background p-2" value={filters[name]?.length ? JSON.stringify(filters[name][0]) : ''} onChange={e => setFilters(previous => ({...previous, [name]: e.target.value ? [JSON.parse(e.target.value)] : []}))}>
-+        <option value="">Todos</option>{options.map((o: any) => <option key={JSON.stringify(o.value)} value={JSON.stringify(o.value)}>{valueLabel(o.value)} ({o.count})</option>)}
-+      </select></label>)}</div>
-+    <p className="text-xs text-muted-foreground">Os filtros selecionam produtos do catálogo; a decisão técnica está na matriz de cada candidato.</p>
-+  </div>;
-+}
-+
-+export function TechnicalHistory({matchId}:{matchId:string}) {
-+  const [history,setHistory] = useState<any[] | null>(null);
-+  const [error,setError] = useState('');
-+  async function load() {
-+    setError('');
-+    try {
-+      const response = await crmFetch(`/api/crm/matches/${matchId}/technical-history`);
-+      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível carregar o histórico');
-+      setHistory(response.payload.history);
-+    } catch(e:any) {setError(e.message)}
-+  }
-+  return <details onToggle={e=>{if(e.currentTarget.open && history===null) load()}}><summary className="cursor-pointer text-sm">Histórico de reavaliações</summary>
-+    {error && <p role="alert">{error}</p>}
-+    {history?.length===0 && <p className="text-xs">Nenhuma reavaliação registrada.</p>}
-+    {history?.map((event:any,index:number)=><section key={index} className="mt-2 rounded border p-2"><p className="text-xs">{new Date(event.created_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})} · Revisor {event.user_id}</p>
-+      <p className="text-sm">Decisão anterior: {event.previous_result?.status || 'Sem matriz'} → {event.technical_result?.status}</p>
-+      {event.previous_result && <TechnicalMatchDetails result={event.previous_result} humanStatus={event.human_status}/>}</section>)}
-+  </details>;
-+}
+diff --git a/src/pages/NoticeDetail.tsx b/src/pages/NoticeDetail.tsx
+index 0817ab9..b0ff037 100644
+--- a/src/pages/NoticeDetail.tsx
++++ b/src/pages/NoticeDetail.tsx
+@@ -26,6 +26,7 @@ import { ResultsTab } from '@/components/notices/ResultsTab';
+ import { EditableInfoField as EditableField } from '@/components/notices/EditableInfoField';
+ import { OperationalSection as InfoSection } from '@/components/notices/OperationalSection';
+ import { NoticeMatchTab } from '@/components/notices/NoticeMatchTab';
++import { NoticeMetadataExport } from '@/components/notices/NoticeMetadataExport';
+ import { BidRoomTab } from '@/components/notices/BidRoomTab';
+ import { OrganPicker } from '@/components/notices/OrganPicker';
+ import { PortalPicker } from '@/components/notices/PortalPicker';
+@@ -1231,6 +1232,7 @@ export default function NoticeDetail() {
+               </Button>
+               </>
+             )}
++            <NoticeMetadataExport noticeId={id!} />
+             <MatchJsonActions noticeId={id!} products={products} />
+           </div>
+           <ResultsTab

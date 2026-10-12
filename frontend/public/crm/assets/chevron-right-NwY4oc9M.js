@@ -1,1 +1,0 @@
-import{pt as e}from"./index-Dml0dRkp.js";var t=e(`ChevronRight`,[[`path`,{d:`m9 18 6-6-6-6`,key:`mthhwq`}]]);export{t};

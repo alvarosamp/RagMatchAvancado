@@ -44,7 +44,8 @@ from app.crm.models import (
 )
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
-from app.db.models import DocumentFile
+from app.db.models import DocumentFile, AnalysisDocument
+from app.services.notice_metadata_export import build_notice_metadata_export
 from app.jobs.models import Job, JobStatus, JobType
 from app.jobs.queue import JobQueue
 from app.services.crm_item_matcher import (
@@ -93,6 +94,41 @@ from app.services.crm_notice_list import invalidate_notice_list_cache, list_noti
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
+
+
+@router.get("/notices/{notice_id}/metadata-json")
+def export_notice_metadata_json(
+    notice_id: str,
+    include_text: bool = Query(default=False),
+    download: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    notice = (db.query(CrmNotice)
+              .options(selectinload(CrmNotice.organ), selectinload(CrmNotice.portal))
+              .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).first())
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    products = (db.query(CrmNoticeProduct)
+                .filter(CrmNoticeProduct.notice_id == notice.id,
+                        CrmNoticeProduct.tenant_id == current_user.tenant_id)
+                .order_by(CrmNoticeProduct.sort_order, CrmNoticeProduct.id).all())
+    documents = (db.query(CrmNoticeDocument)
+                 .filter(CrmNoticeDocument.notice_id == notice.id,
+                         CrmNoticeDocument.tenant_id == current_user.tenant_id)
+                 .order_by(CrmNoticeDocument.sort_order, CrmNoticeDocument.id).all())
+    analysis = None
+    if notice.analysis_document_id is not None:
+        analysis = (db.query(AnalysisDocument)
+                    .filter(AnalysisDocument.id == notice.analysis_document_id,
+                            AnalysisDocument.tenant_id == current_user.tenant_id).first())
+    payload = build_notice_metadata_export(notice, products, documents, analysis, include_text=include_text)
+    if not download:
+        return payload
+    return Response(content=json.dumps(payload, ensure_ascii=False, indent=2),
+                    media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="metadados_edital_{notice.id}.json"',
+                             "Cache-Control": "no-store"})
 
 
 @router.get("/notices/{notice_id}/match-json")

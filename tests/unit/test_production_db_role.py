@@ -110,7 +110,7 @@ def test_production_proxy_allows_frontend_and_api_hosts():
 
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
-    assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap
+    assert 'BOOTSTRAP_REVISION = "20261012_01"' in bootstrap
     assert set(RLS_TABLES) == {
         "editais",
         "jobs",

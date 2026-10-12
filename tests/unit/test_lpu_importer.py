@@ -177,3 +177,27 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     assert db.products[(1, "PN-1")].lpu_drive_url == summary["lpu_drive_url"]
     assert db.products[(1, "PN-1")].description == "Descricao nova"
     assert (1, "PN-FORA-DA-LPU") not in db.products
+
+
+def test_transceiver_header_can_start_on_fourth_row():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append([]); sheet.append([]); sheet.append([])
+    sheet.append(['Marca','PN TOR','Descrição','Disponibilidade','Part No (MFR)'])
+    assert lpu_importer._find_header(sheet)[0] == 4
+
+
+def test_switch_model_and_sku_use_identifiers_and_preserve_description():
+    header=['Marca','PN TOR','Description','Vig','Disponibilidade','Part No']
+    row=['TPLINK','TLSG3428MP','Switch 24P GIGA POE+ 4*SFP','-','Estoque','TLSG3428MP']
+    record=_row_to_record(header,[_norm(v) for v in header],row,'Switches')
+    assert record['sku']=='TLSG3428MP'
+    assert record['model']=='TLSG3428MP'
+    assert record['description']==row[2]
+    assert record['specification']==row[2]
+
+
+def test_tplink_access_points_and_power_supplies_have_distinct_categories():
+    assert lpu_importer._category_from_sheet('TP-LINK','ACCESS POINT AX3000 EAP653')=='access_point'
+    assert lpu_importer._category_from_sheet('TP-LINK','SWITCH 16P SG1016D')=='switch'
+    assert lpu_importer._category_from_sheet('Switches','AC power supply module for S3600')=='fonte'
