@@ -1927,7 +1927,12 @@ def crm_run_notice_matches(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    payload = payload or {}
+    mode = payload.get("mode", "hybrid")
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
     payload = payload or {}
@@ -1937,6 +1942,8 @@ def crm_run_notice_matches(
             current_user,
             notice_id,
             use_llm=payload.get("use_llm", True),
+            mode=mode,
+            attribute_filters=payload.get("attribute_filters"),
             notice_product_id=payload.get("notice_product_id"),
             category=payload.get("category"),
         )
@@ -2000,7 +2007,12 @@ def crm_run_notice_matches_job(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    payload = payload or {}
+    mode = payload.get("mode", "hybrid")
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
 
@@ -2048,6 +2060,8 @@ def crm_run_notice_matches_job(
         notice_product_id=payload.get("notice_product_id"),
         category=payload.get("category"),
         use_llm=bool(payload.get("use_llm", True)),
+        mode=mode,
+        attribute_filters=payload.get("attribute_filters"),
     )
     return {
         "job_id": job_id,
@@ -2386,11 +2400,15 @@ def crm_run_match_batch(
     stage: str = Body(..., embed=True, description="Etapa do edital: triage|analysis|documentation|proposal|auction"),
     limit: int = Body(default=50, embed=True, ge=1, le=500),
     use_llm: bool = Body(default=True, embed=True),
+    mode: str = Body(default="hybrid", embed=True),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match em lote.")
 
@@ -2443,12 +2461,9 @@ def crm_run_match_batch(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             db=db,
+            mode=mode,
+            use_llm=bool(use_llm) and mode != "rules",
         )
-        # Permite mudar o comportamento do job sem criar outro endpoint.
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if job is not None:
-            job.payload = {**(job.payload or {}), "use_llm": bool(use_llm)}
-            db.add(job)
         job_ids.append(job_id)
 
     db.commit()
@@ -2475,6 +2490,8 @@ def crm_confirm_match(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para confirmar o match.")
     try:
         return confirm_notice_item_match(db, current_user, match_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -2590,3 +2607,139 @@ def crm_query_delete(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.put("/catalog-products/{product_id}/technical-sheet")
+def save_catalog_technical_sheet(
+    product_id: str,
+    payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Save reviewed values against this tenant's attached private datasheets."""
+    import hashlib
+    import json
+    from pathlib import Path
+    product = db.query(CrmCatalogProduct).filter_by(id=product_id, tenant_id=current_user.tenant_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Produto nao encontrado")
+    attributes = payload.get("atributos")
+    if not isinstance(attributes, dict) or not attributes:
+        raise HTTPException(status_code=400, detail="Informe atributos normalizados")
+    values = []
+    for attribute in attributes.values():
+        variants = attribute.get("variantes") if isinstance(attribute, dict) else None
+        if variants is not None and (not isinstance(variants, list) or not variants):
+            raise HTTPException(status_code=400, detail="Variantes devem ser uma lista nao vazia")
+        values.extend(variants if variants is not None else [attribute])
+    for value in values:
+        if not isinstance(value, dict) or "valor" not in value:
+            raise HTTPException(status_code=400, detail="Cada atributo deve conter valor e evidencias")
+        evidences = value.get("evidencias", [])
+        if not isinstance(evidences, list):
+            raise HTTPException(status_code=400, detail="Evidencias devem ser uma lista")
+        for evidence in evidences:
+            if not isinstance(evidence, dict):
+                raise HTTPException(status_code=400, detail="Evidencia invalida")
+            sheet = db.query(CrmCatalogProductDatasheet).filter_by(
+                id=evidence.get("documento_id"), catalog_product_id=product_id,
+                tenant_id=current_user.tenant_id,
+            ).first()
+            page = evidence.get("pagina")
+            if sheet is None or not isinstance(page, int) or isinstance(page, bool) or page < 1:
+                raise HTTPException(status_code=400, detail="Documento vinculado e pagina positiva obrigatorios")
+            try:
+                evidence["hash_documento"] = hashlib.sha256(Path(sheet.storage_path).read_bytes()).hexdigest()
+            except OSError as exc:
+                raise HTTPException(status_code=409, detail="Arquivo de evidencia indisponivel") from exc
+            evidence["versao_documento"] = sheet.version
+            if evidence.get("revisado") is True:
+                evidence["revisado_por"] = current_user.id
+                evidence["revisado_em"] = datetime.utcnow().isoformat() + "Z"
+    try:
+        product.specification = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="Ficha tecnica invalida") from exc
+    db.commit()
+    return {"id": product.id, "technical_sheet": payload}
+
+
+@router.post("/matches/{match_id}/reevaluate")
+def crm_reevaluate_technical_match(
+    match_id: str, db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    from app.services.crm_item_matcher import reevaluate_notice_item_match
+    try:
+        return reevaluate_notice_item_match(db, current_user, match_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/notices/{notice_id}/products/{item_id}/match-facets")
+def crm_technical_match_facets(
+    notice_id: str, item_id: str, filters: str = Query(default="{}"),
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    import json
+    from app.services.crm_item_matcher import _load_notice, _structured_item, _json_object
+    from app.services.technical_matching.facets import build_facets
+    try:
+        notice = _load_notice(db, current_user, notice_id)
+        product = next((p for p in notice.notice_products if p.id == item_id), None)
+        if product is None:
+            raise LookupError("Item nao encontrado")
+        item = _structured_item(product)
+        if item is None:
+            raise ValueError("Item sem requisitos estruturados")
+        catalog = db.query(CrmCatalogProduct).filter(
+            CrmCatalogProduct.tenant_id == current_user.tenant_id,
+            CrmCatalogProduct.is_active.is_(True),
+        ).all()
+        products = []
+        for row in catalog:
+            sheet = _json_object(row.specification) or {}
+            products.append({**sheet, "id": row.id, "categoria": sheet.get("categoria") or row.category})
+        return build_facets(item, products, json.loads(filters))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/matches/{match_id}/technical-history")
+def crm_technical_match_history(match_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.crm_item_matcher import _load_match
+    try:
+        match = _load_match(db, current_user, match_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    rows = db.query(CrmNoticeHistory).filter(
+        CrmNoticeHistory.tenant_id == current_user.tenant_id,
+        CrmNoticeHistory.notice_id == match.notice_id,
+        CrmNoticeHistory.action == "Comparacao tecnica reavaliada explicitamente",
+    ).order_by(CrmNoticeHistory.created_at.desc()).all()
+    return {"history": [{"created_at": row.created_at.isoformat(), "user_id": row.user_id, **row.details}
+                        for row in rows if (row.details or {}).get("match_id") == match.id]}
+
+
+@router.post("/catalog-products/{product_id}/technical-sheet/draft")
+def crm_technical_sheet_draft(
+    product_id: str, payload: dict[str, Any] = Body(...), db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    from app.services.technical_matching.datasheet_draft import extract_draft
+    sheet = db.query(CrmCatalogProductDatasheet).filter_by(
+        id=payload.get("documento_id"), catalog_product_id=product_id, tenant_id=current_user.tenant_id,
+    ).first()
+    if sheet is None:
+        raise HTTPException(status_code=404, detail="Datasheet vinculado nao encontrado")
+    path = Path(sheet.storage_path)
+    if path.suffix.lower() != ".pdf":
+        raise HTTPException(status_code=400, detail="Sugestoes automaticas exigem PDF com texto")
+    try:
+        return extract_draft(path, document_id=sheet.id, document_version=sheet.version)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail="Nao foi possivel extrair texto deste PDF; preencha a ficha manualmente") from exc

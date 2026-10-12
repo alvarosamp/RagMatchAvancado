@@ -2,8 +2,11 @@
   "app": "bid-buddy",
   "sourcePath": "bid-buddy",
   "sourceRepo": "https://github.com/LuizH-Paiva/bid-buddy.git",
-  "sourceBranch": "main",
-  "sourceCommit": "82384b47d245c557f78fa2686bb9c493641e9867",
-  "builtAt": "2026-09-25T20:38:39.790Z",
-  "pulledBeforeBuild": false
+  "sourceBranch": "codex/technical-match-v8",
+  "sourceCommit": "2582860c0fbab9b056c46124a9ae774bfb6702d5",
+  "builtAt": "2026-10-12T11:39:26.226Z",
+  "pulledBeforeBuild": false,
+  "sourceDirty": false,
+  "sourcePatch": "docs/crm-technical-match-source.patch",
+  "sourceCommitPublished": false
 }

@@ -35,6 +35,7 @@ const CompetitiveIntelligence = lazy(() => import('./pages/CompetitiveIntelligen
 const BidRobot = lazy(() => import('./pages/BidRobot'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const BlingIntegration = lazy(() => import('./pages/BlingIntegration'))
+const TechnicalMatch = lazy(() => import('./pages/TechnicalMatch'))
 const CrmHub = lazy(() => import('./pages/CrmHub'))
 const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
@@ -94,6 +95,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
+            <Route path="/crm/comparacao-tecnica" element={<PrivateRoute><TechnicalMatch /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/crm/*"                  element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />
