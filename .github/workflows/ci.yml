@@ -193,6 +193,7 @@ jobs:
           # Docker engine. A container BuildKit builder cannot see that image.
           docker compose -f qa/compose.yaml build --builder default api
           docker compose -f qa/compose.yaml up -d --no-build --wait --wait-timeout 300
+          docker compose -f qa/compose.yaml cp api:/reports/seed.json test-results/functional/seed.json
       - name: Verify APIs, PostgreSQL isolation, and business workflows
         run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --junitxml=test-results/functional/api.xml
       - name: Verify backend services with real production libraries
@@ -212,6 +213,7 @@ jobs:
           mkdir -p test-results/functional
           docker compose -f qa/compose.yaml logs --no-color > test-results/functional/stack.log
           docker compose -f qa/compose.yaml stop api
+          docker compose -f qa/compose.yaml cp api:/reports/. test-results/functional/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

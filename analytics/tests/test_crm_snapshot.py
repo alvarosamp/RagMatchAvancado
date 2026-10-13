@@ -1,3 +1,4 @@
+import pytest
 from app.auth import (
     models as auth_models,  # noqa: F401 -- operational mapper registration
 )
@@ -34,6 +35,16 @@ def create_operational_tables(db):
                 )
             )
         )
+
+
+def test_generic_query_cannot_forge_a_technical_approval():
+    from types import SimpleNamespace
+
+    from app.crm.query import _prepare_payload
+
+    with pytest.raises(ValueError, match="calculado pelo servidor"):
+        _prepare_payload(CrmNoticeProductMatch, {"technical_result": {"status": "ATENDE", "score": 1}},
+                         SimpleNamespace(tenant_id=1, id=100), None)
 
 
 def test_crm_reconciliation_updates_prices_and_deactivates_removed_items(db):

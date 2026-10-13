@@ -462,6 +462,8 @@ def _apply_orders(query: Any, model: type, orders: list[dict[str, Any]]) -> Any:
 
 
 def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, existing: Any | None) -> dict[str, Any]:
+    if model is CrmNoticeProductMatch and "technical_result" in payload:
+        raise ValueError("Resultado técnico é calculado pelo servidor; execute a comparação por regras.")
     values: dict[str, Any] = {}
     for column in model.__table__.columns:
         name = column.name
