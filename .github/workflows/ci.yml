@@ -121,7 +121,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
       - name: Build embedded CRM from pinned source
         uses: ./.github/actions/build-crm
       - uses: actions/setup-node@v4
@@ -156,7 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
       - uses: ./.github/actions/build-crm
       - uses: actions/setup-python@v5
         with:
@@ -310,7 +310,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
       - name: Build embedded CRM from pinned source
         if: matrix.image_name == 'ragmatch-frontend'
         uses: ./.github/actions/build-crm

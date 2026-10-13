@@ -490,6 +490,7 @@ class CrmNoticeProductMatch(Base):
     semantic_score = Column(Float)
     llm_score = Column(Float)
     overall_score = Column(Float, nullable=False, default=0.0)
+    technical_result = Column(JSON)
     rationale = Column(Text)
     matched_features = Column(JSON)
     conflicts = Column(JSON)

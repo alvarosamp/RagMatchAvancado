@@ -4,6 +4,30 @@ from app.services.analysis_normalizer import (
 )
 
 
+def test_legacy_spreadsheet_headers_and_price_preserve_original_data():
+    source = {'N Interno': '2026_04_08_12', 'Órgão': 'Prefeitura de Seberi',
+              'Data Disputa': '22/04/2026', 'Nº Pregão': '12/2026',
+              'itens': [{'descricao': 'Switch 16 portas', 'preco': 'R$ 408,87', 'quantidade': '3'}]}
+    normalized = normalize_analysis_result(source)
+    assert normalized['n_interno'] == '2026_04_08_12'
+    assert normalized['edital']['orgao'] == 'Prefeitura de Seberi'
+    assert normalized['edital']['numero_pregao'] == '12/2026'
+    assert normalized['itens_elegiveis'][0]['preco_unitario'] == 'R$ 408,87'
+    assert normalized['itens_elegiveis'][0]['_raw_input'] == source['itens'][0]
+    assert normalized['Órgão'] == source['Órgão']
+    assert 'n_interno' not in source
+
+
+def test_legacy_envelope_unwrapped_and_canonical_fields_take_precedence():
+    inner = {'N Interno': 'old-id', 'n_interno': 'canonical-id', 'Órgão': 'Old organ',
+             'edital': {'orgao': 'Canonical organ'}, 'itens': []}
+    normalized = normalize_analysis_result({'model': 'local-model', 'result': inner})
+    assert normalized['n_interno'] == 'canonical-id'
+    assert normalized['edital']['orgao'] == 'Canonical organ'
+    assert normalized['result'] == inner
+    assert normalized['model'] == 'local-model'
+
+
 def _v8_item(direction="Não identificado"):
     return {
         "categoria": "Transceiver",

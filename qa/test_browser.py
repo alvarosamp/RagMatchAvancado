@@ -14,6 +14,7 @@ PAGES = [
     ("/controle", "Controle de Editais"), ("/upload", "Adicionar processos ao portal"),
     ("/configuracoes", "Configurações"), ("/assinatura", "Entrada, versoes e assinatura de documentos"),
     ("/radar", "Radar de oportunidades"), ("/integracoes/bling", "Bling ERP"),
+    ("/integracoes/conlicitacao", "Laboratório ConLicitação"),
 ]
 
 CRM_PAGES = [
@@ -140,6 +141,27 @@ def test_crm_outage_does_not_invent_zero_indicators(authenticated_page):
     page.route("**/api/crm/dashboard-data", lambda route: route.fulfill(status=500, content_type="application/json", body='{"detail":"QA simulated outage"}'))
     page.goto(WEB_URL + "/crm/")
     expect(page.get_by_text(re.compile("500|indisponível|indisponivel"), exact=False).first).to_be_visible(timeout=15000)
+
+
+def test_crm_route_failure_has_explicit_recovery(authenticated_page):
+    page = authenticated_page
+    page.route("**/crm/assets/Notices-*.js", lambda route: route.abort())
+    page.goto(WEB_URL + "/crm/editais")
+    expect(page.get_by_role("heading", name="Vamos recuperar o CRM")).to_be_visible()
+    page.unroute("**/crm/assets/Notices-*.js")
+    page.get_by_role("button", name="Recarregar CRM").click()
+    expect(page.get_by_role("button", name="Novo edital", exact=True)).to_be_visible()
+
+
+def test_unsaved_notice_draft_survives_reload(authenticated_page):
+    page = authenticated_page
+    page.goto(WEB_URL + "/crm/editais")
+    page.get_by_role("button", name="Novo edital", exact=True).click()
+    page.get_by_placeholder("Ex: Avare", exact=True).first.fill("Município do rascunho QA")
+    page.get_by_placeholder("Ex: TOR-AVARE-001", exact=True).fill("QA-DRAFT-ONLY")
+    page.reload()
+    page.get_by_role("button", name="Novo edital", exact=True).click()
+    expect(page.get_by_placeholder("Ex: TOR-AVARE-001", exact=True)).to_have_value("QA-DRAFT-ONLY")
 
 
 def test_user_page_displays_real_users_and_hides_other_company(authenticated_page):

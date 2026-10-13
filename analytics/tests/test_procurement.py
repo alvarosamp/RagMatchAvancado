@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 import pytest
 from app.auth.dependencies import get_current_user
@@ -417,7 +418,7 @@ def test_negotiation_summary_filters_and_tenant_scope(db, http):
         {"shipping": None},
         {
             "valid_until": (
-                datetime.now(timezone.utc).date() + timedelta(days=20)
+                datetime.now(timezone.utc).astimezone(ZoneInfo("America/Sao_Paulo")).date() + timedelta(days=20)
             ).isoformat()
         },
     ]:
@@ -428,7 +429,7 @@ def test_negotiation_summary_filters_and_tenant_scope(db, http):
         assert response.status_code == 201, response.text
         quotes.append(response.json())
     expired = db.query(SupplierQuote).filter_by(id=quotes[0]["id"]).one()
-    expired.valid_until = datetime.now(timezone.utc).date() - timedelta(days=1)
+    expired.valid_until = datetime.now(timezone.utc).astimezone(ZoneInfo("America/Sao_Paulo")).date() - timedelta(days=1)
     db.commit()
     url = "/crm/market-intelligence/procurement?source=manual"
     data = client.get(url).json()

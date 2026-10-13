@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, rm, writeFile, readdir, readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -75,12 +76,23 @@ async function main() {
   await mkdir(targetRoot, { recursive: true })
   await cp(crmDist, targetRoot, { recursive: true })
 
+  const artifactHashes = {}
+  async function fingerprint(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name)
+      if (entry.isDirectory()) await fingerprint(file)
+      else artifactHashes[path.relative(targetRoot, file).split(path.sep).join('/')] = createHash('sha256').update(await readFile(file)).digest('hex')
+    }
+  }
+  await fingerprint(targetRoot)
+
   const metadata = {
     app: 'bid-buddy',
     sourcePath: 'bid-buddy',
     sourceRepo: readGitValue(['config', '--get', 'remote.origin.url']),
     sourceBranch: readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
     sourceCommit: readGitValue(['rev-parse', 'HEAD']),
+    artifactHashes,
     builtAt: new Date().toISOString(),
     pulledBeforeBuild: shouldPull,
   }

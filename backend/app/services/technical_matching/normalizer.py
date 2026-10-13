@@ -13,6 +13,9 @@ UNITS = {
     "w": ("power", 1), "kw": ("power", 1000),
     "mbps": ("speed", 1), "gbps": ("speed", 1000), "tbps": ("speed", 1000000),
     "m": ("length", 1), "km": ("length", 1000),
+    "nm": ("wavelength", 1),
+    "portas": ("count", 1), "un": ("count", 1),
+    "c": ("temperature", 1), "°c": ("temperature", 1),
 }
 
 

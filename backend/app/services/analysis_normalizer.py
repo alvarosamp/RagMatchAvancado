@@ -122,6 +122,33 @@ ALLOWED_BI_VALUES = {
 def normalize_analysis_result(result: dict[str, Any]) -> dict[str, Any]:
     """Return an analysis payload ready for DB/CRM without losing V8 data."""
     normalized = copy.deepcopy(result or {})
+    # Old spreadsheet exports may wrap the actual response in result. Keep the
+    # envelope and all original labels while adding the canonical import fields.
+    wrapped = normalized.get("result")
+    if (isinstance(wrapped, dict) and not any(key in normalized for key in
+            ("edital", "n_interno", "itens", "itens_elegiveis"))
+            and any(key in wrapped for key in ("N Interno", "n_interno", "edital", "itens"))):
+        normalized.update(copy.deepcopy(wrapped))
+    legacy_labels = {
+        "Status": "status", "Data Disputa": "data_disputa", "Hora Disputa": "hora_disputa",
+        "Órgão": "orgao", "Tipo Licitação": "tipo_licitacao", "Resumo Switches": "resumo_itens",
+        "Critério": "criterio", "Local": "local", "UASG": "uasg", "Nº Pregão": "numero_pregao",
+        "Cidade": "cidade", "UF": "uf", "Valor Total Switches": "valor_total_itens",
+        "Vlr Total Edital": "valor_total_edital", "Intervalo": "intervalo",
+        "Exclusividade ME/EPP": "exclusividade_me_epp", "Endereço": "endereco", "CEP": "cep",
+    }
+    if "N Interno" in normalized or "Órgão" in normalized:
+        if not _meaningful(normalized.get("n_interno")):
+            normalized["n_interno"] = normalized.get("N Interno")
+        header = _dict(normalized.get("edital"))
+        for label, field in legacy_labels.items():
+            if label in normalized and not _meaningful(header.get(field)):
+                header[field] = normalized[label]
+        normalized["edital"] = header
+        risks = _dict(normalized.get("riscos"))
+        if not _meaningful(risks.get("risco_identificado")) and "Risco Identificado" in normalized:
+            risks["risco_identificado"] = normalized["Risco Identificado"]
+        normalized["riscos"] = risks
     analyzer_version = _dict(normalized.get("controle")).get("versao_analisador")
     default_schema = "8.0" if _fold(analyzer_version) == "v8" else "7.4"
     normalized["schema_version"] = _text(normalized.get("schema_version"), default_schema)
@@ -200,7 +227,7 @@ def _normalize_item(item: Any) -> dict[str, Any]:
         "lote_grupo": ("lote_grupo", "lote", "grupo"),
         "numero_item_edital": ("numero_item_edital", "numero_item", "item", "numero"),
         "descricao_original": ("descricao_original", "descricao", "descricao_item", "raw_descricao"),
-        "preco_unitario": ("preco_unitario", "valor_unitario", "preco_minimo"),
+        "preco_unitario": ("preco_unitario", "valor_unitario", "preco_minimo", "preco", "preço"),
         "quantidade": ("quantidade", "qtd"),
         "valor_total_item": ("valor_total_item", "valor_total", "total"),
         "garantia": ("garantia",),

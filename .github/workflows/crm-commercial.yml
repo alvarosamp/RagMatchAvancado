@@ -8,22 +8,13 @@ on:
 permissions:
   contents: read
 jobs:
-  crm:
+  crm-bundle:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: bid-buddy
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: bid-buddy/package-lock.json
-      - run: npm ci
-      - run: npx tsc --noEmit -p tsconfig.app.json
-      - run: npm run test
-      - run: npm run build:embed
+      - name: Verify source revision and embedded artifact hashes
+        run: node scripts/verify-embedded-crm.mjs

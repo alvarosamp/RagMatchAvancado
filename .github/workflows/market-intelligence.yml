@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -r analytics/requirements.txt pytest ruff alembic fastapi python-jose[cryptography] bcrypt python-multipart
+      - run: pip install -r analytics/requirements.txt pytest ruff alembic fastapi python-jose[cryptography] bcrypt python-multipart 'openpyxl>=3.1.5,<4'
       - run: pip install 'coverage>=7.10,<8'
       - run: python -m coverage run --source=backend/app --data-file=.coverage.analytics -m pytest analytics/tests -q
       - uses: actions/upload-artifact@v4

@@ -3,16 +3,65 @@
 Este guia considera a VPS Hostinger atual, que já usa Docker Compose e Traefik.
 O Traefik é o único serviço público nas portas 80/443; não instale Caddy.
 
+## CI/CD e tag compartilhada
+
+Cada push na `main` executa os testes, publica as três imagens no Docker Hub com
+`sha-<SHA completo de 40 caracteres>` e faz deploy por SSH depois de verificar que
+as três imagens existem. API, frontend, MLflow, workers e migrations usam a mesma
+variável `IMAGE_TAG`. `latest` continua disponível no Docker Hub, mas o deploy usa
+sempre a tag SHA. A tag fica no resumo da execução em **Actions → CI → Summary**,
+com links para as imagens, e no artefato `release-<SHA>` como `release.env`.
+
+Cadastre em **Settings → Secrets and variables → Actions**:
+
+| Secret | Valor |
+| --- | --- |
+| `DOCKERHUB_USERNAME` | Usuário com permissão de publicar em `alvarocareli` |
+| `DOCKERHUB_TOKEN` | Token do Docker Hub com permissão de escrita |
+| `VPS_HOST` | IP ou hostname da VPS Hostinger |
+| `VPS_USER` | Usuário SSH com acesso ao Docker e ao checkout |
+| `VPS_SSH_KEY` | Chave privada SSH desse usuário |
+| `VPS_APP_DIR` | Caminho absoluto do clone Git na VPS, por exemplo `/docker/sistemator` |
+| `VPS_PORT` | Opcional; padrão `22` |
+
+Os secrets de VPS podem ficar no environment `production`. Se esse environment
+exigir aprovação, o GitHub aguardará a aprovação antes do deploy. Secrets ausentes
+fazem o deploy falhar explicitamente.
+
+Na VPS, o diretório deve ser um clone deste repositório, com acesso de leitura ao
+remote `origin`, Docker Compose v2 com suporte a `up --wait` e `.env.prod`
+preenchido conforme `.env.prod.example`. Se as imagens forem privadas, execute
+`docker login` na VPS com um token de leitura. As credenciais da aplicação ficam
+no `.env.prod` da VPS. O pipeline não sobrescreve essas credenciais.
+
+O deploy usa `docker-compose.prod.yaml` e checkout no commit exato das imagens.
+Ele baixa as imagens antes de persistir `IMAGE_TAG` no `.env.prod` e aguarda os
+containers ficarem running/healthy. Serviços sem healthcheck só têm o estado
+running confirmado. Se o startup falhar, o pipeline falha e a tag desejada fica
+registrada para diagnóstico; não há rollback automático de banco ou containers.
+
+Para execução manual, use **Run workflow** na `main`: `publish_images` publica sem
+deploy; `deploy_vps` publica e faz deploy mesmo com `publish_images` desmarcado.
+Outras branches podem publicar imagens para testes, mas não fazem deploy em produção.
+
 ## Atualização da VPS existente
 
 1. Faça um snapshot no hPanel antes de qualquer mudança em uma base existente.
-2. No diretório `/docker/sistemator`, mantenha as variáveis existentes e adicione
-   as novas variáveis do `.env.prod.example`. Confira `APP_DOMAIN`, `API_DOMAIN`
-   e a rede externa `traefik-proxy` antes de substituir o Compose atual.
-3. Atualize o `docker-compose.yml` com a versão de produção e valide com
-   `docker compose config -q`.
-4. Execute `docker compose pull` e depois `docker compose up -d --remove-orphans`.
-5. Confira `docker compose ps` e `docker compose logs --tail=200`.
+2. No clone da VPS, mantenha as variáveis existentes no `.env.prod` e adicione as
+   variáveis de `.env.prod.example`. Confira domínios e a rede `traefik-proxy`.
+3. Preserve o nome do projeto Compose da stack atual para reutilizar volumes:
+   defina `COMPOSE_PROJECT_NAME` no `.env.prod` com o nome existente, consultável
+   por `docker compose ls`. A primeira adoção não deve criar uma segunda stack.
+4. Confira também o certificado Traefik: este Compose usa `letsencrypt`; o
+   resolver configurado na VPS deve corresponder aos labels do arquivo.
+5. Depois da publicação, execute o workflow ou, no clone da VPS:
+
+```bash
+IMAGE_TAG=sha-<SHA_COMPLETO_PUBLICADO> bash scripts/deploy-production.sh
+```
+
+O Compose alternativo `deploy/docker-compose.hostinger-test.yml` também exige
+`IMAGE_TAG` única, sem tags independentes por serviço.
 
 O frontend não publica portas no host: o Traefik o acessa pela rede externa
 `traefik-proxy`. PostgreSQL, Redis, MinIO, MLflow e Ollama não têm portas
@@ -110,8 +159,9 @@ o teste de restauração.
 O botão **Atualizar** do hPanel é apropriado apenas depois de a imagem Docker já
 ter sido publicada. Alterações de Compose, como adicionar workers ou redes, devem
 ser aplicadas no terminal da VPS com `docker compose up -d --remove-orphans`.
-Para rollback, restaure o `docker-compose.yml` salvo ou use uma tag SHA anterior e
-execute o mesmo comando.
+Para retornar às imagens de um commit anterior, execute o script com a tag SHA
+anterior. Verifique antes a compatibilidade do banco: retornar imagens não desfaz
+migrations e pode exigir a restauração de um backup.
 
 ## Antes de abrir para clientes
 

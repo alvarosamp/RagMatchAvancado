@@ -70,10 +70,16 @@ def run_notice_item_match(
     use_llm: bool = True,
     notice_product_id: str | None = None,
     category: str | None = None,
+    mode: str = "hybrid",
+    attribute_filters: dict[str, list[Any]] | None = None,
 ) -> dict[str, Any]:
+    if mode not in {"rules", "hybrid"}:
+        raise ValueError("Modo de match invalido")
+    if attribute_filters and (mode != "rules" or not notice_product_id):
+        raise ValueError("Filtros de atributos exigem modo rules e item selecionado")
     tenant = getattr(current_user, "tenant", None)
     use_llm = bool(
-        use_llm
+        mode != "rules" and use_llm
         and CRM_MATCH_USE_LLM
         and ai_feature_enabled("crm_llm_rerank", tenant)
     )
@@ -97,6 +103,8 @@ def run_notice_item_match(
             raise LookupError("Item do edital nao encontrado para rodar match.")
 
     catalog_products_filtered = catalog_products
+    if category and mode == "rules" and not notice_product_id:
+        raise ValueError("No modo rules, categoria explicita exige selecionar um item")
     if category:
         wanted = normalize_text(category)
         catalog_products_filtered = [
@@ -117,9 +125,9 @@ def run_notice_item_match(
         })
 
     embedding_stats: dict[str, Any] | None = None
-    if pending_products and all(_structured_item(p) is not None for p in pending_products):
+    if pending_products and (mode == "rules" or all(_structured_item(p) is not None for p in pending_products)):
         embedding_stats = {"status": "not_used", "reason": "deterministic_json"}
-    if any(_structured_item(p) is None for p in pending_products) and ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
+    if mode != "rules" and any(_structured_item(p) is None for p in pending_products) and ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
         try:
             embedding_stats = ensure_catalog_embeddings(db, catalog_products_filtered)
         except Exception as exc:
@@ -138,7 +146,7 @@ def run_notice_item_match(
 
     for product in pending_products:
         # A matching description cannot substitute explicit technical requirements.
-        reused_catalog = _find_reusable_catalog_product(product, reusable_matches) if _structured_item(product) is None else None
+        reused_catalog = _find_reusable_catalog_product(product, reusable_matches) if mode != "rules" and _structured_item(product) is None else None
         if reused_catalog is not None:
             reused_match = CrmNoticeProductMatch(
                 tenant_id=current_user.tenant_id,
@@ -172,7 +180,14 @@ def run_notice_item_match(
             })
             continue
 
-        ranked = _rank_candidates(
+        item_catalog = catalog_products_filtered
+        if attribute_filters:
+            from app.services.technical_matching.facets import build_facets
+            selected = build_facets(_structured_item(product) or {"categoria": getattr(product, "category", None)},
+                [{**_technical_catalog_payload(c), "id": c.id} for c in item_catalog], attribute_filters)
+            allowed = set(selected["catalog_product_ids"])
+            item_catalog = [c for c in item_catalog if c.id in allowed]
+        ranked = _rank_structured_candidates(_structured_item(product) or {"categoria": getattr(product, "category", None), "requisitos": {}}, item_catalog) if mode == "rules" else _rank_candidates(
             product,
             catalog_products_filtered,
             embedding_cache=embedding_cache,
@@ -197,6 +212,7 @@ def run_notice_item_match(
                 semantic_score=score.semantic_score,
                 llm_score=score.llm_score,
                 overall_score=score.overall_score,
+                technical_result=candidate.get("technical_match"),
                 rationale=score.rationale,
                 matched_features=list(score.matched_features) if score.matched_features else None,
                 conflicts=list(score.conflicts) if score.conflicts else None,
@@ -277,6 +293,10 @@ def get_notice_item_match_payload(db: Session, current_user: User, notice_id: st
 
 def confirm_notice_item_match(db: Session, current_user: User, match_id: str) -> dict[str, Any]:
     match = _load_match(db, current_user, match_id)
+    if _technical_stale(match):
+        raise ValueError("Comparacao desatualizada: reavalie antes de confirmar")
+    if (match.technical_result or {}).get("status") in {"NAO_ATENDE", "VERIFICAR"}:
+        raise ValueError("A comparacao tecnica exige resolver as falhas ou pendencias antes da confirmacao")
     product = match.notice_product
     catalog = match.catalog_product
 
@@ -793,22 +813,38 @@ def _json_object(value: Any) -> dict[str, Any] | None:
 
 
 def _structured_item(product: CrmNoticeProduct) -> dict[str, Any] | None:
+    from app.services.technical_matching.adapter import adapt_item
     for source in (getattr(product, "raw_payload", None), getattr(product, "technical_characteristics", None)):
         payload = _json_object(source)
-        if payload is not None and "requisitos" in payload:
-            return {**payload, "categoria": payload.get("categoria") or getattr(product, "category", None)}
+        if payload is not None:
+            result = adapt_item(payload, getattr(product, "category", None))
+            if result is not None:
+                return result
     return None
+
+
+def _technical_catalog_payload(catalog):
+    payload = _json_object(getattr(catalog, "specification", None)) or {}
+    return {"sku": getattr(catalog, "sku", None), "categoria": payload.get("categoria") or getattr(catalog, "category", None),
+            "atributos": payload.get("atributos", payload), "revisao": payload.get("revisao"), "variante": payload.get("variante")}
+
+
+def _technical_stale(match):
+    from app.services.technical_matching.engine import _hash
+    from app.services.technical_matching.normalizer import RULES
+    saved = getattr(match, "technical_result", None)
+    if not isinstance(saved, dict):
+        return False
+    item = _structured_item(match.notice_product)
+    return (item is None or saved.get("hash_requisitos") != _hash(item)
+            or saved.get("hash_produto") != _hash(_technical_catalog_payload(match.catalog_product))
+            or saved.get("versao_regras") != RULES.get("version"))
 
 
 def _rank_structured_candidates(item: dict[str, Any], catalog_products: list[CrmCatalogProduct]) -> list[dict[str, Any]]:
     ranked = []
     for catalog in catalog_products:
-        payload = _json_object(getattr(catalog, "specification", None)) or {}
-        result = compare_item_product(item, {
-            "sku": getattr(catalog, "sku", None),
-            "categoria": payload.get("categoria") or getattr(catalog, "category", None),
-            "atributos": payload.get("atributos", payload),
-        })
+        result = compare_item_product(item, _technical_catalog_payload(catalog))
         rows = tuple(
             f"{d['atributo']}: {d['status']} | exigido {d['operador']} {d['exigido']} | "
             f"produto {d['encontrado']} | {d['motivo']}"
@@ -1148,6 +1184,9 @@ def _serialize_match(match: CrmNoticeProductMatch) -> dict[str, Any]:
         "semantic_score": match.semantic_score,
         "llm_score": match.llm_score,
         "overall_score": match.overall_score,
+        "technical_stale": _technical_stale(match),
+        "technical_result": getattr(match, "technical_result", None),
+        "technical_status": (getattr(match, "technical_result", None) or {}).get("status"),
         "rationale": match.rationale,
         "matched_features": match.matched_features or [],
         "conflicts": match.conflicts or [],
@@ -1215,3 +1254,28 @@ def _find_reusable_catalog_product(
     if not signature:
         return None
     return reusable_matches.get(signature)
+
+
+def reevaluate_notice_item_match(db: Session, current_user: User, match_id: str) -> dict[str, Any]:
+    """Explicitly reevaluate; retain human selection and archive the old snapshot."""
+    match = _load_match(db, current_user, match_id)
+    item = _structured_item(match.notice_product)
+    if item is None:
+        raise ValueError("Item sem requisitos estruturados")
+    candidate = _rank_structured_candidates(item, [match.catalog_product])[0]
+    previous = match.technical_result
+    result = candidate['technical_match']
+    db.add(CrmNoticeHistory(
+        tenant_id=current_user.tenant_id, notice_id=match.notice_id,
+        user_id=current_user.id, action="Comparacao tecnica reavaliada explicitamente",
+        details={"match_id": match.id, "previous_result": previous, "technical_result": result,
+                 "human_status": _enum_value(match.status)},
+    ))
+    match.technical_result = result
+    match.rationale = candidate['score'].rationale
+    match.overall_score = candidate['score'].overall_score
+    match.match_level = _match_level_enum(candidate['score'].level)
+    match.matched_features = list(candidate['score'].matched_features)
+    match.conflicts = list(candidate['score'].conflicts)
+    db.commit()
+    return get_notice_item_match_payload(db, current_user, match.notice_id)

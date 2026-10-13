@@ -40,7 +40,7 @@ def configure(module, monkeypatch, head, tables):
     )
 
 
-@pytest.mark.parametrize("head", ["20261009_01", "20261009_02", "20261010_03"])
+@pytest.mark.parametrize("head", ["20261012_02"])
 def test_fresh_database_applies_analytical_upgrade_after_snapshot(
     migration_runner, monkeypatch, head
 ):
