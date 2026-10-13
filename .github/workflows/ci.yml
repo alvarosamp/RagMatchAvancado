@@ -189,7 +189,10 @@ jobs:
       - name: Start disposable application stack
         run: |
           mkdir -p test-results/functional
-          docker compose -f qa/compose.yaml up -d --build --wait --wait-timeout 300
+          # The QA wrapper inherits the API image loaded into this runner's
+          # Docker engine. A container BuildKit builder cannot see that image.
+          docker compose -f qa/compose.yaml build --builder default api
+          docker compose -f qa/compose.yaml up -d --no-build --wait --wait-timeout 300
       - name: Verify APIs, PostgreSQL isolation, and business workflows
         run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --junitxml=test-results/functional/api.xml
       - name: Verify backend services with real production libraries
