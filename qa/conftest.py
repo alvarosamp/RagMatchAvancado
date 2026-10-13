@@ -40,9 +40,9 @@ class Api:
 
 @pytest.fixture(scope="session")
 def seed():
-    path = ROOT / "test-results/functional/seed.json"
+    path = Path(os.getenv("QA_SEED_PATH", str(ROOT / "test-results/functional/seed.json")))
     if not path.exists():
-        pytest.fail("QA stack is not running: start qa/compose.yaml before this suite")
+        pytest.fail(f"QA seed metadata missing at {path}; start qa/compose.yaml and copy api:/reports/seed.json before this suite")
     return json.loads(path.read_text(encoding="utf-8"))
 
 

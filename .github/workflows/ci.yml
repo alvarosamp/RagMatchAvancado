@@ -153,6 +153,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 60
+    env:
+      QA_SEED_PATH: ${{ github.workspace }}/test-results/functional/seed.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -193,7 +195,8 @@ jobs:
           # Docker engine. A container BuildKit builder cannot see that image.
           docker compose -f qa/compose.yaml build --builder default api
           docker compose -f qa/compose.yaml up -d --no-build --wait --wait-timeout 300
-          docker compose -f qa/compose.yaml cp api:/reports/seed.json test-results/functional/seed.json
+          docker compose -f qa/compose.yaml cp api:/reports/seed.json "$QA_SEED_PATH"
+          test -f "$QA_SEED_PATH"
       - name: Verify APIs, PostgreSQL isolation, and business workflows
         run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --junitxml=test-results/functional/api.xml
       - name: Verify backend services with real production libraries
@@ -213,7 +216,7 @@ jobs:
           mkdir -p test-results/functional
           docker compose -f qa/compose.yaml logs --no-color > test-results/functional/stack.log
           docker compose -f qa/compose.yaml stop api
-          docker compose -f qa/compose.yaml cp api:/reports/. test-results/functional/
+          docker compose -f qa/compose.yaml cp api:/reports/. "$GITHUB_WORKSPACE/test-results/functional/"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
