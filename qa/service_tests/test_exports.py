@@ -12,7 +12,7 @@ from app.services import export_service, analysis_export_service, tor_datasheet_
 @pytest.fixture
 def matching_report():
     return {"edital_id": 17, "total_requirements": 3, "results": [
-        {"model": model, "overall_score": score, "status": status, "details": [{"attribute": "ports", "required_value": "48", "product_value": "24", "status": status, "final_score": score, "llm_reason": "QA evidência"}]}
+        {"model": model, "overall_score": score, "status": status, "details": [{"attribute": "ports", "required": "48", "found": "24", "status": status, "final_score": score, "llm_reason": "QA evidência"}]}
         for model, score, status in [("QA-SW48", 1.0, "atende"), ("QA-SW24", 0.5, "verificar"), ("QA-SW8", 0, "nao_atende")]
     ]}
 
@@ -31,6 +31,7 @@ def test_matching_pdf_has_readable_product_and_scores(matching_report):
     text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(data)).pages)
     assert "QA-SW48" in text and "QA-SW8" in text
     assert "100%" in text
+    assert "48" in text and "24" in text
 
 
 def test_matching_csv_round_trips_all_statuses_and_products(matching_report):
