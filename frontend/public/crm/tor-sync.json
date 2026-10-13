@@ -76,10 +76,11 @@
     "assets/Users-BBptUu2Y.js": "5dc719ed4cc7603b73f0324f9acfbc2b5079c66f002038e16c0e53d89bf3b219",
     "assets/wrench-CCWLQKYT.js": "8840b1301dd04b8431b4e19044212574be53a5d7419e59ad76347862582b0822",
     "favicon.ico": "dd821076a9b03adc2173c93956226aea3d92482d7578fc4339c5d3a2e9c24586",
-    "index.html": "75aad083bb27f4cf0eed4a5645d2be402501069b11027fa9c06261b3145d10d3",
-    "placeholder.svg": "21789eebf17b6437d2b47e1a4e979548b48cf3652a92c0222c94a9ccd89746a6",
-    "robots.txt": "52710c261d851bc1ad35604017862f2a8444e7a0f02cd7b8b49e3ba92e6d4cea"
+    "index.html": "6dd90bd49c832b7b571552902af5f280c5079f7bcc4c29f514d4493e2b963afb",
+    "placeholder.svg": "c7f8fef98e76c2621a69fb6a06ebad4e552b2641e29cdb762c43e0d1f43be0ff",
+    "robots.txt": "a3d27b3ca5ce32341fa9f96f01169b521b1657c05d1860c45d1e53a6258e9e8b"
   },
-  "builtAt": "2026-10-13T03:20:12.210Z",
+  "artifactHashFormat": "sha256-lf-text-v1",
+  "builtAt": "2026-10-13T03:26:53.448Z",
   "pulledBeforeBuild": false
 }

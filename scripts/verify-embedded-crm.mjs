@@ -1,5 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
+import { artifactHash } from './crm-artifact-hash.mjs'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,7 @@ const metadata = JSON.parse(await readFile(path.join(bundle, 'tor-sync.json'), '
 const pinned = execFileSync('git', ['ls-files', '--stage', 'bid-buddy'], {cwd: root, encoding: 'utf8'}).trim().split(/\s+/)[1]
 if (!pinned || metadata.sourceCommit !== pinned) throw new Error('CRM bundle does not match the pinned source revision. Run build:crm.')
 if (!metadata.artifactHashes?.['index.html']) throw new Error('CRM artifact manifest missing. Run build:crm.')
+if (metadata.artifactHashFormat !== 'sha256-lf-text-v1') throw new Error('CRM artifact hash format missing. Run build:crm.')
 const found = {}
 async function verify(directory) {
   for (const entry of await readdir(directory, {withFileTypes: true})) {
@@ -18,7 +19,7 @@ async function verify(directory) {
     else {
       const relative = path.relative(bundle, file).split(path.sep).join('/')
       if (relative === 'tor-sync.json') continue
-      found[relative] = createHash('sha256').update(await readFile(file)).digest('hex')
+      found[relative] = artifactHash(relative, await readFile(file))
       if (found[relative] !== metadata.artifactHashes[relative]) throw new Error(`CRM artifact changed: ${relative}`)
     }
   }

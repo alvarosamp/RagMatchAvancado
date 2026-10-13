@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { cp, mkdir, rm, writeFile, readdir, readFile } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
+import { artifactHash } from './crm-artifact-hash.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -81,7 +81,7 @@ async function main() {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name)
       if (entry.isDirectory()) await fingerprint(file)
-      else artifactHashes[path.relative(targetRoot, file).split(path.sep).join('/')] = createHash('sha256').update(await readFile(file)).digest('hex')
+      else artifactHashes[path.relative(targetRoot, file).split(path.sep).join('/')] = artifactHash(file, await readFile(file))
     }
   }
   await fingerprint(targetRoot)
@@ -93,6 +93,7 @@ async function main() {
     sourceBranch: readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
     sourceCommit: readGitValue(['rev-parse', 'HEAD']),
     artifactHashes,
+    artifactHashFormat: 'sha256-lf-text-v1',
     builtAt: new Date().toISOString(),
     pulledBeforeBuild: shouldPull,
   }
