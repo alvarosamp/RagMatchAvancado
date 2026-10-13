@@ -20,21 +20,30 @@ UNITS = {
 
 
 def normalize_name(value: str) -> str:
-    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    """Normalize field/category spelling, never product identifiers or values."""
+    if not isinstance(value, str):
+        raise ValueError("Nome deve ser texto")
+    value = unicodedata.normalize("NFKD", value).casefold().encode("ascii", "ignore").decode("ascii")
     # SFP+ and SFP must stay different.
     return re.sub(r"[^a-z0-9]+", "_", value.lower().replace("+", "_plus")).strip("_")
 
 
-ALIASES = {
-    normalize_name(alias): name
-    for name, definition in RULES["attributes"].items()
-    for alias in [name, *definition["aliases"]]
-}
-CATEGORIES = {
-    normalize_name(alias): name
-    for name, aliases in RULES["categories"].items()
-    for alias in [name, *aliases]
-}
+def build_alias_index(definitions: dict[str, list[str]]) -> dict[str, str]:
+    """Fail on conflicting definitions instead of silently choosing the last."""
+    result = {}
+    for name, aliases in definitions.items():
+        for alias in [name, *aliases]:
+            token = normalize_name(alias)
+            if not token:
+                raise ValueError(f"Alias vazio para {name}")
+            if token in result and result[token] != name:
+                raise ValueError(f"Alias ambíguo {alias!r}: {result[token]} / {name}")
+            result[token] = name
+    return result
+
+
+ALIASES = build_alias_index({name: definition['aliases'] for name, definition in RULES['attributes'].items()})
+CATEGORIES = build_alias_index(RULES['categories'])
 
 
 def canonical_name(name: str) -> str:

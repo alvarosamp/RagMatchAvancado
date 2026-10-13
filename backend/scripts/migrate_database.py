@@ -22,7 +22,7 @@ from app.core.data_preservation import require_explicit_empty_database_bootstrap
 # Current operational models already include the technical_result column.
 # Stamp its revision on a fresh snapshot, then create analytics via upgrade.
 BOOTSTRAP_REVISION = "20261012_01"
-SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261012_02"}
+SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261012_02", "20261013_01"}
 
 
 def _bootstrap_empty_database(config: Config) -> None:
@@ -30,7 +30,8 @@ def _bootstrap_empty_database(config: Config) -> None:
 
     db = SessionLocal()
     try:
-        init_db(db)
+        # New browser sessions are owned by their migration, not this historical snapshot.
+        init_db(db, exclude_tables={"auth_sessions"})
         db.commit()
     finally:
         db.close()

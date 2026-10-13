@@ -1,0 +1,215 @@
+diff --git a/src/components/notices/ResultsTab.tsx b/src/components/notices/ResultsTab.tsx
+index 7947733..8790c05 100644
+--- a/src/components/notices/ResultsTab.tsx
++++ b/src/components/notices/ResultsTab.tsx
+@@ -15,6 +15,7 @@ import { DocumentGeneratorDialog } from './DocumentGeneratorDialog';
+ import { lpuUnitPrice, referenceTotalPrice, resolveCompositionMinimumUnitPrice, resolveMinimumUnitPrice } from '@/lib/pricing';
+ import { isTechnicalFeatureKey, resolveTechnicalFeatures } from '@/lib/item-technical-features';
+ import { EmptyState } from '@/components/ui/empty-state';
++import { ItemMatchJsonExport } from './ItemMatchJsonExport';
+ import { OperationalSection } from './OperationalSection';
+ import { EditableInfoField } from './EditableInfoField';
+ 
+@@ -846,6 +847,7 @@ export function ResultsTab({
+                         <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                       </Button>
+                     </CollapsibleTrigger>
++                    <ItemMatchJsonExport noticeId={noticeId} itemId={p.id} number={p.item_number}/>
+                     {canEdit && (
+                       <>
+                         {isDiscarded ? (
+diff --git a/src/pages/NoticeDetail.tsx b/src/pages/NoticeDetail.tsx
+index 9c4e5cb..4d586dd 100644
+--- a/src/pages/NoticeDetail.tsx
++++ b/src/pages/NoticeDetail.tsx
+@@ -25,7 +25,7 @@ import { SessionsTab } from '@/components/notices/SessionsTab';
+ import { ResultsTab } from '@/components/notices/ResultsTab';
+ import { EditableInfoField as EditableField } from '@/components/notices/EditableInfoField';
+ import { OperationalSection as InfoSection } from '@/components/notices/OperationalSection';
+-import { NoticeMatchTab } from '@/components/notices/NoticeMatchTab';
++import { ManualNoticeMatchTab } from '@/components/notices/ManualNoticeMatchTab';
+ import { NoticeMetadataExport } from '@/components/notices/NoticeMetadataExport';
+ import { BidRoomTab } from '@/components/notices/BidRoomTab';
+ import { OrganPicker } from '@/components/notices/OrganPicker';
+@@ -1328,9 +1328,9 @@ export default function NoticeDetail() {
+         </TabsContent>
+ 
+         <TabsContent value="match" className="space-y-4">
+-          <NoticeMatchTab
++          <ManualNoticeMatchTab
+             noticeId={id!}
+-            productsCount={products.length}
++            products={products}
+             canEdit={canEdit}
+             onChanged={() => load(false)}
+           />
+diff --git a/src/components/notices/ItemMatchJsonExport.tsx b/src/components/notices/ItemMatchJsonExport.tsx
+new file mode 100644
+index 0000000..54149aa
+--- /dev/null
++++ b/src/components/notices/ItemMatchJsonExport.tsx
+@@ -0,0 +1,25 @@
++import { useState } from 'react';
++import { Download, Loader2 } from 'lucide-react';
++import { Button } from '@/components/ui/button';
++import { crmFetch } from '@/integrations/supabase/client';
++import { toast } from 'sonner';
++
++export function ItemMatchJsonExport({noticeId, itemId, number}: {noticeId:string; itemId:string; number?:string | null}) {
++  const [busy,setBusy] = useState(false);
++  async function download() {
++    setBusy(true);
++    try {
++      const response = await crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-json`);
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar o item.');
++      const url = URL.createObjectURL(new Blob([JSON.stringify(response.payload,null,2)],{type:'application/json'}));
++      const anchor = document.createElement('a');
++      anchor.href=url; anchor.download=`match_item_${String(number || itemId).replace(/[^a-zA-Z0-9_-]/g,'_')}.json`;
++      anchor.click(); window.setTimeout(()=>URL.revokeObjectURL(url),10000);
++      toast.success('JSON deste item exportado.');
++    } catch (error:any) { toast.error(error.message); }
++    finally {setBusy(false);}
++  }
++  return <Button size="sm" variant="outline" disabled={busy} onClick={download} aria-label={`Exportar JSON do item ${number || itemId}`}>
++    {busy?<Loader2 className="h-4 w-4 animate-spin"/>:<Download className="h-4 w-4"/>}Exportar JSON
++  </Button>;
++}
+diff --git a/src/components/notices/ManualNoticeMatchTab.tsx b/src/components/notices/ManualNoticeMatchTab.tsx
+new file mode 100644
+index 0000000..3bd722c
+--- /dev/null
++++ b/src/components/notices/ManualNoticeMatchTab.tsx
+@@ -0,0 +1,133 @@
++import { useEffect, useState } from 'react';
++import { crmFetch } from '@/integrations/supabase/client';
++import { Button } from '@/components/ui/button';
++import { Card, CardContent } from '@/components/ui/card';
++import { Badge } from '@/components/ui/badge';
++import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
++import { Loader2, Plus, SlidersHorizontal, Save } from 'lucide-react';
++import { toast } from 'sonner';
++import { ItemMatchJsonExport } from './ItemMatchJsonExport';
++import { NoticeMatchTab } from './NoticeMatchTab';
++
++const categories:Record<string,string> = {switch:'Switch',access_point:'Access point',transceiver:'Transceiver'};
++const operators:Record<string,string> = {'==':'Igual a','>=':'No mínimo','<=':'No máximo','>':'Maior que','<':'Menor que',em:'Um destes',contem_todos:'Contém todos',contem_algum:'Contém algum',cobre_faixa:'Cobre a faixa'};
++const valueLabel = (v:any):string => v == null ? 'Não informado' : typeof v==='object' && 'valor' in v ? `${valueLabel(v.valor)}${v.unidade?' '+v.unidade:''}` : typeof v==='boolean' ? (v?'Sim':'Não') : typeof v==='object' ? JSON.stringify(v) : String(v);
++
++export function ManualNoticeMatchTab({noticeId,products,canEdit,onChanged}:{noticeId:string;products:any[];canEdit:boolean;onChanged:()=>void}) {
++  const [item,setItem]=useState<any>(null);
++  const [saved,setSaved]=useState<Record<string,string>>({});
++  const items=products.filter(p=>!p.raw_payload?.kit_component);
++  return <div className="space-y-4">
++    <Card><CardContent className="p-5 space-y-2"><p className="crm-kicker">Match manual</p><h3 className="text-lg font-semibold">Do item ao produto, ponto a ponto</h3>
++      <p className="text-sm text-muted-foreground">Abra um item para carregar seu JSON automaticamente, escolha a categoria e filtre os produtos na tabela. Sem IA.</p>
++      <div className="flex flex-wrap gap-2 text-xs"><Badge variant="outline">1. JSON do item</Badge><Badge variant="outline">2. Categoria</Badge><Badge variant="outline">3. Filtros</Badge><Badge variant="outline">4. Conferência e seleção</Badge></div>
++    </CardContent></Card>
++    {items.length===0 && <p className="text-sm text-muted-foreground">Cadastre os itens deste edital para começar.</p>}
++    {items.length>0 && <div className="max-w-full overflow-x-auto rounded-md border"><table aria-label="Itens para match" className="w-full text-left text-sm"><thead className="bg-muted"><tr>{['Item','Descrição','Quantidade','Situação','Ações'].map(t=><th key={t} scope="col" className="p-3">{t}</th>)}</tr></thead><tbody>
++      {items.map(p=><tr key={p.id} className="border-t align-top"><td className="p-3 whitespace-nowrap">{p.item_number || 'Sem número'}</td><td className="p-3 min-w-64">{p.description}</td><td className="p-3">{p.quantity ?? 'Não informada'}</td><td className="p-3">{saved[p.id] || (p.raw_payload?._manual_match?.selected_status==='confirmado'?'Match confirmado':p.raw_payload?._manual_match?.selected_status==='para_revisao'?'Candidato salvo para revisão':p.raw_payload?._manual_match?'Requisitos e filtros salvos':'Pronto para revisar')}</td><td className="p-3"><div className="flex gap-2"><Button onClick={()=>setItem(p)} aria-label={`Match do item ${p.item_number || p.id}`}><SlidersHorizontal className="h-4 w-4"/>Match</Button><ItemMatchJsonExport noticeId={noticeId} itemId={p.id} number={p.item_number}/></div></td></tr>)}
++    </tbody></table></div>}
++    <Dialog open={Boolean(item)} onOpenChange={open=>{if(!open)setItem(null);}}><DialogContent className="max-h-[94vh] w-[96vw] max-w-6xl overflow-y-auto">
++      <DialogHeader><DialogTitle>Match do item {item?.item_number || 'sem número'}</DialogTitle><DialogDescription>Monte os filtros e confira o produto antes de salvar a seleção.</DialogDescription></DialogHeader>
++      {item && <ManualItemMatch key={item.id} noticeId={noticeId} item={item} canEdit={canEdit} onSaved={message=>{setSaved(s=>({...s,[item.id]:message}));onChanged();}}/>}
++    </DialogContent></Dialog>
++    <details className="rounded-lg border p-4"><summary className="cursor-pointer text-sm font-medium">Resultados anteriores e histórico de comparações</summary>
++      <div className="mt-4"><NoticeMatchTab noticeId={noticeId} productsCount={items.length} canEdit={false} onChanged={onChanged}/></div>
++    </details>
++  </div>;
++}
++
++function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string;item:any;canEdit:boolean;onSaved:(message:string)=>void}) {
++  const base=`/api/crm/notices/${noticeId}/products/${item.id}/manual-match`;
++  const [state,setState]=useState<any>(null),[data,setData]=useState<any>(null),[revision,setRevision]=useState('');
++  const [selected,setSelected]=useState(''),[json,setJson]=useState(''),[error,setError]=useState('');
++  const [busy,setBusy]=useState(false),[calculating,setCalculating]=useState(false),[stamp,setStamp]=useState('');
++  const [showPending,setShowPending]=useState(false),[showRejected,setShowRejected]=useState(false),[limit,setLimit]=useState(12);
++  const currentStamp=JSON.stringify({state,selected});
++  function accept(payload:any) {
++    setState(payload.state);setData(payload);setRevision(payload.base_revision);setSelected(payload.state?.selected_catalog_id || '');setStamp('');
++  }
++  useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw new Error(r.payload?.detail || 'Não foi possível abrir o item.');accept(r.payload);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[base]);
++  useEffect(()=>{
++    if (!state) return;
++    let live=true;setCalculating(true);setError('');
++    const timer=window.setTimeout(()=>{
++      crmFetch(base+'/preview',{method:'POST',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected || null})})
++        .then(r=>{if(!live)return;if(!r.ok)throw new Error(r.payload?.detail || 'Não foi possível calcular os filtros.');setData(r.payload);setStamp(currentStamp);})
++        .catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setCalculating(false);});
++    },300);
++    return()=>{live=false;window.clearTimeout(timer);};
++  },[base,state,selected,revision]);
++  async function importJson(text:string,filename:string) {
++    setBusy(true);setError('');
++    try {const response=await crmFetch(base+'/import',{method:'POST',body:JSON.stringify({json_text:text,filename})});if(!response.ok)throw new Error(response.payload?.detail || 'JSON inválido.');accept(response.payload);setJson('');toast.success('JSON carregado neste rascunho. Confira os pontos antes de salvar.');}
++    catch(e:any){setError(e.message);}finally{setBusy(false);}
++  }
++  async function loadItemJson() {
++    setBusy(true);setError('');
++    try {
++      const response=await crmFetch(`/api/crm/notices/${noticeId}/products/${item.id}/match-json`);
++      if(!response.ok)throw new Error(response.payload?.detail || 'Não foi possível carregar o JSON do item.');
++      await importJson(JSON.stringify(response.payload),'JSON atual do item');
++    } catch(e:any){setError(e.message);}finally{setBusy(false);}
++  }
++  async function upload(file:File | undefined) {
++    if(!file)return;if(file.size>1000000){setError('Use um JSON de até 1 MB.');return;}await importJson(await file.text(),file.name);
++  }
++  const ready=state && stamp===currentStamp && !calculating && !busy && !error;
++  async function save(withProduct=false,confirm=false) {
++    if(!ready)return;setBusy(true);setError('');
++    try {
++      const candidate=data.candidatos.find((c:any)=>c.id===selected);
++      const response=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:withProduct?selected:null,catalog_hash:withProduct?candidate?.hash_catalogo:null,confirm})});
++      if(!response.ok)throw new Error(response.payload?.detail || 'Não foi possível salvar.');
++      setRevision(response.payload.base_revision);setState(response.payload.state);toast.success(response.payload.mensagem);onSaved(response.payload.mensagem);
++    } catch(e:any){setError(e.message);}finally{setBusy(false);}
++  }
++  function updateRow(id:string,change:any){setState((s:any)=>({...s,requisitos:s.requisitos.map((r:any)=>r.id===id?{...r,...change}:r)}));}
++  function toggle(id:string,checked:boolean){setState((s:any)=>({...s,filtros:checked?[...s.filtros,id]:s.filtros.filter((v:string)=>v!==id)}));setLimit(12);}
++  const fields=data?.campos || [];
++  const allowed=state?.categoria ? (data?.campos_categoria?.[state.categoria] || fields.map((f:any)=>f.nome)) : [];
++  const fieldOptions=fields.filter((f:any)=>allowed.includes(f.nome));
++  const candidates=(data?.candidatos || []).filter((c:any)=>c.id===selected || c.status_filtro==='ATENDE' || (showPending && c.status_filtro==='VERIFICAR') || (showRejected && c.status_filtro==='NAO_ATENDE'));
++  const comparisonFields=Array.from(new Set((state?.requisitos || []).filter((r:any)=>state.filtros.includes(r.id) && r.atributo).map((r:any)=>r.atributo))) as string[];
++  if(!state)return <div className="p-5">{error?<p role="alert" className="text-destructive">{error}</p>:<p><Loader2 className="inline h-4 w-4 animate-spin"/> Abrindo item…</p>}</div>;
++  return <div className="min-w-0 space-y-5">
++    {error && <p role="alert" className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
++    <details open className="rounded-md border p-3"><summary className="cursor-pointer text-sm font-medium">Descrição completa do item</summary><p className="mt-2 whitespace-pre-wrap text-sm">{item.description}</p></details>
++    <section className="space-y-3 rounded-md border p-4"><h4 className="font-semibold">1. JSON do item</h4>
++      <p className="text-sm">O JSON do item já foi carregado ao abrir o match. Seus requisitos e filtros salvos são retomados automaticamente.</p>
++      <Button variant="outline" disabled={busy} onClick={loadItemJson}>{busy && <Loader2 className="h-4 w-4 animate-spin"/>}Carregar JSON atual do item</Button>
++      <p className="text-xs text-muted-foreground">Recarregar substitui o rascunho aberto pelo JSON atual. Nada é alterado no item até você salvar.</p>
++      <p className="text-xs text-muted-foreground">Fonte: {state.fonte_json?.arquivo || 'Preenchimento manual'} · {state.requisitos.length} pontos.</p>
++      <details><summary className="cursor-pointer text-sm">Usar outro JSON (arquivo ou texto)</summary><div className="mt-3 space-y-3"><label className="block text-sm">Importar JSON<input aria-label="Importar JSON do item" type="file" accept=".json,application/json" disabled={busy} onChange={e=>{upload(e.target.files?.[0]);e.target.value='';}} className="mt-1 block max-w-full"/></label><textarea aria-label="JSON do item" placeholder="Cole o JSON aqui" className="min-h-28 w-full rounded-md border bg-background p-2 font-mono text-xs" value={json} onChange={e=>setJson(e.target.value)}/><Button size="sm" disabled={busy || !json.trim()} onClick={()=>importJson(json,'JSON colado')}>Usar JSON colado</Button></div></details>
++    </section>
++    <section className="space-y-3"><h4 className="font-semibold">2. Categoria e requisitos ponto a ponto</h4>
++      <label className="block text-sm">Categoria do produto<select aria-label="Categoria do match" className="mt-1 block w-full max-w-sm rounded-md border bg-background p-2" value={state.categoria || ''} onChange={e=>{setState((s:any)=>({...s,categoria:e.target.value || null}));setSelected('');setLimit(12);}}><option value="">Escolha a categoria</option>{Array.from(new Set([...Object.keys(categories),...Object.keys(data?.categorias || {}),...(state.categoria?[state.categoria]:[])])).map((c:any)=><option key={c} value={c}>{categories[c] || c} ({data?.categorias?.[c] || 0})</option>)}</select></label>
++      {!state.categoria && <p className="text-sm text-muted-foreground">Escolha a categoria para ver as características e os produtos correspondentes.</p>}
++      {state.requisitos.length===0 && <p className="rounded-md bg-muted p-3 text-sm">O JSON não tem requisitos estruturados. Adicione os pontos manualmente, conferindo a descrição original.</p>}
++      <div className="overflow-x-auto"><table aria-label="Requisitos do item" className="w-full min-w-[700px] text-left text-sm"><thead><tr>{['Filtrar','Ponto do edital','Característica','Condição','Exigido'].map(t=><th key={t} className="p-2">{t}</th>)}</tr></thead><tbody>{state.requisitos.map((r:any)=>{
++        const definition=fields.find((f:any)=>f.nome===r.atributo);const options=data?.opcoes?.[r.atributo] || [];
++        return <tr key={r.id} className="border-t align-top"><td className="p-2"><input aria-label={`Aplicar filtro ${r.id}`} type="checkbox" disabled={!state.categoria} checked={state.filtros.includes(r.id)} onChange={e=>toggle(r.id,e.target.checked)}/></td>
++          <td className="p-2 max-w-xs"><span className="text-xs text-muted-foreground">{r.id}</span>{r.id.startsWith('M-')?<textarea aria-label={`Descrição ${r.id}`} className="w-full rounded border bg-background p-2" value={r.texto_original} onChange={e=>updateRow(r.id,{texto_original:e.target.value})}/>:<p>{r.texto_original || 'Ponto manual'}</p>}{r.grupo_logico && <p className="text-xs">Grupo {r.grupo_logico} · {r.operador_logico || 'E'}</p>}<small>{r.obrigatorio===false?'Opcional':'Obrigatório'}{r.escopo?' · Escopo: '+valueLabel(r.escopo):''}</small></td>
++          <td className="p-2"><select aria-label={`Característica ${r.id}`} disabled={!state.categoria} className="w-full rounded border bg-background p-2" value={r.atributo} onChange={e=>updateRow(r.id,{atributo:e.target.value})}><option value="">Mapear característica</option>{r.atributo && !fieldOptions.some((f:any)=>f.nome===r.atributo) && <option value={r.atributo}>{definition?.rotulo || r.atributo} (do JSON)</option>}{fieldOptions.map((f:any)=><option key={f.nome} value={f.nome}>{f.rotulo}</option>)}</select></td>
++          <td className="p-2"><select aria-label={`Condição ${r.id}`} className="rounded border bg-background p-2" value={r.operador} onChange={e=>updateRow(r.id,{operador:e.target.value})}>{!operators[r.operador] && <option value={r.operador}>{r.operador} (do JSON)</option>}{Object.entries(operators).map(([op,label])=><option key={op} value={op}>{label}</option>)}</select></td>
++          <td className="p-2"><div className="flex gap-1 items-center">{definition?.type==='boolean' && r.operador==='=='?<select aria-label={`Valor ${r.id}`} className="rounded border bg-background p-2" value={r.valor===true?'true':r.valor===false?'false':''} onChange={e=>updateRow(r.id,{valor:e.target.value===''?null:e.target.value==='true'})}><option value="">Não informado</option><option value="true">Sim</option><option value="false">Não</option></select>:<input aria-label={`Valor ${r.id}`} className="w-28 rounded border bg-background p-2" value={r.valor==null?'':typeof r.valor==='object'?JSON.stringify(r.valor):String(r.valor)} list={`opcoes-${r.id}`} onChange={e=>{let value:any=e.target.value;try{value=JSON.parse(value);}catch{}updateRow(r.id,{valor:value});}}/>}<input aria-label={`Unidade ${r.id}`} className="w-16 rounded border bg-background p-2" placeholder={definition?.unit || 'un.'} value={r.unidade || ''} onChange={e=>updateRow(r.id,{unidade:e.target.value || undefined})}/></div><datalist id={`opcoes-${r.id}`}>{options.map((v:any)=><option key={JSON.stringify(v)} value={String(v)}/>)}</datalist><small className="text-muted-foreground">Valores sugeridos vêm do catálogo. Listas: [1,2]; faixa: {'{"min":0,"max":50}'}.</small></td>
++        </tr>;
++      })}</tbody></table></div>
++      <Button variant="outline" size="sm" disabled={!state.categoria} onClick={()=>setState((s:any)=>({...s,requisitos:[...s.requisitos,{id:'M-'+crypto.randomUUID().slice(0,8),atributo:'',operador:'==',valor:null,obrigatorio:true,texto_original:'Ponto acrescentado manualmente'}]}))}><Plus className="h-4 w-4"/>Adicionar ponto</Button>
++      <label className="flex gap-2 items-start text-sm"><input type="checkbox" checked={state.descricao_revisada} onChange={e=>setState((s:any)=>({...s,descricao_revisada:e.target.checked}))}/>Conferi a descrição completa e os pontos do JSON antes de concluir a seleção.</label>
++      {state.pendencias?.length>0 && <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm">Pontos do JSON que ainda exigem análise ({state.pendencias.length})</summary><pre className="mt-2 whitespace-pre-wrap text-xs">{JSON.stringify(state.pendencias,null,2)}</pre></details>}
++    </section>
++    <section className="space-y-3"><h4 className="font-semibold">3. Produtos restantes</h4><div aria-live="polite" className="flex flex-wrap gap-2"><Badge variant="outline">Compatíveis com os filtros: {data?.contagens?.ATENDE || 0}</Badge><Badge variant="outline">Dados pendentes: {data?.contagens?.VERIFICAR || 0}</Badge><Badge variant="outline">Incompatíveis: {data?.contagens?.NAO_ATENDE || 0}</Badge>{calculating && <span className="text-sm"><Loader2 className="inline h-4 w-4 animate-spin"/>Atualizando…</span>}</div>
++      <p className="text-xs text-muted-foreground">Os filtros ajudam a escolher. Dados da descrição comercial da LPU não substituem evidências do datasheet. A conferência final usa todos os requisitos, inclusive os que não estão marcados como filtro.</p>
++      <div className="flex flex-wrap gap-4 text-sm"><label><input type="checkbox" checked={showPending} onChange={e=>setShowPending(e.target.checked)}/> Mostrar produtos com dados pendentes</label><label><input type="checkbox" checked={showRejected} onChange={e=>setShowRejected(e.target.checked)}/> Mostrar incompatíveis</label></div>
++      {state.categoria && candidates.length===0 && !calculating && <p className="rounded-md border p-3 text-sm">Nenhum produto com dados suficientes corresponde aos filtros. Confira os dados pendentes ou desmarque um ponto para revisar as opções.</p>}
++      <div className="max-w-full overflow-x-auto rounded-md border"><table aria-label="Produtos para comparação" className="w-full text-left text-xs"><thead className="bg-muted"><tr><th scope="col" className="p-2">Seleção</th><th scope="col" className="p-2">Produto / modelo / SKU</th><th scope="col" className="p-2">Situação dos filtros</th>{comparisonFields.map(name=><th key={name} scope="col" className="p-2">{fields.find((f:any)=>f.nome===name)?.rotulo || name}</th>)}</tr></thead><tbody>
++        {candidates.slice(0,limit).map((c:any)=><tr key={c.id} className={`border-t align-top ${selected===c.id?'bg-primary/5':''}`}><td className="p-2"><input type="radio" name="candidate" aria-label={`Selecionar ${c.sku}`} value={c.id} checked={selected===c.id} onChange={()=>setSelected(c.id)}/></td><td className="p-2 min-w-32"><p className="font-semibold">{c.nome}</p><p className="mt-1 break-all text-muted-foreground">SKU: {c.sku}</p><Button aria-label={`Conferir produto ${c.sku}`} size="sm" variant="ghost" onClick={()=>setSelected(c.id)}>Conferir produto</Button></td><td className="p-2">{c.status_filtro==='ATENDE'?'Compatível':c.status_filtro==='VERIFICAR'?'Pendente':'Incompatível'}{c.motivos?.map((m:string,i:number)=><p key={i} className="mt-1 text-xs text-muted-foreground">{m}</p>)}</td>{comparisonFields.map(name=><td key={name} className="p-2">{valueLabel(c.atributos?.[name])}</td>)}</tr>)}
++      </tbody></table></div>
++      {candidates.length>limit && <Button variant="outline" onClick={()=>setLimit(l=>l+12)}>Mostrar mais produtos ({candidates.length-limit})</Button>}
++    </section>
++    {selected && data?.comparacao && <section className="space-y-2 rounded-md border p-4"><h4 className="font-semibold">4. Conferência do produto selecionado</h4><p className="text-sm">{data.candidatos.find((c:any)=>c.id===selected)?.nome} · SKU: {data.candidatos.find((c:any)=>c.id===selected)?.sku}</p><Badge variant="outline">{data.comparacao.status}</Badge><div className="overflow-x-auto"><table aria-label="Conferência completa do produto" className="w-full text-left text-sm"><thead><tr>{['Ponto','Exigido','Produto','Resultado / motivo'].map(t=><th key={t} className="p-2">{t}</th>)}</tr></thead><tbody>{data.comparacao.detalhes.map((r:any,i:number)=><tr key={i} className="border-t align-top"><td className="p-2">{r.texto_original || fields.find((f:any)=>f.nome===r.atributo)?.rotulo || r.atributo}</td><td className="p-2">{r.operador} {valueLabel(r.exigido)}</td><td className="p-2">{valueLabel(r.encontrado)}</td><td className="p-2">{r.status}<p className="text-xs text-muted-foreground">{r.motivo}</p>{(r.fontes || []).flatMap((f:any)=>f.valor?.evidencias || []).filter((e:any)=>e.documento_id && e.pagina).map((e:any,j:number)=><a key={j} className="block text-xs underline" href={`/api/crm/catalog-datasheets/${encodeURIComponent(e.documento_id)}/download#page=${e.pagina}`} target="_blank" rel="noreferrer">Datasheet · página {e.pagina}</a>)}</td></tr>)}</tbody></table></div></section>}
++    <div className="sticky bottom-0 flex flex-wrap gap-2 border-t bg-background py-3">{canEdit?<><Button variant="outline" disabled={!ready} onClick={()=>save()}><Save className="h-4 w-4"/>Salvar requisitos e filtros</Button><Button variant="outline" disabled={!ready || !selected || !data?.comparacao || data.comparacao.status==='NAO_ATENDE'} onClick={()=>save(true)}>Salvar candidato para revisão</Button><Button disabled={!ready || !selected || data?.comparacao?.status!=='ATENDE'} onClick={()=>save(true,true)}>Confirmar match</Button></>:<p className="text-sm">Somente leitura. Um editor pode salvar requisitos e selecionar produtos.</p>}</div>
++  </div>;
++}

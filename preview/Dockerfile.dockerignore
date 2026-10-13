@@ -1,0 +1,15 @@
+*
+!backend/
+!backend/**
+!qa/
+!qa/**
+!preview/
+!preview/**
+!tests/
+!tests/conftest.py
+!tests/unit/
+!tests/unit/test_technical_extraction.py
+**/__pycache__
+**/*.pyc
+**/*.log
+**/.env*

@@ -8,7 +8,8 @@ import { spawnSync } from 'node:child_process'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const repoRoot = path.resolve(__dirname, '..')
-const crmRoot = path.join(repoRoot, 'bid-buddy')
+const sourceArgument = process.argv.find(argument => argument.startsWith('--source-path='))
+const crmRoot = sourceArgument ? path.resolve(repoRoot, sourceArgument.slice('--source-path='.length)) : path.join(repoRoot, 'bid-buddy')
 const crmDist = path.join(crmRoot, 'dist-embed')
 const crmNodeModules = path.join(crmRoot, 'node_modules')
 const targetRoot = path.join(repoRoot, 'frontend', 'public', 'crm')
@@ -68,6 +69,17 @@ async function main() {
 
   ensureCrmDependencies()
 
+  // Keep the private CRM source fix reproducible without publishing that source.
+  for (const patchName of ['crm-session-source.patch', 'crm-manual-match-source.patch']) {
+    const sessionPatch = path.join(repoRoot, 'docs', patchName)
+    if (!existsSync(sessionPatch)) continue;
+    const applied = spawnSync('git', ['apply', '--reverse', '--check', sessionPatch], { cwd: crmRoot })
+    if (applied.status !== 0) {
+      run('git', ['apply', '--check', sessionPatch], crmRoot)
+      run('git', ['apply', sessionPatch], crmRoot)
+    }
+  }
+
   console.log('[crm-sync] Gerando build embarcado em /crm/ ...')
   run(npmCommand, ['run', 'build:embed'], crmRoot)
 
@@ -75,6 +87,11 @@ async function main() {
   await rm(targetRoot, { recursive: true, force: true })
   await mkdir(targetRoot, { recursive: true })
   await cp(crmDist, targetRoot, { recursive: true })
+  const indexFile = path.join(targetRoot, 'index.html')
+  const indexHtml = await readFile(indexFile, 'utf8')
+  if (!indexHtml.includes('src="/session.js"')) {
+    await writeFile(indexFile, indexHtml.replace('<head>', '<head>\n    <script src="/session.js"></script>'), 'utf8')
+  }
 
   const artifactHashes = {}
   async function fingerprint(directory) {
@@ -92,6 +109,8 @@ async function main() {
     sourceRepo: readGitValue(['config', '--get', 'remote.origin.url']),
     sourceBranch: readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
     sourceCommit: readGitValue(['rev-parse', 'HEAD']),
+    sourceDirty: Boolean(readGitValue(['status', '--porcelain'])),
+    sourcePatches: ['docs/crm-session-source.patch', 'docs/crm-manual-match-source.patch'],
     artifactHashes,
     artifactHashFormat: 'sha256-lf-text-v1',
     builtAt: new Date().toISOString(),

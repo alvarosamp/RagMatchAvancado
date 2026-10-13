@@ -8,12 +8,16 @@
       "access point",
       "access points",
       "ap",
-      "ponto de acesso"
+      "ponto de acesso",
+      "Pontos de acesso",
+      "Access-Point"
     ],
     "transceiver": [
       "transceiver",
       "transceivers",
-      "transceptor"
+      "transceptor",
+      "Transceptores",
+      "Módulo transceptor"
     ]
   },
   "attributes": {
@@ -22,7 +26,13 @@
       "aliases": [
         "Portas RJ45",
         "rj45_ports",
-        "interfaces.portas_acesso_rj45_qtd"
+        "interfaces.portas_acesso_rj45_qtd",
+        "Portas RJ-45",
+        "Quantidade de portas RJ45",
+        "Qtd portas RJ45",
+        "RJ45 port count",
+        "RJ-45 ports",
+        "PortasRJ45"
       ],
       "integer": true,
       "minimum": 0
@@ -36,7 +46,10 @@
         "poe_budget",
         "orçamento PoE",
         "poe.orcamento_total_w",
-        "poe.poe_budget_w"
+        "poe.poe_budget_w",
+        "Orçamento de PoE",
+        "Orcamento PoE (W)",
+        "PoE budget (W)"
       ]
     },
     "portas_sfp_plus": {
@@ -44,7 +57,11 @@
       "aliases": [
         "Portas SFP+",
         "sfp_plus_ports",
-        "interfaces.portas_sfp_plus_qtd"
+        "interfaces.portas_sfp_plus_qtd",
+        "Slots SFP+",
+        "Quantidade de portas SFP+",
+        "SFP+ ports",
+        "PortasSFPPlus"
       ],
       "integer": true,
       "minimum": 0
@@ -54,7 +71,11 @@
       "aliases": [
         "Portas SFP",
         "sfp_ports",
-        "interfaces.portas_sfp_qtd"
+        "interfaces.portas_sfp_qtd",
+        "Slots SFP",
+        "Quantidade de portas SFP",
+        "SFP ports",
+        "PortasSFP"
       ],
       "integer": true,
       "minimum": 0
@@ -72,14 +93,18 @@
       "unit": "Gbps",
       "aliases": [
         "Capacidade de Comutação",
-        "switching_capacity_gbps"
+        "switching_capacity_gbps",
+        "Capacidade de comutação (Gbps)",
+        "Switching capacity (Gbps)"
       ]
     },
     "gerenciavel": {
       "type": "boolean",
       "aliases": [
         "gerenciável",
-        "managed"
+        "managed",
+        "Gerenciamento",
+        "Switch gerenciável"
       ]
     },
     "poe": {
@@ -138,7 +163,40 @@
         "interfaces.velocidades_porta",
         "velocidades_porta"
       ]
+    },
+    "camada": {
+      "type": "string",
+      "aliases": [
+        "layer",
+        "camada_rede"
+      ]
+    },
+    "tecnologia_wifi": {
+      "type": "string",
+      "aliases": [
+        "wifi_standard",
+        "padrao_wifi"
+      ]
+    },
+    "ambiente": {
+      "type": "string",
+      "aliases": [
+        "environment"
+      ]
+    },
+    "bandas_wifi": {
+      "type": "string",
+      "aliases": [
+        "wifi_bands"
+      ]
+    },
+    "velocidade_wifi_mbps": {
+      "type": "number",
+      "unit": "Mbps",
+      "aliases": [
+        "wifi_speed_mbps"
+      ]
     }
   },
-  "version": "1.2.0"
+  "version": "1.3.1"
 }

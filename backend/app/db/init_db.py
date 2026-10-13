@@ -8,7 +8,7 @@ from app.services.catalog_loader import load_switch_catalog
 from app.vector.pgvector_store import ensure_pgvector_extension
 
 
-def init_db(db: Session) -> dict:
+def init_db(db: Session, *, exclude_tables=()) -> dict:
     """
     Cria tabelas do portal principal e do CRM no mesmo banco.
     """
@@ -19,7 +19,7 @@ def init_db(db: Session) -> dict:
 
     try:
         ensure_pgvector_extension(db)
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine, tables=[t for t in Base.metadata.sorted_tables if t.name not in exclude_tables])
         _ensure_user_schema_updates()
         _ensure_job_enum_updates()
         _ensure_crm_schema_updates()

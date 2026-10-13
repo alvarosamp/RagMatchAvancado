@@ -37,6 +37,7 @@ const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const BlingIntegration = lazy(() => import('./pages/BlingIntegration'))
 const ConlicitacaoIntegration = lazy(() => import('./pages/ConlicitacaoIntegration'))
 const TechnicalMatch = lazy(() => import('./pages/TechnicalMatch'))
+const TechnicalExtraction = lazy(() => import('./pages/TechnicalExtraction'))
 const CrmHub = lazy(() => import('./pages/CrmHub'))
 const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
@@ -76,6 +77,7 @@ createRoot(document.getElementById('root')).render(
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
             <Route path="/dashboard"              element={<PrivateRoute><Dashboard     /></PrivateRoute>} />
+            <Route path="/laboratorio-tecnico" element={<PrivateRoute><TechnicalExtraction /></PrivateRoute>} />
             <Route path="/suite"                  element={<PrivateRoute><Suite         /></PrivateRoute>} />
             <Route path="/assinatura"             element={<PrivateRoute><Assinatura    /></PrivateRoute>} />
             <Route path="/monitoramento-pncp"     element={<PrivateRoute><ProcurementExpansion moduleId="pncp_monitor" /></PrivateRoute>} />

@@ -17,6 +17,8 @@ from app.routers.editais import router as editais_router
 from app.routers.edital_locks import router as edital_locks_router
 from app.routers.export import router as export_router
 from app.routers.health import router as health_router
+from app.routers.technical_extraction import router as technical_extraction_router
+from app.routers.manual_match import router as manual_match_router
 from app.routers.market import router as market_router
 from app.routers.market_intelligence import router as market_intelligence_router
 from app.routers.ops import router as ops_router
@@ -26,6 +28,8 @@ from app.routers.switches import router as switches_router
 
 ROUTERS = (
     health_router,
+    technical_extraction_router,
+    manual_match_router,
     auth_router,
     bling_router,
     conlicitacao_router,

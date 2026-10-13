@@ -8,6 +8,7 @@ import { persistTheme, readStoredTheme } from '../utils/themeStorage'
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [theme, setTheme] = useState(() => readStoredTheme('light'))
   const [form, setForm] = useState({ email: '', password: '' })
@@ -31,7 +32,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(form.email.trim().toLowerCase(), form.password)
+      await login(form.email.trim().toLowerCase(), form.password, rememberMe)
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail || 'Credenciais invalidas.')
@@ -138,6 +139,13 @@ export default function Login() {
                     </button>
                   </div>
                 </div>
+
+                <label className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+                  <input type="checkbox" className="mt-1" checked={rememberMe} onChange={event => setRememberMe(event.target.checked)} />
+                  <span>Manter conectado neste dispositivo
+                    <span className="mt-1 block text-xs text-slate-500">Use apenas em um dispositivo pessoal. Você pode encerrar a sessão ao sair.</span>
+                  </span>
+                </label>
 
                 {error && (
                   <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">

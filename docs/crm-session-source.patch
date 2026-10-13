@@ -1,0 +1,56 @@
+diff --git a/src/components/layout/AppLayout.tsx b/src/components/layout/AppLayout.tsx
+index a366773..1531f92 100644
+--- a/src/components/layout/AppLayout.tsx
++++ b/src/components/layout/AppLayout.tsx
+@@ -1,3 +1,4 @@
++import { toast } from 'sonner';
+ import { ReactNode, useEffect, useState } from 'react';
+ import { NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom';
+ import { useAuth } from '@/hooks/useAuth';
+@@ -86,7 +87,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
+   }, [user]);
+ 
+   async function handleSignOut() {
+-    await signOut();
++    try {
++      await signOut();
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Nao foi possivel encerrar a sessao.');
++      return;
++    }
+     if (integratedMode) {
+       redirectToPortal('/login');
+       return;
+diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
+index b509923..8589736 100644
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -70,7 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const canEdit = isAdmin || roles.includes('analyst');
+ 
+   async function signOut() {
+-    await supabase.auth.signOut();
++    const result = await supabase.auth.signOut();
++    if (result.error) throw result.error;
+     setUser(null);
+   }
+ 
+diff --git a/src/integrations/supabase/client.ts b/src/integrations/supabase/client.ts
+index 840fa4f..faad311 100644
+--- a/src/integrations/supabase/client.ts
++++ b/src/integrations/supabase/client.ts
+@@ -262,6 +262,14 @@ export const supabase = {
+   auth: {
+     getUser,
+     async signOut() {
++      if (!isLocalCrmPreviewMode()) {
++        try {
++          const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
++          if (!response.ok) return { error: new Error('Nao foi possivel encerrar a sessao. Tente novamente.') };
++        } catch {
++          return { error: new Error('Sem conexao para encerrar a sessao. Tente novamente.') };
++        }
++      }
+       clearPortalSessionStorage();
+       return { error: null };
+     },

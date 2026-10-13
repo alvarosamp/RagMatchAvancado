@@ -26,8 +26,19 @@ const api = axios.create({
 // ── Interceptor de RESPONSE — trata 401 ─────────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
+      const config = error.config || {}
+      const authEndpoint = /\/auth\/(login|register|refresh|logout|password\/reset)(\/|$)/.test(config.url || '')
+      if (!authEndpoint && !config._sessionRetried && !config.headers?.get?.('Authorization') && !config.headers?.Authorization && window.ragmatchSession) {
+        config._sessionRetried = true
+        try {
+          if (await window.ragmatchSession.refresh()) return api(config)
+        } catch {
+          // A transient connection failure must not clear a usable session.
+          return Promise.reject(error)
+        }
+      }
       const currentPath = window.location.pathname
       const requestPath = error.config?.url || ''
 

@@ -52,8 +52,17 @@ it('login normalizes email and navigates only after authentication succeeds', as
   await fill('input[type=email]', 'Admin@EXAMPLE.com')
   await fill('input[type=password]', 'Password-2026!')
   await submit()
-  expect(calls.login).toHaveBeenCalledWith('admin@example.com', 'Password-2026!')
+  expect(calls.login).toHaveBeenCalledWith('admin@example.com', 'Password-2026!', false)
   expect(calls.navigate).toHaveBeenCalledWith('/dashboard')
+})
+it('login sends the remember option selected by the user', async () => {
+  calls.login.mockResolvedValue({ id: 1 })
+  await render(Login)
+  await fill('input[type=email]', 'admin@example.com')
+  await fill('input[type=password]', 'Password-2026!')
+  await act(async () => container.querySelector('input[type=checkbox]').click())
+  await submit()
+  expect(calls.login).toHaveBeenCalledWith('admin@example.com', 'Password-2026!', true)
 })
 it.each([403, 429, 500])('login displays API failure %s without navigating', async status => {
   calls.login.mockRejectedValue({ response: { status, data: { detail: `Falha ${status}` } } })

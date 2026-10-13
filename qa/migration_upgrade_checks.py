@@ -22,7 +22,7 @@ def main():
     if admin_url.database != "ragmatch_quality":
         raise RuntimeError("Migration checks require the disposable QA stack.")
     root = Path("/app")
-    originals = ("20260926_01", "20261010_03", "20261012_01")
+    originals = ("20260926_01", "20261010_03", "20261012_01", "20261012_02")
     with closing(psycopg2.connect(admin_url.render_as_string(hide_password=False))) as admin:
         admin.autocommit = True
         for original in originals:
@@ -36,6 +36,8 @@ def main():
                     # Minimal old operational schema: historical analytical
                     # migrations are real, never stamped without execution.
                     for statement in (
+                        "CREATE TABLE users(id integer primary key)",
+                        "INSERT INTO users VALUES(1)",
                         "CREATE TABLE tenants(id integer primary key)",
                         "INSERT INTO tenants VALUES(1),(2)",
                         "CREATE TABLE crm_catalog_products(id text primary key, tenant_id integer, name text)",
@@ -46,7 +48,7 @@ def main():
                         "CREATE TABLE crm_notice_product_matches(id text primary key)",
                     ):
                         connection.execute(text(statement))
-                    if original == "20261010_03":
+                    if original in {"20261010_03", "20261012_02"}:
                         for name in ("20261009_01_market_intelligence", "20261009_02_procurement", "20261010_03_supplier_sharing"):
                             path = root / "alembic/versions" / (name + ".py")
                             spec = importlib.util.spec_from_file_location(name, path)
@@ -54,7 +56,7 @@ def main():
                             spec.loader.exec_module(module)
                             with Operations.context(MigrationContext.configure(connection)):
                                 module.upgrade()
-                    if original == "20261012_01":
+                    if original in {"20261012_01", "20261012_02"}:
                         connection.execute(text("ALTER TABLE crm_notice_product_matches ADD COLUMN technical_result JSON"))
                         connection.execute(text("INSERT INTO crm_notice_product_matches VALUES('saved','{\"status\":\"VERIFICAR\"}')"))
                     # Stamp records an already-built fixture, not a production
@@ -66,14 +68,16 @@ def main():
                 if result.returncode:
                     raise AssertionError(original + ": " + result.stdout + result.stderr)
                 with engine.connect() as connection:
-                    assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20261012_02"
+                    assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "20261013_01"
+                    assert connection.scalar(text("SELECT count(*) FROM users WHERE id=1")) == 1
+                    assert connection.scalar(text("SELECT to_regclass('public.auth_sessions') IS NOT NULL"))
                     assert connection.scalar(text("SELECT notes FROM crm_notices WHERE id='saved'")) == "Anotação preservada"
                     assert connection.scalar(text("SELECT name FROM crm_catalog_products WHERE id='saved'")) == "Produto preservado"
                     assert connection.scalar(text("SELECT to_regclass('core.supplier_presentation_links') IS NOT NULL"))
                     assert connection.scalar(text("SELECT count(*) FROM information_schema.columns WHERE table_name='crm_notice_product_matches' AND column_name='technical_result'")) == 1
-                    if original == "20261012_01":
+                    if original in {"20261012_01", "20261012_02"}:
                         assert connection.scalar(text("SELECT technical_result FROM crm_notice_product_matches WHERE id='saved'")) == {"status": "VERIFICAR"}
-                print(json.dumps({"from": original, "to": "20261012_02", "preserved": True}), flush=True)
+                print(json.dumps({"from": original, "to": "20261013_01", "preserved": True}), flush=True)
             finally:
                 engine.dispose()
                 with admin.cursor() as cursor:

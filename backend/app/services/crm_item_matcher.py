@@ -814,6 +814,10 @@ def _json_object(value: Any) -> dict[str, Any] | None:
 
 def _structured_item(product: CrmNoticeProduct) -> dict[str, Any] | None:
     from app.services.technical_matching.adapter import adapt_item
+    manual = (getattr(product, 'raw_payload', None) or {}).get('_manual_match')
+    if isinstance(manual, dict):
+        from app.services.manual_match import required_payload
+        return required_payload(manual)
     for source in (getattr(product, "raw_payload", None), getattr(product, "technical_characteristics", None)):
         payload = _json_object(source)
         if payload is not None:

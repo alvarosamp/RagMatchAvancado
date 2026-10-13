@@ -56,7 +56,8 @@ def match_notice_filename(payload: dict[str, Any]) -> str:
 
 def build_crm_match_item_export(notice: Any, product: Any) -> dict[str, Any]:
     """Adapt a CRM notice item to the same contract used by analysis items."""
-    raw = _mapping(product.raw_payload)
+    raw = dict(_mapping(product.raw_payload))
+    manual = raw.pop("_manual_match", None)
     bi_features = _mapping(product.bi_features)
     v8_item = (
         "criterios_comparacao" in raw
@@ -108,7 +109,11 @@ def build_crm_match_item_export(notice: Any, product: Any) -> dict[str, Any]:
         caracteristicas_bi=product.bi_features,
         raw_payload=raw,
     )
-    return build_match_item_export(document, item)
+    exported = build_match_item_export(document, item)
+    if isinstance(manual, dict):
+        exported['match_manual'] = {key: manual.get(key) for key in ('categoria', 'requisitos')}
+        exported['requisitos_atomicos'] = manual.get('requisitos', [])
+    return exported
 
 
 def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:

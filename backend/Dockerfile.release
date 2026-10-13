@@ -1,0 +1,12 @@
+# Same dependency image used by the validated local preview. Application code
+# and migrations come from the current release; no QA server or fixtures.
+FROM alvarocareli/ragmatch-api@sha256:d740be3e195a9dfc0fd0a056753d7aa8011acbb15b00f20ad76e122002b709fc
+WORKDIR /app
+COPY app ./app
+COPY scripts ./scripts
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
+ARG RELEASE_SHA
+LABEL org.opencontainers.image.revision=$RELEASE_SHA
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
