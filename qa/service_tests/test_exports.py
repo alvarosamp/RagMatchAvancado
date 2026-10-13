@@ -12,7 +12,7 @@ from app.services import export_service, analysis_export_service, tor_datasheet_
 @pytest.fixture
 def matching_report():
     return {"edital_id": 17, "total_requirements": 3, "results": [
-        {"model": model, "score": score, "details": [{"attribute": "ports", "required": "48", "provided": "24", "status": status, "score": score, "reason": "QA evidência"}]}
+        {"model": model, "overall_score": score, "status": status, "details": [{"attribute": "ports", "required_value": "48", "product_value": "24", "status": status, "final_score": score, "llm_reason": "QA evidência"}]}
         for model, score, status in [("QA-SW48", 1.0, "atende"), ("QA-SW24", 0.5, "verificar"), ("QA-SW8", 0, "nao_atende")]
     ]}
 
@@ -84,4 +84,5 @@ def test_tor_datasheet_preview_and_real_pdf_preserve_identity(category, model, r
         assert preview["pn_tor"] == model
     data = tor_datasheet_generator.export_tor_datasheet_pdf(preview)
     text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(data)).pages)
-    assert "TOR" in text and "Datasheet" in text
+    assert "TOR" in text and "Especificacoes Tecnicas" in text
+    assert preview["pn_tor"] in text

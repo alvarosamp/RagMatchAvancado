@@ -1,5 +1,6 @@
 """Service tests use actual libraries and transactions in the disposable database."""
 import os
+import uuid
 from types import SimpleNamespace
 
 import pytest
@@ -7,6 +8,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 import app.main  # noqa: F401 -- register all production ORM mappings
+
+
+@pytest.fixture
+def unique():
+    # This suite also runs directly inside the production dependency image,
+    # independently of the host's HTTP/browser conftest.
+    return uuid.uuid4().hex[:12]
 
 
 @pytest.fixture
