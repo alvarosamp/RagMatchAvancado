@@ -229,6 +229,7 @@ bid-buddy/dist-embed/
 # Local publish/build staging folders
 .tmp-publish-*/
 .codex-worktrees/
+_worktrees/
 
 # Local review/export artifacts
 .docx-review/

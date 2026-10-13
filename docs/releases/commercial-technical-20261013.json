@@ -1,0 +1,23 @@
+{
+  "image_tag": "sha-5257acabb4b0dc34417fe66138d59cc1588a956d-38347755589-1",
+  "commit": "5257acabb4b0dc34417fe66138d59cc1588a956d",
+  "run_url": "https://github.com/alvarosamp/RagMatchAvancado/actions/runs/38347755589",
+  "images": {
+    "ragmatch-api": {
+      "reference": "alvarocareli/ragmatch-api:sha-5257acabb4b0dc34417fe66138d59cc1588a956d-38347755589-1",
+      "digest": "sha256:6cec4d1b24c1ac45ed59a6dd125aaa30fe6922927411a5569fb221688ef1b0cf"
+    },
+    "ragmatch-frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:sha-5257acabb4b0dc34417fe66138d59cc1588a956d-38347755589-1",
+      "digest": "sha256:30c35a9ce4fb5f9727a1b16beed9006c3876a6be9b93de366db3774ce8fdd3a2"
+    },
+    "ragmatch-mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:sha-5257acabb4b0dc34417fe66138d59cc1588a956d-38347755589-1",
+      "digest": "sha256:8f6938d5ed475e9f1da16478662ae5104a7f96c15b4d0ed11c0f5b33256d5ecb"
+    },
+    "ragmatch-market-worker": {
+      "reference": "alvarocareli/ragmatch-market-worker:sha-5257acabb4b0dc34417fe66138d59cc1588a956d-38347755589-1",
+      "digest": "sha256:f08f158f6699f8f6dcfb50a68180128be777756d22b250b7d7c5de2223c82d36"
+    }
+  }
+}
