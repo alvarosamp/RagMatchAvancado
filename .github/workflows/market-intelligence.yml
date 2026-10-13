@@ -36,7 +36,9 @@ jobs:
           include-hidden-files: true
           path: .coverage.analytics
           if-no-files-found: error
-      - run: ruff check backend/app/market_intelligence backend/app/routers/market_intelligence.py backend/app/crm/query.py analytics backend/alembic/versions/20261009_01_market_intelligence.py backend/alembic/versions/20261009_02_procurement.py
+      # Keep the syntax baseline stable across Python 3.10/3.12 lint hosts;
+      # runtime and PostgreSQL tests above still execute on Python 3.12.
+      - run: ruff check --target-version py310 backend/app/market_intelligence backend/app/routers/market_intelligence.py backend/app/crm/query.py analytics backend/alembic/versions/20261009_01_market_intelligence.py backend/alembic/versions/20261009_02_procurement.py
       - run: python -m venv /tmp/dbt && /tmp/dbt/bin/pip install -r analytics/requirements-dbt.txt
       - run: /tmp/dbt/bin/dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt
         env:
