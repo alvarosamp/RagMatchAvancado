@@ -40,7 +40,9 @@ class Api:
 
 @pytest.fixture(scope="session")
 def seed():
-    path = Path(os.getenv("QA_SEED_PATH", str(ROOT / "test-results/functional/seed.json")))
+    # Playwright clears its output tree at session start. Fixtures must live
+    # outside test-results, independently of report transport or cleanup.
+    path = Path(os.getenv("QA_SEED_PATH", str(ROOT / ".qa-runtime/seed.json")))
     if not path.exists():
         pytest.fail(f"QA seed metadata missing at {path}; start qa/compose.yaml and copy api:/reports/seed.json before this suite")
     return json.loads(path.read_text(encoding="utf-8"))

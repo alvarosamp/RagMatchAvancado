@@ -154,7 +154,7 @@ jobs:
     needs: lint
     timeout-minutes: 60
     env:
-      QA_SEED_PATH: ${{ github.workspace }}/test-results/functional/seed.json
+      QA_SEED_PATH: ${{ github.workspace }}/.qa-runtime/seed.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -190,7 +190,7 @@ jobs:
           python -m playwright install --with-deps chromium firefox
       - name: Start disposable application stack
         run: |
-          mkdir -p test-results/functional
+          mkdir -p test-results/functional .qa-runtime
           # The QA wrapper inherits the API image loaded into this runner's
           # Docker engine. A container BuildKit builder cannot see that image.
           docker compose -f qa/compose.yaml build --builder default api
@@ -198,7 +198,7 @@ jobs:
           docker compose -f qa/compose.yaml cp api:/reports/seed.json "$QA_SEED_PATH"
           test -f "$QA_SEED_PATH"
       - name: Verify APIs, PostgreSQL isolation, and business workflows
-        run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --junitxml=test-results/functional/api.xml
+        run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --output=test-results/functional/api-browser --junitxml=test-results/functional/api.xml
       - name: Verify backend services with real production libraries
         run: >-
           docker compose -f qa/compose.yaml exec -T api

@@ -238,3 +238,6 @@ output/
 .pytest-tmp-current/
 pytest-cache-files-*/
 backend/pytest-cache-files-*/
+
+# Disposable QA fixtures, outside Playwright output
+.qa-runtime/
