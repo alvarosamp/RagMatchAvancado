@@ -1,0 +1,47 @@
+{
+  "source_commit": "273b400b76a8faae4b591948cc6ec7b2cb00f192",
+  "tag": "sha-273b400b76a8faae4b591948cc6ec7b2cb00f192",
+  "platform": "linux/amd64",
+  "publication_method": "local Docker push; frozen Git archive; verified remote digests",
+  "images": {
+    "mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:sha-273b400b76a8faae4b591948cc6ec7b2cb00f192",
+      "digest": "sha256:afdd302e4f64eee8b968a6c50c3b71fd128bbec98d46ec32ffc6b1f0a4fb812a",
+      "remote_verified": true
+    },
+    "frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:sha-273b400b76a8faae4b591948cc6ec7b2cb00f192",
+      "digest": "sha256:1fece5c41eb4c89cbbd0bac07391da7ee396a2263f008c4fb2ac89223f240c73",
+      "remote_verified": true
+    },
+    "market-worker": {
+      "reference": "alvarocareli/ragmatch-market-worker:sha-273b400b76a8faae4b591948cc6ec7b2cb00f192",
+      "digest": "sha256:3f0cca7decb1c8280860fd89155fa43f7965c446e4869d5bfce124c2951d7129",
+      "remote_verified": true
+    },
+    "api": {
+      "reference": "alvarocareli/ragmatch-api:sha-273b400b76a8faae4b591948cc6ec7b2cb00f192",
+      "digest": "sha256:0cd416bc4a88cda4f6e423bf8ab582a868a797a669d99ae76eb6aefdfe78f14b",
+      "remote_verified": true
+    }
+  },
+  "vps_deployed": false,
+  "validation": {
+    "backend_regression_tests": 95,
+    "http_tests": 44,
+    "crm_frontend_tests": 19,
+    "crm_artifact_hashes": 72,
+    "native_browser_download": "passed",
+    "live_market_and_commercial_pages": "passed",
+    "progressive_filters": "passed",
+    "technical_sheet_table": "passed",
+    "migration_head": "20261014_01",
+    "production_image_end_to_end": "passed",
+    "nginx": "passed",
+    "worker_help": "passed"
+  },
+  "api_dependency_base": "alvarocareli/ragmatch-api@sha256:d740be3e195a9dfc0fd0a056753d7aa8011acbb15b00f20ad76e122002b709fc",
+  "worker_dependency_base": "alvarocareli/ragmatch-market-worker@sha256:5315c21c4bb01b1a6b3137ab4066924007163dc416ea68ed62574e3306663b43",
+  "mlflow_reused_unchanged": true,
+  "updated_at_utc": "2026-10-14T18:30:50.629267+00:00"
+}

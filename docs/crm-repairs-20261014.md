@@ -14,4 +14,4 @@ Fonte do CRM reproduzível: patches anteriores seguidos de `docs/crm-repairs-sou
 
 Validações: testes unitários de identidade, parsers e compatibilidade; testes HTTP em `qa/test_crm_repairs.py` mais regressão de match/sugestões/documentos; testes das páginas de inteligência e de suas bibliotecas; build embarcado e imagens locais; navegador com carregamento das duas inteligências, filtro progressivo, download real e ficha técnica. Os testes HTTP usam empresas de QA e preservam os dados da empresa demonstrativa.
 
-A reprodução e a validação foram feitas no Docker local. As imagens da Hostinger precisam receber esta versão para aplicar as correções em produção.
+A reprodução e a validação foram feitas no Docker local. A correção foi publicada no Docker Hub com digests conferidos; veja `docs/releases/crm-repairs-20261014.md`. A Hostinger ainda precisa ser reimplantada com a nova tag para aplicar as correções em produção.
