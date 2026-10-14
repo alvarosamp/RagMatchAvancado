@@ -1,0 +1,48 @@
+{
+  "source_commit": "e02e0a0be0b567fc432c2b320e9d93052213bb20",
+  "tag": "sha-e02e0a0be0b567fc432c2b320e9d93052213bb20",
+  "platform": "linux/amd64",
+  "publication_method": "local Docker push; frozen Git archive; verified remote digests",
+  "images": {
+    "mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:sha-e02e0a0be0b567fc432c2b320e9d93052213bb20",
+      "digest": "sha256:afdd302e4f64eee8b968a6c50c3b71fd128bbec98d46ec32ffc6b1f0a4fb812a",
+      "remote_verified": true
+    },
+    "frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:sha-e02e0a0be0b567fc432c2b320e9d93052213bb20",
+      "digest": "sha256:89ffac4d71f1d54f73eac76c762353115de7af66781d84f7ec7b626c3e83af35",
+      "remote_verified": true
+    },
+    "market-worker": {
+      "reference": "alvarocareli/ragmatch-market-worker:sha-e02e0a0be0b567fc432c2b320e9d93052213bb20",
+      "digest": "sha256:d26d1dce8047168c6d16fbe6c4eaae2e3a4e1c53b59ef6fd9e1c2b575b7bda82",
+      "remote_verified": true
+    },
+    "api": {
+      "reference": "alvarocareli/ragmatch-api:sha-e02e0a0be0b567fc432c2b320e9d93052213bb20",
+      "digest": "sha256:5f8e0642633ce8aa036bbac9b7f331d1818edc6faa4bbbc1d5d3c2b7c9315bd4",
+      "remote_verified": true
+    }
+  },
+  "vps_deployed": false,
+  "validation": {
+    "backend_unit_regression_tests": 108,
+    "frontend_tests": 42,
+    "frontend_session_tests": 5,
+    "final_production_api_http_tests": 97,
+    "datasheet_collector_tests": 6,
+    "crm_artifact_hashes": 74,
+    "api_readiness": "passed",
+    "migration_head": "20261013_01",
+    "frontend_nginx": "passed",
+    "worker_help": "passed",
+    "mlflow_version": "2.12.1"
+  },
+  "api_dependency_base": "alvarocareli/ragmatch-api@sha256:d740be3e195a9dfc0fd0a056753d7aa8011acbb15b00f20ad76e122002b709fc",
+  "worker_dependency_base": "alvarocareli/ragmatch-market-worker@sha256:5315c21c4bb01b1a6b3137ab4066924007163dc416ea68ed62574e3306663b43",
+  "mlflow_reused_unchanged": true,
+  "updated_at_utc": "2026-10-14T14:13:31.847801+00:00",
+  "hostinger_compose": "docker-compose.prod.yaml",
+  "production_compose_common_tag_verified": true
+}
