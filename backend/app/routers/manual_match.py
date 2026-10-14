@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
+import copy
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -92,6 +93,21 @@ def get_manual_match(notice_id: str, item_id: str, db: Session = Depends(get_db)
     return {**result, 'base_revision': manual.revision(item),
             'item': {'id': item.id, 'numero': item.item_number, 'descricao': item.description},
             'selecionado': state.get('selected_catalog_id'), 'selecionado_status': state.get('selected_status')}
+
+
+@router.post('/suggest')
+def suggest_manual_match(notice_id: str, item_id: str,
+                         db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    notice, item = load_item(db, user, notice_id, item_id)
+    draft_item = copy.copy(item)
+    draft_item.raw_payload = {k: v for k, v in (item.raw_payload or {}).items() if k != '_manual_match'}
+    try:
+        payload = build_crm_match_item_export(notice, draft_item)
+        state = manual.import_item(payload, item, 'JSON atual do item — requisitos sugeridos')
+        result = manual.preview(state, catalog_rows(db, user))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {**result, 'base_revision': manual.revision(item)}
 
 
 @router.post('/import')

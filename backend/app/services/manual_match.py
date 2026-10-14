@@ -73,6 +73,10 @@ def normalize_requirements(requirements):
         if not isinstance(name, str):
             raise ValueError('O campo do requisito deve ser texto.')
         row['atributo'] = canonical_name(name)
+        row['revisao_necessaria'] = row.get('revisao_necessaria') is True
+        row['revisado'] = row.get('revisado') is True
+        if row.get('motivo_revisao') is not None and not isinstance(row['motivo_revisao'], str):
+            raise ValueError('O motivo de revisão deve ser texto.')
         # Keep original labels and text even when the human maps a field.
         row['texto_original'] = str(row.get('texto_original') or row.get('descricao') or name)
         row.pop('campo_normalizado', None)
@@ -112,10 +116,16 @@ def import_item(payload, item, filename='JSON do item'):
     for key in ('conflitos_documentais', 'divergencias_documentais', 'requisitos_gerais_aplicaveis'):
         if payload.get(key):
             pending.append({'campo': key, 'conteudo': payload[key]})
+    if not isinstance(payload.get('obrigacoes_gerais') or {}, dict):
+        raise ValueError('Obrigações gerais precisam ser um objeto.')
+    suggestions = payload.get('sugestoes_bi', [])
+    if not isinstance(suggestions, list) or len(suggestions) > 200 or any(not isinstance(r, dict) or not isinstance(r.get('campo'), str) or not isinstance(r.get('motivo', ''), str) for r in suggestions):
+        raise ValueError('Sugestões BI precisam ser uma lista de até 200 campos.')
     return {'categoria': canonical_category(adapted.get('categoria') or identity.get('categoria')),
             'requisitos': rows, 'filtros': [], 'descricao_revisada': False,
             'fonte_json': {'arquivo': str(filename)[:200], 'hash': _hash(payload), 'payload': payload},
-            'pendencias': pending}
+            'pendencias': pending, 'sugestoes_bi': copy.deepcopy(suggestions),
+            'obrigacoes_gerais': copy.deepcopy(payload.get('obrigacoes_gerais') or {}), 'obrigacoes_revisadas': False}
 
 
 def validate_state(state):
@@ -137,16 +147,32 @@ def validate_state(state):
         raise ValueError('Os filtros precisam referenciar requisitos existentes.')
     result['filtros'] = list(dict.fromkeys(filters))
     result['descricao_revisada'] = result.get('descricao_revisada') is True
+    if not isinstance(result.get('obrigacoes_gerais', {}), dict):
+        raise ValueError('Obrigações gerais precisam ser um objeto.')
+    result['obrigacoes_revisadas'] = result.get('obrigacoes_revisadas') is True
     source = result.get('fonte_json')
     if source:
         if not isinstance(source, dict) or not isinstance(source.get('payload'), dict):
             raise ValueError('Fonte JSON inválida.')
         result['fonte_json']['hash'] = _hash(source['payload'])
+        obligations = source['payload'].get('obrigacoes_gerais') or {}
+        if not isinstance(obligations, dict):
+            raise ValueError('Obrigações gerais precisam ser um objeto.')
+        result['obrigacoes_gerais'] = copy.deepcopy(obligations)
         # Imported conflicts must not disappear when a filter checkbox is cleared.
         pending = []
         for key in ('conflitos_documentais', 'divergencias_documentais', 'requisitos_gerais_aplicaveis'):
             if source['payload'].get(key):
                 pending.append({'campo': key, 'conteudo': source['payload'][key]})
+        source_rows = source['payload'].get('requisitos_atomicos', [])
+        if isinstance(source_rows, list):
+            required_review = {r.get('id') for r in source_rows if isinstance(r, dict) and r.get('revisao_necessaria')}
+            for row in result['requisitos']:
+                if row['id'] in required_review:
+                    row['revisao_necessaria'] = True
+            for row in source_rows:
+                if isinstance(row, dict) and row.get('revisao_necessaria') and row.get('id') not in ids:
+                    pending.append({'id': row.get('id'), 'motivo': 'Ponto da descrição original removido; reimporte e revise o requisito.'})
         result['pendencias'] = pending
     else:
         result['pendencias'] = []
@@ -192,8 +218,13 @@ def required_payload(state):
         rows.append({'id': 'manual_review', 'atributo': 'revisao_do_item', 'operador': '==', 'valor': True,
                      'texto_original': 'Confira a descrição completa e os pontos do JSON.'})
     result = {'categoria': state['categoria'], 'requisitos': rows, 'exigir_evidencia': True}
-    if state.get('pendencias'):
-        result['conflitos_documentais'] = state['pendencias']
+    pending = list(state.get('pendencias') or [])
+    if any(v not in (None, '', [], {}) for v in state.get('obrigacoes_gerais', {}).values()) and not state.get('obrigacoes_revisadas'):
+        pending.append({'id': 'obligations_review', 'motivo': 'Confira garantia, entrega e obrigações gerais do item.'})
+    pending.extend({'id': r['id'], 'motivo': 'Sugestão de requisito ainda não revisada.'}
+                   for r in rows if r.get('revisao_necessaria') and r.get('revisado') is not True)
+    if pending:
+        result['conflitos_documentais'] = pending
     return result
 
 

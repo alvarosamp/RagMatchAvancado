@@ -19,6 +19,16 @@ Categoria, filtros, requisitos mapeados, JSON original, usuário e data são sal
 
 O fluxo não garante extrair todos os pontos de uma descrição: sem requisitos estruturados, o usuário monta a tabela manualmente. Protocolos e condições não mapeados continuam pendentes. Escolher um filtro não elimina um requisito. A confirmação verifica documento, produto, empresa, versão e hash no servidor.
 
+## Sugestões a partir do JSON original
+
+Itens legados (como o formato 7.4) agora geram sugestões da descrição completa ao abrir o match, sem baixar ou importar outro JSON. Critérios explícitos do formato V8 continuam preservados. Estados manuais já salvos são retomados; Sugerir requisitos do item atual abre um novo rascunho a partir do item, preservando o estado salvo até a próxima gravação.
+
+Cada sugestão tem ID estável, trecho original, campo, condição, valor/unidade e revisão individual. Alterar o mapeamento desmarca a revisão daquele ponto. Trechos não reconhecidos, alternativas e números com separador ambíguo ficam como linhas pendentes. SFP28/QSFP28 e PoE+/PoE++ permanecem distintos, com mapeamento pendente quando o catálogo não tem o campo correspondente.
+
+O BI fica em uma seção de consulta e não produz requisitos de proibição por ausência de informação na descrição. Garantia, entrega e obrigações exportadas ficam visíveis e exigem conferência quando preenchidas. O backend bloqueia a confirmação com sugestões não revisadas ou pontos da fonte removidos; preserva obrigações da fonte ao validar o rascunho.
+
+Limite: a extração por regras cobre apenas padrões explícitos implementados. Aplicada aos 43 itens fornecidos, gerou 49 características estruturadas e 332 trechos pendentes. Não equivale a atomização completa, cobertura do catálogo ou aprovação documental.
+
 ## Normalização dos nomes
 
 Campos e categorias usam aliases explícitos para variações de acentos, espaços e escrita, como `Portas RJ-45`, `Quantidade de portas RJ45` e `RJ-45 ports`. Um alias cadastrado para dois campos diferentes gera erro de configuração; não há substituição silenciosa nem aproximação por similaridade.
@@ -54,6 +64,6 @@ python3 preview/manual_match_demo.py
 
 16 testes HTTP: qa/test_manual_match.py (JSON por item, filtragem progressiva, falta de evidência, requisitos desmarcados, preservação de preços, fonte divergente, JSON inválido, isolamento, permissão e confirmação documentada).
 
-38 testes específicos de normalização, 16 de match manual, 62 de autenticação/sessão e 88 de regressão do motor, adaptador V8, exportação e extração passaram no Docker local (204 no total). No navegador real, a validação anterior do fluxo cobriu exportação e importação do mesmo arquivo, filtros ponto a ponto, confirmação do exemplo e persistência.
+18 testes de sugestões/revisão, 38 específicos de normalização, 16 de match manual, 62 de autenticação/sessão e 88 de regressão do motor, adaptador V8, exportação e extração passaram no Docker local (222 no total). No navegador real, a validação anterior do fluxo cobriu exportação e importação do mesmo arquivo, filtros ponto a ponto, confirmação do exemplo e persistência.
 
 A prévia local usa http://localhost:13089. Esta mudança ainda não foi publicada na VPS.

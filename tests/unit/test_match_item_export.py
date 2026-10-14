@@ -90,7 +90,10 @@ def test_build_match_export_preserves_raw_and_builds_normalized_contract() -> No
     assert payload["obrigacoes_gerais"]["prazo_entrega_tipo"] == "uteis"
     assert payload["obrigacoes_gerais"]["garantia_meses"] == 12
     assert payload["obrigacoes_gerais"]["documentos_exigidos"] == ["Datasheet do fabricante"]
-    assert any(req["campo_normalizado"] == "quantidade_portas" for req in payload["requisitos_atomicos"])
+    assert not any(req["campo_normalizado"] == "quantidade_portas" for req in payload["requisitos_atomicos"])
+    assert any(req["campo_normalizado"] == "gerenciavel" for req in payload["requisitos_atomicos"])
+    assert any(s["campo"] == "quantidade_portas" for s in payload["sugestoes_bi"])
+    assert all(req["revisao_necessaria"] for req in payload["requisitos_atomicos"])
 
 
 def test_v8_match_export_uses_direct_evidence_and_general_clauses() -> None:

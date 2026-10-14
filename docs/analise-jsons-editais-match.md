@@ -42,6 +42,14 @@ São rascunhos para revisão humana, não 43 matches concluídos ou JSONs totalm
 
 Originais, inventário e rascunhos permanecem locais, fora do Git. Nenhum edital, item, produto, preço ou ficha da VPS foi modificado nesta análise.
 
-## Próximo ajuste recomendado
+## Implementação após a análise inicial
 
-Converter a descrição completa em critérios rastreáveis por item, com `campo_normalizado`, operador, valor, unidade e trecho original. BI deve ajudar a sugerir o mapeamento, preservando campos sem suporte e condições ambíguas como pendências. O fluxo manual existente pode revisar esses critérios antes de salvar; a geração automática exige mudança específica no adaptador/exportador, ainda não implementada nesta análise.
+O exportador passou a sugerir requisitos a partir da descrição original do formato legado, deixando o BI como consulta. Essa mudança sucede o inventário inicial descrito acima. Os rascunhos locais foram regenerados com o novo comportamento; as contagens de 212/214 pontos representam a versão anterior do exportador.
+
+A extração conservadora dos 43 itens identificou 49 características explícitas (incluindo padrões que ainda exigem campo no catálogo) e preservou 332 trechos como pontos pendentes. Todas as sugestões exigem revisão individual. Condições, formatos ópticos avançados e requisitos sem campo no catálogo continuam sujeitos a mapeamento humano. Garantia, entrega e obrigações exportadas permanecem visíveis no fluxo e precisam ser conferidas quando preenchidas.
+
+O JSON já salvo no item alimenta a tabela ao abrir o match. Estados manuais salvos são preservados; o botão Sugerir requisitos do item atual abre novo rascunho. Nenhuma geração automática altera preços ou confirma um produto.
+
+## Evolução do mapeamento
+
+Ampliar os padrões explícitos de extração e os campos técnicos do catálogo conforme os dados revisados. A geração por regras já monta critérios com campo, operador, valor/unidade e trecho original nos casos suportados; não atomiza completamente protocolos, combinações, escopos e todos os requisitos presentes nesses arquivos.

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from app.services.analysis_normalizer import normalize_brand_direction
+from app.services.item_requirement_suggestions import suggest_requirements, bi_suggestions
 
 SCHEMA_NAME = "tor.match-item"
 SCHEMA_VERSION = "1.0.0"
@@ -137,6 +138,7 @@ def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:
     requirements = _atomic_requirements(
         raw_item, bi, origin, item.item_number,
         allow_bi_fallback=result.get("schema_version") != "8.0",
+        description=item.description, category=category,
     )
     divergences = _document_divergences(raw_item, bi)
 
@@ -206,6 +208,7 @@ def build_match_item_export(document: Any, item: Any) -> dict[str, Any]:
             or _value(item.direcionamento_marca_justificativa),
         },
         "requisitos_atomicos": requirements,
+        "sugestoes_bi": bi_suggestions(bi),
         "requisitos_gerais_aplicaveis": raw_item.get("requisitos_gerais_aplicaveis") or [],
         "conflitos_documentais": _mapping(result.get("auditoria")).get("conflitos_documentais") or [],
         "normalized": {
@@ -230,6 +233,7 @@ def _atomic_requirements(
     origin: dict[str, Any],
     item_number: Any,
     allow_bi_fallback: bool = True,
+    description: str | None = None, category: str | None = None,
 ) -> list[dict[str, Any]]:
     # V8 atual usa criterios_comparacao; o nome anterior continua aceito para
     # analises ja armazenadas, sem fabricar requisitos a partir do BI.
@@ -254,40 +258,9 @@ def _atomic_requirements(
     if not allow_bi_fallback:
         return []
 
-    requirements: list[dict[str, Any]] = []
-    for field, value in _flatten_features(bi).items():
-        requirements.append(
-            {
-                "id": _requirement_id(item_number, len(requirements) + 1),
-                "texto_original": None,
-                "campo_normalizado": field,
-                "operador": "=",
-                "valor": value,
-                "unidade": None,
-                "operador_logico": "E",
-                "obrigatorio": True,
-                "origem": origin,
-                "derivado_de": "caracteristicas_bi",
-            }
-        )
-
-    technical = _value(raw_item.get("caracteristicas_tecnicas"))
-    if technical:
-        requirements.append(
-            {
-                "id": _requirement_id(item_number, len(requirements) + 1),
-                "texto_original": technical,
-                "campo_normalizado": "caracteristicas_tecnicas",
-                "operador": "contem_requisitos",
-                "valor": technical,
-                "unidade": None,
-                "operador_logico": "E",
-                "obrigatorio": True,
-                "origem": origin,
-                "derivado_de": "texto_original_nao_atomizado",
-            }
-        )
-    return requirements
+    # V7.4 BI is a summary, not a list of contractual requirements. Parse only
+    # explicit text, and keep every unsupported clause for manual mapping.
+    return suggest_requirements(description or raw_item.get('descricao_original'), category or raw_item.get('categoria'), origin, item_number)
 
 
 def _normalize_requirement(
@@ -321,6 +294,9 @@ def _normalize_requirement(
         "obrigatorio": payload.get("obrigatorio") is not False,
         "origem": source,
         "derivado_de": _value(payload.get("derivado_de")) or "extracao_original",
+        "revisao_necessaria": payload.get("revisao_necessaria") is True,
+        "revisado": payload.get("revisado") is True,
+        "motivo_revisao": payload.get("motivo_revisao"),
     }
 
 
