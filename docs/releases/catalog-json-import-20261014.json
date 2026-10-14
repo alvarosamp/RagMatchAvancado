@@ -1,0 +1,47 @@
+{
+  "source_commit": "8b170e12e60f3f5e9c303580985d0a6b8d097415",
+  "tag": "sha-8b170e12e60f3f5e9c303580985d0a6b8d097415",
+  "platform": "linux/amd64",
+  "publication_method": "local Docker push; frozen Git archive; verified remote digests",
+  "images": {
+    "mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:sha-8b170e12e60f3f5e9c303580985d0a6b8d097415",
+      "digest": "sha256:afdd302e4f64eee8b968a6c50c3b71fd128bbec98d46ec32ffc6b1f0a4fb812a",
+      "remote_verified": true
+    },
+    "frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:sha-8b170e12e60f3f5e9c303580985d0a6b8d097415",
+      "digest": "sha256:a36ee4bfd22a527f31e45cdd58b5286ccdacc3be7df49ed8f7592cd4d8db55d8",
+      "remote_verified": true
+    },
+    "market-worker": {
+      "reference": "alvarocareli/ragmatch-market-worker:sha-8b170e12e60f3f5e9c303580985d0a6b8d097415",
+      "digest": "sha256:2930f2562f8c3ee3ebe12e1d80ebeb35a4f4fbaefc13ed5056d2a989468ca8cd",
+      "remote_verified": true
+    },
+    "api": {
+      "reference": "alvarocareli/ragmatch-api:sha-8b170e12e60f3f5e9c303580985d0a6b8d097415",
+      "digest": "sha256:3fae1f047c7b39bedb72719891a78a1a92d4e8d514776d93d539fe2f1a9ac2fe",
+      "remote_verified": true
+    }
+  },
+  "vps_deployed": false,
+  "validation": {
+    "targeted_backend_tests_in_preview": 33,
+    "host_json_import_tests": 5,
+    "isolated_catalog_import": "passed",
+    "isolated_lpu_lifecycle": "passed",
+    "isolated_manual_description": "passed",
+    "api_readiness": "passed",
+    "migration_head": "20261014_01",
+    "frontend_nginx": "passed",
+    "production_api_http_tests": 43,
+    "crm_artifact_hashes": 74,
+    "worker_help": "passed",
+    "mlflow_version": "2.12.1"
+  },
+  "api_dependency_base": "alvarocareli/ragmatch-api@sha256:d740be3e195a9dfc0fd0a056753d7aa8011acbb15b00f20ad76e122002b709fc",
+  "worker_dependency_base": "alvarocareli/ragmatch-market-worker@sha256:5315c21c4bb01b1a6b3137ab4066924007163dc416ea68ed62574e3306663b43",
+  "mlflow_reused_unchanged": true,
+  "updated_at_utc": "2026-10-14T15:44:41.630577+00:00"
+}
