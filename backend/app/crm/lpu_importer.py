@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
 from app.crm.models import CrmCatalogProduct
+from app.services.catalog_lpu_specification import refresh_lpu_specification
 
 
 BLOCKED_AVAILABILITY_VALUES = {
@@ -50,6 +51,7 @@ class LpuImportSummary:
             "removed_stale": self.removed_stale,
             "lpu_version": self.lpu_version,
             "lpu_drive_url": self.lpu_drive_url,
+            "technical_jsons_refreshed": self.created + self.updated,
         }
 
 
@@ -82,7 +84,7 @@ def import_lpu_catalog(
             continue
         summary.sheets += 1
 
-        for row in sheet.iter_rows(min_row=header_row + 1, values_only=True):
+        for row_number, row in enumerate(sheet.iter_rows(min_row=header_row + 1, values_only=True), header_row + 1):
             if not _row_has_values(row):
                 continue
             record = _row_to_record(header, normalized_header, row, sheet.title)
@@ -120,11 +122,13 @@ def import_lpu_catalog(
                         CrmCatalogProduct.tenant_id == tenant_id,
                         CrmCatalogProduct.sku == legacy_sku,
                     ).first()
+            record['specification'] = refresh_lpu_specification(
+                existing.specification if existing else None, record,
+                values={normalized_header[i]: row[i] for i in range(min(len(row), len(header)))
+                        if normalized_header[i]}, sheet=sheet.title, row=row_number,
+            )
             if existing:
                 for key, value in record.items():
-                    # A commercial price update must preserve a reviewed technical sheet.
-                    if key == "specification" and _has_technical_sheet(existing.specification):
-                        continue
                     setattr(existing, key, value)
                 db.add(existing)
                 summary.updated += 1

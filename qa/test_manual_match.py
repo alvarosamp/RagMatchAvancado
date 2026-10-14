@@ -64,6 +64,24 @@ def test_category_and_progressive_filtering_without_ai(scenario):
     assert [c['id'] for c in remaining]==[s['products'][1]['id']]
 
 
+def test_catalog_value_choices_shrink_progressively_and_keep_notice_requirements(scenario):
+    s=scenario
+    body=draft(s)
+    body['state']['filtros']=[]
+    body['state']['catalog_filters']={'portas_rj45':24}
+    response=s['api'].post(s['base']+'/preview',json=body)
+    assert response.status_code==200,response.text
+    result=response.json()
+    assert result['facetas']['portas_rj45']==[24]
+    assert result['facetas']['gerenciavel']==[True]
+    own={p['id'] for p in s['products']}
+    assert [c['id'] for c in result['candidatos'] if c['id'] in own and c['status_filtro']=='ATENDE']==[s['products'][1]['id']]
+    assert result['state']['requisitos']==s['loaded']['state']['requisitos']
+    body['state']['catalog_filters']={}
+    restored=s['api'].post(s['base']+'/preview',json=body).json()
+    assert 8 in restored['facetas']['portas_rj45'] and 48 in restored['facetas']['portas_rj45']
+
+
 def test_filtering_is_not_documentary_approval(scenario):
     s=scenario;body=draft(s,catalog_product_id=s['products'][1]['id'])
     body['state']['descricao_revisada']=True

@@ -176,6 +176,14 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     assert db.products[(1, "PN-1")].lpu_version == summary["lpu_version"]
     assert db.products[(1, "PN-1")].lpu_drive_url == summary["lpu_drive_url"]
     assert db.products[(1, "PN-1")].description == "Descricao nova"
+    import json
+    specification = json.loads(db.products[(1, "PN-1")].specification)
+    assert specification['sku'] == 'PN-1'
+    assert specification['dados_lpu']['descricao_original'] == 'Descricao nova'
+    assert specification['dados_lpu']['versao'] == summary['lpu_version']
+    assert specification['dados_lpu']['linha'] == 3
+    assert specification['dados_lpu']['campos_originais']['part no'] == 'MFR-2'
+    assert summary['technical_jsons_refreshed'] == 2
     assert (1, "PN-FORA-DA-LPU") not in db.products
 
 

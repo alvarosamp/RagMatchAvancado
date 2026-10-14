@@ -1,3 +1,9 @@
+# Popup com filtros do catálogo
+
+O popup agora abre diretamente a descrição completa e uma tabela de três colunas: característica, valor do edital e valores disponíveis no catálogo. A categoria e cada valor são escolhas clicáveis. As opções dos demais campos são recalculadas usando os produtos restantes. Clique novamente em uma opção selecionada para removê-la, ou use Limpar filtros. Os requisitos originais permanecem intactos; a seleção de um valor é um filtro exato do catálogo, não uma alteração da exigência do edital.
+
+Os filtros são salvos em catalog_filters no estado do match. Salvar seleção mantém o produto para revisão técnica; o popup simplificado não confirma automaticamente atendimento documental. Dados desconhecidos não viram valores falsos. Pontos ainda não estruturados ficam em Outras condições dentro da tabela.
+
 # Match manual por item (prévia local)
 
 O processo principal fica na aba Match de cada edital do CRM. Na aba Itens, Exportar JSON aparece ao lado de Detalhes, por item. A exportação geral do edital continua disponível.

@@ -70,7 +70,7 @@ async function main() {
   ensureCrmDependencies()
 
   // Keep the private CRM source fix reproducible without publishing that source.
-  for (const patchName of ['crm-session-source.patch', 'crm-manual-match-source.patch']) {
+  for (const patchName of ['crm-session-source.patch', 'crm-manual-match-source.patch', 'crm-technical-sheet-source.patch']) {
     const sessionPatch = path.join(repoRoot, 'docs', patchName)
     if (!existsSync(sessionPatch)) continue;
     const applied = spawnSync('git', ['apply', '--reverse', '--check', sessionPatch], { cwd: crmRoot })
@@ -110,7 +110,7 @@ async function main() {
     sourceBranch: readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
     sourceCommit: readGitValue(['rev-parse', 'HEAD']),
     sourceDirty: Boolean(readGitValue(['status', '--porcelain'])),
-    sourcePatches: ['docs/crm-session-source.patch', 'docs/crm-manual-match-source.patch'],
+    sourcePatches: ['docs/crm-session-source.patch', 'docs/crm-manual-match-source.patch', 'docs/crm-technical-sheet-source.patch'],
     artifactHashes,
     artifactHashFormat: 'sha256-lf-text-v1',
     builtAt: new Date().toISOString(),

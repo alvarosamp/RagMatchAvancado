@@ -6,7 +6,7 @@ import re
 
 from app.services.technical_matching.adapter import adapt_item
 from app.services.technical_matching.engine import compare_item_product, _hash
-from app.services.technical_matching.normalizer import RULES, canonical_category, canonical_name
+from app.services.technical_matching.normalizer import RULES, canonical_category, canonical_name, normalize_value
 
 FIELD_LABELS = {
     'camada': 'Camada de rede', 'tecnologia_wifi': 'Padrão Wi-Fi', 'ambiente': 'Ambiente',
@@ -146,6 +146,18 @@ def validate_state(state):
     if not isinstance(filters, list) or any(not isinstance(v, str) or v not in ids for v in filters):
         raise ValueError('Os filtros precisam referenciar requisitos existentes.')
     result['filtros'] = list(dict.fromkeys(filters))
+    if 'catalog_filters' in result:
+        facets = result['catalog_filters']
+        if not isinstance(facets, dict) or len(facets) > 50:
+            raise ValueError('Filtros do catálogo inválidos.')
+        normalized = {}
+        for key, value in facets.items():
+            name = canonical_name(key)
+            definition = RULES['attributes'].get(name)
+            if not definition or not isinstance(value, (str, int, float, bool)):
+                raise ValueError('Escolha uma característica e um valor do catálogo.')
+            normalized[name] = normalize_value(value, kind=definition['type'], unit=definition.get('unit'))
+        result['catalog_filters'] = normalized
     result['descricao_revisada'] = result.get('descricao_revisada') is True
     if not isinstance(result.get('obrigacoes_gerais', {}), dict):
         raise ValueError('Obrigações gerais precisam ser um objeto.')
@@ -249,9 +261,13 @@ def preview(state, catalog, selected_id=None):
     groups = {r.get('grupo_logico') for r in state['requisitos'] if r['id'] in selected and r.get('grupo_logico')}
     chosen = [dict(r, obrigatorio=True) for r in state['requisitos']
               if r['id'] in selected or (r.get('grupo_logico') and r['grupo_logico'] in groups)]
+    chosen.extend({'id': 'catalog-'+name, 'atributo': name, 'operador': '==', 'valor': value,
+                   'unidade': RULES['attributes'][name].get('unit'), 'obrigatorio': True}
+                  for name, value in state.get('catalog_filters', {}).items())
     candidates, counts, selected_result = [], {'ATENDE': 0, 'VERIFICAR': 0, 'NAO_ATENDE': 0}, None
     category_counts = {}
     options = {}
+    facet_options = {}
     for row in catalog:
         product = catalog_payload(row, signals=True)
         category = canonical_category(product['categoria'])
@@ -262,6 +278,18 @@ def preview(state, catalog, selected_id=None):
         filtered = compare_item_product({'categoria': state['categoria'], 'requisitos': chosen,
                                          'exigir_evidencia': False}, product) if chosen else {'status': 'ATENDE', 'detalhes': []}
         counts[filtered['status']] += 1
+        if filtered['status'] == 'ATENDE':
+            for name, attribute in product['atributos'].items():
+                name = canonical_name(name)
+                definition = RULES['attributes'].get(name)
+                if not definition or name not in CATEGORY_FIELDS.get(state['categoria'], RULES['attributes']):
+                    continue
+                try:
+                    value = normalize_value(attribute, kind=definition['type'], unit=definition.get('unit'))
+                except (ValueError, TypeError):
+                    continue
+                if isinstance(value, (str, bool, int, float)):
+                    facet_options.setdefault(name, {})[json.dumps(value)] = value
         for name, attribute in product['atributos'].items():
             value = attribute.get('valor') if isinstance(attribute, dict) else attribute
             if value is not None and isinstance(value, (str, bool, int, float)):
@@ -276,6 +304,8 @@ def preview(state, catalog, selected_id=None):
     candidates.sort(key=lambda c: (priority[c['status_filtro']], c['nome']))
     return {'state': state, 'categorias': category_counts, 'contagens': counts, 'candidatos': candidates,
             'opcoes': {name: list(values.values()) for name, values in options.items()},
+            'facetas': {name: sorted(values.values(), key=lambda v: (isinstance(v, str), v))
+                        for name, values in facet_options.items()},
             'comparacao': selected_result, 'filtros_efetivos': [r['id'] for r in chosen],
             'campos': [{'nome': name, 'rotulo': FIELD_LABELS.get(name, name), **definition}
                        for name, definition in RULES['attributes'].items()], 'campos_categoria': CATEGORY_FIELDS}
