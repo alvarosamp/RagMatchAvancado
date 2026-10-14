@@ -452,21 +452,8 @@ def _to_float_or_none(value: Any) -> float | None:
 
 
 def _category_from_sheet(sheet_name: str, description: str = "") -> str:
-    normalized = _norm(sheet_name)
-    text = _norm(description)
-    if "power supply module" in text or text.startswith("fonte "):
-        return "fonte"
-    if "access point" in text:
-        return "access_point"
-    if "switch" in text:
-        return "switch"
-    if "switch" in normalized:
-        return "switch"
-    if "cabo" in normalized:
-        return "cabo"
-    if "transceiver" in normalized:
-        return "transceiver"
-    return normalized or "produto"
+    from app.services.catalog_identity import product_category
+    return product_category(sheet_name, description) or "produto"
 
 
 def _is_unavailable(value: str) -> bool:

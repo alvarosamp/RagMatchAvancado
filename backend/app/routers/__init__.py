@@ -11,6 +11,7 @@ from app.routers.analysis_dashboard import router as analysis_dashboard_router
 from app.routers.analytics import router as analytics_router
 from app.routers.bid_robot import router as bid_robot_router
 from app.routers.catalog_import import router as catalog_import_router
+from app.routers.crm_intelligence_read import router as crm_intelligence_read_router
 from app.routers.crm import router as crm_router
 from app.routers.datasheets import router as datasheets_router
 from app.routers.documents import router as documents_router
@@ -35,6 +36,7 @@ ROUTERS = (
     bling_router,
     conlicitacao_router,
     crm_router,
+    crm_intelligence_read_router,
     catalog_import_router,
     jobs_router,
     ops_router,

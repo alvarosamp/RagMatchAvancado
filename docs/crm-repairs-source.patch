@@ -1,0 +1,250 @@
+diff --git a/src/pages/MarketIntelligence.tsx b/src/pages/MarketIntelligence.tsx
+index 44d093e..5d60280 100644
+--- a/src/pages/MarketIntelligence.tsx
++++ b/src/pages/MarketIntelligence.tsx
+@@ -1,6 +1,6 @@
+ import { useEffect, useMemo, useState } from 'react';
+ import { Link } from 'react-router-dom';
+-import { supabase } from '@/integrations/supabase/client';
++import { crmFetch } from '@/integrations/supabase/client';
+ import { Card, CardContent } from '@/components/ui/card';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '@/components/ui/button';
+@@ -31,11 +31,10 @@ export default function MarketIntelligence() {
+     setLoading(true);
+     setLoadError('');
+     try {
+-    const { data, error } = await supabase
+-      .from('notices')
+-      .select('id, created_at, number, tor_id, title, state, municipality_name, outcome, bi_risk_identified, bi_risk_operational, particularities, portals(name), organs(name, city, state), notice_products(*)')
+-      .order('created_at', { ascending: false });
+-      if (error) throw new Error(error.message);
++    const response = await crmFetch('/api/crm/intelligence/notices');
++    if (!response.ok) throw new Error(response.payload?.detail || `Não foi possível ler a demanda do CRM (HTTP ${response.status}).`);
++    const data = response.payload?.data;
++    if (!Array.isArray(data)) throw new Error('Resposta de demanda inválida.');
+       setNotices((data ?? []).filter((notice: Notice) => notice.outcome !== 'not_pursued'));
+     } catch (error) {
+       setNotices([]);
+@@ -83,8 +82,9 @@ export default function MarketIntelligence() {
+   const exportJson = async () => {
+     setExporting(true);
+     try {
+-      const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+-      if (error) throw new Error(error.message);
++      const response = await crmFetch('/api/crm/intelligence/notices');
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar a demanda.');
++      const data = response.payload?.data;
+       if (!Array.isArray(data)) throw new Error('Resposta do CRM inválida. Exportação cancelada.');
+       const json = marketExportJson(data, { search, riskOnly, dimension, metric, category, state, dateFrom, dateTo });
+       const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+diff --git a/src/pages/CommercialIntelligence.tsx b/src/pages/CommercialIntelligence.tsx
+index 9d50cc4..0974143 100644
+--- a/src/pages/CommercialIntelligence.tsx
++++ b/src/pages/CommercialIntelligence.tsx
+@@ -83,13 +83,25 @@ export default function CommercialIntelligence() {
+       if (current !== generation.current) return;
+       setDiagnostic(status);
+       if (!status.warehouse_ready) throw new Error('A camada analítica ainda não está disponível neste ambiente.');
+-      const [data, syncRuns, modelRuns, pending, supplierRows, operationStatus, capabilityStatus] = await Promise.all([
+-        marketRequest<Report>(`/report?${queryString(applied)}`), marketRequest<DataRow[]>('/sync-runs'), marketRequest<DataRow[]>('/model-runs'), marketRequest<{ rows: DataRow[]; total: number }>(`/identity-reviews?offset=${reviewOffset}`), marketRequest<{ rows: DataRow[] }>('/entities?kind=supplier&limit=200'),
+-        marketRequest<OperationsStatus>('/operations'), marketRequest<{ sources: Record<string, string> }>('/capabilities'),
++      // The demand report is usable even if optional training/admin services fail.
++      const data = await marketRequest<Report>(`/report?${queryString(applied)}`);
++      if (current !== generation.current) return;
++      setReport(data);
++      const extra = await Promise.allSettled([
++        marketRequest<DataRow[]>('/sync-runs'), marketRequest<DataRow[]>('/model-runs'),
++        marketRequest<{ rows: DataRow[]; total: number }>(`/identity-reviews?offset=${reviewOffset}`),
++        marketRequest<{ rows: DataRow[] }>('/entities?kind=supplier&limit=200'),
++        marketRequest<OperationsStatus>('/operations'), marketRequest<{ sources: Record<string,string> }>('/capabilities'),
+       ]);
+       if (current !== generation.current) return;
+-      setReport(data); setRuns(syncRuns); setModels(modelRuns); setReviews(pending.rows); setReviewTotal(pending.total); setSuppliers(supplierRows.rows);
+-      setOperations(operationStatus); setCapabilities(capabilityStatus.sources);
++      if (extra[0].status === 'fulfilled') setRuns(extra[0].value as DataRow[]);
++      if (extra[1].status === 'fulfilled') setModels(extra[1].value as DataRow[]);
++      if (extra[2].status === 'fulfilled') {const v=extra[2].value as {rows:DataRow[];total:number};setReviews(v.rows);setReviewTotal(v.total);}
++      if (extra[3].status === 'fulfilled') setSuppliers((extra[3].value as {rows:DataRow[]}).rows);
++      if (extra[4].status === 'fulfilled') setOperations(extra[4].value as OperationsStatus);
++      if (extra[5].status === 'fulfilled') setCapabilities((extra[5].value as {sources:Record<string,string>}).sources);
++      const failed=extra.filter(result=>result.status==='rejected').length;
++      if(failed) setError(`Demanda carregada. ${failed} consulta(s) auxiliar(es) indisponível(is).`);
+     } catch (e) { if (current === generation.current) setError(e instanceof Error ? e.message : 'Falha ao carregar.'); }
+     finally { if (current === generation.current) setBusy(false); }
+   }, [applied, reviewOffset]);
+diff --git a/src/lib/market-intelligence.ts b/src/lib/market-intelligence.ts
+index b78f65c..02b3a78 100644
+--- a/src/lib/market-intelligence.ts
++++ b/src/lib/market-intelligence.ts
+@@ -49,8 +49,9 @@ const finite = (value: unknown) => Number.isFinite(Number(value)) ? Math.max(0,
+ 
+ export function marketItems(notices: any[]): MarketItem[] {
+   return notices.flatMap(notice => (Array.isArray(notice.notice_products) ? notice.notice_products : []).map((product: any) => {
+-    const raw = product.raw_payload || {};
+-    const leaves = { ...featureLeaves(raw.caracteristicas_bi), ...featureLeaves(product.bi_features) };
++    const stored=product.raw_payload && typeof product.raw_payload==='object'?product.raw_payload:{};
++    const raw={...(stored._raw_input || {}),...stored};
++    const leaves = { ...featureLeaves(raw.normalized?.caracteristicas_bi), ...featureLeaves(raw.caracteristicas_bi), ...featureLeaves(product.bi_features) };
+     const features: Record<string, string> = {};
+     for (const [dimension, definition] of Object.entries(DIMENSIONS)) {
+       if (dimension === 'category') continue;
+diff --git a/src/components/notices/ItemMatchJsonExport.tsx b/src/components/notices/ItemMatchJsonExport.tsx
+index 54149aa..8e920fb 100644
+--- a/src/components/notices/ItemMatchJsonExport.tsx
++++ b/src/components/notices/ItemMatchJsonExport.tsx
+@@ -1,25 +1,12 @@
+-import { useState } from 'react';
+-import { Download, Loader2 } from 'lucide-react';
++import { Download } from 'lucide-react';
+ import { Button } from '@/components/ui/button';
+-import { crmFetch } from '@/integrations/supabase/client';
+-import { toast } from 'sonner';
+ 
+-export function ItemMatchJsonExport({noticeId, itemId, number}: {noticeId:string; itemId:string; number?:string | null}) {
+-  const [busy,setBusy] = useState(false);
+-  async function download() {
+-    setBusy(true);
+-    try {
+-      const response = await crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-json`);
+-      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar o item.');
+-      const url = URL.createObjectURL(new Blob([JSON.stringify(response.payload,null,2)],{type:'application/json'}));
+-      const anchor = document.createElement('a');
+-      anchor.href=url; anchor.download=`match_item_${String(number || itemId).replace(/[^a-zA-Z0-9_-]/g,'_')}.json`;
+-      anchor.click(); window.setTimeout(()=>URL.revokeObjectURL(url),10000);
+-      toast.success('JSON deste item exportado.');
+-    } catch (error:any) { toast.error(error.message); }
+-    finally {setBusy(false);}
+-  }
+-  return <Button size="sm" variant="outline" disabled={busy} onClick={download} aria-label={`Exportar JSON do item ${number || itemId}`}>
+-    {busy?<Loader2 className="h-4 w-4 animate-spin"/>:<Download className="h-4 w-4"/>}Exportar JSON
++/** A native attachment request keeps the browser's user gesture on Safari. */
++export function ItemMatchJsonExport({noticeId,itemId,number}:{noticeId:string;itemId:string;number?:string|null}) {
++  return <Button size="sm" variant="outline" asChild>
++    <a href={`/api/crm/notices/${encodeURIComponent(noticeId)}/products/${encodeURIComponent(itemId)}/match-json?download=true`}
++       download onClick={event=>event.stopPropagation()} aria-label={`Exportar JSON do item ${number || itemId}`}>
++      <Download className="h-4 w-4"/>Exportar JSON
++    </a>
+   </Button>;
+ }
+diff --git a/src/components/notices/CatalogFacetMatch.tsx b/src/components/notices/CatalogFacetMatch.tsx
+index 38a85e5..220b516 100644
+--- a/src/components/notices/CatalogFacetMatch.tsx
++++ b/src/components/notices/CatalogFacetMatch.tsx
+@@ -22,17 +22,18 @@ export function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string
+  const allowed=data?.campos_categoria?.[state.categoria]||fields.map((f:any)=>f.nome);
+  const requirements=state.requisitos||[];
+  const ordered=["portas_rj45","portas_sfp","portas_sfp_plus",...allowed.filter((n:string)=>!["portas_rj45","portas_sfp","portas_sfp_plus"].includes(n))].filter((n:string)=>allowed.includes(n));
+- const names=Array.from(new Set([...ordered.filter((n:string)=>(data?.facetas?.[n]?.length||requirements.some((r:any)=>r.atributo===n)||n in state.catalog_filters)),...requirements.filter((r:any)=>r.atributo&&allowed.includes(r.atributo)).map((r:any)=>r.atributo)])) as string[];
++ const names=Array.from(new Set([...ordered.filter((n:string)=>(data?.facetas?.[n]?.length||requirements.some((r:any)=>r.atributo===n)||n in state.catalog_filters)),...requirements.filter((r:any)=>r.atributo).map((r:any)=>r.atributo)])) as string[];
+  const others=requirements.filter((r:any)=>!names.includes(r.atributo));
++ function mapRequirement(id:string,attribute:string){setState((s:any)=>({...s,requisitos:s.requisitos.map((r:any)=>r.id===id?{...r,atributo:attribute,revisado:false}:r)}));setSelected('');}
+  const candidates=(data?.candidatos||[]).filter((c:any)=>c.status_filtro==='ATENDE');
+- const rowValue=(name:string)=>{const reqs=requirements.filter((r:any)=>r.atributo===name);return reqs.length?reqs.map((r:any)=>`${op[r.operador]??r.operador} ${label(r.valor)}${r.unidade?' '+r.unidade:''}`.trim()).join(' · '):'Não informado';};
++ const rowValue=(name:string)=>{const reqs=requirements.filter((r:any)=>r.atributo===name);return reqs.length?reqs.map((r:any)=>r.valor==null?r.texto_original:`${op[r.operador]??r.operador} ${label(r.valor)}${r.unidade?' '+r.unidade:''}`.trim()).join(' · '):'Não informado';};
+  return <div className="space-y-4 min-w-0">
+   {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
+   <details open className="rounded-lg border p-3"><summary className="text-sm font-medium cursor-pointer">Descrição completa do item</summary><p className="mt-2 whitespace-pre-wrap text-sm">{item.description}</p></details>
+   <div className="overflow-x-auto rounded-lg border"><table aria-label="Filtros técnicos do catálogo" className="w-full text-left text-sm"><thead className="bg-muted"><tr><th className="p-3 w-[24%]">Característica</th><th className="p-3 w-[28%]">Item do edital</th><th className="p-3">Escolha no catálogo</th></tr></thead><tbody>
+-   <tr className="border-t"><th className="p-3 align-top font-medium">Produto</th><td className="p-3 align-top">{categories[item.category]||item.category||'Não informado'}</td><td className="p-3"><div className="flex flex-wrap gap-2">{Object.entries(data?.categorias||{}).sort(([a],[b])=>Object.keys(categories).indexOf(a)-Object.keys(categories).indexOf(b)).map(([c,count])=><button key={c} type="button" aria-label={`Categoria ${categories[c]||c}`} aria-pressed={state.categoria===c} disabled={busy} className={`rounded-md border px-3 py-1.5 ${state.categoria===c?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`} onClick={()=>{setState((s:any)=>({...s,categoria:c,catalog_filters:{},filtros:[]}));setSelected('');}}>{categories[c]||c}</button>)}</div></td></tr>
+-   {names.map(name=>{const f=fields.find((f:any)=>f.nome===name);const picked=state.catalog_filters[name];const values=data?.facetas?.[name]||[];const choices=picked!==undefined&&!values.some((v:any)=>JSON.stringify(v)===JSON.stringify(picked))?[picked,...values]:values;return <tr key={name} className="border-t"><th className="p-3 align-top font-medium">{f?.rotulo||name}</th><td className="p-3 align-top">{rowValue(name)}</td><td className="p-3"><div className="flex flex-wrap gap-2">{choices.map((v:any)=><button type="button" key={JSON.stringify(v)} aria-label={`Filtro ${f?.rotulo||name}: ${label(v)}`} aria-pressed={JSON.stringify(picked)===JSON.stringify(v)} disabled={!ready} onClick={()=>choose(name,v)} className={`rounded-md border px-3 py-1.5 ${JSON.stringify(picked)===JSON.stringify(v)?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`}>{label(v)}{f?.unit?' '+f.unit:''}</button>)}{!choices.length&&<span className="text-muted-foreground">Sem valor disponível</span>}</div></td></tr>;})}
+-   {others.length>0&&<tr className="border-t"><th className="p-3 align-top font-medium">Outras condições</th><td className="p-3" colSpan={2}><details><summary className="cursor-pointer text-muted-foreground">Ver {others.length} pontos da descrição</summary><ul className="mt-2 space-y-2">{others.map((r:any)=><li key={r.id}>{r.texto_original}</li>)}</ul></details></td></tr>}
++   <tr className="border-t"><th className="p-3 align-top font-medium">Tipo de produto</th><td className="p-3 align-top">{categories[item.category]||item.category||'Não informado'}</td><td className="p-3"><div className="flex flex-wrap gap-2">{Object.entries(data?.categorias||{}).sort(([a],[b])=>Object.keys(categories).indexOf(a)-Object.keys(categories).indexOf(b)).map(([c,count])=><button key={c} type="button" aria-label={`Categoria ${categories[c]||c}`} aria-pressed={state.categoria===c} disabled={busy} className={`rounded-md border px-3 py-1.5 ${state.categoria===c?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`} onClick={()=>{setState((s:any)=>({...s,categoria:c,catalog_filters:{},filtros:[]}));setSelected('');}}>{categories[c]||c}</button>)}</div></td></tr>
++   {names.map(name=>{const f=fields.find((f:any)=>f.nome===name);const picked=state.catalog_filters[name];const values=data?.facetas?.[name]||[];const choices=picked!==undefined&&!values.some((v:any)=>JSON.stringify(v)===JSON.stringify(picked))?[picked,...values]:values;return <tr key={name} className="border-t"><th className="p-3 align-top font-medium">{f?.rotulo||name}</th><td className="p-3 align-top"><span>{rowValue(name)}</span>{requirements.filter((r:any)=>r.atributo===name).map((r:any)=><p key={r.id} className="mt-1 text-xs text-muted-foreground">{r.texto_original}</p>)}</td><td className="p-3"><div className="flex flex-wrap gap-2">{choices.map((v:any)=><button type="button" key={JSON.stringify(v)} aria-label={`Filtro ${f?.rotulo||name}: ${label(v)}`} aria-pressed={JSON.stringify(picked)===JSON.stringify(v)} disabled={!ready} onClick={()=>choose(name,v)} className={`rounded-md border px-3 py-1.5 ${JSON.stringify(picked)===JSON.stringify(v)?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`}>{label(v)}{f?.unit?' '+f.unit:''}</button>)}{!choices.length&&<span className="text-muted-foreground">Sem valor disponível</span>}</div></td></tr>;})}
++   {others.map((r:any)=><tr key={r.id} className="border-t"><th className="p-3 align-top font-medium"><label className="text-xs text-muted-foreground">Característica deste ponto<select aria-label={`Característica do requisito ${r.id}`} value={r.atributo || ''} onChange={event=>mapRequirement(r.id,event.target.value)} className="mt-2 block w-full max-w-64 rounded border bg-background p-2 text-sm"><option value="">Relacionar a uma característica</option>{fields.map((f:any)=><option key={f.nome} value={f.nome}>{f.rotulo}</option>)}</select></label></th><td className="p-3 align-top whitespace-pre-wrap">{r.texto_original}</td><td className="p-3 text-muted-foreground">Relacione o ponto à característica para escolher um valor disponível. A condição original permanece para conferência.</td></tr>)}
+   </tbody></table></div>
+   <div className="flex justify-between items-center gap-3"><p className="text-sm" aria-live="polite">{loading?'Atualizando opções…':`${candidates.length} produtos disponíveis`}</p><Button size="sm" variant="ghost" onClick={()=>{setState((s:any)=>({...s,catalog_filters:{},filtros:[]}));setSelected('');}}>Limpar filtros</Button></div>
+   <div className="grid gap-2 sm:grid-cols-2">{candidates.map((c:any)=><button type="button" key={c.id} disabled={!ready} aria-label={`Selecionar ${c.sku}`} aria-pressed={selected===c.id} onClick={()=>setSelected(c.id)} className={`rounded-lg border p-3 text-left ${selected===c.id?'border-primary bg-primary/5':'hover:bg-muted'}`}><span className="block font-medium text-sm">{c.nome}</span><span className="block text-xs text-muted-foreground mt-1 break-all">{c.sku}</span></button>)}</div>
+diff --git a/src/components/catalog/TechnicalSheetEditor.tsx b/src/components/catalog/TechnicalSheetEditor.tsx
+index fc0dcee..1a7c2fe 100644
+--- a/src/components/catalog/TechnicalSheetEditor.tsx
++++ b/src/components/catalog/TechnicalSheetEditor.tsx
+@@ -17,8 +17,15 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+   const [busy, setBusy] = useState(false);
+   const [open,setOpen] = useState(false);
+   const [sheetBase,setSheetBase] = useState<any>({});
+-  let savedCount = 0;
+-  try { const attrs = JSON.parse(specification || '{}').atributos || {}; savedCount = Object.values(attrs).reduce<number>((count, entry:any) => count + (Array.isArray(entry?.variantes) ? entry.variantes.length : 1), 0); } catch {}
++  let savedEntries:any[] = [], importedEntries:any[] = [];
++  try {
++    const sheet=JSON.parse(specification || '{}');
++    savedEntries=Object.entries(sheet.atributos || {}).flatMap(([name,value]:[string,any])=>(value?.variantes || [value]).map((entry:any)=>({name,...(entry && typeof entry==='object'?entry:{valor:entry})})));
++    importedEntries=(sheet.importacao_json_produto?.especificacoes_tecnicas || []).filter((entry:any)=>entry.validacao!=='informado_na_lpu').map((entry:any)=>({name:entry.chave_padronizada || entry.nome,valor:entry.valor_normalizado ?? entry.valor,unidade:entry.unidade,origem:entry.fonte,pendente:true,condicao:entry.condicao}));
++  } catch {}
++  const savedCount=savedEntries.length;
++  const visibleEntries=savedEntries;
++  const display=(value:any)=>value==null?'Não informado':typeof value==='boolean'?(value?'Sim':'Não'):typeof value==='object'?JSON.stringify(value):String(value);
+   function loadSheet() {
+     setRevision('');setVariant('');setRows([]);setSheetBase({});setDraftDocument('');
+     try {const sheet=JSON.parse(specification || '{}');
+@@ -79,8 +86,11 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+     } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
+   }
+   return <section className="sm:col-span-2 min-w-0 space-y-3 rounded-lg border bg-muted/20 p-4">
+-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">Ficha técnica</h3><p className="mt-1 text-sm text-muted-foreground">{savedCount} especificações salvas · valores, unidades e fontes do produto</p></div><Button type="button" variant="outline" onClick={()=>{loadSheet();setOpen(true);}}><Pencil className="h-4 w-4"/>Alterar atributos</Button></div>
++    <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">Ficha técnica</h3><p className="mt-1 text-sm text-muted-foreground">{savedCount} especificações do produto · valores, unidades e fontes do produto</p></div><Button type="button" variant="outline" onClick={()=>{loadSheet();setOpen(true);}}><Pencil className="h-4 w-4"/>Alterar atributos</Button></div>
+     <p className="text-xs text-muted-foreground">Confira e edite as especificações em uma tabela. Dados informados pela LPU continuam identificados pela sua origem.</p>
++    {visibleEntries.length>0 && <div className="max-h-80 overflow-auto rounded border"><table aria-label="Ficha técnica ponto a ponto" className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr>{['Característica','Valor','Unidade','Origem / situação'].map(title=><th key={title} className="p-2">{title}</th>)}</tr></thead><tbody>{visibleEntries.map((entry,index)=><tr key={index} className="border-t align-top"><th className="p-2 font-medium break-words">{entry.name.replace(/_/g,' ')}</th><td className="p-2 max-w-sm break-words">{display(entry.valor)}{entry.condicao && <p className="text-xs text-muted-foreground">Condição: {display(entry.condicao)}</p>}</td><td className="p-2">{entry.unidade || '—'}</td><td className="p-2 text-xs">{entry.pendente?'Datasheet · conferir aplicabilidade':entry.origem?.tipo==='lpu'?'LPU':entry.evidencias?.length?'Documento vinculado':'Cadastro'}{entry.origem?.pagina && ` · página ${entry.origem.pagina}`}</td></tr>)}</tbody></table></div>}
++    {!visibleEntries.length && <p className="text-sm text-muted-foreground">Nenhuma especificação estruturada disponível. Importe o JSON deste produto ou adicione os atributos.</p>}
++    {importedEntries.length>0 && <details className="rounded border p-3"><summary className="cursor-pointer text-sm">Extrações dos documentos para conferir ({importedEntries.length})</summary><p className="my-2 text-xs text-muted-foreground">Estes trechos podem abranger outros modelos ou famílias. Confira a aplicabilidade antes de adicioná-los como atributos do produto.</p><div className="max-h-80 overflow-auto"><table aria-label="Extrações documentais pendentes" className="w-full text-left text-sm"><thead><tr>{['Característica','Valor original','Unidade','Fonte'].map(title=><th key={title} className="p-2">{title}</th>)}</tr></thead><tbody>{importedEntries.map((entry,index)=><tr key={index} className="border-t align-top"><td className="p-2">{entry.name.replace(/_/g,' ')}</td><td className="p-2 max-w-sm break-words">{display(entry.valor)}{entry.condicao && <p className="text-xs text-muted-foreground">{display(entry.condicao)}</p>}</td><td className="p-2">{entry.unidade || '—'}</td><td className="p-2 text-xs">Página {entry.origem?.pagina || 'não informada'} · aplicabilidade pendente</td></tr>)}</tbody></table></div></details>}
+     <Dialog open={open} onOpenChange={value=>{if(!busy)setOpen(value);}}><DialogContent className="max-h-[92vh] w-[96vw] max-w-6xl overflow-hidden flex flex-col">
+       <DialogHeader><DialogTitle>Alterar atributos{productName?` — ${productName}`:''}</DialogTitle><DialogDescription>Edite os valores salvos ou adicione especificações. Confira o documento antes de marcar uma evidência como revisada.</DialogDescription></DialogHeader>
+       <div className="min-w-0 min-h-0 space-y-4 overflow-y-auto">
+diff --git a/src/pages/MarketIntelligence.test.tsx b/src/pages/MarketIntelligence.test.tsx
+index 84d4cf2..8859164 100644
+--- a/src/pages/MarketIntelligence.test.tsx
++++ b/src/pages/MarketIntelligence.test.tsx
+@@ -4,10 +4,10 @@ import { cleanup } from '@testing-library/react';
+ import { MemoryRouter } from 'react-router-dom';
+ import MarketIntelligence from './MarketIntelligence';
+ 
+-vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ order: async () => ({ data: [
++vi.mock('@/integrations/supabase/client', () => ({ crmFetch: async () => ({ok:true,status:200,payload:{data:[
+   { id: '1', created_at: '2026-10-01', outcome: null, title: 'Equipamentos de rede', state: 'SP', notice_products: [{ id: 'item1', description: 'Switch de 24 portas', technical_characteristics: '24 portas Gigabit', category: 'Switch', quantity: 10, raw_payload: { marca: 'Acme', modelo: 'X24' }, bi_features: { quantidade_portas: '24 Portas' } }] },
+   { id: '2', created_at: '2026-09-01', state: 'RJ', notice_products: [{ category: 'Cabo DAC', quantity: 4, raw_payload: { marca: 'CableCo', modelo: 'DAC3' } }] },
+-], error: null }) }) }) } }));
++]}}) }));
+ vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+ afterEach(cleanup);
+ 
+diff --git a/src/pages/CommercialIntelligence.test.tsx b/src/pages/CommercialIntelligence.test.tsx
+index 6519473..59aa355 100644
+--- a/src/pages/CommercialIntelligence.test.tsx
++++ b/src/pages/CommercialIntelligence.test.tsx
+@@ -7,6 +7,7 @@ vi.mock('@/lib/commercial-intelligence', async importOriginal => ({
+   marketRequest: vi.fn(),
+ }));
+ import { marketRequest } from '@/lib/commercial-intelligence';
++vi.mock('@/components/market/InteractiveDashboard',()=>({InteractiveDashboard:()=> <p>Demanda carregada do CRM</p>}));
+ import CommercialIntelligence from './CommercialIntelligence';
+ 
+ afterEach(() => { cleanup(); vi.clearAllMocks(); });
+@@ -24,3 +25,14 @@ describe('commercial intelligence page', () => {
+     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Sessão expirada.'));
+   });
+ });
++
++it('retains the demand report when optional administrative queries fail', async () => {
++  vi.mocked(marketRequest).mockImplementation(async (path:string) => {
++    if(path==='/diagnostic')return {warehouse_ready:true};
++    if(path.startsWith('/report'))return {generated_at:'2026-10-14T12:00:00Z',summary:{internal_demand_items:2},quality:{},product_demand:[],supplier_products:[],timeline:[]};
++    throw new Error('Serviço auxiliar indisponível');
++  });
++  render(<MemoryRouter><CommercialIntelligence /></MemoryRouter>);
++  await waitFor(()=>expect(screen.getByText('Demanda carregada do CRM')).toBeTruthy());
++  await waitFor(()=>expect(screen.getByRole('alert').textContent).toContain('Demanda carregada.'));
++});
+diff --git a/src/lib/market-intelligence.test.ts b/src/lib/market-intelligence.test.ts
+index 24bc011..24f11b8 100644
+--- a/src/lib/market-intelligence.test.ts
++++ b/src/lib/market-intelligence.test.ts
+@@ -55,3 +55,9 @@ describe('market intelligence', () => {
+     expect(demandCsv(rankDemand(items, 'brand'))).toContain('"\'=HYPERLINK(""bad"")"');
+   });
+ });
++
++it('reads the original V7 payload nested by the CRM importer', () => {
++  const [item]=marketItems([notice('1',[{category:'Switch',quantity:13,raw_payload:{_raw_input:{caracteristicas_bi:{quantidade_portas:'24 Portas',portas_acesso:'10 Gigabit'}}}}])]);
++  expect(item.features.ports).toBe('24');
++  expect(item.features.speed).toBe('10 Gigabit');
++});

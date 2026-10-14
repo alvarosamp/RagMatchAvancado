@@ -321,6 +321,13 @@ def get_facts(
     limit: int = Query(50, ge=1, le=200),
 ):
     query = fact_query(db, user.tenant_id, **slice).filter(Fact.kind == kind)
+    if kind == 'demand':
+        from app.market_intelligence.crm_current import snapshot, filter_facts
+        current, _, _ = snapshot(db, user.tenant_id)
+        records = [as_dict(row) for row in query.filter(Fact.source != 'crm').all()]
+        records.extend(filter_facts(current, slice))
+        records.sort(key=lambda row: (row['event_at'], row['id']), reverse=True)
+        return {'total':len(records), 'rows':records[offset:offset+limit]}
     return {
         "total": query.count(),
         "rows": [

@@ -363,6 +363,11 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data[column.name] = _json_value(value)
 
     if isinstance(row, CrmCatalogProduct):
+        from app.services.catalog_technical_sheet import effective_sheet
+        sheet = effective_sheet(row)
+        data['specification'] = __import__('json').dumps(sheet, ensure_ascii=False, default=str)
+        from app.services.catalog_identity import product_category
+        data['category'] = product_category(row.category, row.description, row.model)
         data["min_price"] = row.min_price if row.min_price is not None else row.computed_min_price
     elif isinstance(row, CrmNotice):
         data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None

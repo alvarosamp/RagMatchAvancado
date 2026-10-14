@@ -10,6 +10,9 @@ from app.services.technical_matching.normalizer import canonical_category
 
 NUMBER = r'(?<![\d.,])\d+(?:[.,]\d+)?'
 PATTERNS = [
+ ('portas_acesso', rf'({NUMBER})\s*portas?\s+(?:10/100/1000|Gigabit\s+Ethernet)', None),
+ ('portas_expansao', rf'({NUMBER})\s*portas?\s+(?:de\s+)?expans[ãa]o', None),
+ ('velocidade_uplink_mbps', rf'({NUMBER})\s*Gigabit\s+Ethernet', 'Mbps'),
  ('portas_rj45', rf'({NUMBER})\s*(?:portas?\s*(?:Ethernet\s*)?)?RJ[- ]?45\b', None),
  ('portas_sfp_plus', rf'({NUMBER})\s*(?:portas?|slots?|uplinks?|interfaces?)?\s*SFP\+(?!\+)', None),
  ('velocidade_uplink_mbps', rf'(?:uplinks?\s+)?SFP\+\s*[/ ]?\s*({NUMBER})\s*(Gbps|G)\b(?![/\d])', 'Mbps'),
@@ -66,6 +69,7 @@ def suggest_requirements(description, category, origin, item_number):
                 continue
             spans=[]
             for field,pattern,unit in PATTERNS:
+                if field=='velocidade_uplink_mbps' and 'Gigabit' in pattern and not re.search(r'expans[ãa]o|uplink',clause,re.I):continue
                 if field=='velocidade_wifi_mbps' and category!='access_point':continue
                 for found in re.finditer(pattern,clause,re.I):
                     if any(a<=found.start(1)<b for a,b in spans):continue
@@ -77,11 +81,15 @@ def suggest_requirements(description, category, origin, item_number):
                     supplied=found[2].lower() if found.lastindex and found.lastindex>=2 else None
                     if unit=='m' and supplied=='km':value*=1000
                     if unit=='Gbps' and supplied=='mbps':value/=1000
-                    if unit=='Mbps' and supplied in ('gbps','g'):value*=1000
+                    if unit=='Mbps' and (supplied in ('gbps','g') or 'Gigabit' in pattern):value*=1000
                     op=_operator(clause[:found.start(1)])
                     add(clause,field,value,unit,op,span=found.span());spans.append(found.span())
             for field,pattern in [('gerenciavel',r'\b(?:n[ãa]o\s+gerenci[áa]vel|gerenci[áa]vel|unmanaged|managed)\b'),
                                   ('poe',r'\b(?:sem\s+PoE|n[ãa]o\s+(?:suporta\s+)?PoE|PoE(?:\+\+|\+)?)(?!\w)'),
+                                  ('alimentacao_bivolt',r'\bbivolt(?:\s+autom[áa]tic[oa])?\b'),
+                                  ('mdi_mdix',r'\bMDI[/ -]MDI?X\b'),
+                                  ('controle_fluxo_8023x',r'\bIEEE\s+802[.]3x\b'),
+                                  ('rack_19',r'\brack\s+19\s+polegadas\b'),
                                   ('tecnologia_wifi',r'Wi[- ]?Fi\s*[4567](?:E)?\b')]:
                 for found in re.finditer(pattern,clause,re.I):
                     if field=='tecnologia_wifi' and category!='access_point':continue
@@ -91,13 +99,21 @@ def suggest_requirements(description, category, origin, item_number):
                     if field=='poe' and value and '+' in found[0]:
                         add(clause,'poe_plus_plus' if '++' in found[0] else 'poe_plus',True,operator='==',
                             reason='O padrão PoE avançado é distinto do suporte básico; conferir a ficha.')
+            for field, pattern, convert in [
+                ('camada', r'\b(L[23]\+?)\b', lambda m: m[1].upper()),
+                ('vlan_802_1q', r'\bVLAN\s+(?:IEEE\s+)?802[.]1Q\b', lambda m: True),
+                ('tipo_switch', r'\btipo\s+(I{1,3}|IV)\b', lambda m: m[1].upper()),
+            ]:
+                for found in re.finditer(pattern, clause, re.I):
+                    add(clause, field, convert(found), operator='==', span=found.span())
+                    spans.append(found.span())
             residual=clause
             merged=[]
             for a,b in sorted(spans):
                 if merged and a<=merged[-1][1]:merged[-1]=(merged[-1][0],max(b,merged[-1][1]))
                 else:merged.append((a,b))
             for a,b in reversed(merged):residual=residual[:a]+' '+residual[b:]
-            residual=re.sub(r'\b(?:switch|access|point|corporativo|portas?|de|do|da|e|com|no|pelo|menos|m[íi]nim[oa]|m[áa]xim[oa])\b',' ',residual,flags=re.I)
+            residual=re.sub(r'\b(?:switch|access|point|corporativo|tipo|Mbps|Gbps|portas?|de|do|da|e|com|no|pelo|menos|m[íi]nim[oa]|m[áa]xim[oa])\b',' ',residual,flags=re.I)
             if re.search(r'\w',residual):
                 add(clause,reason='Há detalhes ainda não mapeados; preserve o ponto completo ao revisar.')
     if len(rows)>200:

@@ -4,12 +4,13 @@ import hashlib
 import json
 import re
 
+from app.services.catalog_identity import product_category
 from app.services.technical_matching.adapter import adapt_item
 from app.services.technical_matching.engine import compare_item_product, _hash
 from app.services.technical_matching.normalizer import RULES, canonical_category, canonical_name, normalize_value
 
 FIELD_LABELS = {
-    'camada': 'Camada de rede', 'tecnologia_wifi': 'Padrão Wi-Fi', 'ambiente': 'Ambiente',
+    'taxa_nominal_gbps': 'Taxa nominal', 'portas_acesso': 'Portas de acesso Ethernet', 'alimentacao_bivolt': 'Alimentação bivolt', 'mdi_mdix': 'MDI/MDIX', 'controle_fluxo_8023x': 'Controle de fluxo IEEE 802.3x', 'rack_19': 'Montagem em rack 19 polegadas', 'marca': 'Marca', 'vlan_802_1q': 'VLAN IEEE 802.1Q', 'portas_expansao': 'Portas de expansão', 'tipo_switch': 'Tipo de switch', 'camada': 'Camada de rede', 'tecnologia_wifi': 'Padrão Wi-Fi', 'ambiente': 'Ambiente',
     'bandas_wifi': 'Bandas Wi-Fi', 'velocidade_wifi_mbps': 'Velocidade Wi-Fi',
     'portas_rj45': 'Portas RJ45', 'portas_sfp': 'Portas SFP', 'portas_sfp_plus': 'Portas SFP+',
     'gerenciavel': 'Gerenciável', 'poe': 'Suporte a PoE', 'poe_budget_w': 'Orçamento de PoE',
@@ -19,10 +20,10 @@ FIELD_LABELS = {
     'comprimento_onda_tx_nm': 'Comprimento de onda Tx', 'comprimento_onda_rx_nm': 'Comprimento de onda Rx',
 }
 CATEGORY_FIELDS = {
-    'switch': ['camada', 'portas_rj45', 'portas_sfp', 'portas_sfp_plus', 'gerenciavel', 'poe', 'poe_budget_w',
+    'switch': ['marca', 'alimentacao_bivolt', 'mdi_mdix', 'controle_fluxo_8023x', 'rack_19', 'portas_acesso', 'camada', 'tipo_switch', 'vlan_802_1q', 'portas_expansao', 'portas_rj45', 'portas_sfp', 'portas_sfp_plus', 'gerenciavel', 'poe', 'poe_budget_w',
                'capacidade_comutacao_gbps', 'velocidade_uplink_mbps', 'velocidades_porta_mbps', 'temperatura_operacao_c'],
-    'access_point': ['tecnologia_wifi', 'ambiente', 'bandas_wifi', 'velocidade_wifi_mbps', 'poe', 'gerenciavel', 'temperatura_operacao_c'],
-    'transceiver': ['alcance_m', 'conector', 'tipo_fibra', 'comprimento_onda_tx_nm', 'comprimento_onda_rx_nm',
+    'access_point': ['marca', 'tecnologia_wifi', 'ambiente', 'bandas_wifi', 'velocidade_wifi_mbps', 'poe', 'gerenciavel', 'temperatura_operacao_c'],
+    'transceiver': ['marca', 'taxa_nominal_gbps', 'alcance_m', 'conector', 'tipo_fibra', 'comprimento_onda_tx_nm', 'comprimento_onda_rx_nm',
                     'temperatura_operacao_c', 'velocidades_porta_mbps'],
 }
 OPERATORS = {'==', '>=', '<=', '>', '<', 'em', 'contem_todos', 'contem_algum', 'cobre_faixa'}
@@ -195,17 +196,18 @@ def catalog_payload(row, *, signals=False):
     try:
         def invalid_number(value):
             raise ValueError('Número inválido na ficha técnica')
-        sheet = json.loads(row.specification or '{}', parse_constant=invalid_number)
+        from app.services.catalog_technical_sheet import effective_sheet
+        sheet = effective_sheet(row)
     except (ValueError, TypeError, RecursionError):
         sheet = {}
     sheet = sheet if isinstance(sheet, dict) else {}
     attrs = copy.deepcopy(sheet.get('atributos', sheet))
     attrs = attrs if isinstance(attrs, dict) else {}
-    if signals and not sheet:
+    if signals and not attrs:
         # These explicit commercial signals are useful for preselection, but
         # never become reviewed datasheet evidence or modify the catalogue.
         text = ' '.join([row.description or '', row.specification or ''])
-        for suffix, name in [('RJ45', 'portas_rj45'), ('SFP\+', 'portas_sfp_plus'), ('SFP(?!\+)', 'portas_sfp')]:
+        for suffix, name in [('RJ45', 'portas_rj45'), (r'SFP\+', 'portas_sfp_plus'), (r'SFP(?!\+)', 'portas_sfp')]:
             counts = set(int(v) for v in re.findall(r'\b(\d+)\s*[x×]\s*\d+(?:[.,]\d+)?[MG]?(?:/\d+(?:[.,]\d+)?[MG]?)*\s*' + suffix, text, re.I))
             if len(counts) == 1:
                 attrs[name] = {'valor': counts.pop(), 'origem': 'Descrição comercial da LPU', 'evidencias': []}
@@ -220,7 +222,11 @@ def catalog_payload(row, *, signals=False):
             attrs['poe'] = {'valor': False, 'origem': 'Descrição comercial da LPU', 'evidencias': []}
         elif re.search(r'\bPoE(?:\+)?\b', text, re.I):
             attrs['poe'] = {'valor': True, 'origem': 'Descrição comercial da LPU', 'evidencias': []}
-    return {'sku': row.sku, 'categoria': sheet.get('categoria') or row.category, 'atributos': attrs,
+    if 'portas_rj45' in attrs:
+        attrs.setdefault('portas_acesso', copy.deepcopy(attrs['portas_rj45']))
+    if getattr(row, 'brand', None):
+        attrs.setdefault('marca', {'valor': row.brand, 'origem': 'Cadastro do produto', 'evidencias': []})
+    return {'sku': row.sku, 'categoria': product_category(sheet.get('categoria') or row.category, row.description, getattr(row, 'model', None)), 'atributos': attrs,
             'revisao': sheet.get('revisao'), 'variante': sheet.get('variante')}
 
 

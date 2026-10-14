@@ -67,6 +67,7 @@ def report(db, tenant_id, **filters):
     limit = int(os.getenv("MARKET_REPORT_MAX_FACTS", "50000"))
     rows = (
         fact_query(db, tenant_id, **filters)
+        .filter(~((Fact.source == 'crm') & (Fact.kind == 'demand')))
         .order_by(Fact.event_at, Fact.id)
         .limit(limit + 1)
         .all()
@@ -111,12 +112,23 @@ def report(db, tenant_id, **filters):
                 "counts": run.counts,
             },
         )
-    output = build_report(
-        [as_dict(row) for row in rows], entities, relations, list(latest.values())
-    )
+    # Read operational demand directly: the base production compose does not
+    # require the optional analytics worker to show items already in the CRM.
+    from .crm_current import snapshot, filter_facts
+    current_facts, current_entities, current_relations = snapshot(db, tenant_id)
+    records = [as_dict(row) for row in rows if not (row.source == 'crm' and row.kind == 'demand')]
+    records.extend(filter_facts(current_facts, filters))
+    if len(records) > limit:
+        raise OverflowError('Recorte excede o limite de análise. Reduza o período ou selecione uma categoria.')
+    entity_map = {entity['id']:entity for entity in entities}
+    entity_map.update({entity['id']:entity for entity in current_entities})
+    entities = list(entity_map.values())
+    current_product_ids = {r['id'] for r in current_entities if r['kind']=='product'}
+    relations = [r for r in relations if not (r['source']=='crm' and r['product_id'] in current_product_ids)] + current_relations
+    output = build_report(records, entities, relations, list(latest.values()))
     from .relationships import relationship_report
-
-    related = relationship_report([as_dict(row) for row in rows], entities, relations)
+    related = relationship_report(records, entities, relations)
+    output['crm_refresh'] = {'status':'operational', 'source':'current_crm'}
     # Catalog relationships have no event timestamp: their scope is explicitly current.
     for key in ("product_demand", "supplier_products"):
         related[key] = [
@@ -147,7 +159,7 @@ def report(db, tenant_id, **filters):
     output["filters"] = {
         k: v.isoformat() if isinstance(v, date) else v for k, v in filters.items()
     }
-    output["facts_sample"] = len(rows)
+    output["facts_sample"] = len(records)
     if filters.get("supplier_id"):
         output["suppliers"] = [
             row for row in output["suppliers"] if row["id"] == filters["supplier_id"]

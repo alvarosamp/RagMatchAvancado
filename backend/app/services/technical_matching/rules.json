@@ -18,6 +18,14 @@
       "transceptor",
       "Transceptores",
       "Módulo transceptor"
+    ],
+    "cabo": [
+      "cabos",
+      "cable"
+    ],
+    "fonte": [
+      "fontes",
+      "power supply"
     ]
   },
   "attributes": {
@@ -119,7 +127,8 @@
       "unit": "m",
       "aliases": [
         "alcance",
-        "reach_m"
+        "reach_m",
+        "alcance_ou_comprimento"
       ]
     },
     "conector": {
@@ -196,6 +205,66 @@
       "aliases": [
         "wifi_speed_mbps"
       ]
+    },
+    "marca": {
+      "type": "string",
+      "aliases": [
+        "brand",
+        "fabricante"
+      ]
+    },
+    "vlan_802_1q": {
+      "type": "boolean",
+      "aliases": [
+        "IEEE 802.1Q",
+        "802.1q"
+      ]
+    },
+    "portas_expansao": {
+      "type": "number",
+      "integer": true,
+      "minimum": 0,
+      "aliases": [
+        "portas de expansão"
+      ]
+    },
+    "tipo_switch": {
+      "type": "string",
+      "aliases": [
+        "tipo de switch"
+      ]
+    },
+    "portas_acesso": {
+      "type": "number",
+      "integer": true,
+      "minimum": 0,
+      "aliases": [
+        "portas de acesso"
+      ]
+    },
+    "taxa_nominal_gbps": {
+      "type": "number",
+      "unit": "Gbps",
+      "aliases": [
+        "taxa_nominal",
+        "taxa_dados"
+      ]
+    },
+    "alimentacao_bivolt": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "mdi_mdix": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "controle_fluxo_8023x": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "rack_19": {
+      "type": "boolean",
+      "aliases": []
     }
   },
   "version": "1.3.1"

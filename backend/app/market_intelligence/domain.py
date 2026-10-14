@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 import unicodedata
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 
 PRICE_TYPES = {
@@ -113,8 +113,8 @@ def timestamp(value, default=None):
 
 
 def json_value(value):
-    if isinstance(value, (datetime, Decimal)):
-        return value.isoformat() if isinstance(value, datetime) else str(value)
+    if isinstance(value, (date, datetime, Decimal)):
+        return value.isoformat() if isinstance(value, (date, datetime)) else str(value)
     if hasattr(value, "value"):
         return value.value
     raise TypeError(f"Unsupported payload type: {type(value).__name__}")
@@ -143,6 +143,27 @@ def coverage(verdict, linked=False, candidates=False):
 
 def technical_attributes(text):
     """Evidence-preserving numeric constraints; never overrides match verdicts."""
+    structured = text
+    if isinstance(text, str):
+        try:
+            structured = json.loads(text)
+        except (ValueError, TypeError):
+            pass
+    if isinstance(structured, dict) and isinstance(structured.get('atributos'), dict):
+        aliases = {'portas_rj45':'ports', 'portas_acesso':'ports', 'capacidade_comutacao_gbps':'speed_gbps'}
+        result = {}
+        for name, entry in structured['atributos'].items():
+            if isinstance(entry, dict) and entry.get('validacao') == 'revisar_aplicabilidade':
+                continue
+            value = entry.get('valor') if isinstance(entry, dict) else entry
+            if isinstance(value, bool):
+                continue
+            numeric = number(value)
+            if numeric is not None:
+                result.setdefault(aliases.get(name, name), []).append({'value':float(numeric),
+                    'evidence':entry.get('origem') if isinstance(entry, dict) else None,
+                    'unit':entry.get('unidade') if isinstance(entry, dict) else None})
+        return result
     rules = {
         "ports": r"(\d+)\s*portas?",
         "speed_gbps": r"(\d+(?:[.,]\d+)?)\s*gbps",

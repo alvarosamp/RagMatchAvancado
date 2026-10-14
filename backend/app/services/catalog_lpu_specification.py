@@ -35,7 +35,7 @@ def refresh_lpu_specification(existing: Any, record: dict, *, values: dict,
                          (r'SFP(?!\+|\d)', 'portas_sfp'), (r'SFP28', 'portas_sfp28'),
                          (r'QSFP28', 'portas_qsfp28')]:
         numbers = {int(v) for v in re.findall(
-            r'\b(\d+)\s*[x×]\s*\d+(?:[.,]\d+)?[MG]?(?:/\d+(?:[.,]\d+)?[MG]?)*\s*' + suffix + r'(?!\w)', description, re.I)}
+            r'\b(\d+)\s*(?:[x×]|portas?)\s*\d+(?:[.,]\d+)?(?:[MG](?:bps)?)?(?:/\d+(?:[.,]\d+)?(?:[MG](?:bps)?)?)*\s*' + suffix + r'(?!\w)', description, re.I)}
         if len(numbers) == 1:
             add(name, numbers.pop())
     layers = set(re.findall(r'\bL([23])\b', description, re.I))
@@ -56,6 +56,20 @@ def refresh_lpu_specification(existing: Any, record: dict, *, values: dict,
         if match:
             add('alcance_m', float(match[1].replace(',', '.')) * (1000 if match[2].lower() == 'km' else 1), 'm', raw)
             break
+    # Explicit transceiver facts from legacy commercial descriptions.
+    if record['category'] == 'transceiver':
+        distances = {float(v.replace(',', '.')) * 1000 for v in re.findall(r'(?<![\w.])(\d+(?:[.,]\d+)?)\s*km\b', description, re.I)}
+        if len(distances) == 1 and 'alcance_m' not in generated:
+            add('alcance_m', distances.pop(), 'm')
+        rates = {float(v.replace(',', '.')) for v in re.findall(r'(?<![\w.])(\d+(?:[.,]\d+)?)\s*G(?:Base|bps|\b)', description, re.I)}
+        if len(rates) == 1:
+            add('taxa_nominal_gbps', rates.pop(), 'Gbps')
+        fibers = set(re.findall(r'\b(SMF|MMF)\b', description, re.I))
+        if len(fibers) == 1:
+            add('tipo_fibra', fibers.pop().upper())
+        connectors = set(re.findall(r'\b(LC|SC|MPO|MTP)\b', description, re.I))
+        if len(connectors) == 1:
+            add('conector', connectors.pop().upper())
     # Generated values are fallback only. Documented/manual fields take precedence.
     protected_names = {canonical_name(name) for name in attrs}
     for name, value in generated.items():

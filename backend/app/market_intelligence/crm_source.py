@@ -182,9 +182,14 @@ def reconcile_crm(db, tenant_id, run_id):
             item.match_review_verdict, bool(item.catalog_product_id), candidate_exists
         )
         payload = item.raw_payload if isinstance(item.raw_payload, dict) else {}
+        payload = {**(payload.get('_raw_input') if isinstance(payload.get('_raw_input'), dict) else {}), **payload}
         # Requested brand must come from request evidence, never selected catalogue.
         demand_brand = payload.get("marca") or payload.get("brand")
-        if isinstance(demand_brand, (dict, list)):
+        if not demand_brand:
+            direction = payload.get('direcionamento_marca')
+            if isinstance(direction, dict) and direction.get('existe') is True:
+                demand_brand = direction.get('fabricante') or direction.get('marca')
+        if isinstance(demand_brand, (dict, list)) or str(demand_brand or '').strip().lower() in {'n/c', 'não informado'}:
             demand_brand = None
         common = {
             "notice_id": notice.id,
