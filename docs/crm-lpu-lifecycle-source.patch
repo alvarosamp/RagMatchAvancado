@@ -1,0 +1,414 @@
+diff --git a/src/components/catalog/LpuLifecycle.test.tsx b/src/components/catalog/LpuLifecycle.test.tsx
+new file mode 100644
+index 0000000..4503be7
+--- /dev/null
++++ b/src/components/catalog/LpuLifecycle.test.tsx
+@@ -0,0 +1,51 @@
++import { fireEvent, render, screen, waitFor } from '@testing-library/react';
++import { MemoryRouter } from 'react-router-dom';
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import { LpuAlerts, LpuManagement } from './LpuLifecycle';
++
++const mocks = vi.hoisted(() => ({
++  status: { current: { id: 'lpu-1', version: 'v1', valid_until: '2026-10-01', owner_id: 1, drive_url: 'https://drive.google.com/old' },
++    expired: true, users: [{ id: 1, name: 'Responsavel' }, { id: 2, name: 'Novo responsavel' }],
++    pending: [{ id: 'product-1', name: 'Switch antigo', sku: 'SW1', cost: 100, min_price: 120, lpu_review_deadline: '2026-11-14',
++      lpu_review_owner_id: 1, lpu_drive_url: 'https://drive.google.com/old', assigned_to_me: true, overdue: false }] },
++  fetch: vi.fn(), refresh: vi.fn(),
++}));
++vi.mock('@/lib/lpu-lifecycle', () => ({ useLpuStatus: () => ({ status: mocks.status, error: '' }), refreshLpu: mocks.refresh,
++  lpuDate: (date: string) => date.split('-').reverse().join('/') }));
++vi.mock('@/integrations/supabase/client', () => ({ crmFetch: mocks.fetch }));
++vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ isAdmin: true }) }));
++vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
++
++describe('LPU lifecycle controls', () => {
++  beforeEach(() => { vi.clearAllMocks(); mocks.fetch.mockResolvedValue({ ok: true, payload: {} }); });
++  it('shows expiry and assigned review on CRM entry', () => {
++    render(<MemoryRouter><LpuAlerts /></MemoryRouter>);
++    expect(screen.getByRole('alert')).toHaveTextContent('LPU invalida');
++    expect(screen.getByRole('alert')).toHaveTextContent('01/10/2026');
++    expect(screen.getByRole('alert')).toHaveTextContent('1 atribuido(s) a voce');
++    expect(screen.getByRole('link')).toHaveAttribute('href', '/produtos');
++  });
++  it('sends the selected owner together with the extended validity', async () => {
++    render(<LpuManagement onChanged={vi.fn()} />);
++    fireEvent.click(screen.getByText('Aumentar validade'));
++    fireEvent.change(screen.getByLabelText('Nova validade'), { target: { value: '2026-12-31' } });
++    fireEvent.change(screen.getByLabelText('Usuario responsavel'), { target: { value: '2' } });
++    fireEvent.click(screen.getByText('Salvar prorrogacao'));
++    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith('/api/crm/lpu/lpu-1/extend', {
++      method: 'POST', body: JSON.stringify({ valid_until: '2026-12-31', owner_id: 2 }),
++    }));
++  });
++  it('lets the user inspect old prices and LPU before explicitly confirming removal', async () => {
++    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
++    render(<LpuManagement onChanged={vi.fn()} />);
++    expect(mocks.fetch).not.toHaveBeenCalled();
++    fireEvent.click(screen.getByText('Conferir'));
++    expect(screen.getByText(/Custo:/)).toHaveTextContent('100');
++    expect(screen.getByText('Abrir LPU antiga')).toHaveAttribute('href', 'https://drive.google.com/old');
++    fireEvent.click(screen.getByText('Confirmar retirada do catalogo'));
++    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith('/api/crm/lpu/products/product-1/review', {
++      method: 'POST', body: JSON.stringify({ action: 'confirm' }),
++    }));
++    expect(confirm).toHaveBeenCalledOnce(); confirm.mockRestore();
++  });
++});
+diff --git a/src/components/catalog/LpuLifecycle.tsx b/src/components/catalog/LpuLifecycle.tsx
+new file mode 100644
+index 0000000..8b93bc2
+--- /dev/null
++++ b/src/components/catalog/LpuLifecycle.tsx
+@@ -0,0 +1,80 @@
++import { useState } from 'react';
++import { Link } from 'react-router-dom';
++import { useAuth } from '@/hooks/useAuth';
++import { crmFetch } from '@/integrations/supabase/client';
++import { useLpuStatus, refreshLpu, lpuDate, LpuStatus } from '@/lib/lpu-lifecycle';
++import { Button } from '@/components/ui/button';
++import { Input } from '@/components/ui/input';
++import { Card, CardContent } from '@/components/ui/card';
++import { toast } from 'sonner';
++
++export function LpuAlerts() {
++  const { status, error } = useLpuStatus();
++  if (error) return <div role="alert" className="m-4 text-sm text-destructive">{error}</div>;
++  if (!status || (!status.expired && !status.pending.length)) return null;
++  const assigned = status.pending.filter(p => p.assigned_to_me).length;
++  return <div role="alert" className="m-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm space-y-2">
++    {status.expired && <p><strong>LPU invalida:</strong> validade encerrada em {lpuDate(status.current!.valid_until)}. Os dados continuam preservados.</p>}
++    {status.pending.length > 0 && <p>{status.pending.length} produto(s) ausente(s) da nova LPU aguardando revisao. {assigned > 0 && `${assigned} atribuido(s) a voce.`}</p>}
++    <Link className="font-semibold underline" to="/produtos">Conferir LPU e pendencias no catalogo</Link>
++  </div>;
++}
++
++export function LpuOwnerSelect({ users, value, onChange, disabled = false }: { disabled?: boolean; users: LpuStatus['users']; value: string; onChange: (value: string) => void }) {
++  return <label className="block text-sm space-y-1">Usuario responsavel
++    <select disabled={disabled} aria-label="Usuario responsavel" className="w-full rounded-md border bg-background px-3 py-2" value={value} onChange={e => onChange(e.target.value)}>
++      <option value="">Selecione um usuario</option>
++      {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
++    </select>
++  </label>;
++}
++
++export function LpuManagement({ onChanged }: { onChanged: () => void }) {
++  const { status, error } = useLpuStatus();
++  const { isAdmin } = useAuth();
++  const [extending, setExtending] = useState(false);
++  const [deadline, setDeadline] = useState('');
++  const [owner, setOwner] = useState('');
++  const [reviewing, setReviewing] = useState<string | null>(null);
++  const [busy, setBusy] = useState(false);
++  async function mutate(path: string, payload: object) {
++    setBusy(true);
++    try {
++      const result = await crmFetch(path, { method: 'POST', body: JSON.stringify(payload) });
++      if (!result.ok) throw new Error(result.payload?.detail || 'Nao foi possivel salvar.');
++      refreshLpu(); onChanged(); setExtending(false); setReviewing(null);
++      toast.success('Alteracao salva. Dados dos processos preservados.');
++    } catch (e) { toast.error(e instanceof Error ? e.message : 'Falha ao salvar.'); }
++    finally { setBusy(false); }
++  }
++  if (error) return <p role="alert" className="text-destructive">{error}</p>;
++  if (!status) return null;
++  return <Card><CardContent className="p-4 space-y-4">
++    {status.current ? <div className="space-y-2">
++      <p className="font-semibold">LPU {status.expired ? 'invalida' : 'vigente'} — validade: {lpuDate(status.current.valid_until)}</p>
++      <p className="text-sm">Responsavel: {status.users.find(u => u.id === Number(status.current!.owner_id))?.name || 'Usuario indisponivel'}</p>
++      {isAdmin && <Button variant="outline" onClick={() => { setExtending(!extending); setOwner(String(status.current!.owner_id)); }}>Aumentar validade</Button>}
++      {extending && <div className="grid gap-3 md:grid-cols-3 items-end">
++        <label className="text-sm">Nova validade<Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} /></label>
++        <LpuOwnerSelect users={status.users} value={owner} onChange={setOwner} />
++        <Button disabled={busy || !deadline || !owner} onClick={() => mutate(`/api/crm/lpu/${status.current!.id}/extend`, { valid_until: deadline, owner_id: Number(owner) })}>Salvar prorrogacao</Button>
++      </div>}
++    </div> : <p className="text-sm">A LPU anterior nao tem validade registrada. Informe a validade e o responsavel na proxima importacao.</p>}
++    {status.pending.length > 0 && <div className="space-y-3">
++      <p className="font-semibold">Produtos ausentes da nova LPU</p>
++      <p className="text-sm text-muted-foreground">Prazo de um mes para revisar. Vencer o prazo nao apaga os dados. Confirmar retira o produto do catalogo ativo e mantem seu historico nos processos.</p>
++      {status.pending.map(p => <div key={p.id} className="rounded-md border p-3 space-y-2">
++        <p>{p.name} — {p.sku}</p>
++        <p className="text-sm">Revisar ate {lpuDate(p.lpu_review_deadline)} {p.overdue && '— Prazo vencido'} · Responsavel: {status.users.find(u => u.id === Number(p.lpu_review_owner_id))?.name || 'Usuario indisponivel'}</p>
++        <Button size="sm" variant="outline" onClick={() => setReviewing(reviewing === p.id ? null : p.id)}>Conferir</Button>
++        {reviewing === p.id && <div className="space-y-2 text-sm">
++          <p>Custo: {p.cost?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} · Minimo: {p.min_price?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? 'Nao informado'}</p>
++          {p.lpu_drive_url && <a className="block underline" href={p.lpu_drive_url} target="_blank" rel="noreferrer">Abrir LPU antiga</a>}
++          {(isAdmin || p.assigned_to_me) && <Button size="sm" variant="destructive" disabled={busy} onClick={() => {
++            if (window.confirm(`Confirmar a retirada de ${p.sku} do catalogo ativo? Precos, dados e referencia da LPU antiga serao preservados nos processos.`)) void mutate(`/api/crm/lpu/products/${p.id}/review`, { action: 'confirm' });
++          }}>Confirmar retirada do catalogo</Button>}
++        </div>}
++      </div>)}
++    </div>}
++  </CardContent></Card>;
++}
+diff --git a/src/components/layout/AppLayout.tsx b/src/components/layout/AppLayout.tsx
+index 1531f92..fb81459 100644
+--- a/src/components/layout/AppLayout.tsx
++++ b/src/components/layout/AppLayout.tsx
+@@ -1,3 +1,4 @@
++import { LpuAlerts } from '@/components/catalog/LpuLifecycle';
+ import { toast } from 'sonner';
+ import { ReactNode, useEffect, useState } from 'react';
+ import { NavLink, useLocation, useNavigate, Navigate } from 'react-router-dom';
+@@ -136,6 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
+   if (isEmbedded) {
+     return (
+       <main className="min-h-screen bg-background text-foreground">
++        <LpuAlerts />
+         {children}
+       </main>
+     );
+@@ -285,6 +287,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
+           </header>
+ 
+         <main className="flex-1 min-w-0">
++          <LpuAlerts />
+           {signatureAlert?.request && location.pathname !== '/' && (
+             <div className="mx-4 mt-4 rounded-lg border border-primary/30 bg-primary/10 p-4 shadow-sm md:mx-6 lg:mx-8">
+               <div className="flex items-start justify-between gap-3">
+diff --git a/src/lib/lpu-lifecycle.ts b/src/lib/lpu-lifecycle.ts
+new file mode 100644
+index 0000000..7b471a1
+--- /dev/null
++++ b/src/lib/lpu-lifecycle.ts
+@@ -0,0 +1,32 @@
++import { useEffect, useState } from 'react';
++import { crmFetch } from '@/integrations/supabase/client';
++
++export type LpuStatus = {
++  current: { id: string; version: string; valid_until: string; owner_id: number; drive_url: string } | null;
++  expired: boolean;
++  pending: Array<{ id: string; name: string; sku: string; cost: number; min_price: number | null;
++    lpu_review_deadline: string; lpu_review_owner_id: number; lpu_drive_url: string;
++    assigned_to_me: boolean; overdue: boolean }>;
++  users: Array<{ id: number; name: string }>;
++};
++export const refreshLpu = () => window.dispatchEvent(new Event('lpu-changed'));
++export const lpuDate = (date: string) => date.split('-').reverse().join('/');
++export function useLpuStatus() {
++  const [status, setStatus] = useState<LpuStatus | null>(null);
++  const [error, setError] = useState('');
++  useEffect(() => {
++    let active = true;
++    const load = async () => {
++      try {
++        const response = await crmFetch('/api/crm/lpu/status');
++        if (!response.ok) throw new Error(response.payload?.detail || 'Nao foi possivel carregar os avisos da LPU.');
++        if (active) { setStatus(response.payload); setError(''); }
++      } catch (e) { if (active) setError(e instanceof Error ? e.message : 'Falha ao carregar LPU.'); }
++    };
++    void load();
++    const timer = window.setInterval(load, 60000);
++    window.addEventListener('lpu-changed', load);
++    return () => { active = false; clearInterval(timer); window.removeEventListener('lpu-changed', load); };
++  }, []);
++  return { status, error };
++}
+diff --git a/src/pages/CatalogProducts.tsx b/src/pages/CatalogProducts.tsx
+index 325d58d..05ce92d 100644
+--- a/src/pages/CatalogProducts.tsx
++++ b/src/pages/CatalogProducts.tsx
+@@ -1,3 +1,5 @@
++import { LpuManagement, LpuOwnerSelect } from '@/components/catalog/LpuLifecycle';
++import { useLpuStatus, refreshLpu } from '@/lib/lpu-lifecycle';
+ import { useEffect, useMemo, useState } from 'react';
+ import { supabase } from '@/integrations/supabase/client';
+ import { useAuth } from '@/hooks/useAuth';
+@@ -15,7 +17,7 @@ const fmtBRL = (n: number | null | undefined) =>
+ 
+ const productTitle = (p: any) => [p.brand, p.model].filter(Boolean).join(' ') || p.name;
+ const productSpec = (p: any) => {
+-  try {if (JSON.parse(p.specification || '{}').atributos) return p.description || 'Ficha técnica documentada';} catch { /* Existing catalog specifications may be plain text. */ }
++  try {if (JSON.parse(p.specification || '{}').atributos) return p.description || 'Ficha técnica documentada';} catch {}
+   return p.specification || p.description;
+ };
+ 
+@@ -27,13 +29,17 @@ export default function CatalogProducts() {
+   const [open, setOpen] = useState(false);
+   const [editing, setEditing] = useState<any | null>(null);
+   const [importing, setImporting] = useState(false);
+-  const [clearing, setClearing] = useState(false);
++  const { status: lpuStatus } = useLpuStatus();
++  const [validUntil, setValidUntil] = useState('');
++  const [ownerId, setOwnerId] = useState('');
++  const [importPreview, setImportPreview] = useState<any | null>(null);
+   const [lpuDriveUrl, setLpuDriveUrl] = useState('');
+   const [lpuFile, setLpuFile] = useState<File | null>(null);
+   const [importPanelOpen, setImportPanelOpen] = useState(false);
+   const [lastImportSummary, setLastImportSummary] = useState<any | null>(null);
+ 
+   useEffect(() => { load(); }, []);
++  useEffect(() => { setImportPreview(null); }, [lpuFile, lpuDriveUrl, validUntil, ownerId]);
+ 
+   async function load() {
+     setLoading(true);
+@@ -49,28 +55,7 @@ export default function CatalogProducts() {
+     if (error) toast.error(error.message); else { toast.success('Removido'); load(); }
+   }
+ 
+-  async function clearCatalog() {
+-    if (items.length === 0) {
+-      toast.info('Nao ha produtos no catalogo para remover.');
+-      return;
+-    }
+-    const confirmation = window.prompt(`Remover ${items.length} produto(s) do catalogo antes de importar a LPU? Digite APAGAR para confirmar.`);
+-    if (confirmation !== 'APAGAR') return;
+-
+-    setClearing(true);
+-    try {
+-      const { error } = await supabase.from('catalog_products').delete();
+-      if (error) throw error;
+-      toast.success('Catalogo limpo. Agora voce pode importar a LPU.');
+-      load();
+-    } catch (error: any) {
+-      toast.error(error?.message ?? 'Nao foi possivel limpar o catalogo.');
+-    } finally {
+-      setClearing(false);
+-    }
+-  }
+-
+-  async function importLpu(file: File | null) {
++  async function importLpu(file: File | null, preview = true) {
+     if (!file) return;
+     const driveUrl = lpuDriveUrl.trim();
+     if (!driveUrl) {
+@@ -83,6 +68,9 @@ export default function CatalogProducts() {
+       const formData = new FormData();
+       formData.append('file', file);
+       formData.append('drive_url', driveUrl);
++      formData.append('valid_until', validUntil);
++      formData.append('owner_id', ownerId);
++      formData.append('preview', String(preview));
+       const response = await fetch('/api/crm/imports/lpu', {
+         method: 'POST',
+         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+@@ -92,6 +80,9 @@ export default function CatalogProducts() {
+       const payload = await response.json().catch(() => ({}));
+       if (!response.ok) throw new Error(payload?.detail ?? 'Nao foi possivel importar a LPU.');
+       const summary = payload.summary ?? {};
++      if (preview) { setImportPreview(summary); return; }
++      setImportPreview(null);
++      refreshLpu();
+       setLastImportSummary(summary);
+       setLpuDriveUrl('');
+       setLpuFile(null);
+@@ -99,7 +90,7 @@ export default function CatalogProducts() {
+       toast.success(
+         `LPU importada: ${summary.total_items ?? summary.items ?? summary.processed ?? 0} itens, ` +
+         `${summary.created ?? 0} novos, ${summary.updated ?? 0} atualizados, ` +
+-        `${summary.skipped ?? 0} ignorados, ${summary.removed_stale ?? 0} removidos antigos`
++        `${summary.skipped ?? 0} ignorados, ${summary.pending_review ?? 0} pendentes de revisao`
+       );
+       load();
+     } catch (error: any) {
+@@ -128,6 +119,7 @@ export default function CatalogProducts() {
+       toast.error('Selecione o arquivo .xlsx da LPU.');
+       return false;
+     }
++    if (!validUntil || !ownerId) { toast.error('Informe a validade e selecione o usuario responsavel.'); return false; }
+     return true;
+   }
+ 
+@@ -152,15 +144,16 @@ export default function CatalogProducts() {
+   }, [items, search]);
+ 
+   const currentLpu = useMemo(() => {
++    if (lpuStatus?.current) return { lpu_version: lpuStatus.current.version, lpu_drive_url: lpuStatus.current.drive_url };
+     const versioned = items
+-      .filter((item) => item.lpu_version || item.lpu_drive_url)
++      .filter((item) => !item.lpu_missing_since && (item.lpu_version || item.lpu_drive_url))
+       .sort((a, b) => {
+         const av = new Date(a.updated_at ?? a.created_at ?? 0).getTime();
+         const bv = new Date(b.updated_at ?? b.created_at ?? 0).getTime();
+         return bv - av;
+       });
+     return versioned[0] ?? null;
+-  }, [items]);
++  }, [items, lpuStatus]);
+ 
+   return (
+     <div className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+@@ -179,16 +172,7 @@ export default function CatalogProducts() {
+             <CatalogJsonImport onSaved={load} />
+             {isAdmin && (
+               <>
+-              <Button
+-                variant="outline"
+-                disabled={clearing || importing || loading || items.length === 0}
+-                onClick={clearCatalog}
+-                className="text-destructive hover:text-destructive"
+-              >
+-                {clearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+-                Limpar catalogo
+-              </Button>
+-              <Button variant="outline" disabled={importing || clearing} onClick={() => setImportPanelOpen(true)}>
++              <Button variant="outline" disabled={importing} onClick={() => setImportPanelOpen(true)}>
+                 {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                 Importar LPU
+               </Button>
+@@ -210,13 +194,13 @@ export default function CatalogProducts() {
+                 Selecione o arquivo da LPU, informe o link do Drive e confirme para atualizar o catalogo.
+               </p>
+             </div>
+-            <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(260px,1.2fr)_auto] lg:items-end">
++            <div className="grid gap-3 lg:grid-cols-2 lg:items-end">
+               <div className="space-y-1">
+                 <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Arquivo da LPU</label>
+                 <Input
+                   type="file"
+                   accept=".xlsx"
+-                  disabled={importing || clearing}
++                  disabled={importing}
+                   onChange={(event) => setLpuFile(event.target.files?.[0] ?? null)}
+                 />
+               </div>
+@@ -227,13 +211,17 @@ export default function CatalogProducts() {
+                   value={lpuDriveUrl}
+                   onChange={(event) => setLpuDriveUrl(event.target.value)}
+                   placeholder="https://drive.google.com/..."
+-                  disabled={importing || clearing}
++                  disabled={importing}
+                 />
+               </div>
+-              <div className="flex gap-2">
+-                <Button onClick={confirmLpuImport} disabled={importing || clearing}>
++              <label className="text-sm">Validade da LPU
++              <Input type="date" value={validUntil} disabled={importing} onChange={e => setValidUntil(e.target.value)} />
++            </label>
++            <LpuOwnerSelect users={lpuStatus?.users ?? []} value={ownerId} onChange={setOwnerId} disabled={importing} />
++            <div className="flex gap-2">
++                <Button onClick={confirmLpuImport} disabled={importing}>
+                   {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+-                  Confirmar
++                  Conferir importacao
+                 </Button>
+                 <Button
+                   variant="outline"
+@@ -248,10 +236,18 @@ export default function CatalogProducts() {
+                 </Button>
+               </div>
+             </div>
++            {importPreview && <div className="rounded-md border p-3 space-y-3">
++              <p className="font-semibold">Previa: {importPreview.processed} itens · {importPreview.pending_review} ausentes da nova LPU</p>
++              <p className="text-sm">Os itens ausentes serao preservados e encaminhados ao responsavel para revisao em um mes.</p>
++              {importPreview.missing_items?.map((p: any) => <p key={p.id} className="text-sm">{p.sku} — {p.name} · revisar ate {p.review_deadline}</p>)}
++              <Button disabled={importing} onClick={() => importLpu(lpuFile, false)}>Confirmar importacao e gerar avisos</Button>
++            </div>}
+           </CardContent>
+         </Card>
+       )}
+ 
++      <LpuManagement onChanged={load} />
++
+       <div className="flex items-center gap-3 flex-wrap">
+         <div className="relative w-full max-w-md">
+           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+@@ -373,7 +369,7 @@ export default function CatalogProducts() {
+                         <Pencil className="h-4 w-4" />
+                       </Button>
+                     )}
+-                    {isAdmin && (
++                    {isAdmin && !p.lpu_version && (
+                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => remove(p.id)}>
+                         <Trash2 className="h-4 w-4" />
+                       </Button>

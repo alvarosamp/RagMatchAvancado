@@ -34,3 +34,7 @@ isolado, dentro da imagem com as dependências de produção. Cobre prévia sem 
 retenção de categoria ausente, isolamento entre organizações, expiração, prorrogação,
 confirmação, preços e links históricos, ocultação no catálogo e retorno de um produto.
 Os testes do frontend cobrem os avisos, a escolha do responsável e a confirmação explícita.
+
+Os controles do CRM são reproduzidos por `docs/crm-lpu-lifecycle-source.patch`,
+aplicado depois dos patches de sessão, match, ficha técnica e importação de catálogo
+no build do CRM embarcado. A release inclui os avisos também no modo integrado.
