@@ -4,7 +4,7 @@ import json
 import os
 import tempfile
 import csv
-from datetime import datetime
+from datetime import date, datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from urllib.parse import quote
@@ -23,6 +23,7 @@ from app.crm.sales_process_importer import build_import_context_for_user, run_im
 from app.crm.models import (
     CrmBidAssistLog,
     CrmCatalogProduct,
+    CrmLpuVersion,
     CrmCatalogProductDatasheet,
     CrmChecklistStatus,
     CrmItemFulfillment,
@@ -816,6 +817,12 @@ def link_catalog_product_and_datasheet(
     if notice_product is None or catalog_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item ou produto do catalogo nao encontrado.")
 
+    if catalog_product.archived_at and notice_product.catalog_product_id != catalog_product.id:
+        raise HTTPException(400, "Produto retirado do catalogo ativo.")
+    if notice_product.catalog_product_id != catalog_product.id or not notice_product.catalog_snapshot:
+        from app.crm.query import serialize_record
+        notice_product.catalog_snapshot = serialize_record(catalog_product)
+        notice_product.catalog_lpu_version = catalog_product.lpu_version
     notice_product.catalog_product_id = catalog_product.id
     notice_product.catalog_match_source = "manual_confirmed"
     notice_product.catalog_match_confirmed_by = current_user.id
@@ -1148,6 +1155,9 @@ async def crm_import_sales_processes(
 async def crm_import_lpu_catalog(
     file: UploadFile = File(..., description="Planilha XLSX de LPU/catalogo"),
     drive_url: str = Form(..., description="Link do Drive da LPU"),
+    valid_until: date = Form(...),
+    owner_id: int = Form(...),
+    preview: bool = Form(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1157,6 +1167,9 @@ async def crm_import_lpu_catalog(
             detail="Somente administradores podem importar a LPU.",
         )
 
+    owner = db.query(User).filter_by(id=owner_id, tenant_id=current_user.tenant_id, is_active=True).first()
+    if not owner:
+        raise HTTPException(400, "Selecione um usuario ativo da sua organizacao.")
     filename = (file.filename or "").lower()
     if not filename.endswith(".xlsx"):
         raise HTTPException(
@@ -1176,10 +1189,16 @@ async def crm_import_lpu_catalog(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             lpu_drive_url=drive_url,
+            valid_until=valid_until,
+            owner_id=owner_id,
+            commit=not preview,
         )
+        if preview:
+            db.rollback()
         db.expire_all()
-        return {"ok": True, "summary": summary}
+        return {"ok": True, "summary": summary, "preview": preview}
     except ValueError as exc:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
@@ -1188,6 +1207,68 @@ async def crm_import_lpu_catalog(
         await file.close()
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@router.get("/lpu/status")
+def crm_lpu_status(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import today_brasilia
+    from app.crm.query import serialize_record
+    current = db.query(CrmLpuVersion).filter_by(tenant_id=current_user.tenant_id, superseded_at=None).first()
+    pending = db.query(CrmCatalogProduct).filter(
+        CrmCatalogProduct.tenant_id == current_user.tenant_id,
+        CrmCatalogProduct.lpu_missing_since.isnot(None), CrmCatalogProduct.archived_at.is_(None),
+    ).all()
+    users = db.query(User).filter_by(tenant_id=current_user.tenant_id, is_active=True).all()
+    today = today_brasilia()
+    return {"current": serialize_record(current) if current else None,
+            "expired": bool(current and current.valid_until < today),
+            "pending": [dict(serialize_record(p), overdue=p.lpu_review_deadline < today,
+                             assigned_to_me=p.lpu_review_owner_id == current_user.id) for p in pending],
+            "users": [{"id": u.id, "name": u.full_name or u.email} for u in users]}
+
+
+@router.post("/lpu/{lpu_id}/extend")
+def crm_extend_lpu(lpu_id: str, payload: dict = Body(...), db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import today_brasilia
+    if current_user.role != "admin":
+        raise HTTPException(403, "Somente administradores podem prorrogar a LPU.")
+    row = db.query(CrmLpuVersion).filter_by(id=lpu_id, tenant_id=current_user.tenant_id, superseded_at=None).with_for_update().first()
+    if not row:
+        raise HTTPException(404, "LPU atual nao encontrada.")
+    try:
+        deadline = date.fromisoformat(str(payload.get("valid_until", "")))
+        owner_id = int(payload.get("owner_id"))
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Informe uma validade e um usuario.")
+    owner = db.query(User).filter_by(id=owner_id, tenant_id=current_user.tenant_id, is_active=True).first()
+    if not owner or deadline <= row.valid_until or deadline < today_brasilia():
+        raise HTTPException(400, "Selecione um usuario ativo e uma validade posterior a atual, hoje ou futura.")
+    row.extensions = [*(row.extensions or []), {"by": current_user.id, "at": datetime.now().isoformat(),
+        "previous_valid_until": row.valid_until.isoformat(), "valid_until": deadline.isoformat(), "owner_id": owner_id}]
+    row.valid_until, row.owner_id = deadline, owner_id
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/lpu/products/{product_id}/review")
+def crm_review_lpu_product(product_id: str, payload: dict = Body(...), db: Session = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import preserve_process_products
+    row = db.query(CrmCatalogProduct).filter_by(id=product_id, tenant_id=current_user.tenant_id).with_for_update().first()
+    if not row or not row.lpu_missing_since or row.archived_at:
+        raise HTTPException(404, "Pendencia nao encontrada.")
+    if current_user.id != row.lpu_review_owner_id and current_user.role != "admin":
+        raise HTTPException(403, "Somente o responsavel ou administrador pode confirmar a retirada.")
+    if payload.get("action") != "confirm":
+        raise HTTPException(400, "Confirme a retirada apos conferir o produto.")
+    preserve_process_products(db, row)
+    row.archived_at = datetime.now()
+    row.is_active = False
+    row.lpu_reviewed_at = datetime.now()
+    row.lpu_reviewed_by = current_user.id
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/summary")

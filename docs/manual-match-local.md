@@ -73,3 +73,12 @@ python3 preview/manual_match_demo.py
 18 testes de sugestões/revisão, 38 específicos de normalização, 16 de match manual, 62 de autenticação/sessão e 88 de regressão do motor, adaptador V8, exportação e extração passaram no Docker local (222 no total). No navegador real, a validação anterior do fluxo cobriu exportação e importação do mesmo arquivo, filtros ponto a ponto, confirmação do exemplo e persistência.
 
 A prévia local usa http://localhost:13089. Esta mudança ainda não foi publicada na VPS.
+
+
+## Abertura direta dos itens já cadastrados
+
+O Match usa a descrição do item selecionado no CRM; não é necessário baixar ou enviar
+um JSON. Datas do pregão vindas do ORM são convertidas para texto ISO antes da montagem
+do rascunho. Isso corrige o erro “Configuração JSON inválida” ao abrir itens de editais
+com data de disputa preenchida. O rascunho continua preservando requisitos existentes,
+a origem dos dados e a descrição completa, sem modificar o item ao abrir a janela.

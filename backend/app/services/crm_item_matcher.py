@@ -46,7 +46,9 @@ def _auto_pricing_allowed(product: CrmNoticeProduct) -> bool:
 
 
 def _remember_lpu_version(product: CrmNoticeProduct, catalog: CrmCatalogProduct) -> None:
+    from app.crm.query import serialize_record
     product.catalog_lpu_version = getattr(catalog, "lpu_version", None)
+    product.catalog_snapshot = serialize_record(catalog)
 
 
 def _has_validated_match(product: CrmNoticeProduct) -> bool:
@@ -299,6 +301,8 @@ def confirm_notice_item_match(db: Session, current_user: User, match_id: str) ->
         raise ValueError("A comparacao tecnica exige resolver as falhas ou pendencias antes da confirmacao")
     product = match.notice_product
     catalog = match.catalog_product
+    if catalog.archived_at:
+        raise ValueError("Produto retirado do catalogo ativo.")
 
     product.catalog_product_id = catalog.id
     product.catalog_match_source = "match_confirmed"
@@ -362,8 +366,8 @@ def mark_notice_product_ground_truth(
         )
         .first()
     )
-    if not catalog:
-        raise LookupError("Produto do catalogo nao encontrado.")
+    if not catalog or catalog.archived_at:
+        raise LookupError("Produto do catalogo ativo nao encontrado.")
 
     product.catalog_product_id = catalog.id
     product.catalog_match_source = source

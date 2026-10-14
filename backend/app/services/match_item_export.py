@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -479,6 +479,10 @@ def _mapping(value: Any) -> dict[str, Any]:
 
 
 def _value(value: Any) -> Any:
+    # ORM dates must use the same JSON representation as the exported API file.
+    # The manual match consumes this payload directly, before FastAPI encoding.
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
     if value is None:
         return None
     if isinstance(value, str):

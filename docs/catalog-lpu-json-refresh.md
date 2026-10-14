@@ -17,8 +17,8 @@ são preservados. Divergências podem ser consultadas em
 `dados_lpu.atributos_extraidos`. Ausência de PoE ou gerenciamento não gera `false`.
 
 O comportamento vale para os produtos aceitos pelo importador existente, com seus
-filtros de disponibilidade e tratamento de duplicatas. Não muda suas regras de
-exclusão de produtos antigos. A resposta inclui `technical_jsons_refreshed`, a
+filtros de disponibilidade e tratamento de duplicatas. Produtos ausentes agora seguem o fluxo de revisão e preservação descrito em
+`crm-lpu-validity.md`, sem exclusão automática. A resposta inclui `technical_jsons_refreshed`, a
 quantidade de operações de criação/atualização, incluindo linhas duplicadas.
 
 Os JSONs avulsos em `outputs/LPU_2026-10-14` continuam sendo uma entrega de arquivos

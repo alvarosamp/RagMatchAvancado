@@ -103,6 +103,9 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
             self.filters.update(dict(clauses))
             return self
 
+        def with_for_update(self):
+            return self
+
         def first(self):
             key = (self.filters.get("tenant_id"), self.filters.get("sku"))
             return self.db.products.get(key)
@@ -115,7 +118,7 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
                 product
                 for product in self.db.products.values()
                 if product.tenant_id == tenant_id
-                and product.category in categories
+                and (not categories or product.category in categories)
                 and product.sku not in excluded_skus
             ]
 
@@ -150,6 +153,10 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     db = FakeDb()
     db.add(
         FakeProduct(
+            id="old-product",
+            lpu_version="old",
+            lpu_drive_url="https://drive.google.com/file/d/old",
+            min_price=2.0,
             tenant_id=1,
             sku="PN-FORA-DA-LPU",
             category="transceiver",
@@ -170,7 +177,8 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     assert summary["updated"] == 1
     assert summary["items"] == 2
     assert summary["duplicate_updates"] == 1
-    assert summary["removed_stale"] == 1
+    assert summary["removed_stale"] == 0
+    assert summary["pending_review"] == 1
     assert summary["lpu_version"]
     assert summary["lpu_drive_url"] == "https://drive.google.com/file/d/lpu"
     assert db.products[(1, "PN-1")].lpu_version == summary["lpu_version"]
@@ -184,7 +192,9 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     assert specification['dados_lpu']['linha'] == 3
     assert specification['dados_lpu']['campos_originais']['part no'] == 'MFR-2'
     assert summary['technical_jsons_refreshed'] == 2
-    assert (1, "PN-FORA-DA-LPU") not in db.products
+    assert (1, "PN-FORA-DA-LPU") in db.products
+    assert db.products[(1, "PN-FORA-DA-LPU")].cost == 1.0
+    assert db.products[(1, "PN-FORA-DA-LPU")].lpu_review_owner_id == 2
 
 
 def test_transceiver_header_can_start_on_fourth_row():

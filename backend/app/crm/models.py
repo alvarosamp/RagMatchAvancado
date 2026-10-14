@@ -201,6 +201,12 @@ class CrmCatalogProduct(Base):
     notes = Column(Text)
     lpu_version = Column(String)
     lpu_drive_url = Column(Text)
+    lpu_missing_since = Column(Date)
+    lpu_review_deadline = Column(Date)
+    lpu_review_owner_id = Column(Integer, ForeignKey("users.id"))
+    lpu_reviewed_by = Column(Integer, ForeignKey("users.id"))
+    lpu_reviewed_at = Column(DateTime)
+    archived_at = Column(DateTime)
     embedding = Column(Vector(EMBEDDING_DIM))
     embedding_model = Column(String)
     embedding_provider = Column(String)
@@ -219,6 +225,20 @@ class CrmCatalogProduct(Base):
     @property
     def computed_min_price(self) -> float:
         return round((self.cost or 0.0) * (1 + (self.tax_percent or 0.0) / 100) * (1 + (self.margin_percent or 0.0) / 100), 4)
+
+
+class CrmLpuVersion(Base):
+    __tablename__ = "crm_lpu_versions"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    version = Column(String, nullable=False)
+    drive_url = Column(Text, nullable=False)
+    valid_until = Column(Date, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    superseded_at = Column(DateTime)
+    extensions = Column(JSON, nullable=False, default=list)
 
 
 class CrmNotice(Base):
@@ -381,6 +401,7 @@ class CrmNoticeProduct(Base):
     catalog_match_model_version = Column(String)
     catalog_match_notes = Column(Text)
     catalog_lpu_version = Column(String)
+    catalog_snapshot = Column(JSON)
     match_review_verdict = Column(String)
     match_review_confidence = Column(Float)
     match_review_reason_codes = Column(JSON)

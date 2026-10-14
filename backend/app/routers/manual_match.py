@@ -49,7 +49,7 @@ def current_state(notice, item):
     saved = (item.raw_payload or {}).get('_manual_match')
     if isinstance(saved, dict):
         return manual.validate_state(saved)
-    return manual.import_item(build_crm_match_item_export(notice, item), item, 'JSON atual do item')
+    return manual.import_item(build_crm_match_item_export(notice, item), item, 'Descrição e requisitos do item cadastrado')
 
 
 def verify_documents(db, user, catalog, result):
@@ -103,7 +103,7 @@ def suggest_manual_match(notice_id: str, item_id: str,
     draft_item.raw_payload = {k: v for k, v in (item.raw_payload or {}).items() if k != '_manual_match'}
     try:
         payload = build_crm_match_item_export(notice, draft_item)
-        state = manual.import_item(payload, item, 'JSON atual do item — requisitos sugeridos')
+        state = manual.import_item(payload, item, 'Descrição do item cadastrado — requisitos sugeridos')
         result = manual.preview(state, catalog_rows(db, user))
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
@@ -192,6 +192,8 @@ def save_manual_match(notice_id: str, item_id: str, body: MatchDraft,
             item.catalog_match_confirmed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             item.catalog_match_model_version = 'manual_progressive'
             item.catalog_match_notes = 'Confirmado após comparação manual ponto a ponto.'
+            from app.crm.query import serialize_record
+            item.catalog_snapshot = serialize_record(catalog)
             item.catalog_lpu_version = catalog.lpu_version
             # Confirmation must not overwrite negotiated quantities or prices.
             db.query(CrmNoticeProductMatch).filter(CrmNoticeProductMatch.notice_product_id == item.id,

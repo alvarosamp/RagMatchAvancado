@@ -3,14 +3,15 @@ from __future__ import annotations
 import json
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
-from app.crm.models import CrmCatalogProduct
+from app.crm.models import CrmCatalogProduct, CrmLpuVersion
+from app.services.lpu_lifecycle import today_brasilia, month_later, preserve_process_products
 from app.services.catalog_lpu_specification import refresh_lpu_specification
 
 
@@ -32,6 +33,7 @@ class LpuImportSummary:
     skipped_duplicates: int = 0
     duplicate_updates: int = 0
     removed_stale: int = 0
+    missing_items: list[dict[str, Any]] = field(default_factory=list)
     reference_sheets: list[str] = field(default_factory=list)
     lpu_version: str = ""
     lpu_drive_url: str = ""
@@ -49,6 +51,8 @@ class LpuImportSummary:
             "skipped_duplicates": self.skipped_duplicates,
             "duplicate_updates": self.duplicate_updates,
             "removed_stale": self.removed_stale,
+            "missing_items": self.missing_items,
+            "pending_review": len(self.missing_items),
             "lpu_version": self.lpu_version,
             "lpu_drive_url": self.lpu_drive_url,
             "technical_jsons_refreshed": self.created + self.updated,
@@ -62,13 +66,22 @@ def import_lpu_catalog(
     tenant_id: int,
     user_id: int | None,
     lpu_drive_url: str,
+    valid_until: date | None = None,
+    owner_id: int | None = None,
+    commit: bool = True,
 ) -> dict[str, Any]:
     lpu_drive_url = _normalize_lpu_drive_url(lpu_drive_url)
+    if valid_until is not None and valid_until < today_brasilia():
+        raise ValueError("A validade da LPU deve ser hoje ou uma data futura.")
+    if valid_until is not None and owner_id is None:
+        raise ValueError("Selecione o usuario responsavel pela LPU.")
+    if valid_until is not None:
+        from app.auth.models import Tenant
+        db.query(Tenant).filter_by(id=tenant_id).with_for_update().one()
     workbook = load_workbook(path, data_only=True)
     lpu_version = _build_lpu_version(path)
     summary = LpuImportSummary(lpu_version=lpu_version, lpu_drive_url=lpu_drive_url)
     seen_skus: set[str] = set()
-    imported_categories: set[str] = set()
     imported_skus: set[str] = set()
     has_proposal_sheet = any(_norm(sheet.title) == "proposta" for sheet in workbook.worksheets)
 
@@ -100,7 +113,6 @@ def import_lpu_catalog(
             summary.processed += 1
             record["lpu_version"] = lpu_version
             record["lpu_drive_url"] = lpu_drive_url
-            imported_categories.add(record["category"])
             imported_skus.add(record["sku"])
             existing = (
                 db.query(CrmCatalogProduct)
@@ -108,7 +120,7 @@ def import_lpu_catalog(
                     CrmCatalogProduct.tenant_id == tenant_id,
                     CrmCatalogProduct.sku == record["sku"],
                 )
-                .first()
+                .with_for_update().first()
             )
             if existing is None and "switch" in _norm(sheet.title):
                 # Keep IDs and attached evidence from previous imports whose SKU
@@ -121,15 +133,23 @@ def import_lpu_catalog(
                     existing = db.query(CrmCatalogProduct).filter(
                         CrmCatalogProduct.tenant_id == tenant_id,
                         CrmCatalogProduct.sku == legacy_sku,
-                    ).first()
+                    ).with_for_update().first()
             record['specification'] = refresh_lpu_specification(
                 existing.specification if existing else None, record,
                 values={normalized_header[i]: row[i] for i in range(min(len(row), len(header)))
                         if normalized_header[i]}, sheet=sheet.title, row=row_number,
             )
             if existing:
+                if valid_until is not None:
+                    preserve_process_products(db, existing)
                 for key, value in record.items():
                     setattr(existing, key, value)
+                existing.lpu_missing_since = None
+                existing.lpu_review_deadline = None
+                existing.lpu_review_owner_id = None
+                existing.lpu_reviewed_by = None
+                existing.lpu_reviewed_at = None
+                existing.archived_at = None
                 db.add(existing)
                 summary.updated += 1
             else:
@@ -148,16 +168,37 @@ def import_lpu_catalog(
             db.query(CrmCatalogProduct)
             .filter(
                 CrmCatalogProduct.tenant_id == tenant_id,
-                CrmCatalogProduct.category.in_(imported_categories),
                 CrmCatalogProduct.sku.notin_(imported_skus),
             )
-            .all()
+            .with_for_update().all()
         )
-        summary.removed_stale = len(stale_rows)
         for row in stale_rows:
-            db.delete(row)
+            # Manual products and already archived products do not belong to the replacement.
+            if not getattr(row, "lpu_version", None) or getattr(row, "archived_at", None):
+                continue
+            if not getattr(row, "lpu_missing_since", None):
+                row.lpu_missing_since = today_brasilia()
+                row.lpu_review_deadline = month_later(row.lpu_missing_since)
+                row.lpu_review_owner_id = owner_id or user_id
+            summary.missing_items.append({
+                "id": row.id, "sku": row.sku, "name": row.name,
+                "cost": row.cost, "min_price": row.min_price,
+                "lpu_drive_url": row.lpu_drive_url,
+                "review_deadline": row.lpu_review_deadline.isoformat(),
+            })
 
-    db.commit()
+    if not imported_skus:
+        raise ValueError("Nenhum produto valido encontrado. A LPU atual foi preservada.")
+    workbook.close()
+    if valid_until is not None:
+        for previous in db.query(CrmLpuVersion).filter(
+            CrmLpuVersion.tenant_id == tenant_id, CrmLpuVersion.superseded_at.is_(None)
+        ).all():
+            previous.superseded_at = datetime.now()
+        db.add(CrmLpuVersion(tenant_id=tenant_id, version=lpu_version,
+            drive_url=lpu_drive_url, valid_until=valid_until, owner_id=owner_id, created_by=user_id))
+    if commit:
+        db.commit()
     return summary.as_dict()
 
 

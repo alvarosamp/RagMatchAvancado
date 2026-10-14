@@ -41,6 +41,7 @@ RLS_TABLES = (
     "editais",
     "jobs",
     *CRM_RLS_TABLES,
+    "crm_lpu_versions",
     *OTHER_TENANT_RLS_TABLES,
     *BLING_RLS_TABLES,
 )

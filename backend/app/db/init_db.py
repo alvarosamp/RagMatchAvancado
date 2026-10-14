@@ -152,6 +152,7 @@ def _ensure_crm_schema_updates() -> None:
             "catalog_match_model_version": "VARCHAR",
             "catalog_match_notes": "TEXT",
             "catalog_lpu_version": "VARCHAR",
+            "catalog_snapshot": "JSON",
         },
     )
     _ensure_columns(
@@ -175,6 +176,12 @@ def _ensure_crm_schema_updates() -> None:
             "supplier_tax_id": "VARCHAR(14)",
             "lpu_version": "VARCHAR",
             "lpu_drive_url": "TEXT",
+            "lpu_missing_since": "DATE",
+            "lpu_review_deadline": "DATE",
+            "lpu_review_owner_id": "INTEGER",
+            "lpu_reviewed_by": "INTEGER",
+            "lpu_reviewed_at": "TIMESTAMP",
+            "archived_at": "TIMESTAMP",
             "supplier_name": "VARCHAR",
             "datasheet_url": "TEXT",
             "certificate_url": "TEXT",
