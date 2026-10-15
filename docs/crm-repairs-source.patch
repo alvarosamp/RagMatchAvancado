@@ -128,10 +128,32 @@ index 54149aa..8e920fb 100644
    </Button>;
  }
 diff --git a/src/components/notices/CatalogFacetMatch.tsx b/src/components/notices/CatalogFacetMatch.tsx
-index 38a85e5..6da46b1 100644
+index 38a85e5..e6ff804 100644
 --- a/src/components/notices/CatalogFacetMatch.tsx
 +++ b/src/components/notices/CatalogFacetMatch.tsx
-@@ -22,22 +22,33 @@ export function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string
+@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
+ import {crmFetch} from '@/integrations/supabase/client';
+ import {Button} from '@/components/ui/button';
+ import {toast} from 'sonner';
++import {DocumentGeneratorDialog} from './DocumentGeneratorDialog';
+
+ const categories:Record<string,string>={switch:'Switch',access_point:'Access point',transceiver:'Transceiver',cabo:'Cabo',fonte:'Fonte'};
+ const label=(v:any):string=>v==null?'Não informado':typeof v==='boolean'?(v?'Sim':'Não'):typeof v==='object'&&'valor' in v?label(v.valor)+(v.unidade?' '+v.unidade:''):typeof v==='object'?JSON.stringify(v):String(v);
+@@ -11,33 +12,46 @@ export function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string
+  const base=`/api/crm/notices/${noticeId}/products/${item.id}/manual-match`;
+  const [state,setState]=useState<any>(null),[data,setData]=useState<any>(null),[revision,setRevision]=useState('');
+  const [selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[stamp,setStamp]=useState('');
++ const [savedState,setSavedState]=useState('');
+  const current=JSON.stringify({state,selected});
+- useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível abrir o item.');const s=r.payload.state;setState({...s,filtros:[],catalog_filters:s.catalog_filters||{}});setRevision(r.payload.base_revision);setData(r.payload);setSelected(s.catalog_filters?s.selected_catalog_id||'':'');}).catch(e=>{if(live){setError(e.message);setLoading(false);}});return()=>{live=false;};},[base]);
++ useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível abrir o item.');const s=r.payload.state;const draft={...s,filtros:[],catalog_filters:s.catalog_filters||{}};setState(draft);setSavedState(JSON.stringify({state:draft,selected:s.catalog_filters?s.selected_catalog_id||'':''}));setRevision(r.payload.base_revision);setData(r.payload);setSelected(s.catalog_filters?s.selected_catalog_id||'':'');}).catch(e=>{if(live){setError(e.message);setLoading(false);}});return()=>{live=false;};},[base]);
+  useEffect(()=>{if(!state)return;let live=true;setLoading(true);const timer=setTimeout(()=>{crmFetch(base+'/preview',{method:'POST',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null})}).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível atualizar os filtros.');setData(r.payload);setStamp(current);setError('');}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setLoading(false);});},150);return()=>{live=false;clearTimeout(timer);};},[base,state,selected,revision]);
+  const ready=state&&!loading&&!busy&&!error&&stamp===current;
+  function choose(name:string,value:any){setState((s:any)=>{const filters={...s.catalog_filters};if(JSON.stringify(filters[name])===JSON.stringify(value))delete filters[name];else filters[name]=value;return {...s,catalog_filters:filters};});setSelected('');}
+- async function save(){if(!ready)return;setBusy(true);try{const c=data.candidatos.find((c:any)=>c.id===selected);const r=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null,catalog_hash:c?.hash_catalogo,confirm:false})});if(!r.ok)throw Error(r.payload?.detail||'Não foi possível salvar.');setState(r.payload.state);setRevision(r.payload.base_revision);toast.success(r.payload.mensagem);onSaved(r.payload.mensagem);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
++ async function save(){if(!ready)return;setBusy(true);try{const c=data.candidatos.find((c:any)=>c.id===selected);const r=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null,catalog_hash:c?.hash_catalogo,confirm:false})});if(!r.ok)throw Error(r.payload?.detail||'Não foi possível salvar.');setState(r.payload.state);setSavedState(JSON.stringify({state:r.payload.state,selected}));setRevision(r.payload.base_revision);toast.success(r.payload.mensagem);onSaved(r.payload.mensagem);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
+  if(!state)return <p className="p-4" role={error?'alert':undefined}>{error||'Abrindo item…'}</p>;
+  const fields=data?.campos||[];
   const allowed=data?.campos_categoria?.[state.categoria]||fields.map((f:any)=>f.nome);
   const requirements=state.requisitos||[];
   const ordered=["portas_rj45","portas_sfp","portas_sfp_plus",...allowed.filter((n:string)=>!["portas_rj45","portas_sfp","portas_sfp_plus"].includes(n))].filter((n:string)=>allowed.includes(n));
@@ -168,8 +190,10 @@ index 38a85e5..6da46b1 100644
    <div className="grid gap-2 sm:grid-cols-2">{candidates.map((c:any)=><button type="button" key={c.id} disabled={!ready} aria-label={`Selecionar ${c.sku}`} aria-pressed={selected===c.id} onClick={()=>setSelected(c.id)} className={`rounded-lg border p-3 text-left ${selected===c.id?'border-primary bg-primary/5':'hover:bg-muted'}`}><span className="block font-medium text-sm">{c.nome}</span><span className="block text-xs text-muted-foreground mt-1 break-all">{c.sku}</span></button>)}</div>
    {!loading&&!candidates.length&&<p className="text-sm text-muted-foreground">Nenhum produto tem dados suficientes para essas escolhas. Remova um filtro para ver outras opções.</p>}
 -  {selected&&<p className="text-xs text-muted-foreground">Selecionado: {data.candidatos.find((c:any)=>c.id===selected)?.nome}. Salvo para revisão técnica.</p>}
+-  {canEdit&&<div className="flex justify-end"><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
 +  {selected&&<p className="text-xs text-muted-foreground">Selecionado: {data.candidatos.find((c:any)=>c.id===selected)?.nome}. Seleção em rascunho; salve para revisão técnica.</p>}
-   {canEdit&&<div className="flex justify-end"><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
++  {canEdit&&<p className="text-xs text-muted-foreground">Para gerar a declaração Tor, salve a seleção do produto e os requisitos do match.</p>}
++  {canEdit&&<div className="flex flex-wrap justify-end gap-2"><DocumentGeneratorDialog noticeId={noticeId} initialItemId={item.id} initialTemplateId="complementary_declaration" triggerLabel="Gerar declaração Tor" canEdit={Boolean(ready&&selected&&savedState===current)} /><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
   </div>;
  }
 diff --git a/src/components/catalog/TechnicalSheetEditor.tsx b/src/components/catalog/TechnicalSheetEditor.tsx
@@ -332,6 +356,119 @@ index 24bc011..24f11b8 100644
 +  expect(item.features.ports).toBe('24');
 +  expect(item.features.speed).toBe('10 Gigabit');
 +});
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/components/notices/DocumentGeneratorDialog.test.tsx b/src/components/notices/DocumentGeneratorDialog.test.tsx
+new file mode 100644
+index 0000000..2ba647b
+--- /dev/null
++++ b/src/components/notices/DocumentGeneratorDialog.test.tsx
+@@ -0,0 +1,17 @@
++import {it,expect,vi} from 'vitest';
++import {render,screen,fireEvent,waitFor} from '@testing-library/react';
++import {DocumentGeneratorDialog} from './DocumentGeneratorDialog';
++const {generate,download}=vi.hoisted(()=>({generate:vi.fn(),download:vi.fn()}));
++vi.mock('@/lib/document-files',()=>({listDocumentTemplates:()=>Promise.resolve([{id:'complementary_declaration',name:'Minuta Tor'}]),listSigners:()=>Promise.resolve([]),generateDocument:generate,downloadDocument:download,previewGeneratedDocument:vi.fn()}));
++vi.mock('sonner',()=>({toast:{success:vi.fn(),error:vi.fn()}}));
++it('archives an unsigned single-item draft and exposes a native Word link instead of an async blob download',async()=>{
++ generate.mockResolvedValue({id:'d1',original_filename:'minuta_item11.docx',download_url:'/api/documents/files/d1/download'});
++ render(<DocumentGeneratorDialog noticeId="n" canEdit initialTemplateId="complementary_declaration" initialItemId="i" triggerLabel="Gerar declaração Tor"/>);
++ fireEvent.click(screen.getByRole('button',{name:'Gerar declaração Tor'}));
++ await screen.findByText('Minuta Tor');
++ fireEvent.click(screen.getByRole('button',{name:'Gerar e arquivar'}));
++ await waitFor(()=>expect(generate).toHaveBeenCalledWith(expect.objectContaining({notice_id:'n',options:expect.objectContaining({item_ids:['i']}),send_for_signature:false})));
++ const link=await screen.findByRole('link',{name:'Baixar Word'});
++ expect(link.getAttribute('href')).toBe('/api/documents/files/d1/download');expect(link.getAttribute('download')).toBe('minuta_item11.docx');
++ expect(download).not.toHaveBeenCalled();expect(screen.getByRole('button',{name:'Gerar e arquivar'}).hasAttribute('disabled')).toBe(true);
++});
+diff --git a/src/components/notices/DocumentGeneratorDialog.tsx b/src/components/notices/DocumentGeneratorDialog.tsx
+index c102b2d..04444a4 100644
+--- a/src/components/notices/DocumentGeneratorDialog.tsx
++++ b/src/components/notices/DocumentGeneratorDialog.tsx
+@@ -5,19 +5,22 @@ import { Textarea } from '@/components/ui/textarea';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { FileText, Loader2 } from 'lucide-react';
+-import { downloadDocument, generateDocument, listDocumentTemplates, listSigners, previewGeneratedDocument, DocumentPreview, DocumentTemplate, SignatureUser } from '@/lib/document-files';
++import { downloadDocument, generateDocument, listDocumentTemplates, listSigners, previewGeneratedDocument, DocumentPreview, DocumentTemplate, SignatureUser, DocumentFile } from '@/lib/document-files';
+ import { documentGenerationNeedsSigner } from '@/lib/document-generation';
+ import { toast } from 'sonner';
+
+-export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { noticeId: string; canEdit: boolean; onGenerated?: () => void }) {
++export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated, initialTemplateId = 'commercial_proposal', initialItemId = '', triggerLabel = 'Gerar documento' }: { noticeId: string; canEdit: boolean; onGenerated?: () => void; initialTemplateId?:string; initialItemId?:string; triggerLabel?:string }) {
+   const [open, setOpen] = useState(false);
+   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+   const [signers, setSigners] = useState<SignatureUser[]>([]);
+-  const [templateId, setTemplateId] = useState('commercial_proposal');
++  const [templateId, setTemplateId] = useState(initialTemplateId);
++  const [availableItems,setAvailableItems] = useState<any[]>([]);
++  const [itemId,setItemId] = useState(initialItemId);
+   const [signerId, setSignerId] = useState('');
+   const [sendForSignature, setSendForSignature] = useState(false);
+   const [justification, setJustification] = useState('');
+   const [preview, setPreview] = useState<DocumentPreview | null>(null);
++  const [generated,setGenerated] = useState<DocumentFile | null>(null);
+   const [loading, setLoading] = useState(false);
+   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+
+@@ -32,14 +35,15 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+     setLoading(true);
+     try {
+       const signer = signers.find((item) => String(item.id) === signerId);
+-      setPreview(await previewGeneratedDocument(templateId, {
++      const result=await previewGeneratedDocument(templateId, {
+         notice_id: noticeId,
+         company: {},
+         options: {
+-          justification,
++          justification, item_ids:itemId?[itemId]:[],
+           signer: signer ? { name: signer.full_name || signer.email, email: signer.email, cpf: signer.cpf, role: signer.role } : {},
+         },
+-      }));
++      });
++      setPreview(result);setAvailableItems((result.fields as any)?.declaration?.available_items || []);
+     } catch (error: any) { toast.error(error?.message ?? 'Não foi possível revisar os dados.'); }
+     finally { setLoading(false); }
+   }
+@@ -53,11 +57,12 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+     try {
+       const document = await generateDocument({
+         notice_id: noticeId, template_id: templateId, company: {},
+-        options: { justification }, signer_id: signerId ? Number(signerId) : undefined,
++        options: { justification, item_ids:itemId?[itemId]:[] }, signer_id: signerId ? Number(signerId) : undefined,
+         send_for_signature: sendForSignature,
+         idempotency_key: idempotencyKey,
+       });
+       toast.success('Documento gerado e arquivado na biblioteca');
++      if(templateId==='complementary_declaration'){setGenerated(document);setIdempotencyKey(crypto.randomUUID());onGenerated?.();return;}
+       await downloadDocument(document);
+       setIdempotencyKey(crypto.randomUUID());
+       setOpen(false); onGenerated?.();
+@@ -66,18 +71,20 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+   }
+
+   return (
+-    <Dialog open={open} onOpenChange={setOpen}>
+-      <DialogTrigger asChild><Button disabled={!canEdit}><FileText className="h-4 w-4" />Gerar documento</Button></DialogTrigger>
++    <Dialog open={open} onOpenChange={value=>{setOpen(value);if(value)setGenerated(null);}}>
++      <DialogTrigger asChild><Button disabled={!canEdit}><FileText className="h-4 w-4" />{triggerLabel}</Button></DialogTrigger>
+       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+         <DialogHeader><DialogTitle>Gerar documento</DialogTitle></DialogHeader>
+         <div className="grid gap-4 sm:grid-cols-2">
+-          <div><label className="text-sm font-medium">Modelo</label><Select value={templateId} onValueChange={(value) => { setTemplateId(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{templates.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div>
++          <div><label className="text-sm font-medium">Modelo</label><Select value={templateId} onValueChange={(value) => { setTemplateId(value); setPreview(null);setGenerated(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{templates.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div>
+           <div><label className="text-sm font-medium">Assinante</label><Select value={signerId} onValueChange={(value) => { setSignerId(value); setPreview(null); }}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{signers.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.full_name || item.email}</SelectItem>)}</SelectContent></Select></div>
+           <label className="flex items-center gap-2 pt-6"><Checkbox checked={sendForSignature} onCheckedChange={(value) => setSendForSignature(value === true)} />Enviar para assinatura</label>
+-          {templateId === 'feasibility_declaration' && <div className="sm:col-span-2"><label className="text-sm font-medium">Justificativa de exequibilidade</label><Textarea value={justification} onChange={(event) => setJustification(event.target.value)} /></div>}
++          {templateId === 'complementary_declaration' && <div className="sm:col-span-2 space-y-2"><p className="text-sm">Minuta em nome da Tor, com um item e modelo por documento. Os requisitos, dados do produto e pendências vêm da seleção salva no match. A geração não confirma atendimento técnico.</p>{!initialItemId && <label className="block text-sm">Item do match<select aria-label="Item da declaração" className="mt-1 w-full rounded border bg-background p-2" value={itemId} onChange={event=>{setItemId(event.target.value);setPreview(null);}}><option value="">Clique em Revisar dados para listar os itens</option>{availableItems.map((entry:any)=><option key={entry.id} value={entry.id}>Item {entry.item} · {entry.brand} {entry.model} · {entry.sku}</option>)}</select></label>}</div>}
++          {templateId === 'feasibility_declaration'  && <div className="sm:col-span-2"><label className="text-sm font-medium">Justificativa de exequibilidade</label><Textarea value={justification} onChange={(event) => setJustification(event.target.value)} /></div>}
+         </div>
+-        {preview && <div className="rounded-md border p-3 text-sm"><p className="font-medium">Dados que serão utilizados</p><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(preview.fields, null, 2)}</pre>{preview.missing_fields.length > 0 && <p className="mt-2 text-destructive">Pendências: {preview.missing_fields.join(', ')}</p>}</div>}
+-        <div className="flex justify-end gap-2"><Button variant="outline" onClick={review} disabled={loading}>Revisar dados</Button><Button onClick={generate} disabled={loading || documentGenerationNeedsSigner(sendForSignature, signerId) || Boolean(preview?.missing_fields.length)}>{loading && <Loader2 className="h-4 w-4 animate-spin" />}Gerar e arquivar</Button></div>
++        {generated && <div role="status" className="space-y-3 rounded-md border p-3"><p className="text-sm font-medium">Minuta gerada e arquivada no edital</p><p className="break-all text-xs text-muted-foreground">{generated.original_filename}</p><Button asChild><a href={`/api/documents/files/${encodeURIComponent(generated.id)}/download`} download={generated.original_filename}>Baixar Word</a></Button></div>}
++        {preview && !generated && <div className="rounded-md border p-3 text-sm"><p className="font-medium">Dados que serão utilizados</p><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(preview.fields, null, 2)}</pre>{preview.missing_fields.length > 0 && <p className="mt-2 text-destructive">Pendências: {preview.missing_fields.join(', ')}</p>}</div>}
++        <div className="flex justify-end gap-2"><Button variant="outline" onClick={review} disabled={loading}>Revisar dados</Button><Button onClick={generate} disabled={loading || Boolean(generated) || documentGenerationNeedsSigner(sendForSignature, signerId) || Boolean(preview?.missing_fields.length)}>{loading && <Loader2 className="h-4 w-4 animate-spin" />}Gerar e arquivar</Button></div>
+       </DialogContent>
+     </Dialog>
+   );
 diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/components/notices/CatalogFacetMatch.test.tsx b/src/components/notices/CatalogFacetMatch.test.tsx
 new file mode 100644
 index 0000000..3d724b4
