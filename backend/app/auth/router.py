@@ -48,6 +48,8 @@ from app.core.features import effective_ai_features, update_tenant_ai_features
 from app.services.auth_email import password_reset_email_configured, send_password_reset_email
 from app.services.rate_limit import rate_limit_exceeded, reset_rate_limit
 
+from app.auth.sessions import start_session, renew_session, revoke_session, clear_cookies
+
 router = APIRouter(prefix="/auth", tags=["autenticação"])
 AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "access_token")
 COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").lower()
@@ -181,14 +183,7 @@ def register(payload: RegisterRequest, response: Response, db: Session = Depends
     logger.info(f"[Auth] Novo tenant registrado: {tenant.slug} | admin: {user.email}")
 
     # Gera o JWT e retorna — cliente já fica autenticado
-    token = create_access_token(
-        subject     = user.email,
-        tenant_slug = tenant.slug,
-        user_id     = user.id,
-        role        = user.role,
-        auth_version = user.auth_version or 0,
-    )
-    _set_auth_cookie(response, token)
+    token = start_session(db, user, response)
 
     return TokenResponse(
         access_token = token if _token_body_enabled() else "",
@@ -256,16 +251,10 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
             detail      = "Conta da empresa desativada. Entre em contato com o suporte.",
         )
 
+    reset_rate_limit("login-account", payload.email)
     logger.info(f"[Auth] Login bem-sucedido: {user.email} | tenant={user.tenant.slug}")
 
-    token = create_access_token(
-        subject     = user.email,
-        tenant_slug = user.tenant.slug,
-        user_id     = user.id,
-        role        = user.role,
-        auth_version = user.auth_version or 0,
-    )
-    _set_auth_cookie(response, token)
+    token = start_session(db, user, response, payload.remember_me)
 
     return TokenResponse(
         access_token = token if _token_body_enabled() else "",
@@ -280,9 +269,19 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/logout")
-def logout(response: Response):
-    _clear_auth_cookie(response)
+def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    revoke_session(db, request)
+    clear_cookies(response)
     return {"message": "Sessao encerrada."}
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(request: Request, response: Response, db: Session = Depends(get_db)):
+    _enforce_rate_limit("session-refresh-ip", _client_ip(request), limit=120, window_seconds=60)
+    user, token = renew_session(db, request, response)
+    return TokenResponse(access_token=token if _token_body_enabled() else "",
+                         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                         tenant_slug=user.tenant.slug, role=user.role)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -377,7 +376,7 @@ def change_password(
     current_user.hashed_password = hash_password(payload.new_password)
     current_user.auth_version = int(current_user.auth_version or 0) + 1
     db.commit()
-    _clear_auth_cookie(response)
+    clear_cookies(response)
     logger.info("[Auth] Senha alterada e sessoes revogadas | user_id=%s", current_user.id)
     return {"message": "Senha alterada. Entre novamente em todos os dispositivos."}
 
@@ -471,7 +470,7 @@ def confirm_password_reset(
     user.hashed_password = hash_password(payload.new_password)
     user.auth_version = int(user.auth_version or 0) + 1
     db.commit()
-    _clear_auth_cookie(response)
+    clear_cookies(response)
     logger.info("[Auth] Senha redefinida e sessoes revogadas | user_id=%s", user.id)
     return {"message": "Senha redefinida. Voce ja pode entrar novamente."}
 

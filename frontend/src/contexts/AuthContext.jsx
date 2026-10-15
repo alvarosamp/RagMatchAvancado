@@ -19,6 +19,7 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null)
+  const [logoutError, setLogoutError] = useState('')
   const [loading, setLoading] = useState(true)   // true enquanto verifica token salvo
 
   // Ao montar, verifica se há token salvo e carrega o usuário
@@ -29,8 +30,9 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const login = useCallback(async (email, password) => {
-    const res = await authApi.login({ email, password })
+  const login = useCallback(async (email, password, rememberMe = false) => {
+    const res = await authApi.login({ email, password, remember_me: rememberMe })
+    window.ragmatchSession?.resume()
     const { tenant_slug, role } = res.data
 
     localStorage.removeItem('access_token')
@@ -45,6 +47,7 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const res = await authApi.register(payload)
+    window.ragmatchSession?.resume()
     const { tenant_slug, role } = res.data
 
     localStorage.removeItem('access_token')
@@ -63,7 +66,15 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
-    await authApi.logout().catch(() => null)
+    window.ragmatchSession?.stop()
+    setLogoutError('')
+    try {
+      await authApi.logout()
+    } catch {
+      window.ragmatchSession?.resume()
+      setLogoutError('Não foi possível encerrar a sessão. Confira sua conexão e tente sair novamente.')
+      return
+    }
     clearPortalSessionStorage()
     setUser(null)
     window.location.href = '/login'
@@ -74,6 +85,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, register, updateProfile, isAdmin, isEditor }}>
+      {logoutError && <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded-lg bg-red-50 p-4 text-sm text-red-800 shadow-lg">{logoutError}</div>}
       {children}
     </AuthContext.Provider>
   )

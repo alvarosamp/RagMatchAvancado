@@ -1,0 +1,1 @@
+import{p as e}from"./client-DM39uAL7.js";var t=e(`ChevronRight`,[[`path`,{d:`m9 18 6-6-6-6`,key:`mthhwq`}]]);export{t};

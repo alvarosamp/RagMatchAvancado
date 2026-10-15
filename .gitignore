@@ -42,6 +42,9 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
+.validation/
+test-results/
+.deploy.lock
 .cache
 nosetests.xml
 coverage.xml
@@ -226,6 +229,7 @@ bid-buddy/dist-embed/
 # Local publish/build staging folders
 .tmp-publish-*/
 .codex-worktrees/
+_worktrees/
 
 # Local review/export artifacts
 .docx-review/
@@ -235,3 +239,6 @@ output/
 .pytest-tmp-current/
 pytest-cache-files-*/
 backend/pytest-cache-files-*/
+
+# Disposable QA fixtures, outside Playwright output
+.qa-runtime/

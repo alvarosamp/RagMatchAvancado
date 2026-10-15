@@ -32,7 +32,7 @@ def _fixture():
 
 def test_registry_exposes_three_extensible_templates():
     assert {item["id"] for item in list_templates()} == {
-        "commercial_proposal", "unified_declaration", "feasibility_declaration"
+        "commercial_proposal", "unified_declaration", "feasibility_declaration", "complementary_declaration"
     }
 
 

@@ -24,11 +24,12 @@ SPEC.loader.exec_module(provision_app_role)
 
 
 class FakeCursor:
-    def __init__(self, *, superuser=True, role_exists=False):
+    def __init__(self, *, superuser=True, role_exists=False, analytics_schemas=False):
         self.answers = iter([
             ("postgres", "edital_matcher"),
             (superuser,),
             (1,) if role_exists else None,
+            *[(1,) if analytics_schemas else None for _ in range(4)],
         ])
         self.statements = []
 
@@ -75,6 +76,16 @@ def test_provisioning_rejects_admin_role_as_runtime_role():
         provision_app_role.provision(FakeConnection(), "postgres", "secret")
 
 
+def test_existing_analytics_schemas_receive_runtime_dml_without_ddl():
+    connection = FakeConnection(analytics_schemas=True)
+    provision_app_role.provision(connection, "ragmatch_app", "secret")
+    queries = "\n".join(str(statement) for statement, _ in connection.fake_cursor.statements)
+    for schema in ("raw", "core", "mart", "staging"):
+        assert f"Identifier('{schema}')" in queries
+    assert "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA" in queries
+    assert "GRANT CREATE" not in queries
+
+
 def test_provisioning_requires_admin_connection():
     with pytest.raises(ValueError, match="administrativa"):
         provision_app_role.provision(FakeConnection(superuser=False), "ragmatch_app", "secret")
@@ -108,9 +119,31 @@ def test_production_proxy_allows_frontend_and_api_hosts():
     ) in env_example
 
 
+def test_minio_uses_accessible_pinned_mirror_and_preserves_volume():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^  minio:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|\Z)", compose)
+    assert match is not None
+    minio_service = match.group(1)
+
+    assert "alvarocareli/ragmatch-minio:RELEASE.2025-09-07T16-13-09Z" in minio_service
+    assert "- minio_data:/data" in minio_service
+
+
+def test_ollama_model_download_does_not_block_production_startup():
+    compose = (ROOT / "docker-compose.prod.yaml").read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^  ollama-setup:\n(.*?)(?=^  [a-z][a-z0-9-]*:\n|\Z)", compose)
+    assert match is not None
+    setup_service = match.group(1)
+
+    assert 'entrypoint: ["/bin/sh", "-c"]' in setup_service
+    assert 'ollama pull "$$OLLAMA_EMBED_MODEL" ||' in setup_service
+    assert 'ollama pull "$$OLLAMA_MODEL" ||' in setup_service
+    assert "exit 0" in setup_service
+
+
 def test_fresh_database_bootstrap_is_pinned_and_installs_both_policies():
     bootstrap = (ROOT / "backend/scripts/migrate_database.py").read_text(encoding="utf-8")
-    assert 'BOOTSTRAP_REVISION = "20260926_01"' in bootstrap
+    assert 'BOOTSTRAP_REVISION = "20261012_01"' in bootstrap
     assert set(RLS_TABLES) == {
         "editais",
         "jobs",

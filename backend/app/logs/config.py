@@ -3,7 +3,7 @@ import os
 
 # Definir o diretório onde os logs serão armazenados
 # Usando o diretório atual do código (relativo ao local onde o código está sendo executado)
-LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
+LOG_DIR = os.getenv('BACKEND_LOG_DIR', os.path.join(os.path.dirname(__file__), 'logs'))
 
 # Certifique-se de que o diretório de logs exista, caso contrário, crie
 os.makedirs(LOG_DIR, exist_ok=True)

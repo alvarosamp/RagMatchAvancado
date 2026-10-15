@@ -1,0 +1,20 @@
+name: CRM commercial intelligence
+on:
+  push:
+    paths: ['bid-buddy', 'bid-buddy/**', '.gitmodules', '.github/workflows/crm-commercial.yml']
+  pull_request:
+    paths: ['bid-buddy', 'bid-buddy/**', '.gitmodules', '.github/workflows/crm-commercial.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  crm-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify source revision and embedded artifact hashes
+        run: node scripts/verify-embedded-crm.mjs

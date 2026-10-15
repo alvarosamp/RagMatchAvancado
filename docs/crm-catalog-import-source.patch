@@ -1,0 +1,76 @@
+diff --git a/src/pages/CatalogProducts.tsx b/src/pages/CatalogProducts.tsx
+index 8fc9676..325d58d 100644
+--- a/src/pages/CatalogProducts.tsx
++++ b/src/pages/CatalogProducts.tsx
+@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
+ import { Badge } from '@/components/ui/badge';
+ import { ExternalLink, Plus, Search, Pencil, Trash2, Loader2, Package, Upload, FileText, BadgeCheck } from 'lucide-react';
+ import { toast } from 'sonner';
++import { CatalogJsonImport } from '@/components/catalog/CatalogJsonImport';
+ import { CatalogProductDialog } from '@/components/catalog/CatalogProductDialog';
+ 
+ const fmtBRL = (n: number | null | undefined) =>
+@@ -175,6 +176,7 @@ export default function CatalogProducts() {
+         </div>
+         {canEdit && (
+           <div className="flex gap-2 flex-wrap">
++            <CatalogJsonImport onSaved={load} />
+             {isAdmin && (
+               <>
+               <Button
+diff --git a/src/components/catalog/CatalogJsonImport.tsx b/src/components/catalog/CatalogJsonImport.tsx
+new file mode 100644
+index 0000000..ef99296
+--- /dev/null
++++ b/src/components/catalog/CatalogJsonImport.tsx
+@@ -0,0 +1,50 @@
++import { useState } from 'react';
++import { Button } from '@/components/ui/button';
++import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
++import { Input } from '@/components/ui/input';
++import { Upload, Loader2 } from 'lucide-react';
++
++export function CatalogJsonImport({ onSaved }: { onSaved: () => void }) {
++  const [open, setOpen] = useState(false);
++  const [jsons, setJsons] = useState<File[]>([]);
++  const [documents, setDocuments] = useState<File[]>([]);
++  const [busy, setBusy] = useState(false);
++  const [result, setResult] = useState<any>(null);
++  const [error, setError] = useState('');
++  async function submit() {
++    setBusy(true); setError(''); setResult(null);
++    try {
++      const body = new FormData();
++      [...jsons, ...documents].forEach(file => body.append('files', file));
++      const response = await fetch('/api/crm/imports/product-json', { method: 'POST', body, credentials: 'same-origin' });
++      const payload = await response.json();
++      if (!response.ok) throw new Error(typeof payload?.detail === 'string' ? payload.detail : 'Não foi possível importar os arquivos.');
++      setResult(payload); onSaved();
++    } catch (e: any) { setError(e.message || 'Erro de conexão.'); }
++    finally { setBusy(false); }
++  }
++  return <>
++    <Button variant="outline" onClick={() => setOpen(true)}><Upload className="h-4 w-4" />Importar JSONs e documentos</Button>
++    <Dialog open={open} onOpenChange={value => { if (!busy) setOpen(value); }}>
++      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
++        <DialogHeader><DialogTitle>Importar produtos e datasheets</DialogTitle></DialogHeader>
++        <p className="text-sm text-muted-foreground">Selecione os JSONs individuais da pasta <strong>produtos</strong>. Você pode selecionar vários de uma vez. O código TOR identifica o produto no catálogo; códigos novos criam produtos.</p>
++        <label className="space-y-2 text-sm font-medium">1. JSONs dos produtos
++          <Input aria-label="JSONs dos produtos" type="file" accept=".json" multiple disabled={busy} onChange={e => { setJsons(Array.from(e.target.files || [])); setResult(null); }} />
++        </label>
++        <label className="space-y-2 text-sm font-medium">2. Datasheets correspondentes (opcional)
++          <Input aria-label="Datasheets correspondentes" type="file" accept=".pdf,.docx" multiple disabled={busy} onChange={e => { setDocuments(Array.from(e.target.files || [])); setResult(null); }} />
++        </label>
++        <p className="text-sm text-muted-foreground">Selecione os PDFs da pasta <strong>datasheets</strong>. O conteúdo do arquivo precisa corresponder ao SHA registrado no JSON. Para anexar outro documento, abra o produto em Editar → Datasheets.</p>
++        <p className="text-sm text-muted-foreground">Preços e atributos existentes são preservados. Dados informados na LPU entram nos filtros; tabelas de datasheet ficam preservadas no JSON para revisão. Limites: 600 arquivos e 300 MB por lote.</p>
++        <Button disabled={busy || !jsons.length} onClick={submit}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}{busy ? 'Importando…' : `Importar ${jsons.length} JSON(s) e ${documents.length} documento(s)`}</Button>
++        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
++        {result && <div aria-live="polite" className="space-y-3 text-sm">
++          <p>{result.aviso}</p>
++          {result.documentos_sem_vinculo > 0 && <p>{result.documentos_sem_vinculo} documento(s) sem correspondência nos JSONs enviados. Eles não foram anexados.</p>}
++          <ul className="space-y-2">{result.resultados.map((row: any, i: number) => <li key={i} className="rounded border p-2"><strong>{row.sku || row.arquivo}</strong> — {row.status}{row.mensagem ? `: ${row.mensagem}` : ` · ${row.documentos_anexados} documento(s) anexado(s) · ${row.documentos_nao_enviados} não enviado(s)`}</li>)}</ul>
++        </div>}
++      </DialogContent>
++    </Dialog>
++  </>;
++}

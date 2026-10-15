@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_images:
-        description: "Publicar imagens no Docker Hub (latest + sha)"
+        description: "Publicar release no Docker Hub"
         type: boolean
         required: true
         default: false
@@ -45,7 +45,7 @@ jobs:
       - name: Install quality dependencies
         run: python -m pip install -r requirements-ci.txt
       - name: Check Python for runtime errors
-        run: ruff check backend/app tests/integration --select F --output-format=github
+        run: ruff check backend/app tests/integration qa --select F --output-format=github
 
   backend-unit-tests:
     name: Backend Unit Tests
@@ -62,6 +62,8 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install -r requirements-ci.txt
       - name: Run unit tests with coverage
+        env:
+          COVERAGE_FILE: .coverage.unit
         run: |
           mkdir -p test-results
           pytest tests/unit \
@@ -71,7 +73,6 @@ jobs:
                  --tb=short \
                  --junitxml=test-results/unit.xml \
                  --cov=backend/app \
-                 --cov-fail-under=35 \
                  --cov-report=xml \
                  --cov-report=term-missing
       - name: Upload backend unit test reports
@@ -79,7 +80,9 @@ jobs:
         if: always()
         with:
           name: backend-unit-reports
+          include-hidden-files: true
           path: |
+            .coverage.unit
             coverage.xml
             test-results/unit.xml
           if-no-files-found: warn
@@ -117,9 +120,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Build embedded CRM from pinned source
+        uses: ./.github/actions/build-crm
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Check embedded CRM assets
@@ -141,6 +148,142 @@ jobs:
           path: frontend/coverage
           if-no-files-found: warn
 
+  functional-tests:
+    name: Real Database and Browser Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 60
+    env:
+      QA_SEED_PATH: ${{ github.workspace }}/.qa-runtime/seed.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - uses: ./.github/actions/build-crm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: qa/requirements.txt
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API from this commit
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          load: true
+          tags: ragmatch-api:qa
+          cache-from: type=gha,scope=ragmatch-api
+          cache-to: type=gha,mode=max,scope=ragmatch-api
+      - name: Build production frontend from this commit
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          load: true
+          tags: ragmatch-frontend:qa
+          cache-from: type=gha,scope=ragmatch-frontend
+          cache-to: type=gha,mode=max,scope=ragmatch-frontend
+      - name: Install functional testing tools and browsers
+        run: |
+          pip install -r qa/requirements.txt
+          python -m playwright install --with-deps chromium firefox
+      - name: Start disposable application stack
+        run: |
+          mkdir -p test-results/functional .qa-runtime
+          # The QA wrapper inherits the API image loaded into this runner's
+          # Docker engine. A container BuildKit builder cannot see that image.
+          docker compose -f qa/compose.yaml build --builder default api
+          docker compose -f qa/compose.yaml up -d --no-build --wait --wait-timeout 300
+          docker compose -f qa/compose.yaml cp api:/reports/seed.json "$QA_SEED_PATH"
+          test -f "$QA_SEED_PATH"
+      - name: Verify APIs, PostgreSQL isolation, and business workflows
+        run: pytest qa --ignore=qa/test_browser.py --ignore=qa/service_tests -v --tb=short --output=test-results/functional/api-browser --junitxml=test-results/functional/api.xml
+      - name: Verify backend services with real production libraries
+        run: >-
+          docker compose -f qa/compose.yaml exec -T api
+          coverage run --source=app --data-file=/reports/.coverage.services
+          -m pytest /qa/service_tests -v --tb=short --junitxml=/reports/services.xml
+      - name: Verify desktop and mobile screens in Chromium and Firefox
+        run: >-
+          pytest qa/test_browser.py -v --tb=short --browser chromium --browser firefox
+          --tracing=retain-on-failure --screenshot=only-on-failure
+          --output=test-results/functional/browser
+          --junitxml=test-results/functional/browser.xml
+      - name: Collect logs and flush API coverage
+        if: always()
+        run: |
+          mkdir -p test-results/functional
+          docker compose -f qa/compose.yaml logs --no-color > test-results/functional/stack.log
+          docker compose -f qa/compose.yaml stop api
+          docker compose -f qa/compose.yaml cp api:/reports/. "$GITHUB_WORKSPACE/test-results/functional/"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: functional-test-reports
+          include-hidden-files: true
+          path: test-results/functional/
+          if-no-files-found: error
+      - name: Remove disposable stack
+        if: always()
+        run: docker compose -f qa/compose.yaml down --volumes
+
+  coverage-gate:
+    name: Combined Coverage Gate
+    runs-on: ubuntu-latest
+    needs: [backend-unit-tests, functional-tests, market-checks]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install 'coverage>=7.10,<8'
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-unit-reports
+          path: test-results/coverage-data/unit
+      - uses: actions/download-artifact@v4
+        with:
+          name: functional-test-reports
+          path: test-results/coverage-data/functional
+      - uses: actions/download-artifact@v4
+        with:
+          name: analytics-coverage
+          path: test-results/coverage-data/
+      - name: Combine unit and live-server coverage
+        run: |
+          cp test-results/coverage-data/unit/.coverage.unit test-results/coverage-data/.coverage.unit
+          cp test-results/coverage-data/functional/.coverage.* test-results/coverage-data/
+          python qa/check_coverage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: combined-backend-coverage
+          path: test-results/coverage/
+          if-no-files-found: error
+
+  market-checks:
+    name: Market Intelligence Checks
+    needs: lint
+    uses: ./.github/workflows/market-intelligence.yml
+
+  release:
+    name: Release Metadata
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.release.outputs.image_tag }}
+    steps:
+      - name: Define unique release tag
+        id: release
+        run: echo "image_tag=sha-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+      - name: Validate manual deployment request
+        if: github.event_name == 'workflow_dispatch' && inputs.deploy_vps
+        env:
+          PUBLISH_IMAGES: ${{ inputs.publish_images }}
+        run: |
+          test "$PUBLISH_IMAGES" = true || { echo 'deploy_vps requires publish_images'; exit 1; }
+          test "$GITHUB_REF" = refs/heads/main || { echo 'Production deployment requires main'; exit 1; }
+
   docker-build:
     name: Docker Packaging
     runs-on: ubuntu-latest
@@ -148,8 +291,14 @@ jobs:
       - backend-unit-tests
       - backend-integration-tests
       - frontend-tests-build
-    if: github.event_name != 'workflow_dispatch'
+      - market-checks
+      - coverage-gate
+      - functional-tests
+      - release
     timeout-minutes: 45
+    env:
+      IMAGE_TAG: ${{ needs.release.outputs.image_tag }}
+      PUBLISH_IMAGES: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_images) }}
     strategy:
       fail-fast: false
       matrix:
@@ -163,17 +312,35 @@ jobs:
           - image_name: ragmatch-mlflow
             context: ./mlflow
             dockerfile: ./mlflow/Dockerfile
+          - image_name: ragmatch-market-worker
+            context: .
+            dockerfile: ./analytics/Dockerfile
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Build embedded CRM from pinned source
+        if: matrix.image_name == 'ragmatch-frontend'
+        uses: ./.github/actions/build-crm
       - uses: docker/setup-buildx-action@v3
-      - name: Build ${{ matrix.image_name }} without publishing
+      - name: Login to Docker Hub
+        if: env.PUBLISH_IMAGES == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build ${{ matrix.image_name }} for testing
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: false
           load: true
+          platforms: linux/amd64
           tags: ${{ matrix.image_name }}:ci
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.image_name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
       - name: Smoke test ${{ matrix.image_name }} image
@@ -189,155 +356,123 @@ jobs:
             ragmatch-frontend)
               docker run --rm ragmatch-frontend:ci nginx -t
               ;;
+            ragmatch-market-worker)
+              docker run --rm --read-only --tmpfs /tmp:size=512m,uid=10001,gid=10001 \
+                -e DATABASE_URL=postgresql://postgres:postgres@db:5432/test \
+                -e SECRET_KEY=test-secret-ci ragmatch-market-worker:ci \
+                python -m app.market_intelligence.worker --help
+              ;;
             ragmatch-mlflow)
               docker run --rm ragmatch-mlflow:ci mlflow --version
               ;;
           esac
 
-  publish-images:
-    name: Publish Docker Images
-    runs-on: ubuntu-latest
-    needs:
-      - backend-unit-tests
-      - backend-integration-tests
-      - frontend-tests-build
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_images
-    timeout-minutes: 45
-    concurrency:
-      group: dockerhub-${{ matrix.image_name }}-${{ github.ref }}
-      cancel-in-progress: false
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image_name: ragmatch-api
-            context: ./backend
-            dockerfile: ./backend/Dockerfile
-          - image_name: ragmatch-frontend
-            context: ./frontend
-            dockerfile: ./frontend/Dockerfile
-          - image_name: ragmatch-mlflow
-            context: ./mlflow
-            dockerfile: ./mlflow/Dockerfile
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - name: Validate Docker Hub secrets
+      - name: Push the tested image
+        if: env.PUBLISH_IMAGES == 'true'
+        env:
+          IMAGE_NAME: ${{ matrix.image_name }}
         run: |
-          test -n "${{ secrets.DOCKERHUB_USERNAME }}" || (echo "Missing DOCKERHUB_USERNAME secret" && exit 1)
-          test -n "${{ secrets.DOCKERHUB_TOKEN }}" || (echo "Missing DOCKERHUB_TOKEN secret" && exit 1)
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+          set -euo pipefail
+          reference="${DOCKERHUB_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker tag "${IMAGE_NAME}:ci" "$reference"
+          docker push "$reference"
+
+  verify-published-images:
+    name: Export Verified Release
+    runs-on: ubuntu-latest
+    needs: [docker-build, release]
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_images)
+    timeout-minutes: 10
+    outputs:
+      image_tag: ${{ needs.release.outputs.image_tag }}
+    env:
+      IMAGE_TAG: ${{ needs.release.outputs.image_tag }}
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Generate image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKERHUB_NAMESPACE }}/${{ matrix.image_name }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=sha-${{ github.sha }}
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.image_name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}
-
-  verify-published-images:
-    name: Verify Published Docker Images
-    runs-on: ubuntu-latest
-    needs: publish-images
-    timeout-minutes: 10
-    env:
-      IMAGE_TAG: sha-${{ github.sha }}
-    steps:
-      - name: Show the Hostinger deployment tag
-        run: |
-          {
-            echo "## Hostinger deployment tag"
-            echo '```env'
-            echo "IMAGE_TAG=${IMAGE_TAG}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Verify the deploy tag for every service
+      - name: Verify images and export release files
         run: |
           set -euo pipefail
-          for image in ragmatch-api ragmatch-frontend ragmatch-mlflow; do
+          mkdir -p release
+          printf 'IMAGE_TAG=%s\nMARKET_WORKER_IMAGE=%s/ragmatch-market-worker:%s\nDEPLOY_SHA=%s\n' \
+            "$IMAGE_TAG" "$DOCKERHUB_NAMESPACE" "$IMAGE_TAG" "$GITHUB_SHA" > release/deploy.env
+          jq -n --arg tag "$IMAGE_TAG" --arg commit "$GITHUB_SHA" \
+            --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{image_tag: $tag, commit: $commit, run_url: $run, images: {}}' > release/release.json
+          for image in ragmatch-api ragmatch-frontend ragmatch-mlflow ragmatch-market-worker; do
             reference="${DOCKERHUB_NAMESPACE}/${image}:${IMAGE_TAG}"
-            echo "Checking ${reference}"
-            docker manifest inspect "${reference}" >/dev/null
+            digest=$(docker buildx imagetools inspect "$reference" --format '{{json .Manifest}}' | jq -er '.digest')
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            jq --arg image "$image" --arg reference "$reference" --arg digest "$digest" \
+              '.images[$image] = {reference: $reference, digest: $digest}' \
+              release/release.json > release/next.json
+            mv release/next.json release/release.json
           done
-      - name: Verify latest on main
-        if: github.ref == 'refs/heads/main'
-        run: |
-          set -euo pipefail
-          for image in ragmatch-api ragmatch-frontend ragmatch-mlflow; do
-            reference="${DOCKERHUB_NAMESPACE}/${image}:latest"
-            echo "Checking ${reference}"
-            docker manifest inspect "${reference}" >/dev/null
-          done
+          {
+            echo '## Release pronta para deploy'
+            echo '```env'
+            cat release/deploy.env
+            echo '```'
+            echo 'Baixe o artifact dockerhub-release para obter deploy.env e release.json com os digests.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dockerhub-release
+          path: release/
+          if-no-files-found: error
+          retention-days: 90
 
   deploy-production:
     name: Deploy Production
     runs-on: ubuntu-latest
     needs: verify-published-images
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_images && inputs.deploy_vps
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' && vars.AUTO_DEPLOY_VPS == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.deploy_vps))
     timeout-minutes: 20
     environment:
       name: production
     concurrency:
       group: production-deploy
       cancel-in-progress: false
+    env:
+      IMAGE_TAG: ${{ needs.verify-published-images.outputs.image_tag }}
+      VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
-      - name: Gate deploy (requires VPS secrets)
-        id: gate
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+      - uses: actions/checkout@v4
+      - name: Validate deployment configuration
         run: |
-          set -e
-          missing=""
-          [ -n "$VPS_HOST" ] || missing="$missing VPS_HOST"
-          [ -n "$VPS_USER" ] || missing="$missing VPS_USER"
-          [ -n "$VPS_SSH_KEY" ] || missing="$missing VPS_SSH_KEY"
-          [ -n "$VPS_APP_DIR" ] || missing="$missing VPS_APP_DIR"
-          if [ -n "$missing" ]; then
-            echo "Deploy skipped; missing secrets:$missing"
-            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Configure SSH
-        if: steps.gate.outputs.should_deploy == 'true'
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          set -euo pipefail
+          for name in VPS_APP_DIR VPS_HOST VPS_USER VPS_SSH_KEY VPS_KNOWN_HOSTS; do
+            test -n "${!name}" || { echo "Missing secret: $name"; exit 1; }
+          done
+          [[ "$VPS_APP_DIR" =~ ^/[a-zA-Z0-9_./-]+$ ]]
+          [[ "$VPS_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          [[ "$VPS_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "${VPS_PORT:-22}" =~ ^[0-9]+$ ]]
+      - name: Configure trusted SSH connection
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          PORT="${VPS_PORT:-22}"
-          ssh-keyscan -p "$PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
-      - name: Deploy stack on VPS
-        if: steps.gate.outputs.should_deploy == 'true'
-        env:
-          DEPLOY_BRANCH: main
-          IMAGE_TAG: sha-${{ github.sha }}
-          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_USER: ${{ secrets.VPS_USER }}
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Deploy the exact release on VPS
         run: |
-          PORT="${VPS_PORT:-22}"
-          ssh -p "$PORT" "${VPS_USER}@${VPS_HOST}" \
-            "cd '${VPS_APP_DIR}' && DEPLOY_BRANCH='${DEPLOY_BRANCH}' IMAGE_TAG='${IMAGE_TAG}' bash scripts/deploy-production.sh"
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -p "${VPS_PORT:-22}" "${VPS_USER}@${VPS_HOST}" \
+            "cd '$VPS_APP_DIR' && IMAGE_TAG='$IMAGE_TAG' DEPLOY_SHA='$GITHUB_SHA' bash -s" \
+            < scripts/deploy-production.sh
+      - name: Remove SSH private key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

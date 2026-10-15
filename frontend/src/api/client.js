@@ -26,8 +26,19 @@ const api = axios.create({
 // ── Interceptor de RESPONSE — trata 401 ─────────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
+      const config = error.config || {}
+      const authEndpoint = /\/auth\/(login|register|refresh|logout|password\/reset)(\/|$)/.test(config.url || '')
+      if (!authEndpoint && !config._sessionRetried && !config.headers?.get?.('Authorization') && !config.headers?.Authorization && window.ragmatchSession) {
+        config._sessionRetried = true
+        try {
+          if (await window.ragmatchSession.refresh()) return api(config)
+        } catch {
+          // A transient connection failure must not clear a usable session.
+          return Promise.reject(error)
+        }
+      }
       const currentPath = window.location.pathname
       const requestPath = error.config?.url || ''
 
@@ -152,6 +163,54 @@ export const blingApi = {
     api.post(`/integrations/bling/invoices/${invoiceId}/authorize`, null, {
       params: { sendEmail },
     }),
+}
+
+export const conlicitacaoApi = {
+  status: () => api.get('/integrations/conlicitacao/status'),
+  diagnostics: (payload = {}) => api.post('/integrations/conlicitacao/diagnostics', payload, {
+    timeout: 120_000,
+  }),
+  previewOpportunity: (externalId) => api.get(
+    `/integrations/conlicitacao/opportunities/${externalId}/preview`,
+    { timeout: 120_000 },
+  ),
+  importOpportunity: (externalId) => api.post(
+    `/integrations/conlicitacao/opportunities/${externalId}/import`,
+    {},
+    { timeout: 120_000 },
+  ),
+  sync: () => api.post('/integrations/conlicitacao/sync'),
+  labFilters: () => api.get('/integrations/conlicitacao/lab/filters'),
+  labBulletins: (filterId, params = {}) => api.get(
+    `/integrations/conlicitacao/lab/filters/${filterId}/bulletins`,
+    { params },
+  ),
+  labBulletin: (bulletinId) => api.get(
+    `/integrations/conlicitacao/lab/bulletins/${bulletinId}`,
+    { timeout: 120_000 },
+  ),
+  labTrace: (biddingId, maxBulletins = 15) => api.get(
+    `/integrations/conlicitacao/lab/biddings/${biddingId}/trace`,
+    { params: { max_bulletins: maxBulletins }, timeout: 300_000 },
+  ),
+  labDocument: (bulletinId, tenderId, index) => api.get(
+    `/integrations/conlicitacao/lab/bulletins/${bulletinId}/tenders/${tenderId}/documents/${index}`,
+    { responseType: 'blob', timeout: 300_000 },
+  ),
+  labUsers: () => api.get('/integrations/conlicitacao/lab/users'),
+  labMonitored: (params = {}) => api.get('/integrations/conlicitacao/lab/monitored', { params }),
+  labMessages: (biddingId, params = {}) => api.get(
+    `/integrations/conlicitacao/lab/monitored/${biddingId}/messages`,
+    { params },
+  ),
+  startMonitoring: (biddingId, userId) => api.post('/integrations/conlicitacao/monitoring/start', {
+    bidding_id: biddingId,
+    user_id: userId,
+  }),
+  stopMonitoring: (biddingId, userId) => api.delete(
+    `/integrations/conlicitacao/monitoring/${biddingId}`,
+    { params: { user_id: userId } },
+  ),
 }
 
 export const bidRobotApi = {

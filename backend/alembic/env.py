@@ -7,9 +7,10 @@ import app.integrations.bling.models  # noqa: F401
 from alembic import context
 from app.db.models import Base
 from app.db.session import engine
+from app.market_intelligence.models import WarehouseBase
 
 config = context.config
-target_metadata = Base.metadata
+target_metadata = [Base.metadata, WarehouseBase.metadata]
 
 
 def run_migrations_online() -> None:

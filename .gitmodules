@@ -1,0 +1,4 @@
+[submodule "bid-buddy"]
+	path = bid-buddy
+	url = https://github.com/LuizH-Paiva/bid-buddy.git
+	branch = codex/inteligencia-comercial-v4

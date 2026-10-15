@@ -1,0 +1,20 @@
+name: Build embedded CRM
+description: Build available CRM source or verify the pinned private CRM bundle
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: frontend/package-lock.json
+    - shell: bash
+      run: |
+        if [[ -f bid-buddy/package.json ]]; then
+          npm --prefix bid-buddy ci
+          node scripts/sync-bid-buddy.mjs
+        else
+          echo 'Using the checked-in private CRM bundle; source unit tests run in its source checkout.'
+        fi
+    - shell: bash
+      run: node scripts/verify-embedded-crm.mjs

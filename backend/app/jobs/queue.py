@@ -335,6 +335,8 @@ class JobQueue:
         notice_product_id: str | None = None,
         category: str | None = None,
         use_llm: bool = True,
+        mode: str = "hybrid",
+        attribute_filters: dict | None = None,
     ) -> str:
         """
         Cria um job assíncrono de match do CRM (catalogo x itens do edital).
@@ -353,6 +355,8 @@ class JobQueue:
                 "notice_product_id": notice_product_id,
                 "category": category,
                 "use_llm": use_llm,
+                "mode": mode,
+                "attribute_filters": attribute_filters,
             },
         )
         db.add(job)
@@ -678,7 +682,8 @@ def _executar_job_crm_notice_match(
             raise ValueError(f"Usuario {user_id} nao encontrado para executar o match CRM")
 
         from app.core.features import ai_feature_enabled
-        if not ai_feature_enabled("crm_matching", user.tenant):
+        rules_job = db.get(Job, job_id)
+        if (rules_job.payload or {}).get("mode") != "rules" and not ai_feature_enabled("crm_matching", user.tenant):
             _update_job(
                 db,
                 job_id,
@@ -710,6 +715,8 @@ def _executar_job_crm_notice_match(
             use_llm=use_llm,
             notice_product_id=notice_product_id,
             category=category,
+            mode=(job.payload or {}).get("mode", "hybrid") if job else "hybrid",
+            attribute_filters=(job.payload or {}).get("attribute_filters") if job else None,
         )
         summary = payload.get("summary") or {}
 

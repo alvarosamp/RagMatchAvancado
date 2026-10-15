@@ -55,7 +55,14 @@ def _commercial(notice: Any, company: dict[str, Any], options: dict[str, Any]) -
     return build_notice_proposal_docx(notice, company=company, options=options)
 
 
+from app.services.complementary_declaration import build_declaration
+
+
 REGISTRY: dict[str, DocumentTemplate] = {
+    "complementary_declaration": DocumentTemplate(
+        "complementary_declaration", "Minuta de declaração complementar Tor", Path(__file__).with_name("complementary_declaration.py"),
+        (), build_declaration,
+    ),
     "commercial_proposal": DocumentTemplate(
         "commercial_proposal", "Proposta comercial", TEMPLATE_ROOT / "proposals" / "modelo_proposta.docx",
         ("company.razao_social", "company.cnpj"), _commercial,
@@ -94,6 +101,10 @@ def generation_preview(notice: Any, template_id: str, company: dict[str, Any], o
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.quantity")
             if template_id == "commercial_proposal" and proposal_line_unit_price(notice, product) is None:
                 missing.append(f"items.{getattr(product, 'item_number', product.id)}.unit_price")
+    if template_id == "complementary_declaration":
+        from app.services.complementary_declaration import declaration_preview
+        fields['declaration'] = declaration_preview(notice, options)
+        missing.extend(fields['declaration']['missing_fields'])
     return {"template": {"id": template.id, "name": template.name, "template_version": template.version}, "fields": fields, "missing_fields": sorted(set(missing))}
 
 
@@ -112,9 +123,15 @@ def generate_document(notice: Any, template_id: str, company: dict[str, Any], op
     return validated, preview
 
 
-def generated_filename(notice: Any, template_id: str) -> str:
+def generated_filename(notice: Any, template_id: str, options: dict[str, Any] | None = None) -> str:
     number = re.sub(r"[^A-Za-z0-9._-]+", "_", str(getattr(notice, "number", None) or getattr(notice, "id", "edital"))).strip("_")
-    return f"{template_id}_{number or 'edital'}.docx"
+    suffix = ''
+    if template_id == 'complementary_declaration' and options:
+        from app.services.complementary_declaration import declaration_preview
+        context = declaration_preview(notice, options)
+        identity = f"item_{context.get('item_number') or 'sem_numero'}_{context.get('sku') or 'sem_sku'}"
+        suffix = '_' + re.sub(r'[^A-Za-z0-9._-]+', '_', identity)[:160]
+    return f"{template_id}_{number or 'edital'}{suffix}.docx"
 
 
 def _template(template_id: str) -> DocumentTemplate:

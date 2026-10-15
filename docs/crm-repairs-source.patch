@@ -1,0 +1,644 @@
+diff --git a/src/pages/MarketIntelligence.tsx b/src/pages/MarketIntelligence.tsx
+index 44d093e..5d60280 100644
+--- a/src/pages/MarketIntelligence.tsx
++++ b/src/pages/MarketIntelligence.tsx
+@@ -1,6 +1,6 @@
+ import { useEffect, useMemo, useState } from 'react';
+ import { Link } from 'react-router-dom';
+-import { supabase } from '@/integrations/supabase/client';
++import { crmFetch } from '@/integrations/supabase/client';
+ import { Card, CardContent } from '@/components/ui/card';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '@/components/ui/button';
+@@ -31,11 +31,10 @@ export default function MarketIntelligence() {
+     setLoading(true);
+     setLoadError('');
+     try {
+-    const { data, error } = await supabase
+-      .from('notices')
+-      .select('id, created_at, number, tor_id, title, state, municipality_name, outcome, bi_risk_identified, bi_risk_operational, particularities, portals(name), organs(name, city, state), notice_products(*)')
+-      .order('created_at', { ascending: false });
+-      if (error) throw new Error(error.message);
++    const response = await crmFetch('/api/crm/intelligence/notices');
++    if (!response.ok) throw new Error(response.payload?.detail || `Não foi possível ler a demanda do CRM (HTTP ${response.status}).`);
++    const data = response.payload?.data;
++    if (!Array.isArray(data)) throw new Error('Resposta de demanda inválida.');
+       setNotices((data ?? []).filter((notice: Notice) => notice.outcome !== 'not_pursued'));
+     } catch (error) {
+       setNotices([]);
+@@ -83,8 +82,9 @@ export default function MarketIntelligence() {
+   const exportJson = async () => {
+     setExporting(true);
+     try {
+-      const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+-      if (error) throw new Error(error.message);
++      const response = await crmFetch('/api/crm/intelligence/notices');
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar a demanda.');
++      const data = response.payload?.data;
+       if (!Array.isArray(data)) throw new Error('Resposta do CRM inválida. Exportação cancelada.');
+       const json = marketExportJson(data, { search, riskOnly, dimension, metric, category, state, dateFrom, dateTo });
+       const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+diff --git a/src/pages/CommercialIntelligence.tsx b/src/pages/CommercialIntelligence.tsx
+index 9d50cc4..0974143 100644
+--- a/src/pages/CommercialIntelligence.tsx
++++ b/src/pages/CommercialIntelligence.tsx
+@@ -83,13 +83,25 @@ export default function CommercialIntelligence() {
+       if (current !== generation.current) return;
+       setDiagnostic(status);
+       if (!status.warehouse_ready) throw new Error('A camada analítica ainda não está disponível neste ambiente.');
+-      const [data, syncRuns, modelRuns, pending, supplierRows, operationStatus, capabilityStatus] = await Promise.all([
+-        marketRequest<Report>(`/report?${queryString(applied)}`), marketRequest<DataRow[]>('/sync-runs'), marketRequest<DataRow[]>('/model-runs'), marketRequest<{ rows: DataRow[]; total: number }>(`/identity-reviews?offset=${reviewOffset}`), marketRequest<{ rows: DataRow[] }>('/entities?kind=supplier&limit=200'),
+-        marketRequest<OperationsStatus>('/operations'), marketRequest<{ sources: Record<string, string> }>('/capabilities'),
++      // The demand report is usable even if optional training/admin services fail.
++      const data = await marketRequest<Report>(`/report?${queryString(applied)}`);
++      if (current !== generation.current) return;
++      setReport(data);
++      const extra = await Promise.allSettled([
++        marketRequest<DataRow[]>('/sync-runs'), marketRequest<DataRow[]>('/model-runs'),
++        marketRequest<{ rows: DataRow[]; total: number }>(`/identity-reviews?offset=${reviewOffset}`),
++        marketRequest<{ rows: DataRow[] }>('/entities?kind=supplier&limit=200'),
++        marketRequest<OperationsStatus>('/operations'), marketRequest<{ sources: Record<string,string> }>('/capabilities'),
+       ]);
+       if (current !== generation.current) return;
+-      setReport(data); setRuns(syncRuns); setModels(modelRuns); setReviews(pending.rows); setReviewTotal(pending.total); setSuppliers(supplierRows.rows);
+-      setOperations(operationStatus); setCapabilities(capabilityStatus.sources);
++      if (extra[0].status === 'fulfilled') setRuns(extra[0].value as DataRow[]);
++      if (extra[1].status === 'fulfilled') setModels(extra[1].value as DataRow[]);
++      if (extra[2].status === 'fulfilled') {const v=extra[2].value as {rows:DataRow[];total:number};setReviews(v.rows);setReviewTotal(v.total);}
++      if (extra[3].status === 'fulfilled') setSuppliers((extra[3].value as {rows:DataRow[]}).rows);
++      if (extra[4].status === 'fulfilled') setOperations(extra[4].value as OperationsStatus);
++      if (extra[5].status === 'fulfilled') setCapabilities((extra[5].value as {sources:Record<string,string>}).sources);
++      const failed=extra.filter(result=>result.status==='rejected').length;
++      if(failed) setError(`Demanda carregada. ${failed} consulta(s) auxiliar(es) indisponível(is).`);
+     } catch (e) { if (current === generation.current) setError(e instanceof Error ? e.message : 'Falha ao carregar.'); }
+     finally { if (current === generation.current) setBusy(false); }
+   }, [applied, reviewOffset]);
+diff --git a/src/lib/market-intelligence.ts b/src/lib/market-intelligence.ts
+index b78f65c..02b3a78 100644
+--- a/src/lib/market-intelligence.ts
++++ b/src/lib/market-intelligence.ts
+@@ -49,8 +49,9 @@ const finite = (value: unknown) => Number.isFinite(Number(value)) ? Math.max(0,
+
+ export function marketItems(notices: any[]): MarketItem[] {
+   return notices.flatMap(notice => (Array.isArray(notice.notice_products) ? notice.notice_products : []).map((product: any) => {
+-    const raw = product.raw_payload || {};
+-    const leaves = { ...featureLeaves(raw.caracteristicas_bi), ...featureLeaves(product.bi_features) };
++    const stored=product.raw_payload && typeof product.raw_payload==='object'?product.raw_payload:{};
++    const raw={...(stored._raw_input || {}),...stored};
++    const leaves = { ...featureLeaves(raw.normalized?.caracteristicas_bi), ...featureLeaves(raw.caracteristicas_bi), ...featureLeaves(product.bi_features) };
+     const features: Record<string, string> = {};
+     for (const [dimension, definition] of Object.entries(DIMENSIONS)) {
+       if (dimension === 'category') continue;
+diff --git a/src/components/notices/ItemMatchJsonExport.tsx b/src/components/notices/ItemMatchJsonExport.tsx
+index 54149aa..8e920fb 100644
+--- a/src/components/notices/ItemMatchJsonExport.tsx
++++ b/src/components/notices/ItemMatchJsonExport.tsx
+@@ -1,25 +1,12 @@
+-import { useState } from 'react';
+-import { Download, Loader2 } from 'lucide-react';
++import { Download } from 'lucide-react';
+ import { Button } from '@/components/ui/button';
+-import { crmFetch } from '@/integrations/supabase/client';
+-import { toast } from 'sonner';
+
+-export function ItemMatchJsonExport({noticeId, itemId, number}: {noticeId:string; itemId:string; number?:string | null}) {
+-  const [busy,setBusy] = useState(false);
+-  async function download() {
+-    setBusy(true);
+-    try {
+-      const response = await crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-json`);
+-      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar o item.');
+-      const url = URL.createObjectURL(new Blob([JSON.stringify(response.payload,null,2)],{type:'application/json'}));
+-      const anchor = document.createElement('a');
+-      anchor.href=url; anchor.download=`match_item_${String(number || itemId).replace(/[^a-zA-Z0-9_-]/g,'_')}.json`;
+-      anchor.click(); window.setTimeout(()=>URL.revokeObjectURL(url),10000);
+-      toast.success('JSON deste item exportado.');
+-    } catch (error:any) { toast.error(error.message); }
+-    finally {setBusy(false);}
+-  }
+-  return <Button size="sm" variant="outline" disabled={busy} onClick={download} aria-label={`Exportar JSON do item ${number || itemId}`}>
+-    {busy?<Loader2 className="h-4 w-4 animate-spin"/>:<Download className="h-4 w-4"/>}Exportar JSON
++/** A native attachment request keeps the browser's user gesture on Safari. */
++export function ItemMatchJsonExport({noticeId,itemId,number}:{noticeId:string;itemId:string;number?:string|null}) {
++  return <Button size="sm" variant="outline" asChild>
++    <a href={`/api/crm/notices/${encodeURIComponent(noticeId)}/products/${encodeURIComponent(itemId)}/match-json?download=true`}
++       download onClick={event=>event.stopPropagation()} aria-label={`Exportar JSON do item ${number || itemId}`}>
++      <Download className="h-4 w-4"/>Exportar JSON
++    </a>
+   </Button>;
+ }
+diff --git a/src/components/notices/CatalogFacetMatch.tsx b/src/components/notices/CatalogFacetMatch.tsx
+index 38a85e5..e6ff804 100644
+--- a/src/components/notices/CatalogFacetMatch.tsx
++++ b/src/components/notices/CatalogFacetMatch.tsx
+@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
+ import {crmFetch} from '@/integrations/supabase/client';
+ import {Button} from '@/components/ui/button';
+ import {toast} from 'sonner';
++import {DocumentGeneratorDialog} from './DocumentGeneratorDialog';
+
+ const categories:Record<string,string>={switch:'Switch',access_point:'Access point',transceiver:'Transceiver',cabo:'Cabo',fonte:'Fonte'};
+ const label=(v:any):string=>v==null?'Não informado':typeof v==='boolean'?(v?'Sim':'Não'):typeof v==='object'&&'valor' in v?label(v.valor)+(v.unidade?' '+v.unidade:''):typeof v==='object'?JSON.stringify(v):String(v);
+@@ -11,33 +12,46 @@ export function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string
+  const base=`/api/crm/notices/${noticeId}/products/${item.id}/manual-match`;
+  const [state,setState]=useState<any>(null),[data,setData]=useState<any>(null),[revision,setRevision]=useState('');
+  const [selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[stamp,setStamp]=useState('');
++ const [savedState,setSavedState]=useState('');
+  const current=JSON.stringify({state,selected});
+- useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível abrir o item.');const s=r.payload.state;setState({...s,filtros:[],catalog_filters:s.catalog_filters||{}});setRevision(r.payload.base_revision);setData(r.payload);setSelected(s.catalog_filters?s.selected_catalog_id||'':'');}).catch(e=>{if(live){setError(e.message);setLoading(false);}});return()=>{live=false;};},[base]);
++ useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível abrir o item.');const s=r.payload.state;const draft={...s,filtros:[],catalog_filters:s.catalog_filters||{}};setState(draft);setSavedState(JSON.stringify({state:draft,selected:s.catalog_filters?s.selected_catalog_id||'':''}));setRevision(r.payload.base_revision);setData(r.payload);setSelected(s.catalog_filters?s.selected_catalog_id||'':'');}).catch(e=>{if(live){setError(e.message);setLoading(false);}});return()=>{live=false;};},[base]);
+  useEffect(()=>{if(!state)return;let live=true;setLoading(true);const timer=setTimeout(()=>{crmFetch(base+'/preview',{method:'POST',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null})}).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível atualizar os filtros.');setData(r.payload);setStamp(current);setError('');}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setLoading(false);});},150);return()=>{live=false;clearTimeout(timer);};},[base,state,selected,revision]);
+  const ready=state&&!loading&&!busy&&!error&&stamp===current;
+  function choose(name:string,value:any){setState((s:any)=>{const filters={...s.catalog_filters};if(JSON.stringify(filters[name])===JSON.stringify(value))delete filters[name];else filters[name]=value;return {...s,catalog_filters:filters};});setSelected('');}
+- async function save(){if(!ready)return;setBusy(true);try{const c=data.candidatos.find((c:any)=>c.id===selected);const r=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null,catalog_hash:c?.hash_catalogo,confirm:false})});if(!r.ok)throw Error(r.payload?.detail||'Não foi possível salvar.');setState(r.payload.state);setRevision(r.payload.base_revision);toast.success(r.payload.mensagem);onSaved(r.payload.mensagem);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
++ async function save(){if(!ready)return;setBusy(true);try{const c=data.candidatos.find((c:any)=>c.id===selected);const r=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null,catalog_hash:c?.hash_catalogo,confirm:false})});if(!r.ok)throw Error(r.payload?.detail||'Não foi possível salvar.');setState(r.payload.state);setSavedState(JSON.stringify({state:r.payload.state,selected}));setRevision(r.payload.base_revision);toast.success(r.payload.mensagem);onSaved(r.payload.mensagem);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
+  if(!state)return <p className="p-4" role={error?'alert':undefined}>{error||'Abrindo item…'}</p>;
+  const fields=data?.campos||[];
+  const allowed=data?.campos_categoria?.[state.categoria]||fields.map((f:any)=>f.nome);
+  const requirements=state.requisitos||[];
+  const ordered=["portas_rj45","portas_sfp","portas_sfp_plus",...allowed.filter((n:string)=>!["portas_rj45","portas_sfp","portas_sfp_plus"].includes(n))].filter((n:string)=>allowed.includes(n));
+- const names=Array.from(new Set([...ordered.filter((n:string)=>(data?.facetas?.[n]?.length||requirements.some((r:any)=>r.atributo===n)||n in state.catalog_filters)),...requirements.filter((r:any)=>r.atributo&&allowed.includes(r.atributo)).map((r:any)=>r.atributo)])) as string[];
++ const names=Array.from(new Set([...ordered.filter((n:string)=>(data?.facetas?.[n]?.length||requirements.some((r:any)=>r.atributo===n)||n in state.catalog_filters)),...requirements.filter((r:any)=>r.atributo).map((r:any)=>r.atributo)])) as string[];
+  const others=requirements.filter((r:any)=>!names.includes(r.atributo));
++ function mapRequirement(id:string,attribute:string){setState((s:any)=>({...s,requisitos:s.requisitos.map((r:any)=>r.id===id?{...r,atributo:attribute,revisado:false}:r)}));setSelected('');}
+  const candidates=(data?.candidatos||[]).filter((c:any)=>c.status_filtro==='ATENDE');
+- const rowValue=(name:string)=>{const reqs=requirements.filter((r:any)=>r.atributo===name);return reqs.length?reqs.map((r:any)=>`${op[r.operador]??r.operador} ${label(r.valor)}${r.unidade?' '+r.unidade:''}`.trim()).join(' · '):'Não informado';};
++ const selectedProduct=data?.candidatos?.find((candidate:any)=>candidate.id===selected);
++ function result(name:string){
++  if(!selected)return <span className="text-muted-foreground">Selecione um produto</span>;
++  if(!ready)return <span className="text-muted-foreground">Atualizando…</span>;
++  const details=(data?.comparacao?.detalhes||[]).filter((detail:any)=>detail.atributo===name);
++  const status=details.some((detail:any)=>detail.status==='NAO_ATENDE')?'NAO_ATENDE':details.length&&details.every((detail:any)=>detail.status==='ATENDE')?'ATENDE':'VERIFICAR';
++  return <div><span className={`inline-block rounded px-2 py-1 text-xs font-medium ${status==='ATENDE'?'bg-green-500/10 text-green-700 dark:text-green-400':status==='NAO_ATENDE'?'bg-red-500/10 text-red-700 dark:text-red-400':'bg-amber-500/10 text-amber-700 dark:text-amber-400'}`}>{status==='ATENDE'?'Atende':status==='NAO_ATENDE'?'Não atende':'Conferir'}</span>{status==='VERIFICAR'&&<p className="mt-1 text-xs text-muted-foreground">{details.length?[...new Set(details.map((detail:any)=>detail.motivo))].join(' · '):'Requisito do edital não informado para este ponto.'}</p>}</div>;
++ }
++ const productValue=(name:string)=>selectedProduct?.atributos?.[name]===undefined?'Não informado':label(selectedProduct.atributos[name]);
++ const rowValue=(name:string)=>{const reqs=requirements.filter((r:any)=>r.atributo===name);return reqs.length?reqs.map((r:any)=>r.valor==null?r.texto_original:`${op[r.operador]??r.operador} ${label(r.valor)}${r.unidade?' '+r.unidade:''}`.trim()).join(' · '):'Não informado';};
+  return <div className="space-y-4 min-w-0">
+   {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
+   <details open className="rounded-lg border p-3"><summary className="text-sm font-medium cursor-pointer">Descrição completa do item</summary><p className="mt-2 whitespace-pre-wrap text-sm">{item.description}</p></details>
+-  <div className="overflow-x-auto rounded-lg border"><table aria-label="Filtros técnicos do catálogo" className="w-full text-left text-sm"><thead className="bg-muted"><tr><th className="p-3 w-[24%]">Característica</th><th className="p-3 w-[28%]">Item do edital</th><th className="p-3">Escolha no catálogo</th></tr></thead><tbody>
+-   <tr className="border-t"><th className="p-3 align-top font-medium">Produto</th><td className="p-3 align-top">{categories[item.category]||item.category||'Não informado'}</td><td className="p-3"><div className="flex flex-wrap gap-2">{Object.entries(data?.categorias||{}).sort(([a],[b])=>Object.keys(categories).indexOf(a)-Object.keys(categories).indexOf(b)).map(([c,count])=><button key={c} type="button" aria-label={`Categoria ${categories[c]||c}`} aria-pressed={state.categoria===c} disabled={busy} className={`rounded-md border px-3 py-1.5 ${state.categoria===c?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`} onClick={()=>{setState((s:any)=>({...s,categoria:c,catalog_filters:{},filtros:[]}));setSelected('');}}>{categories[c]||c}</button>)}</div></td></tr>
+-   {names.map(name=>{const f=fields.find((f:any)=>f.nome===name);const picked=state.catalog_filters[name];const values=data?.facetas?.[name]||[];const choices=picked!==undefined&&!values.some((v:any)=>JSON.stringify(v)===JSON.stringify(picked))?[picked,...values]:values;return <tr key={name} className="border-t"><th className="p-3 align-top font-medium">{f?.rotulo||name}</th><td className="p-3 align-top">{rowValue(name)}</td><td className="p-3"><div className="flex flex-wrap gap-2">{choices.map((v:any)=><button type="button" key={JSON.stringify(v)} aria-label={`Filtro ${f?.rotulo||name}: ${label(v)}`} aria-pressed={JSON.stringify(picked)===JSON.stringify(v)} disabled={!ready} onClick={()=>choose(name,v)} className={`rounded-md border px-3 py-1.5 ${JSON.stringify(picked)===JSON.stringify(v)?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`}>{label(v)}{f?.unit?' '+f.unit:''}</button>)}{!choices.length&&<span className="text-muted-foreground">Sem valor disponível</span>}</div></td></tr>;})}
+-   {others.length>0&&<tr className="border-t"><th className="p-3 align-top font-medium">Outras condições</th><td className="p-3" colSpan={2}><details><summary className="cursor-pointer text-muted-foreground">Ver {others.length} pontos da descrição</summary><ul className="mt-2 space-y-2">{others.map((r:any)=><li key={r.id}>{r.texto_original}</li>)}</ul></details></td></tr>}
++  <div className="rounded-lg border p-3"><label className="block text-sm font-medium" htmlFor={`compare-product-${item.id}`}>Meu produto para comparação</label><select id={`compare-product-${item.id}`} aria-label="Meu produto para comparação" value={selected} disabled={!ready} onChange={event=>setSelected(event.target.value)} className="mt-2 w-full rounded-md border bg-background p-2 text-sm"><option value="">Selecione um produto do catálogo</option>{candidates.map((candidate:any)=><option key={candidate.id} value={candidate.id}>{candidate.nome} · {candidate.sku}</option>)}</select><p className="mt-2 text-xs text-muted-foreground">As opções abaixo filtram o catálogo. O atendimento compara os requisitos do edital com os dados e as evidências do produto selecionado.</p></div>
++  <div className="overflow-x-auto rounded-lg border"><table aria-label="Filtros técnicos do catálogo" className="w-full min-w-[850px] text-left text-sm"><thead className="bg-muted"><tr>{['Tipo','Descrição','Valor do item do edital','Valor do meu produto','Atende / Não atende'].map(title=><th key={title} className="p-3">{title}</th>)}</tr></thead><tbody>
++   <tr className="border-t align-top"><th className="p-3 font-medium">Tipo de produto</th><td className="p-3">Categoria do equipamento</td><td className="p-3">{categories[item.category]||item.category||'Não informado'}</td><td className="p-3"><div className="flex flex-wrap gap-2">{Object.entries(data?.categorias||{}).sort(([a],[b])=>Object.keys(categories).indexOf(a)-Object.keys(categories).indexOf(b)).map(([c,count])=><button key={c} type="button" aria-label={`Categoria ${categories[c]||c}`} aria-pressed={state.categoria===c} disabled={!ready} className={`rounded-md border px-3 py-1.5 ${state.categoria===c?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`} onClick={()=>{setState((s:any)=>({...s,categoria:c,catalog_filters:{},filtros:[]}));setSelected('');}}>{categories[c]||c}</button>)}</div></td><td className="p-3">{result('categoria')}</td></tr>
++   {names.map(name=>{const f=fields.find((f:any)=>f.nome===name);const picked=state.catalog_filters[name];const values=data?.facetas?.[name]||[];const choices=picked!==undefined&&!values.some((v:any)=>JSON.stringify(v)===JSON.stringify(picked))?[picked,...values]:values;return <tr key={name} className="border-t align-top"><th className="p-3 font-medium">{f?.rotulo||name}</th><td className="p-3 max-w-xs">{requirements.filter((r:any)=>r.atributo===name).map((r:any)=><p key={r.id} className="whitespace-pre-wrap">{r.texto_original||f?.rotulo||name}</p>)}{!requirements.some((r:any)=>r.atributo===name)&&<span className="text-muted-foreground">Filtro do catálogo</span>}</td><td className="p-3">{rowValue(name)}</td><td className="p-3"><p className="mb-2 font-medium">{selected?productValue(name):'Selecione um produto'}</p><div className="flex flex-wrap gap-2" aria-label={`Opções de ${f?.rotulo||name}`}>{choices.map((v:any)=><button type="button" key={JSON.stringify(v)} aria-label={`Filtro ${f?.rotulo||name}: ${label(v)}`} aria-pressed={JSON.stringify(picked)===JSON.stringify(v)} disabled={!ready} onClick={()=>choose(name,v)} className={`rounded-md border px-3 py-1.5 ${JSON.stringify(picked)===JSON.stringify(v)?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`}>{label(v)}{f?.unit?' '+f.unit:''}</button>)}{!choices.length&&<span className="text-xs text-muted-foreground">Sem opção de filtro disponível</span>}</div></td><td className="p-3">{result(name)}</td></tr>;})}
++   {others.map((r:any)=><tr key={r.id} className="border-t align-top"><th className="p-3 font-medium"><label className="text-xs text-muted-foreground">Ponto a relacionar<select aria-label={`Característica do requisito ${r.id}`} value={r.atributo || ''} onChange={event=>mapRequirement(r.id,event.target.value)} className="mt-2 block w-full max-w-64 rounded border bg-background p-2 text-sm"><option value="">Relacionar a uma característica</option>{fields.map((f:any)=><option key={f.nome} value={f.nome}>{f.rotulo}</option>)}</select></label></th><td className="p-3 whitespace-pre-wrap">{r.texto_original}</td><td className="p-3">{r.valor==null?'Não estruturado':label(r.valor)}</td><td className="p-3 text-muted-foreground">Relacione a uma característica para comparar.</td><td className="p-3 text-amber-700 dark:text-amber-400">Conferir</td></tr>)}
+   </tbody></table></div>
+   <div className="flex justify-between items-center gap-3"><p className="text-sm" aria-live="polite">{loading?'Atualizando opções…':`${candidates.length} produtos disponíveis`}</p><Button size="sm" variant="ghost" onClick={()=>{setState((s:any)=>({...s,catalog_filters:{},filtros:[]}));setSelected('');}}>Limpar filtros</Button></div>
+   <div className="grid gap-2 sm:grid-cols-2">{candidates.map((c:any)=><button type="button" key={c.id} disabled={!ready} aria-label={`Selecionar ${c.sku}`} aria-pressed={selected===c.id} onClick={()=>setSelected(c.id)} className={`rounded-lg border p-3 text-left ${selected===c.id?'border-primary bg-primary/5':'hover:bg-muted'}`}><span className="block font-medium text-sm">{c.nome}</span><span className="block text-xs text-muted-foreground mt-1 break-all">{c.sku}</span></button>)}</div>
+   {!loading&&!candidates.length&&<p className="text-sm text-muted-foreground">Nenhum produto tem dados suficientes para essas escolhas. Remova um filtro para ver outras opções.</p>}
+-  {selected&&<p className="text-xs text-muted-foreground">Selecionado: {data.candidatos.find((c:any)=>c.id===selected)?.nome}. Salvo para revisão técnica.</p>}
+-  {canEdit&&<div className="flex justify-end"><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
++  {selected&&<p className="text-xs text-muted-foreground">Selecionado: {data.candidatos.find((c:any)=>c.id===selected)?.nome}. Seleção em rascunho; salve para revisão técnica.</p>}
++  {canEdit&&<p className="text-xs text-muted-foreground">Para gerar a declaração Tor, salve a seleção do produto e os requisitos do match.</p>}
++  {canEdit&&<div className="flex flex-wrap justify-end gap-2"><DocumentGeneratorDialog noticeId={noticeId} initialItemId={item.id} initialTemplateId="complementary_declaration" triggerLabel="Gerar declaração Tor" canEdit={Boolean(ready&&selected&&savedState===current)} /><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
+  </div>;
+ }
+diff --git a/src/components/catalog/TechnicalSheetEditor.tsx b/src/components/catalog/TechnicalSheetEditor.tsx
+index fc0dcee..21b6196 100644
+--- a/src/components/catalog/TechnicalSheetEditor.tsx
++++ b/src/components/catalog/TechnicalSheetEditor.tsx
+@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
+ import { crmFetch } from '@/integrations/supabase/client';
+ import { listCatalogDatasheets, CatalogDatasheet } from '@/lib/document-files';
+ import { toast } from 'sonner';
++import { extractionGroups, readableExtraction, extractionLabel } from '@/lib/catalog-extractions';
+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+ import { Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
+
+@@ -16,9 +17,20 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+   const [draftDocument, setDraftDocument] = useState('');
+   const [busy, setBusy] = useState(false);
+   const [open,setOpen] = useState(false);
++  const [reviewWarning,setReviewWarning] = useState('');
+   const [sheetBase,setSheetBase] = useState<any>({});
+-  let savedCount = 0;
+-  try { const attrs = JSON.parse(specification || '{}').atributos || {}; savedCount = Object.values(attrs).reduce<number>((count, entry:any) => count + (Array.isArray(entry?.variantes) ? entry.variantes.length : 1), 0); } catch {}
++  let savedEntries:any[] = [], groups:any[] = [];
++  try {
++    const sheet=JSON.parse(specification || '{}');
++    savedEntries=Object.entries(sheet.atributos || {}).flatMap(([name,value]:[string,any])=>(value?.variantes || [value]).map((entry:any)=>({name,...(entry && typeof entry==='object'?entry:{valor:entry})})));
++    groups=extractionGroups(sheet.importacao_json_produto);
++  } catch {}
++  const descriptionNames=new Set(['descricao_tecnica_original','descricao_original','descricao','descricao_comercial','description']);
++  const isDescription=(entry:any)=>descriptionNames.has(entry.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[ -]+/g,'_'));
++  const descriptions=savedEntries.filter(isDescription);
++  const visibleEntries=savedEntries.filter(entry=>!isDescription(entry));
++  const savedCount=visibleEntries.length;
++  const display=(value:any)=>value==null?'Não informado':typeof value==='boolean'?(value?'Sim':'Não'):typeof value==='object'?JSON.stringify(value):String(value);
+   function loadSheet() {
+     setRevision('');setVariant('');setRows([]);setSheetBase({});setDraftDocument('');
+     try {const sheet=JSON.parse(specification || '{}');
+@@ -45,6 +57,22 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+       toast.info(`${added.length} sugestões para revisão; ${response.payload.conflitos.length} conflitos no documento`);
+     } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
+   }
++  function adopt(entry:any, group:any) {
++    loadSheet();
++    setReviewWarning(group.conflicts.join(' '));
++    const document=documents.find(d=>d.original_filename.toLowerCase()===`${group.hash}.pdf`);
++    const original={valor:entry.value,unidade:entry.unit,origem:entry.source,condicao:entry.condition,
++      extracao_original:entry.original,validacao:'aplicabilidade_pendente',gerado_por:'extracao_documental',
++      evidencias:document?[{documento_id:document.id,pagina:entry.source?.pagina,revisado:false}]:[]};
++    const row={name:entry.name,value:JSON.stringify(entry.value),unit:entry.unit || '',documentId:document?.id || '',page:String(entry.source?.pagina || ''),reviewed:false,fiber:'',original,dirty:false};
++    setRows(previous=>{
++      if(previous.some(old=>old.name===row.name)) return previous;
++      return [...previous,row];
++    });
++    if(savedEntries.some(old=>old.name===entry.name)) toast.info('Este atributo já existe. Confira o valor salvo antes de substituí-lo.');
++    else toast.info(document?'Sugestão adicionada ao rascunho. Confira o valor e a variante antes de salvar.':'Sugestão no rascunho. Anexe o PDF correspondente para conferir a evidência.');
++    setOpen(true);
++  }
+   async function save() {
+     setBusy(true);
+     try {
+@@ -60,6 +88,7 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+         const first=original.evidencias?.[0];
+         const evidence=row.documentId?[{...(first?.documento_id===row.documentId?first:{}),documento_id:row.documentId,pagina:Number(row.page),revisado:row.reviewed},...(first?.documento_id===row.documentId?(original.evidencias || []).slice(1).map((e:any)=>row.dirty?{...e,revisado:false}:e):[])]:[];
+         const entry:any={...original,valor:value,evidencias:evidence};
++        if(row.reviewed && original.validacao==='aplicabilidade_pendente')entry.validacao='conferido_no_documento';
+         delete entry.unidade;delete entry.escopo;
+         if(row.unit)entry.unidade=row.unit;if(Object.keys(scope).length)entry.escopo=scope;
+         if(row.dirty || (!first && row.documentId)) {entry.gerado_por='edicao_manual';entry.validacao='informado_manualmente';entry.origem_anterior=original.origem;entry.origem={tipo:'manual'};}
+@@ -79,18 +108,32 @@ export function TechnicalSheetEditor({productId, category, specification, onSave
+     } catch(e:any) {toast.error(e.message)} finally {setBusy(false)}
+   }
+   return <section className="sm:col-span-2 min-w-0 space-y-3 rounded-lg border bg-muted/20 p-4">
+-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">Ficha técnica</h3><p className="mt-1 text-sm text-muted-foreground">{savedCount} especificações salvas · valores, unidades e fontes do produto</p></div><Button type="button" variant="outline" onClick={()=>{loadSheet();setOpen(true);}}><Pencil className="h-4 w-4"/>Alterar atributos</Button></div>
++    <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">Ficha técnica</h3><p className="mt-1 text-sm text-muted-foreground">{savedCount} especificações do produto · valores, unidades e fontes do produto</p></div><Button type="button" variant="outline" onClick={()=>{loadSheet();setReviewWarning('');setOpen(true);}}><Pencil className="h-4 w-4"/>Alterar atributos</Button></div>
+     <p className="text-xs text-muted-foreground">Confira e edite as especificações em uma tabela. Dados informados pela LPU continuam identificados pela sua origem.</p>
++    {descriptions.length>0 && <div className="space-y-2 rounded-md border bg-background p-3" aria-label="Descrição técnica do produto"><h4 className="text-sm font-medium">Descrição técnica do produto</h4>{descriptions.map((entry,index)=><p key={index} className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{display(entry.valor)}</p>)}</div>}
++    {visibleEntries.length>0 && <div className="max-h-80 overflow-auto rounded border"><table aria-label="Ficha técnica ponto a ponto" className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr>{['Característica','Valor','Unidade','Origem / situação'].map(title=><th key={title} className="p-2">{title}</th>)}</tr></thead><tbody>{visibleEntries.map((entry,index)=><tr key={index} className="border-t align-top"><th className="p-2 font-medium break-words">{entry.name.replace(/_/g,' ')}</th><td className="p-2 max-w-sm break-words">{readableExtraction(entry.valor)}{entry.condicao && <p className="text-xs text-muted-foreground">Condição: {display(entry.condicao)}</p>}</td><td className="p-2">{entry.unidade || '—'}</td><td className="p-2 text-xs">{entry.pendente?'Datasheet · conferir aplicabilidade':entry.origem?.tipo==='lpu'?'LPU':entry.evidencias?.length?'Documento vinculado':entry.origem?.tipo==='datasheet'?'Extração documental':'Cadastro'}{entry.validacao==='aplicabilidade_pendente' && <p>Aplicabilidade pendente</p>}{entry.origem?.pagina && ` · página ${entry.origem.pagina}`}</td></tr>)}</tbody></table></div>}
++    {!visibleEntries.length && <p className="text-sm text-muted-foreground">Nenhuma especificação estruturada disponível. Importe o JSON deste produto ou adicione os atributos.</p>}
++    {groups.length>0 && <details className="rounded border p-3"><summary className="cursor-pointer text-sm">Extrações dos documentos para conferir ({groups.reduce((count,group)=>count+group.items.length,0)})</summary>
++      <p className="my-3 text-xs text-muted-foreground">Escolha um atributo para abrir o rascunho da ficha. Mínimo, típico e máximo permanecem separados. Adicionar não confirma aplicabilidade nem evidência documental.</p>
++      <div className="space-y-3">{groups.map(group=><details key={group.key} open={group.relevant} className="rounded-md border p-3">
++        <summary className="cursor-pointer text-sm font-medium">{group.specific?'Documento específico — conferir variante':group.relevant?'Página com o identificador do produto':'Outras páginas / famílias — conferir aplicabilidade'} ({group.items.length})<span className="mt-1 block text-xs font-normal text-muted-foreground">Documento {group.hash.slice(0,12)}{group.source && /^https?:\/\//i.test(group.source)?` · ${group.source.split('/').pop()}`:''}</span></summary>
++        {group.conflicts.map((warning:string,index:number)=><p role="alert" key={index} className="my-3 rounded border border-amber-500/50 bg-amber-500/10 p-3 text-sm">{warning}</p>)}
++        <div className="mt-3 max-h-96 overflow-auto"><table aria-label="Extrações documentais pendentes" className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr>{['Característica','Valor / limites','Unidade','Fonte',''].map((title,index)=><th key={index} className="p-2">{title}</th>)}</tr></thead><tbody>{group.items.map((entry:any,index:number)=><tr key={index} className="border-t align-top"><td className="p-2">{extractionLabel(entry.name)}</td><td className="p-2 max-w-sm break-words">{readableExtraction(entry.raw)}{entry.condition && <details className="mt-1 text-xs text-muted-foreground"><summary className="cursor-pointer">Condições e original</summary><p>{entry.condition}</p><p className="mt-1">{display(entry.original.valor)}</p></details>}</td><td className="p-2">{entry.unit || '—'}</td><td className="p-2 text-xs">Página {entry.source?.pagina || 'não informada'}{entry.source?.tabela && ` · tabela ${entry.source.tabela}`}</td><td className="p-2"><Button type="button" size="sm" variant="outline" onClick={()=>adopt(entry,group)}>Adicionar à ficha</Button></td></tr>)}</tbody></table></div>
++      </details>)}</div>
++    </details>}
++
+     <Dialog open={open} onOpenChange={value=>{if(!busy)setOpen(value);}}><DialogContent className="max-h-[92vh] w-[96vw] max-w-6xl overflow-hidden flex flex-col">
+       <DialogHeader><DialogTitle>Alterar atributos{productName?` — ${productName}`:''}</DialogTitle><DialogDescription>Edite os valores salvos ou adicione especificações. Confira o documento antes de marcar uma evidência como revisada.</DialogDescription></DialogHeader>
+       <div className="min-w-0 min-h-0 space-y-4 overflow-y-auto">
++        {reviewWarning && <p role="alert" className="rounded border border-amber-500/50 p-3 text-sm">{reviewWarning}</p>}
+         <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm font-medium">Revisão e variante da ficha</summary><div className="mt-3 flex flex-wrap gap-3"><label className="text-sm">Revisão<input aria-label="Revisão da ficha" className="mt-1 block rounded border bg-background p-2" value={revision} onChange={e=>setRevision(e.target.value)}/></label><label className="text-sm">Variante<input aria-label="Variante da ficha" className="mt-1 block rounded border bg-background p-2" value={variant} onChange={e=>setVariant(e.target.value)}/></label></div></details>
+         <details className="rounded-md border p-3"><summary className="cursor-pointer text-sm font-medium">Preencher sugestões a partir de um PDF</summary><div className="mt-3 flex flex-wrap gap-2"><select aria-label="PDF para sugestões" className="max-w-full rounded border bg-background p-2 text-sm" value={draftDocument} onChange={e=>setDraftDocument(e.target.value)}><option value="">Selecionar PDF</option>{documents.filter(d=>d.original_filename.toLowerCase().endsWith('.pdf')).map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select><Button type="button" variant="outline" disabled={busy || !draftDocument} onClick={suggest}>Sugerir atributos do PDF</Button></div></details>
++        {rows.some(row=>isDescription(row)) && <div className="space-y-3 rounded-md border p-3"><h4 className="text-sm font-medium">Descrição técnica do produto</h4>{rows.map((row,index)=>isDescription(row)?<textarea key={index} aria-label={`Descrição técnica ${index+1}`} className="min-h-24 w-full rounded border bg-background p-2 text-sm" value={(()=>{try{return display(JSON.parse(row.value))}catch{return row.value}})()} onChange={event=>edit(index,{value:JSON.stringify(event.target.value)})}/>:null)}</div>}
+         <div className="overflow-x-auto rounded-md border"><table aria-label="Especificações técnicas do produto" className="w-full min-w-[850px] text-left text-sm"><thead className="bg-muted"><tr>{['Atributo','Valor','Unidade','Origem / evidência','Revisão','Ações'].map(t=><th scope="col" key={t} className="p-3">{t}</th>)}</tr></thead><tbody>
+-        {rows.map((row,i)=><tr key={i} className="border-t align-top"><td className="p-2"><input aria-label={`Atributo ${i+1}`} className="w-44 rounded border bg-background p-2" placeholder="portas_rj45" value={row.name} onChange={e=>edit(i,{name:e.target.value})}/>{(row.fiber || /transceiver|transceptor|sfp|optico/i.test(category)) && <select aria-label={`Condição de fibra ${i+1}`} className="mt-2 w-44 rounded border bg-background p-2 text-xs" value={row.fiber} onChange={e=>edit(i,{fiber:e.target.value})}><option value="">Sem condição de fibra</option>{['OM1','OM2','OM3','OM4','OM5','SMF','MMF'].map(f=><option key={f} value={f}>{f}</option>)}</select>}</td>
++        {rows.map((row,i)=>isDescription(row)?null:<tr key={i} className="border-t align-top"><td className="p-2"><input aria-label={`Atributo ${i+1}`} className="w-44 rounded border bg-background p-2" placeholder="portas_rj45" value={row.name} onChange={e=>edit(i,{name:e.target.value})}/>{(row.fiber || /transceiver|transceptor|sfp|optico/i.test(category)) && <select aria-label={`Condição de fibra ${i+1}`} className="mt-2 w-44 rounded border bg-background p-2 text-xs" value={row.fiber} onChange={e=>edit(i,{fiber:e.target.value})}><option value="">Sem condição de fibra</option>{['OM1','OM2','OM3','OM4','OM5','SMF','MMF'].map(f=><option key={f} value={f}>{f}</option>)}</select>}</td>
+           <td className="p-2"><textarea aria-label={`Valor ${i+1}`} className="min-h-12 w-44 rounded border bg-background p-2" placeholder='24, "L3", [10,100,1000]' value={row.value} onChange={e=>edit(i,{value:e.target.value})}/></td>
+           <td className="p-2"><input aria-label={`Unidade ${i+1}`} className="w-20 rounded border bg-background p-2" placeholder="un." value={row.unit} onChange={e=>edit(i,{unit:e.target.value})}/></td>
+-          <td className="p-2"><select aria-label={`Documento ${i+1}`} className="w-52 rounded border bg-background p-2 text-xs" value={row.documentId} onChange={e=>edit(i,{documentId:e.target.value})}><option value="">Sem evidência documental</option>{documents.map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select>{row.documentId && <input aria-label={`Página ${i+1}`} className="mt-2 w-24 rounded border bg-background p-2" type="number" min={1} placeholder="Página" disabled={!row.documentId} value={row.page} onChange={e=>edit(i,{page:e.target.value})}/>}<p className="mt-1 text-xs text-muted-foreground">{row.dirty?'Edição manual':row.original?.origem?.tipo==='lpu'?'Fonte: LPU':row.original?.origem?.tipo==='manual'?'Fonte: edição manual':row.documentId?'Fonte: documento vinculado':'Fonte sem documento'}</p></td>
++          <td className="p-2"><select aria-label={`Documento ${i+1}`} className="w-52 rounded border bg-background p-2 text-xs" value={row.documentId} onChange={e=>edit(i,{documentId:e.target.value})}><option value="">Sem evidência documental</option>{documents.map(d=><option key={d.id} value={d.id}>v{d.version} — {d.original_filename}</option>)}</select>{row.documentId && <input aria-label={`Página ${i+1}`} className="mt-2 w-24 rounded border bg-background p-2" type="number" min={1} placeholder="Página" disabled={!row.documentId} value={row.page} onChange={e=>edit(i,{page:e.target.value})}/>}<p className="mt-1 text-xs text-muted-foreground">{row.original?.validacao==='aplicabilidade_pendente'?'Extração documental · conferir aplicabilidade':row.dirty?'Edição manual':row.original?.origem?.tipo==='lpu'?'Fonte: LPU':row.original?.origem?.tipo==='manual'?'Fonte: edição manual':row.documentId?'Fonte: documento vinculado':'Fonte sem documento'}</p></td>
+           <td className="p-2"><label className="flex gap-2 text-xs"><input aria-label={`Conferir atributo ${i+1}`} type="checkbox" disabled={!row.documentId} checked={row.reviewed} onChange={e=>edit(i,{reviewed:e.target.checked})}/>Conferido no documento</label></td><td className="p-2"><Button aria-label={`Remover atributo ${i+1}`} type="button" size="sm" variant="ghost" disabled={busy} onClick={()=>setRows(previous=>previous.filter((_,j)=>j!==i))}><Trash2 className="h-4 w-4"/></Button></td></tr>)}
+         {rows.length===0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhum atributo salvo. Adicione uma especificação para começar.</td></tr>}
+         </tbody></table></div>
+diff --git a/src/pages/MarketIntelligence.test.tsx b/src/pages/MarketIntelligence.test.tsx
+index 84d4cf2..8859164 100644
+--- a/src/pages/MarketIntelligence.test.tsx
++++ b/src/pages/MarketIntelligence.test.tsx
+@@ -4,10 +4,10 @@ import { cleanup } from '@testing-library/react';
+ import { MemoryRouter } from 'react-router-dom';
+ import MarketIntelligence from './MarketIntelligence';
+
+-vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ order: async () => ({ data: [
++vi.mock('@/integrations/supabase/client', () => ({ crmFetch: async () => ({ok:true,status:200,payload:{data:[
+   { id: '1', created_at: '2026-10-01', outcome: null, title: 'Equipamentos de rede', state: 'SP', notice_products: [{ id: 'item1', description: 'Switch de 24 portas', technical_characteristics: '24 portas Gigabit', category: 'Switch', quantity: 10, raw_payload: { marca: 'Acme', modelo: 'X24' }, bi_features: { quantidade_portas: '24 Portas' } }] },
+   { id: '2', created_at: '2026-09-01', state: 'RJ', notice_products: [{ category: 'Cabo DAC', quantity: 4, raw_payload: { marca: 'CableCo', modelo: 'DAC3' } }] },
+-], error: null }) }) }) } }));
++]}}) }));
+ vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+ afterEach(cleanup);
+
+diff --git a/src/pages/CommercialIntelligence.test.tsx b/src/pages/CommercialIntelligence.test.tsx
+index 6519473..59aa355 100644
+--- a/src/pages/CommercialIntelligence.test.tsx
++++ b/src/pages/CommercialIntelligence.test.tsx
+@@ -7,6 +7,7 @@ vi.mock('@/lib/commercial-intelligence', async importOriginal => ({
+   marketRequest: vi.fn(),
+ }));
+ import { marketRequest } from '@/lib/commercial-intelligence';
++vi.mock('@/components/market/InteractiveDashboard',()=>({InteractiveDashboard:()=> <p>Demanda carregada do CRM</p>}));
+ import CommercialIntelligence from './CommercialIntelligence';
+
+ afterEach(() => { cleanup(); vi.clearAllMocks(); });
+@@ -24,3 +25,14 @@ describe('commercial intelligence page', () => {
+     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Sessão expirada.'));
+   });
+ });
++
++it('retains the demand report when optional administrative queries fail', async () => {
++  vi.mocked(marketRequest).mockImplementation(async (path:string) => {
++    if(path==='/diagnostic')return {warehouse_ready:true};
++    if(path.startsWith('/report'))return {generated_at:'2026-10-14T12:00:00Z',summary:{internal_demand_items:2},quality:{},product_demand:[],supplier_products:[],timeline:[]};
++    throw new Error('Serviço auxiliar indisponível');
++  });
++  render(<MemoryRouter><CommercialIntelligence /></MemoryRouter>);
++  await waitFor(()=>expect(screen.getByText('Demanda carregada do CRM')).toBeTruthy());
++  await waitFor(()=>expect(screen.getByRole('alert').textContent).toContain('Demanda carregada.'));
++});
+diff --git a/src/lib/market-intelligence.test.ts b/src/lib/market-intelligence.test.ts
+index 24bc011..24f11b8 100644
+--- a/src/lib/market-intelligence.test.ts
++++ b/src/lib/market-intelligence.test.ts
+@@ -55,3 +55,9 @@ describe('market intelligence', () => {
+     expect(demandCsv(rankDemand(items, 'brand'))).toContain('"\'=HYPERLINK(""bad"")"');
+   });
+ });
++
++it('reads the original V7 payload nested by the CRM importer', () => {
++  const [item]=marketItems([notice('1',[{category:'Switch',quantity:13,raw_payload:{_raw_input:{caracteristicas_bi:{quantidade_portas:'24 Portas',portas_acesso:'10 Gigabit'}}}}])]);
++  expect(item.features.ports).toBe('24');
++  expect(item.features.speed).toBe('10 Gigabit');
++});
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/components/notices/DocumentGeneratorDialog.test.tsx b/src/components/notices/DocumentGeneratorDialog.test.tsx
+new file mode 100644
+index 0000000..2ba647b
+--- /dev/null
++++ b/src/components/notices/DocumentGeneratorDialog.test.tsx
+@@ -0,0 +1,17 @@
++import {it,expect,vi} from 'vitest';
++import {render,screen,fireEvent,waitFor} from '@testing-library/react';
++import {DocumentGeneratorDialog} from './DocumentGeneratorDialog';
++const {generate,download}=vi.hoisted(()=>({generate:vi.fn(),download:vi.fn()}));
++vi.mock('@/lib/document-files',()=>({listDocumentTemplates:()=>Promise.resolve([{id:'complementary_declaration',name:'Minuta Tor'}]),listSigners:()=>Promise.resolve([]),generateDocument:generate,downloadDocument:download,previewGeneratedDocument:vi.fn()}));
++vi.mock('sonner',()=>({toast:{success:vi.fn(),error:vi.fn()}}));
++it('archives an unsigned single-item draft and exposes a native Word link instead of an async blob download',async()=>{
++ generate.mockResolvedValue({id:'d1',original_filename:'minuta_item11.docx',download_url:'/api/documents/files/d1/download'});
++ render(<DocumentGeneratorDialog noticeId="n" canEdit initialTemplateId="complementary_declaration" initialItemId="i" triggerLabel="Gerar declaração Tor"/>);
++ fireEvent.click(screen.getByRole('button',{name:'Gerar declaração Tor'}));
++ await screen.findByText('Minuta Tor');
++ fireEvent.click(screen.getByRole('button',{name:'Gerar e arquivar'}));
++ await waitFor(()=>expect(generate).toHaveBeenCalledWith(expect.objectContaining({notice_id:'n',options:expect.objectContaining({item_ids:['i']}),send_for_signature:false})));
++ const link=await screen.findByRole('link',{name:'Baixar Word'});
++ expect(link.getAttribute('href')).toBe('/api/documents/files/d1/download');expect(link.getAttribute('download')).toBe('minuta_item11.docx');
++ expect(download).not.toHaveBeenCalled();expect(screen.getByRole('button',{name:'Gerar e arquivar'}).hasAttribute('disabled')).toBe(true);
++});
+diff --git a/src/components/notices/DocumentGeneratorDialog.tsx b/src/components/notices/DocumentGeneratorDialog.tsx
+index c102b2d..04444a4 100644
+--- a/src/components/notices/DocumentGeneratorDialog.tsx
++++ b/src/components/notices/DocumentGeneratorDialog.tsx
+@@ -5,19 +5,22 @@ import { Textarea } from '@/components/ui/textarea';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { FileText, Loader2 } from 'lucide-react';
+-import { downloadDocument, generateDocument, listDocumentTemplates, listSigners, previewGeneratedDocument, DocumentPreview, DocumentTemplate, SignatureUser } from '@/lib/document-files';
++import { downloadDocument, generateDocument, listDocumentTemplates, listSigners, previewGeneratedDocument, DocumentPreview, DocumentTemplate, SignatureUser, DocumentFile } from '@/lib/document-files';
+ import { documentGenerationNeedsSigner } from '@/lib/document-generation';
+ import { toast } from 'sonner';
+
+-export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { noticeId: string; canEdit: boolean; onGenerated?: () => void }) {
++export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated, initialTemplateId = 'commercial_proposal', initialItemId = '', triggerLabel = 'Gerar documento' }: { noticeId: string; canEdit: boolean; onGenerated?: () => void; initialTemplateId?:string; initialItemId?:string; triggerLabel?:string }) {
+   const [open, setOpen] = useState(false);
+   const [templates, setTemplates] = useState<DocumentTemplate[]>([]);
+   const [signers, setSigners] = useState<SignatureUser[]>([]);
+-  const [templateId, setTemplateId] = useState('commercial_proposal');
++  const [templateId, setTemplateId] = useState(initialTemplateId);
++  const [availableItems,setAvailableItems] = useState<any[]>([]);
++  const [itemId,setItemId] = useState(initialItemId);
+   const [signerId, setSignerId] = useState('');
+   const [sendForSignature, setSendForSignature] = useState(false);
+   const [justification, setJustification] = useState('');
+   const [preview, setPreview] = useState<DocumentPreview | null>(null);
++  const [generated,setGenerated] = useState<DocumentFile | null>(null);
+   const [loading, setLoading] = useState(false);
+   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+
+@@ -32,14 +35,15 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+     setLoading(true);
+     try {
+       const signer = signers.find((item) => String(item.id) === signerId);
+-      setPreview(await previewGeneratedDocument(templateId, {
++      const result=await previewGeneratedDocument(templateId, {
+         notice_id: noticeId,
+         company: {},
+         options: {
+-          justification,
++          justification, item_ids:itemId?[itemId]:[],
+           signer: signer ? { name: signer.full_name || signer.email, email: signer.email, cpf: signer.cpf, role: signer.role } : {},
+         },
+-      }));
++      });
++      setPreview(result);setAvailableItems((result.fields as any)?.declaration?.available_items || []);
+     } catch (error: any) { toast.error(error?.message ?? 'Não foi possível revisar os dados.'); }
+     finally { setLoading(false); }
+   }
+@@ -53,11 +57,12 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+     try {
+       const document = await generateDocument({
+         notice_id: noticeId, template_id: templateId, company: {},
+-        options: { justification }, signer_id: signerId ? Number(signerId) : undefined,
++        options: { justification, item_ids:itemId?[itemId]:[] }, signer_id: signerId ? Number(signerId) : undefined,
+         send_for_signature: sendForSignature,
+         idempotency_key: idempotencyKey,
+       });
+       toast.success('Documento gerado e arquivado na biblioteca');
++      if(templateId==='complementary_declaration'){setGenerated(document);setIdempotencyKey(crypto.randomUUID());onGenerated?.();return;}
+       await downloadDocument(document);
+       setIdempotencyKey(crypto.randomUUID());
+       setOpen(false); onGenerated?.();
+@@ -66,18 +71,20 @@ export function DocumentGeneratorDialog({ noticeId, canEdit, onGenerated }: { no
+   }
+
+   return (
+-    <Dialog open={open} onOpenChange={setOpen}>
+-      <DialogTrigger asChild><Button disabled={!canEdit}><FileText className="h-4 w-4" />Gerar documento</Button></DialogTrigger>
++    <Dialog open={open} onOpenChange={value=>{setOpen(value);if(value)setGenerated(null);}}>
++      <DialogTrigger asChild><Button disabled={!canEdit}><FileText className="h-4 w-4" />{triggerLabel}</Button></DialogTrigger>
+       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+         <DialogHeader><DialogTitle>Gerar documento</DialogTitle></DialogHeader>
+         <div className="grid gap-4 sm:grid-cols-2">
+-          <div><label className="text-sm font-medium">Modelo</label><Select value={templateId} onValueChange={(value) => { setTemplateId(value); setPreview(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{templates.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div>
++          <div><label className="text-sm font-medium">Modelo</label><Select value={templateId} onValueChange={(value) => { setTemplateId(value); setPreview(null);setGenerated(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{templates.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></div>
+           <div><label className="text-sm font-medium">Assinante</label><Select value={signerId} onValueChange={(value) => { setSignerId(value); setPreview(null); }}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{signers.map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.full_name || item.email}</SelectItem>)}</SelectContent></Select></div>
+           <label className="flex items-center gap-2 pt-6"><Checkbox checked={sendForSignature} onCheckedChange={(value) => setSendForSignature(value === true)} />Enviar para assinatura</label>
+-          {templateId === 'feasibility_declaration' && <div className="sm:col-span-2"><label className="text-sm font-medium">Justificativa de exequibilidade</label><Textarea value={justification} onChange={(event) => setJustification(event.target.value)} /></div>}
++          {templateId === 'complementary_declaration' && <div className="sm:col-span-2 space-y-2"><p className="text-sm">Minuta em nome da Tor, com um item e modelo por documento. Os requisitos, dados do produto e pendências vêm da seleção salva no match. A geração não confirma atendimento técnico.</p>{!initialItemId && <label className="block text-sm">Item do match<select aria-label="Item da declaração" className="mt-1 w-full rounded border bg-background p-2" value={itemId} onChange={event=>{setItemId(event.target.value);setPreview(null);}}><option value="">Clique em Revisar dados para listar os itens</option>{availableItems.map((entry:any)=><option key={entry.id} value={entry.id}>Item {entry.item} · {entry.brand} {entry.model} · {entry.sku}</option>)}</select></label>}</div>}
++          {templateId === 'feasibility_declaration'  && <div className="sm:col-span-2"><label className="text-sm font-medium">Justificativa de exequibilidade</label><Textarea value={justification} onChange={(event) => setJustification(event.target.value)} /></div>}
+         </div>
+-        {preview && <div className="rounded-md border p-3 text-sm"><p className="font-medium">Dados que serão utilizados</p><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(preview.fields, null, 2)}</pre>{preview.missing_fields.length > 0 && <p className="mt-2 text-destructive">Pendências: {preview.missing_fields.join(', ')}</p>}</div>}
+-        <div className="flex justify-end gap-2"><Button variant="outline" onClick={review} disabled={loading}>Revisar dados</Button><Button onClick={generate} disabled={loading || documentGenerationNeedsSigner(sendForSignature, signerId) || Boolean(preview?.missing_fields.length)}>{loading && <Loader2 className="h-4 w-4 animate-spin" />}Gerar e arquivar</Button></div>
++        {generated && <div role="status" className="space-y-3 rounded-md border p-3"><p className="text-sm font-medium">Minuta gerada e arquivada no edital</p><p className="break-all text-xs text-muted-foreground">{generated.original_filename}</p><Button asChild><a href={`/api/documents/files/${encodeURIComponent(generated.id)}/download`} download={generated.original_filename}>Baixar Word</a></Button></div>}
++        {preview && !generated && <div className="rounded-md border p-3 text-sm"><p className="font-medium">Dados que serão utilizados</p><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(preview.fields, null, 2)}</pre>{preview.missing_fields.length > 0 && <p className="mt-2 text-destructive">Pendências: {preview.missing_fields.join(', ')}</p>}</div>}
++        <div className="flex justify-end gap-2"><Button variant="outline" onClick={review} disabled={loading}>Revisar dados</Button><Button onClick={generate} disabled={loading || Boolean(generated) || documentGenerationNeedsSigner(sendForSignature, signerId) || Boolean(preview?.missing_fields.length)}>{loading && <Loader2 className="h-4 w-4 animate-spin" />}Gerar e arquivar</Button></div>
+       </DialogContent>
+     </Dialog>
+   );
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/components/notices/CatalogFacetMatch.test.tsx b/src/components/notices/CatalogFacetMatch.test.tsx
+new file mode 100644
+index 0000000..3d724b4
+--- /dev/null
++++ b/src/components/notices/CatalogFacetMatch.test.tsx
+@@ -0,0 +1,20 @@
++import {it,expect,vi} from 'vitest';
++import {render,screen,fireEvent,waitFor,within} from '@testing-library/react';
++import {ManualItemMatch} from './CatalogFacetMatch';
++const {fetchMock}=vi.hoisted(()=>({fetchMock:vi.fn()}));
++vi.mock('@/integrations/supabase/client',()=>({crmFetch:fetchMock}));
++vi.mock('sonner',()=>({toast:{success:vi.fn()}}));
++it('uses the selected product and preserves pending evidence instead of approving a filter',async()=>{
++ const state={categoria:'switch',requisitos:[{id:'rj',atributo:'portas_rj45',valor:24,operador:'>=',texto_original:'No mínimo 24 portas RJ45'}],catalog_filters:{}};
++ const payload={state,base_revision:'1',categorias:{switch:1},campos_categoria:{switch:['portas_rj45','poe']},campos:[{nome:'portas_rj45',rotulo:'Portas RJ45',unit:'un.'},{nome:'poe',rotulo:'PoE'}],facetas:{portas_rj45:[48],poe:[true]},candidatos:[{id:'p',sku:'SW48',nome:'Switch 48',status_filtro:'ATENDE',atributos:{portas_rj45:{valor:48,unidade:'un.'},poe:{valor:true}}}]};
++ fetchMock.mockImplementation(async(_url,options)=>({ok:true,payload:{...payload,comparacao:options&&JSON.parse(options.body).catalog_product_id?{detalhes:[{atributo:'categoria',status:'ATENDE'},{atributo:'portas_rj45',status:'VERIFICAR',motivo:'Valor sem evidencia documental revisada'}]}:null}}));
++ render(<ManualItemMatch noticeId="n" item={{id:'i',category:'switch',description:'Switch 24 portas'}} canEdit onSaved={()=>{}}/>);
++ await waitFor(()=>expect(screen.getByLabelText('Meu produto para comparação').hasAttribute('disabled')).toBe(false),{timeout:5000});
++ for(const name of ['Tipo','Descrição','Valor do item do edital','Valor do meu produto','Atende / Não atende'])expect(screen.getByRole('columnheader',{name,exact:true})).toBeTruthy();
++ expect(screen.queryByText('Atende',{exact:true})).toBeNull();
++ fireEvent.change(screen.getByLabelText('Meu produto para comparação'),{target:{value:'p'}});
++ await screen.findByText('Valor sem evidencia documental revisada');
++ const row=screen.getByText('Portas RJ45',{exact:true}).closest('tr')!;
++ expect(within(row).getByText('Mínimo 24')).toBeTruthy();expect(within(row).getAllByText('48 un.')).toHaveLength(2);expect(within(row).getByText('Conferir')).toBeTruthy();
++ expect(within(row).queryByText('Atende',{exact:true})).toBeNull();
++});
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/components/catalog/TechnicalSheetEditor.test.tsx b/src/components/catalog/TechnicalSheetEditor.test.tsx
+new file mode 100644
+index 0000000..ba526fc
+--- /dev/null
++++ b/src/components/catalog/TechnicalSheetEditor.test.tsx
+@@ -0,0 +1,26 @@
++import {beforeEach,describe,it,expect,vi} from 'vitest';
++import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
++import {TechnicalSheetEditor} from './TechnicalSheetEditor';
++const {fetchMock}=vi.hoisted(()=>({fetchMock:vi.fn()}));
++vi.mock('@/integrations/supabase/client',()=>({crmFetch:fetchMock}));
++vi.mock('@/lib/document-files',()=>({listCatalogDatasheets:()=>Promise.resolve([{id:'private-doc',original_filename:'abc.pdf',version:1}])}));
++vi.mock('sonner',()=>({toast:{info:vi.fn(),error:vi.fn(),success:vi.fn()}}));
++const specification=JSON.stringify({atributos:{descricao_tecnica_original:{valor:'XFP, SMF',origem:{tipo:'lpu'}}},importacao_json_produto:{descricoes_lpu:['XFP'],datasheets:[{sha256:'abc',paginas_com_identificador:[{pagina:2}]}],transcricao_integral:[{documento_sha256:'abc',paginas:[{},{}]}],especificacoes_tecnicas:[{nome:'tensao_alimentacao',valor_normalizado:{Min:3.14,Typ:3.3,Max:3.47},unidade:'V',validacao:'revisar_aplicabilidade',fonte:{tipo:'datasheet',documento_sha256:'abc',pagina:1,tabela:1}},{nome:'description',valor:'SFP+, 40km',fonte:{documento_sha256:'abc',pagina:2},validacao:'revisar_aplicabilidade'}]}});
++beforeEach(()=>{cleanup();fetchMock.mockReset();fetchMock.mockImplementation(async (_path,init)=>({ok:true,payload:{technical_sheet:JSON.parse(init.body)}}));});
++describe('technical extraction adoption',()=>{
++ it('saves explicit limits and provenance without claiming review, while retaining the archive',async()=>{
++  const saved=vi.fn();render(<TechnicalSheetEditor productId="p" category="transceiver" specification={specification} onSaved={saved}/>);
++  fireEvent.click(screen.getByText(/Extrações dos documentos para conferir/));
++  expect(screen.getByText(/Formato divergente: LPU XFP/)).toBeTruthy();
++  expect(screen.getByText('Mín.: 3.14 · Típ.: 3.3 · Máx.: 3.47')).toBeTruthy();
++  await waitFor(()=>expect(screen.getAllByText('Adicionar à ficha')).toHaveLength(2));
++  fireEvent.click(screen.getAllByText('Adicionar à ficha')[0]);
++  expect((screen.getByLabelText('Conferir atributo 2') as HTMLInputElement).checked).toBe(false);
++  fireEvent.click(screen.getByText('Salvar atributos'));
++  await waitFor(()=>expect(saved).toHaveBeenCalledTimes(1));
++  const sheet=JSON.parse(saved.mock.calls[0][0]);
++  expect(sheet.atributos.tensao_alimentacao).toMatchObject({valor:{min:3.14,tipico:3.3,max:3.47},unidade:'V',validacao:'aplicabilidade_pendente',evidencias:[{documento_id:'private-doc',pagina:1,revisado:false}],origem:{documento_sha256:'abc'},extracao_original:{nome:'tensao_alimentacao'}});
++  expect(sheet.importacao_json_produto.especificacoes_tecnicas).toHaveLength(2);
++  expect(sheet.atributos.descricao_tecnica_original.valor).toBe('XFP, SMF');
++ });
++});
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/lib/catalog-extractions.ts b/src/lib/catalog-extractions.ts
+new file mode 100644
+index 0000000..2c6b3c8
+--- /dev/null
++++ b/src/lib/catalog-extractions.ts
+@@ -0,0 +1,70 @@
++/** Deterministic review proposals. Document scope never implies technical approval. */
++export const extractionText = (value: any): string => value == null ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
++const present = (value: any) => value != null && !['', '-', '—'].includes(String(value).trim());
++export function extractionValue(value: any) {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
++  const range: Record<string, any> = {};
++  for (const [source, target] of [['Min','min'],['Typ','tipico'],['Max','max']]) {
++    if (present(value[source])) range[target] = value[source];
++  }
++  return Object.keys(range).length ? range : value;
++}
++export function readableExtraction(value: any): string {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) return extractionText(value);
++  const range = extractionValue(value);
++  if (range !== value) return Object.entries(range).map(([key,v]) => `${({min:'Mín.',tipico:'Típ.',max:'Máx.'} as any)[key]}: ${extractionText(v)}`).join(' · ');
++  return Object.entries(value).map(([key,v]) => `${({min:'Mín.',tipico:'Típ.',max:'Máx.'} as any)[key] || key.replace(/\s+/g,' ')}: ${extractionText(v)}`).join(' · ');
++}
++function textualAttribute(text: string) {
++  if (/^Digital Diagnostics Monitoring \(DDM\)$/i.test(text)) return {name:'ddm',value:true};
++  const connector = text.match(/^([\w+-]+) Connector Type$/i);
++  if (connector) return {name:'conector',value:connector[1]};
++  const fiber = text.match(/^(SMF|MMF) Transmission Medium$/i);
++  if (fiber) return {name:'tipo_fibra',value:fiber[1].toUpperCase()};
++  const power = text.match(/^([<>≤≥]?)\s*(\d+(?:\.\d+)?)\s*W Power Dissipation$/i);
++  if (power) return {name:'dissipacao_potencia',value:{operador:power[1] || '=',valor:Number(power[2])},unit:'W'};
++  if (/^PIN Receiver$/i.test(text)) return {name:'tipo_receptor',value:'PIN'};
++  return null;
++}
++export function extractionGroups(archive: any) {
++  const specs = Array.isArray(archive?.especificacoes_tecnicas) ? archive.especificacoes_tecnicas : [];
++  const docs = Array.isArray(archive?.datasheets) ? archive.datasheets : [];
++  const transcripts = Array.isArray(archive?.transcricao_integral) ? archive.transcricao_integral : [];
++  const groups = new Map<string, any>();
++  for (const spec of specs) {
++    if (!spec || spec.validacao === 'informado_na_lpu') continue;
++    const hash = spec.fonte?.documento_sha256 || 'sem-documento';
++    const doc = docs.find((d:any) => d.sha256 === hash);
++    const transcript = transcripts.find((d:any) => d.documento_sha256 === hash);
++    const exactPages = (doc?.paginas_com_identificador || []).map((p:any) => p.pagina);
++    // Only prioritize a short document with the exact identifier, never every page of a guide.
++    const specific = exactPages.length > 0 && transcript?.paginas?.length > 0 && transcript.paginas.length <= 4;
++    const relevant = specific || exactPages.includes(spec.fonte?.pagina);
++    const key = `${hash}:${relevant ? 'modelo' : 'geral'}`;
++    if (!groups.has(key)) groups.set(key, {key,hash,relevant,specific,source:doc?.origens?.find((s:any)=>s.url)?.url,items:[],conflicts:[]});
++    const name = spec.chave_padronizada || spec.nome || 'caracteristica_textual';
++    const raw = spec.valor_normalizado ?? spec.valor;
++    const parsed = /caracteristica[ _]textual/i.test(name) && typeof raw === 'string' ? textualAttribute(raw) : null;
++    const entry = {name:parsed?.name || name,value:parsed?.value ?? extractionValue(raw),unit:parsed?.unit || spec.unidade,raw,source:spec.fonte,condition:spec.condicao,original:spec};
++    const group = groups.get(key);
++    if (!group.items.some((old:any)=>old.name===entry.name && JSON.stringify(old.value)===JSON.stringify(entry.value) && old.source?.pagina===entry.source?.pagina)) group.items.push(entry);
++    if (name === 'description' && typeof raw === 'string') {
++      const lpu = (archive.descricoes_lpu || []).join(' ');
++      const form = (text:string) => text.match(/\b(QSFP28|QSFP\+|SFP28|SFP\+|XFP)\b|\b(QSFP\+|SFP\+)(?=[,\s]|$)/i)?.[0]?.toUpperCase();
++      const expected=form(lpu), observed=form(raw);
++      if (expected && observed && expected!==observed) group.conflicts.push(`Formato divergente: LPU ${expected}; descrição do documento ${observed}. Confira com o fabricante antes de usar os dados desta variante.`);
++    }
++  }
++  return [...groups.values()].sort((a,b)=>Number(b.relevant)-Number(a.relevant));
++}
++
++const labels:Record<string,string>={
++ case_operating_temperature_commercial:'Temperatura de operação · comercial',case_operating_temperature_industrial:'Temperatura de operação · industrial',
++ tensao_alimentacao:'Tensão de alimentação',power_supply_current:'Corrente de alimentação',storage_humidity:'Umidade de armazenamento',temperatura_armazenamento:'Temperatura de armazenamento',
++ transmission_distance:'Distância de transmissão',data_rate_total:'Taxa de dados',comprimento_onda:'Comprimento de onda TX',receiver_wavelength:'Comprimento de onda RX',
++ transmit_power:'Potência de transmissão',spectral_width:'Largura espectral',side_mode_suppression_ratio:'Supressão de modos laterais (SMSR)',razao_extincao:'Razão de extinção',
++ relative_intensity_noise:'Ruído de intensidade relativa (RIN)',transmitter_off_output_power:'Potência com transmissor desligado',damage_threshold:'Limiar de dano',input_saturation_power:'Potência de saturação',
++ sensibilidade_rx:'Sensibilidade RX',los_assert:'LOS · ativação',los_de_assert:'LOS · desativação',los_hysteresis:'Histerese LOS',caracteristica_textual:'Característica textual',description:'Descrição do documento',
++ tipo_receptor:'Tipo de receptor',tipo_fibra:'Tipo de fibra',conector:'Conector',ddm:'Diagnóstico digital (DDM)',dissipacao_potencia:'Dissipação de potência',
++};
++export const extractionLabel=(name:string)=>labels[name] || name.replace(/_/g,' ');
+diff --git a/Users/alvarosamp/Documents/Projetos/RagMatchAvan-ado/output/technical-preview/crm-session-source/src/lib/catalog-extractions.test.ts b/src/lib/catalog-extractions.test.ts
+new file mode 100644
+index 0000000..483de18
+--- /dev/null
++++ b/src/lib/catalog-extractions.test.ts
+@@ -0,0 +1,33 @@
++import {describe,it,expect} from 'vitest';
++import {extractionGroups,extractionValue,readableExtraction} from './catalog-extractions';
++const spec=(name:string,value:any,page=1)=>({nome:name,valor_normalizado:value,fonte:{documento_sha256:'doc',pagina:page},validacao:'revisar_aplicabilidade'});
++const archive=(specs:any[],pages=2)=>({descricoes_lpu:['XFP, SMF'],datasheets:[{sha256:'doc',paginas_com_identificador:[{pagina:2}]}],transcricao_integral:[{documento_sha256:'doc',paginas:Array.from({length:pages},()=>({}))}],especificacoes_tecnicas:specs});
++describe('catalog extraction review',()=>{
++ it('preserves zero, negative limits and typical values without converting missing limits to zero',()=>{
++  expect(extractionValue({Min:0,Typ:'-',Max:-15,Unit:'dBm'})).toEqual({min:0,max:-15});
++  expect(readableExtraction({Min:3.14,Typ:3.3,Max:3.47})).toBe('Mín.: 3.14 · Típ.: 3.3 · Máx.: 3.47');
++ });
++ it('keeps full unrecognized columns and conditional variants',()=>{
++  const value={'Commercial / Industrial':'0 to +70 / -40 to +85'};
++  expect(extractionValue(value)).toEqual(value);
++ });
++ it('separates guide pages from the exact model page',()=>{
++  const groups=extractionGroups(archive([spec('accessory','Bluetooth',24),spec('description','XFP',2)],30));
++  expect(groups.map(g=>g.relevant)).toEqual([true,false]);
++  expect(groups[0].items[0].raw).toBe('XFP');
++ });
++ it('flags the real XFP versus SFP+ mismatch even in a short exact-identifier PDF',()=>{
++  const [group]=extractionGroups(archive([spec('description','SFP+, 1270nm Tx/1330nm Rx')]));
++  expect(group.relevant).toBe(true);expect(group.conflicts[0]).toContain('LPU XFP');expect(group.conflicts[0]).toContain('SFP+');
++ });
++ it('turns explicit features into useful attributes while preserving the original evidence',()=>{
++  const [group]=extractionGroups(archive([spec('caracteristica_textual','Digital Diagnostics Monitoring (DDM)'),spec('caracteristica_textual','<2.0W Power Dissipation'),spec('caracteristica_textual','1310 or 1270nm DFB Transmitter')]));
++  expect(group.items[0]).toMatchObject({name:'ddm',value:true,raw:'Digital Diagnostics Monitoring (DDM)'});
++  expect(group.items[1]).toMatchObject({name:'dissipacao_potencia',value:{operador:'<',valor:2},unit:'W'});
++  expect(group.items[2].value).toBe('1310 or 1270nm DFB Transmitter');
++ });
++ it('never infers relevance without an exact identifier or includes LPU as pending',()=>{
++  const a=archive([spec('rate',10),{...spec('lpu',10),validacao:'informado_na_lpu'}]);a.datasheets=[];
++  expect(extractionGroups(a)[0]).toMatchObject({relevant:false});expect(extractionGroups(a)[0].items).toHaveLength(1);
++ });
++});

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 import uuid
 from collections.abc import Awaitable, Callable
@@ -29,6 +30,10 @@ from app.integrations.conlicitacao.schemas import (
 )
 from app.logs.config import logger
 
+# httpx logs every request URL at INFO. Signed document links carry the client
+# token in their query string, so those lines must never reach the app logs.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 @dataclass(frozen=True)
 class ConlicitacaoSettings:
@@ -36,6 +41,7 @@ class ConlicitacaoSettings:
     base_url: str = "https://consultaonline.conlicitacao.com.br"
     token: SecretStr | None = None
     timeout_seconds: float = 15.0
+    bulletin_timeout_seconds: float = 60.0
     max_attempts: int = 3
     backoff_base_seconds: float = 0.5
 
@@ -46,6 +52,10 @@ class ConlicitacaoSettings:
             base_url=app_settings.conlicitacao_base_url.rstrip("/"),
             token=app_settings.conlicitacao_token,
             timeout_seconds=app_settings.conlicitacao_timeout_seconds,
+            bulletin_timeout_seconds=max(
+                app_settings.conlicitacao_timeout_seconds,
+                app_settings.conlicitacao_bulletin_timeout_seconds,
+            ),
         )
 
 
@@ -105,8 +115,13 @@ class ConlicitacaoClient:
     async def get_bulletin(
         self, bulletin_id: int, *, correlation_id: str | None = None
     ) -> ConlicitacaoBulletin:
+        # Boletins grandes já levaram ~14 s na VPS; usam um timeout próprio.
         body = await self._request(
-            "GET", f"/api/boletim/{bulletin_id}", "bulletin", correlation_id=correlation_id
+            "GET",
+            f"/api/boletim/{bulletin_id}",
+            "bulletin",
+            correlation_id=correlation_id,
+            timeout=self.settings.bulletin_timeout_seconds,
         )
         return self._validate(ConlicitacaoBulletin, body)
 
@@ -170,6 +185,77 @@ class ConlicitacaoClient:
             correlation_id=correlation_id,
         )
 
+    async def download_document(
+        self,
+        relative_url: str,
+        *,
+        max_bytes: int,
+        correlation_id: str | None = None,
+    ) -> tuple[bytes, str | None]:
+        """Download a bulletin attachment without exposing its signed URL.
+
+        Bulletin links carry a signed ``auth`` parameter (valid for 24 h) that
+        embeds the client token, so the URL itself is a credential: it is never
+        logged nor returned to the browser. A redirect is followed once, without
+        the token header, because it may point at a third-party storage host.
+        """
+        if not self.configured:
+            raise ConlicitacaoConfigurationError("Integração ConLicitação não configurada.")
+        correlation_id = correlation_id or str(uuid.uuid4())
+        base = httpx.URL(self.settings.base_url + "/")
+        url = base.join(relative_url)
+        if url.host != base.host or url.scheme != base.scheme:
+            raise ConlicitacaoResponseError(
+                502, "Link de documento fora do domínio da ConLicitação."
+            )
+        headers = {
+            "x-auth-token": self.settings.token.get_secret_value(),  # type: ignore[union-attr]
+            "X-Correlation-ID": correlation_id,
+        }
+        timeout = self.settings.bulletin_timeout_seconds
+        try:
+            for hop in range(2):
+                async with self._client.stream(
+                    "GET", url, headers=headers, timeout=timeout
+                ) as response:
+                    if response.is_redirect and hop == 0:
+                        location = response.headers.get("Location")
+                        if not location:
+                            break
+                        url = response.url.join(location)
+                        if url.scheme != "https" and url.host != base.host:
+                            raise ConlicitacaoResponseError(
+                                502, "Redirecionamento de documento inseguro."
+                            )
+                        if url.host != base.host:
+                            headers = {"X-Correlation-ID": correlation_id}
+                        continue
+                    status = response.status_code
+                    metrics.REQUESTS.labels("GET", "document", str(status)).inc()
+                    if status in (401, 403):
+                        raise ConlicitacaoAuthenticationError(
+                            status, "Link do documento rejeitado (expirado ou IP não autorizado)."
+                        )
+                    if status == 404:
+                        raise ConlicitacaoAPIError(404, "Documento não encontrado na ConLicitação.")
+                    if not 200 <= status < 300:
+                        raise ConlicitacaoAPIError(status, "A ConLicitação recusou o download.")
+                    chunks: list[bytes] = []
+                    size = 0
+                    async for chunk in response.aiter_bytes():
+                        size += len(chunk)
+                        if size > max_bytes:
+                            raise ConlicitacaoAPIError(
+                                413, "Documento maior que o limite configurado."
+                            )
+                        chunks.append(chunk)
+                    self._log("request_ok", correlation_id, "document", status=status, bytes=size)
+                    return b"".join(chunks), response.headers.get("Content-Type")
+        except httpx.RequestError as exc:
+            metrics.REQUEST_ERRORS.labels("GET", "document", "network").inc()
+            raise ConlicitacaoAPIError(502, "Falha de rede ao baixar o documento.") from exc
+        raise ConlicitacaoAPIError(502, "Redirecionamentos demais ao baixar o documento.")
+
     async def _request(
         self,
         method: str,
@@ -177,6 +263,7 @@ class ConlicitacaoClient:
         endpoint: str,
         *,
         correlation_id: str | None = None,
+        timeout: float | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         if not self.settings.enabled:
@@ -203,7 +290,7 @@ class ConlicitacaoClient:
                     method,
                     url,
                     headers=headers,
-                    timeout=self.settings.timeout_seconds,
+                    timeout=timeout or self.settings.timeout_seconds,
                     **kwargs,
                 )
             except httpx.RequestError as exc:

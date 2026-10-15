@@ -1,0 +1,571 @@
+diff --git a/src/index.css b/src/index.css
+index 90f4238..f6df578 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -188,3 +188,17 @@
+     @apply rounded-md border bg-muted/25;
+   }
+ }
++
++@media print {
++  @page { size: A4 landscape; margin: 12mm; }
++  body:has(.market-report) aside,
++  body:has(.market-report) header,
++  main:has(.market-report) > :not(.market-report) { display: none !important; }
++  body:has(.market-report), body:has(.market-report) #root,
++  body:has(.market-report) main { background: white; color: black; min-height: 0; }
++  .market-report { padding: 0 !important; max-width: none; }
++  .market-report .overflow-x-auto { overflow: visible; }
++  .market-report table { min-width: 0; width: 100%; font-size: 10px; }
++  .market-report tr { break-inside: avoid; }
++  .market-report thead { display: table-header-group; }
++}
+diff --git a/src/pages/MarketIntelligence.tsx b/src/pages/MarketIntelligence.tsx
+index c72ec0b..761601c 100644
+--- a/src/pages/MarketIntelligence.tsx
++++ b/src/pages/MarketIntelligence.tsx
+@@ -6,83 +6,142 @@ import { Button } from '@/components/ui/button';
+ import { Badge } from '@/components/ui/badge';
+ import { BarChart3, Loader2, Search, ShieldCheck, Tag, Wrench } from 'lucide-react';
+ import { toast } from 'sonner';
++import { DIMENSIONS, marketItems, rankDemand, demandCsv, normalizeText, marketExportJson } from '@/lib/market-intelligence';
+ 
+ type Notice = any;
+ 
+-type ProductIntelRow = {
+-  key: string;
+-  label: string;
+-  category: string;
+-  quantity: number;
+-  notices: number;
+-  totalValue: number;
+-  exclusive: number;
+-  brandDirected: number;
+-  installRisk: number;
+-  states: Set<string>;
+-  portals: Set<string>;
+-};
+-
+ export default function MarketIntelligence() {
+   const [loading, setLoading] = useState(true);
++  const [exporting, setExporting] = useState(false);
+   const [notices, setNotices] = useState<Notice[]>([]);
+   const [search, setSearch] = useState('');
+   const [riskOnly, setRiskOnly] = useState(false);
++  const [dimension, setDimension] = useState('category');
++  const [metric, setMetric] = useState<'quantity' | 'items' | 'notices' | 'totalValue'>('quantity');
++  const [category, setCategory] = useState('');
++  const [state, setState] = useState('');
++  const [dateFrom, setDateFrom] = useState('');
++  const [dateTo, setDateTo] = useState('');
+ 
+   useEffect(() => { load(); }, []);
+ 
+   async function load() {
+     setLoading(true);
++    try {
+     const { data, error } = await supabase
+       .from('notices')
+-      .select('id, number, tor_id, title, state, municipality_name, outcome, bi_risk_identified, bi_risk_operational, particularities, portals(name), organs(name, city, state), notice_products(*)')
++      .select('id, created_at, number, tor_id, title, state, municipality_name, outcome, bi_risk_identified, bi_risk_operational, particularities, portals(name), organs(name, city, state), notice_products(*)')
+       .neq('outcome', 'not_pursued')
+       .order('created_at', { ascending: false });
+-    if (error) toast.error(error.message);
+-    setNotices(data ?? []);
+-    setLoading(false);
++      if (error) throw new Error(error.message);
++      setNotices(data ?? []);
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Não foi possível carregar a análise.');
++    } finally {
++      setLoading(false);
++    }
+   }
+ 
+-  const rows = useMemo(() => {
++  const allItems = useMemo(() => marketItems(notices), [notices]);
++  const dimensions = useMemo(() => ({ ...Object.fromEntries(Object.entries(DIMENSIONS).map(([key, value]) => [key, value.label])),
++    ...Object.fromEntries(allItems.flatMap(item => Object.keys(item.features).filter(key => key.startsWith('bi:')).map(key => [key, key.slice(3).replace(/[._]/g, ' ')]))) }), [allItems]);
++  const filteredItems = useMemo(() => allItems.filter(item => {
++    const date = String(item.notice.created_at || '').slice(0, 10);
+     const q = normalizeText(search);
+-    return buildProductIntelligence(notices)
+-      .filter((row) => !riskOnly || row.installRisk > 0 || row.brandDirected > 0)
+-      .filter((row) => !q || normalizeText([row.label, row.category, Array.from(row.states).join(' '), Array.from(row.portals).join(' ')].join(' ')).includes(q));
+-  }, [notices, riskOnly, search]);
+-
+-  const totals = useMemo(() => {
+-    const products = rows.reduce((sum, row) => sum + row.quantity, 0);
+-    const noticesCount = new Set(notices.map((notice) => notice.id)).size;
+-    const riskRows = rows.filter((row) => row.installRisk > 0 || row.brandDirected > 0).length;
+-    const totalValue = rows.reduce((sum, row) => sum + row.totalValue, 0);
+-    return { products, noticesCount, riskRows, totalValue };
+-  }, [notices, rows]);
++    return (!category || item.category === category) && (!state || item.state === state)
++      && (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo)
++      && (!riskOnly || isBrandDirectedProduct(item.product) || hasInstallServiceRisk(item.notice, item.product))
++      && (!q || normalizeText([item.category, item.product.description, ...Object.values(item.features), item.state, item.portal].join(' ')).includes(q));
++  }), [allItems, category, state, dateFrom, dateTo, riskOnly, search]);
++  const demand = useMemo(() => rankDemand(filteredItems, dimension, metric), [filteredItems, dimension, metric]);
++  const rows = useMemo(() => demand.map(row => {
++    const members = filteredItems.filter(item => normalizeText(dimension === 'category' ? item.category : dimension === 'model' && item.features.model ? `${item.features.brand || 'Marca N/C'} · ${item.features.model}` : item.features[dimension]) === row.key);
++    return { ...row, category: dimension === 'category' ? '' : dimensions[dimension],
++      states: new Set(members.map(item => item.state).filter(Boolean)),
++      exclusive: members.filter(item => isExclusiveProduct(item.product)).length,
++      brandDirected: members.filter(item => isBrandDirectedProduct(item.product)).length,
++      installRisk: members.filter(item => hasInstallServiceRisk(item.notice, item.product)).length };
++  }), [demand, filteredItems, dimension, dimensions]);
++  const totals = {
++    products: filteredItems.reduce((sum, item) => sum + item.quantity, 0),
++    noticesCount: new Set(filteredItems.map(item => item.noticeId)).size,
++    riskRows: rows.filter(row => row.installRisk > 0 || row.brandDirected > 0).length,
++    totalValue: filteredItems.reduce((sum, item) => sum + item.totalValue, 0),
++  };
++  const covered = filteredItems.filter(item => dimension === 'category' || item.features[dimension]).length;
++  const coverage = filteredItems.length ? covered / filteredItems.length * 100 : 0;
++  const leaders = ['brand', 'model', 'ports'].map(key => ({ key, leader: rankDemand(filteredItems, key, metric)[0],
++    coverage: filteredItems.filter(item => item.features[key]).length }));
++  const exportCsv = () => {
++    const url = URL.createObjectURL(new Blob([demandCsv(demand)], { type: 'text/csv;charset=utf-8' }));
++    const link = document.createElement('a'); link.href = url; link.download = `inteligencia-mercado-${dimension.replace(/[^a-z0-9]/gi, '-')}.csv`; link.click(); URL.revokeObjectURL(url);
++  };
++  const exportJson = async () => {
++    setExporting(true);
++    try {
++      const { data, error } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
++      if (error) throw new Error(error.message);
++      if (!Array.isArray(data)) throw new Error('Resposta do CRM inválida. Exportação cancelada.');
++      const json = marketExportJson(data, { search, riskOnly, dimension, metric, category, state, dateFrom, dateTo });
++      const url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
++      const link = document.createElement('a');
++      link.href = url;
++      link.download = `inteligencia-mercado-completo-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
++      link.click();
++      setTimeout(() => URL.revokeObjectURL(url), 1000);
++      toast.success(`JSON completo exportado: ${data.length} editais.`);
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Não foi possível exportar o JSON.');
++    } finally {
++      setExporting(false);
++    }
++  };
+ 
+   return (
+-    <div className="p-6 lg:p-8 space-y-5 max-w-[1600px]">
++    <div className="market-report p-6 lg:p-8 space-y-5 max-w-[1600px]">
+       <div className="flex items-center justify-between gap-4 flex-wrap">
+         <div>
+           <h1 className="text-2xl font-bold tracking-tight">Inteligência de mercado</h1>
+           <p className="text-sm text-muted-foreground">Produtos mais solicitados e sinais comerciais dos editais cadastrados.</p>
+         </div>
+-        <Button variant="outline" onClick={load} disabled={loading}>
++        <div className="flex flex-wrap gap-2 print:hidden"><Button variant="outline" onClick={exportJson} disabled={exporting}>{exporting ? 'Preparando JSON…' : 'Exportar JSON completo'}</Button><Button variant="outline" onClick={exportCsv} disabled={loading || !rows.length}>Exportar CSV</Button><Button variant="outline" onClick={() => window.print()} disabled={loading}>Relatório / PDF</Button><Button variant="outline" onClick={load} disabled={loading}>
+           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}Atualizar
+-        </Button>
++        </Button></div>
+       </div>
+ 
+       <div className="grid gap-3 md:grid-cols-4">
+-        <MetricCard label="Itens mapeados" value={formatQty(totals.products)} />
++        <MetricCard label="Unidades mapeadas" value={formatQty(totals.products)} />
+         <MetricCard label="Editais analisados" value={formatQty(totals.noticesCount)} />
+-        <MetricCard label="Produtos com alerta" value={formatQty(totals.riskRows)} />
++        <MetricCard label="Grupos com alerta" value={formatQty(totals.riskRows)} />
+         <MetricCard label="Valor estimado" value={formatMoney(totals.totalValue)} />
+       </div>
+ 
++      <div className="grid gap-3 md:grid-cols-3">
++        {leaders.map(({ key, leader, coverage: count }) => <Card key={key}><CardContent className="p-4 space-y-1">
++          <h2 className="text-sm font-semibold">{DIMENSIONS[key].label} mais pedido</h2>
++          <p className="font-bold">{leader?.label || 'Sem dados identificados'}</p>
++          {leader && <p className="text-sm">{formatQty(leader.quantity)} unidades · {leader.notices} editais</p>}
++          <p className="text-xs text-muted-foreground">Atributo identificado em {count} de {filteredItems.length} itens.</p>
++        </CardContent></Card>)}
++      </div>
++      <Card><CardContent className="p-4 space-y-2">
++        <h2 className="font-semibold">Demanda por {dimensions[dimension]?.toLowerCase()}</h2>
++        <p className="text-sm">{rows[0] ? `Líder do recorte: ${rows[0].label} — ${formatQty(rows[0].quantity)} unidades em ${rows[0].notices} editais (${rows[0].share.toFixed(1)}% pela métrica selecionada).` : 'Sem dados identificados para este recorte.'}</p>
++        <p className="text-sm text-muted-foreground">Cobertura: {covered} de {filteredItems.length} itens ({coverage.toFixed(1)}%). Valores N/C ficam fora dos rankings. Marcas solicitadas não incluem marcas vencedoras ou sugestões do catálogo. Participações por edital podem se sobrepor.</p>
++        <p className="text-xs text-muted-foreground">Recorte: {category || 'Todas as categorias'} · {state || 'Todas as UFs'} · cadastro de {dateFrom || 'início'} até {dateTo || 'hoje'} · {riskOnly ? 'com alertas' : 'todos os itens'} · busca: {search || 'todas'}. Gerado em {new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.</p>
++      </CardContent></Card>
+       <Card>
+         <CardContent className="p-3 space-y-3">
+-          <div className="flex flex-wrap items-center gap-2">
++          <div className="flex flex-wrap items-center gap-2 print:hidden">
++            <label className="text-xs">Agrupar por<select aria-label="Agrupar por" className="block border rounded bg-background p-2" value={dimension} onChange={event => setDimension(event.target.value)}>{Object.entries(dimensions).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
++            <label className="text-xs">Ordenar por<select aria-label="Ordenar por" className="block border rounded bg-background p-2" value={metric} onChange={event => setMetric(event.target.value as typeof metric)}><option value="quantity">Unidades</option><option value="items">Itens</option><option value="notices">Editais</option><option value="totalValue">Valor estimado</option></select></label>
++            <label className="text-xs">Categoria<select aria-label="Categoria" className="block border rounded bg-background p-2" value={category} onChange={event => setCategory(event.target.value)}><option value="">Todas</option>{[...new Set(allItems.map(item => item.category))].sort().map(value => <option key={value}>{value}</option>)}</select></label>
++            <label className="text-xs">UF<select aria-label="UF" className="block border rounded bg-background p-2" value={state} onChange={event => setState(event.target.value)}><option value="">Todas</option>{[...new Set(allItems.map(item => item.state).filter(Boolean))].sort().map(value => <option key={value}>{value}</option>)}</select></label>
++            <label className="text-xs">Cadastro desde<Input aria-label="Cadastro desde" type="date" value={dateFrom} max={dateTo || undefined} onChange={event => setDateFrom(event.target.value)} /></label>
++            <label className="text-xs">Cadastro até<Input aria-label="Cadastro até" type="date" value={dateTo} min={dateFrom || undefined} onChange={event => setDateTo(event.target.value)} /></label>
+             <div className="relative min-w-[260px] flex-1 max-w-md">
+               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+-              <Input className="pl-9" placeholder="Buscar produto, categoria, UF ou portal..." value={search} onChange={(event) => setSearch(event.target.value)} />
++              <Input className="pl-9" placeholder="Buscar marca, modelo, produto, UF ou portal..." value={search} onChange={(event) => setSearch(event.target.value)} />
+             </div>
+             <Button variant={riskOnly ? 'default' : 'outline'} onClick={() => setRiskOnly((value) => !value)}>
+               Mostrar alertas
+@@ -98,9 +157,9 @@ export default function MarketIntelligence() {
+               <table className="w-full min-w-[960px] text-sm">
+                 <thead>
+                   <tr className="border-b text-left text-xs uppercase tracking-[0.16em] text-muted-foreground">
+-                    <th className="py-3 pr-3 font-semibold">Produto</th>
++                    <th className="py-3 pr-3 font-semibold">{dimensions[dimension]}</th>
+                     <th className="py-3 pr-3 font-semibold">Qtd.</th>
+-                    <th className="py-3 pr-3 font-semibold">Editais</th>
++                    <th className="py-3 pr-3 font-semibold">Itens</th><th className="py-3 pr-3 font-semibold">Editais</th><th className="py-3 pr-3 font-semibold">Participação</th>
+                     <th className="py-3 pr-3 font-semibold">Valor</th>
+                     <th className="py-3 pr-3 font-semibold">UFs</th>
+                     <th className="py-3 pr-3 font-semibold">Sinais</th>
+@@ -114,7 +173,7 @@ export default function MarketIntelligence() {
+                         {row.category && <p className="text-xs text-muted-foreground">{row.category}</p>}
+                       </td>
+                       <td className="py-3 pr-3 font-semibold">{formatQty(row.quantity)}</td>
+-                      <td className="py-3 pr-3">{row.notices}</td>
++                      <td className="py-3 pr-3">{row.items}</td><td className="py-3 pr-3">{row.notices}</td><td className="py-3 pr-3">{row.share.toFixed(1)}%</td>
+                       <td className="py-3 pr-3">{formatMoney(row.totalValue)}</td>
+                       <td className="py-3 pr-3">{Array.from(row.states).slice(0, 4).join(', ') || 'N/C'}</td>
+                       <td className="py-3 pr-3">
+@@ -163,74 +222,6 @@ function SignalBadge({ icon: Icon, label, tone }: { icon: any; label: string; to
+   );
+ }
+ 
+-function buildProductIntelligence(notices: Notice[]): ProductIntelRow[] {
+-  const groups = new Map<string, ProductIntelRow & { noticeIds: Set<string> }>();
+-
+-  notices.forEach((notice) => {
+-    const products = Array.isArray(notice.notice_products) ? notice.notice_products : [];
+-    products.forEach((product: any) => {
+-      const label = productLabel(product);
+-      if (!label) return;
+-      const key = normalizeProductKey(label);
+-      const row = groups.get(key) ?? {
+-        key,
+-        label,
+-        category: product.category || '',
+-        quantity: 0,
+-        notices: 0,
+-        totalValue: 0,
+-        exclusive: 0,
+-        brandDirected: 0,
+-        installRisk: 0,
+-        states: new Set<string>(),
+-        portals: new Set<string>(),
+-        noticeIds: new Set<string>(),
+-      };
+-      row.quantity += Number(product.quantity || 0) || 0;
+-      row.totalValue += product.reference_total_price != null
+-        ? Number(product.reference_total_price || 0)
+-        : Number(product.reference_price || 0) * Number(product.quantity || 0);
+-      row.noticeIds.add(notice.id);
+-      const state = notice.state || notice.organs?.state;
+-      if (state) row.states.add(String(state).toUpperCase());
+-      if (notice.portals?.name) row.portals.add(notice.portals.name);
+-      if (isExclusiveProduct(product)) row.exclusive += 1;
+-      if (isBrandDirectedProduct(product)) row.brandDirected += 1;
+-      if (hasInstallServiceRisk(notice, product)) row.installRisk += 1;
+-      groups.set(key, row);
+-    });
+-  });
+-
+-  return Array.from(groups.values())
+-    .map(({ noticeIds, ...row }) => ({ ...row, notices: noticeIds.size }))
+-    .sort((a, b) => b.quantity - a.quantity || b.notices - a.notices || b.totalValue - a.totalValue || a.label.localeCompare(b.label, 'pt-BR'));
+-}
+-
+-function productLabel(product: any) {
+-  return product.category || compactText(product.catalog_products?.name) || compactText(product.description) || '';
+-}
+-
+-function compactText(value: string | null | undefined) {
+-  const text = String(value ?? '').trim();
+-  if (!text) return '';
+-  const first = text.split(/[.;\n]/)[0]?.trim() || text;
+-  return first.length > 88 ? `${first.slice(0, 85).trim()}...` : first;
+-}
+-
+-function normalizeProductKey(value: string) {
+-  return normalizeText(value)
+-    .replace(/\b(de|da|do|das|dos|com|para|e)\b/g, ' ')
+-    .replace(/\s+/g, ' ')
+-    .trim();
+-}
+-
+-function normalizeText(value: string | null | undefined) {
+-  return String(value ?? '')
+-    .normalize('NFD')
+-    .replace(/[\u0300-\u036f]/g, '')
+-    .toLowerCase();
+-}
+-
+ function isExclusiveProduct(product: any) {
+   return Boolean(product.is_exclusive_epp) || /exclusiv|tratamento favorecido|me\/epp|mpe/i.test(String(product.exclusive_epp_label ?? ''));
+ }
+
+diff --git a/src/lib/market-intelligence.ts b/src/lib/market-intelligence.ts
+new file mode 100644
+index 0000000..b78f65c
+--- /dev/null
++++ b/src/lib/market-intelligence.ts
+@@ -0,0 +1,154 @@
++// Extend this registry with aliases; additional BI leaves are discovered automatically.
++export const DIMENSIONS: Record<string, { label: string; aliases: string[] }> = {
++  category: { label: 'Categoria', aliases: [] },
++  brand: { label: 'Marca solicitada', aliases: ['marca', 'brand', 'fabricante', 'marca_referencia'] },
++  model: { label: 'Modelo solicitado', aliases: ['modelo', 'model', 'modelo_referencia', 'part_number'] },
++  reference: { label: 'Marca/modelo citado', aliases: ['marca_modelo'] },
++  ports: { label: 'Número de portas', aliases: ['quantidade_portas', 'portas_acesso_rj45_qtd', 'numero_portas'] },
++  speed: { label: 'Velocidade', aliases: ['velocidade', 'velocidade_nominal_gbps', 'velocidade_gbps', 'portas_acesso'] },
++  length: { label: 'Comprimento', aliases: ['comprimento', 'comprimento_m', 'length'] },
++  connector: { label: 'Conector / formato', aliases: ['conector', 'conectores', 'formato', 'form_factor'] },
++  fiber: { label: 'Tipo de fibra', aliases: ['tipo_fibra', 'tipo_meio'] },
++};
++
++export function normalizeText(value: unknown): string {
++  return String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
++}
++
++export function documented(value: unknown): string {
++  if (typeof value !== 'string' && typeof value !== 'number') return '';
++  const text = String(value).trim();
++  return /^(n\/?c|nao (identificado|informado|consta)|nenhum|null|undefined|-|)$/i.test(normalizeText(text)) ? '' : text;
++}
++
++export function featureLeaves(value: unknown, prefix = ''): Record<string, string> {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
++  return Object.fromEntries(Object.entries(value).flatMap(([key, child]) => {
++    const path = prefix ? `${prefix}.${key}` : key;
++    if (child && typeof child === 'object' && !Array.isArray(child)) return Object.entries(featureLeaves(child, path));
++    const text = Array.isArray(child) ? child.map(documented).filter(Boolean).join(' / ') : documented(child);
++    return text ? [[path, text]] : [];
++  }));
++}
++
++export function canonicalCategory(value: unknown, description = ''): string {
++  const category = documented(value);
++  const text = normalizeText(!category || /^(outros?|cabos?|cabeamento)$/i.test(normalizeText(category)) ? description : category);
++  if (/\b(dac|direct attach|twinax)\b/.test(text)) return 'Cabo DAC';
++  if (/\b(aoc|active optical cable)\b/.test(text)) return 'Cabo óptico AOC';
++  if (/cabo.*(optic|otic|fibra)|cordao.*(optic|otic)|patch cord.*(optic|fibra)/.test(text)) return 'Cabo óptico';
++  return category || 'Sem categoria';
++}
++
++export type MarketItem = {
++  noticeId: string; category: string; state: string; portal: string; quantity: number; totalValue: number;
++  features: Record<string, string>; product: any; notice: any;
++};
++
++const finite = (value: unknown) => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
++
++export function marketItems(notices: any[]): MarketItem[] {
++  return notices.flatMap(notice => (Array.isArray(notice.notice_products) ? notice.notice_products : []).map((product: any) => {
++    const raw = product.raw_payload || {};
++    const leaves = { ...featureLeaves(raw.caracteristicas_bi), ...featureLeaves(product.bi_features) };
++    const features: Record<string, string> = {};
++    for (const [dimension, definition] of Object.entries(DIMENSIONS)) {
++      if (dimension === 'category') continue;
++      for (const alias of definition.aliases) {
++        const value = documented(raw[alias]) || documented(leaves[alias]) || Object.entries(leaves).find(([path]) => path.split('.').slice(-1)[0] === alias)?.[1] || documented(product[`bi_feature_${alias}`]);
++        if (value) {
++          features[dimension] = value;
++          if (dimension === 'speed' && /gbps$/.test(alias) && /^\d+(?:[.,]\d+)?$/.test(value)) features[dimension] = `${value}G`;
++          if (dimension === 'length' && /_m$/.test(alias) && /^\d+(?:[.,]\d+)?$/.test(value)) features[dimension] = `${value}m`;
++          break;
++        }
++      }
++    }
++    // Explicit labels only: catalog matches and winning brands are not requested brands.
++    const description = String(product.description || '');
++    const direction = raw.direcionamento_marca;
++    features.reference = features.reference || documented(product.brand_direction_model)
++      || (typeof direction === 'object' && direction ? documented(direction.marca_modelo) : documented(String(direction || '').match(/marca\/modelo\s*:\s*([^|]+)/i)?.[1]));
++    if (!features.reference) delete features.reference;
++    const directionType = product.brand_direction_type || (typeof direction === 'object' && direction ? direction.tipo : String(direction || '').match(/tipo\s*:\s*([^|]+)/i)?.[1]);
++    if (!features.brand && normalizeText(directionType) === 'marca' && features.reference) features.brand = features.reference;
++    for (const [dimension, label] of [['brand', 'marca|fabricante'], ['model', 'modelo']] as const) {
++      const match = description.match(new RegExp(`(?:^|[;\\n|]|\\b)(${label})\\s*:\\s*([^;\\n|]+)`, 'i'));
++      if (!features[dimension] && match) features[dimension] = documented(match[2]);
++    }
++    if (features.ports) features.ports = features.ports.replace(/\s*portas?$/i, '').trim();
++    const category = canonicalCategory(product.category || raw.categoria, description);
++    if (!features.ports && /switch/i.test(category)) {
++      const ports = description.match(/\b(\d+)\s+portas?\b/i);
++      if (ports) features.ports = ports[1];
++    }
++    for (const [path, value] of Object.entries(leaves)) {
++      if (!Object.values(DIMENSIONS).some(def => def.aliases.includes(path.split('.').slice(-1)[0]!))) features[`bi:${path}`] = value;
++    }
++    const quantity = finite(product.quantity);
++    return { noticeId: String(notice.id), category,
++      state: String(notice.state || notice.organs?.state || '').toUpperCase(), portal: notice.portals?.name || '',
++      quantity, totalValue: product.reference_total_price != null ? finite(product.reference_total_price) : finite(product.reference_price) * quantity,
++      features, product, notice };
++  }));
++}
++
++export type DemandRow = { key: string; label: string; quantity: number; items: number; notices: number; totalValue: number; share: number };
++
++export function rankDemand(items: MarketItem[], dimension: string, metric: 'quantity' | 'items' | 'notices' | 'totalValue' = 'quantity'): DemandRow[] {
++  const groups = new Map<string, DemandRow & { ids: Set<string> }>();
++  for (const item of items) {
++    const label = dimension === 'category' ? item.category : item.features[dimension];
++    if (!label) continue;
++    // Models are scoped to brand so unrelated model names never merge.
++    const display = dimension === 'model' ? `${item.features.brand || 'Marca N/C'} · ${label}` : label;
++    const key = normalizeText(display);
++    const row = groups.get(key) || { key, label: display, quantity: 0, items: 0, notices: 0, totalValue: 0, share: 0, ids: new Set<string>() };
++    row.quantity += item.quantity; row.items++; row.totalValue += item.totalValue; row.ids.add(item.noticeId);
++    groups.set(key, row);
++  }
++  const rows = [...groups.values()].map(({ ids, ...row }) => ({ ...row, notices: ids.size }));
++  // Shares use the same metric and include undocumented items in the denominator.
++  const denominator = metric === 'notices' ? new Set(items.map(item => item.noticeId)).size
++    : metric === 'items' ? items.length : items.reduce((sum, item) => sum + item[metric], 0);
++  return rows.map(row => ({ ...row, share: denominator ? row[metric] / denominator * 100 : 0 }))
++    .sort((a, b) => b[metric] - a[metric] || a.label.localeCompare(b.label, 'pt-BR'));
++}
++
++export function demandCsv(rows: DemandRow[]): string {
++  const cell = (value: unknown) => `"${String(value).replace(/^[=+@\-\t\r]/, "'$&").replace(/"/g, '""')}"`;
++  return '\uFEFF' + [['Valor', 'Unidades', 'Itens', 'Editais', 'Valor estimado', 'Participação (%)'], ...rows.map(row => [row.label, row.quantity, row.items, row.notices, row.totalValue, row.share.toFixed(2)])].map(row => row.map(cell).join(';')).join('\r\n');
++}
++
++/** Export the complete tenant dataset, independently of the visible filters. */
++export function marketExport(notices: any[], filters: Record<string, unknown> = {}) {
++  const items = marketItems(notices);
++  const dimensions = [...new Set([...Object.keys(DIMENSIONS), ...items.flatMap(item => Object.keys(item.features))])];
++  const metrics = ['quantity', 'items', 'notices', 'totalValue'] as const;
++  return {
++    schema_version: 1,
++    generated_at: new Date().toISOString(),
++    scope: 'Todos os editais disponíveis no CRM desta empresa, inclusive descartados; independente dos filtros da tela.',
++    limitations: ['Inclui dados retornados pelo CRM e atributos extraídos. Não inclui o conteúdo binário dos documentos nem dados ainda não importados da ConLicitação.'],
++    active_filters: filters,
++    summary: {
++      notices: notices.length, items: items.length,
++      quantities: items.reduce((sum, item) => sum + item.quantity, 0),
++      estimated_value: items.reduce((sum, item) => sum + item.totalValue, 0),
++      notices_without_items: notices.filter(notice => !notice.notice_products?.length).map(notice => notice.id),
++    },
++    dimensions: Object.fromEntries(dimensions.map(key => [key, {
++      label: DIMENSIONS[key]?.label || key.slice(3),
++      documented_items: items.filter(item => key === 'category' || item.features[key]).length,
++      rankings: Object.fromEntries(metrics.map(metric => [metric, rankDemand(items, key, metric)])),
++    }])),
++    normalized_items: items.map(({ notice, product, ...item }) => ({ ...item, product_id: product.id })),
++    notices,
++  };
++}
++
++export function marketExportJson(notices: any[], filters: Record<string, unknown> = {}) {
++  return JSON.stringify(marketExport(notices, filters), (key, value) =>
++    /^(authorization|password|token|access_token|refresh_token|api_key|secret|secret_key)$/i.test(key)
++      ? '[REDACTED]' : value, 2);
++}
+
+diff --git a/src/lib/market-intelligence.test.ts b/src/lib/market-intelligence.test.ts
+new file mode 100644
+index 0000000..24bc011
+--- /dev/null
++++ b/src/lib/market-intelligence.test.ts
+@@ -0,0 +1,57 @@
++import { describe, expect, it } from 'vitest';
++import { canonicalCategory, marketItems, rankDemand, demandCsv, marketExportJson } from './market-intelligence';
++
++const notice = (id: string, products: any[]) => ({ id, state: 'SP', notice_products: products });
++
++describe('market intelligence', () => {
++  it('exports all notices, raw nested attributes and every ranking regardless of active filters', () => {
++    const data = [notice('1', [{ id: 'p1', quantity: 2, raw_payload: { marca: 'Acme', detalhes: { original: true }, token: 'secret' } }]), { id: '2', outcome: 'not_pursued', notice_products: [] }];
++    const exported = JSON.parse(marketExportJson(data, { state: 'RJ' }));
++    expect(exported.summary).toMatchObject({ notices: 2, items: 1, notices_without_items: ['2'] });
++    expect(exported.notices[0].notice_products[0].raw_payload.detalhes.original).toBe(true);
++    expect(exported.notices[0].notice_products[0].raw_payload.token).toBe('[REDACTED]');
++    expect(exported.dimensions.brand.rankings.quantity[0].quantity).toBe(2);
++    expect(exported.normalized_items[0].product_id).toBe('p1');
++    expect(exported.active_filters.state).toBe('RJ');
++  });
++  it('separates DAC, AOC, fiber cables and optical modules', () => {
++    expect(canonicalCategory('Cabo DAC SFP+')).toBe('Cabo DAC');
++    expect(canonicalCategory('Cabo AOC')).toBe('Cabo óptico AOC');
++    expect(canonicalCategory('Cabo de fibra óptica')).toBe('Cabo óptico');
++    expect(canonicalCategory('Transceiver')).toBe('Transceiver');
++    expect(canonicalCategory('Switch', 'switch com cabo DAC')).toBe('Switch');
++    expect(canonicalCategory('Outros', 'Cabo DAC SFP+')).toBe('Cabo DAC');
++  });
++  it('reads explicit requested attributes and retains extensible nested features', () => {
++    const [item] = marketItems([notice('1', [{ category: 'Switch', quantity: 3, raw_payload: { marca: 'Acme', modelo: 'X24' }, bi_features: { switch: { interfaces: { portas_acesso_rj45_qtd: '24' }, comercial: { garantia_meses: 60 } } } }])]);
++    expect(item.features).toMatchObject({ brand: 'Acme', model: 'X24', ports: '24', 'bi:switch.comercial.garantia_meses': '60' });
++  });
++  it('counts each notice once, keeps unknown quantity zero, and includes missing brands in share', () => {
++    const items = marketItems([notice('1', [{ quantity: 10, raw_payload: { marca: 'Acme' } }, { quantity: null, raw_payload: { marca: 'ACME' } }]), notice('2', [{ quantity: 5, raw_payload: { marca: 'N/C' } }])]);
++    expect(rankDemand(items, 'brand')[0]).toMatchObject({ quantity: 10, items: 2, notices: 1 });
++    expect(rankDemand(items, 'brand')[0].share).toBeCloseTo(66.6667);
++    expect(rankDemand(items, 'brand', 'notices')[0].share).toBe(50);
++  });
++  it('does not turn catalog matches, winning brands or combined references into requested brands', () => {
++    const [item] = marketItems([notice('1', [{ catalog_products: { brand: 'Suggestion' }, winner_brand: 'Winner', brand_direction_model: 'Acme X10', raw_payload: {} }])]);
++    expect(item.features.brand).toBeUndefined();
++    expect(item.features.reference).toBe('Acme X10');
++  });
++  it('scopes models by brand and sorts by the selected metric', () => {
++    const items = marketItems([notice('1', [{ quantity: 100, raw_payload: { marca: 'A', modelo: 'X' }, reference_total_price: 0 }]), notice('2', [{ quantity: 2, raw_payload: { marca: 'B', modelo: 'X' }, reference_total_price: 500 }])]);
++    expect(rankDemand(items, 'model')).toHaveLength(2);
++    expect(rankDemand(items, 'model', 'totalValue')[0].label).toBe('B · X');
++  });
++  it('accepts a legacy reference explicitly classified as brand', () => {
++    const [item] = marketItems([notice('1', [{ brand_direction_type: 'Marca', brand_direction_model: 'Acme' }])]);
++    expect(item.features.brand).toBe('Acme');
++  });
++  it('normalizes cable units and extracts only explicit description fields', () => {
++    const [item] = marketItems([notice('1', [{ category: 'Cabo DAC', description: 'Marca: Acme; Modelo: DAC10', bi_features: { cabo_dac: { comprimento_m: 3, velocidade_gbps: 10 } } }])]);
++    expect(item.features).toMatchObject({ brand: 'Acme', model: 'DAC10', length: '3m', speed: '10G' });
++  });
++  it('escapes CSV labels and neutralizes spreadsheet formulas', () => {
++    const items = marketItems([notice('1', [{ raw_payload: { marca: '=HYPERLINK("bad")' } }])]);
++    expect(demandCsv(rankDemand(items, 'brand'))).toContain('"\'=HYPERLINK(""bad"")"');
++  });
++});
+
+diff --git a/src/pages/MarketIntelligence.test.tsx b/src/pages/MarketIntelligence.test.tsx
+new file mode 100644
+index 0000000..edfdd49
+--- /dev/null
++++ b/src/pages/MarketIntelligence.test.tsx
+@@ -0,0 +1,36 @@
++import { fireEvent, render, screen, waitFor } from '@testing-library/react';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import { cleanup } from '@testing-library/react';
++import MarketIntelligence from './MarketIntelligence';
++
++vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ neq: () => ({ order: async () => ({ data: [
++  { id: '1', created_at: '2026-10-01', state: 'SP', notice_products: [{ category: 'Switch', quantity: 10, raw_payload: { marca: 'Acme', modelo: 'X24' }, bi_features: { quantidade_portas: '24 Portas' } }] },
++  { id: '2', created_at: '2026-09-01', state: 'RJ', notice_products: [{ category: 'Cabo DAC', quantity: 4, raw_payload: { marca: 'CableCo', modelo: 'DAC3' } }] },
++], error: null }) }) }) }) } }));
++vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
++afterEach(cleanup);
++
++describe('market dashboard filters', () => {
++  it('uses the same filtered items in KPIs, coverage and brand rankings', async () => {
++    render(<MarketIntelligence />);
++    await waitFor(() => expect(screen.getByRole('option', { name: 'Cabo DAC' })).toBeTruthy());
++    fireEvent.change(screen.getByLabelText('Agrupar por'), { target: { value: 'brand' } });
++    expect(screen.getAllByText('Acme').length).toBeGreaterThan(0);
++    expect(screen.getByText('CableCo')).toBeTruthy();
++    fireEvent.change(screen.getByLabelText('UF'), { target: { value: 'RJ' } });
++    expect(screen.queryByText('Acme')).toBeNull();
++    expect(screen.getByText(/Cobertura: 1 de 1 itens/)).toBeTruthy();
++    expect(screen.getByText(/Líder do recorte: CableCo/)).toBeTruthy();
++  });
++  it('filters by registration date and opens the printable report', async () => {
++    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
++    render(<MarketIntelligence />);
++    await waitFor(() => expect(screen.getByRole('option', { name: 'Cabo DAC' })).toBeTruthy());
++    fireEvent.change(screen.getByLabelText('Cadastro desde'), { target: { value: '2026-10-01' } });
++    expect(screen.queryByText('CableCo')).toBeNull();
++    expect(screen.getByText(/Cobertura: 1 de 1 itens/)).toBeTruthy();
++    fireEvent.click(screen.getByRole('button', { name: 'Relatório / PDF' }));
++    expect(print).toHaveBeenCalledOnce();
++    print.mockRestore();
++  });
++});

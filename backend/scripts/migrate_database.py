@@ -17,8 +17,12 @@ from sqlalchemy import inspect, text
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.db.rls import RLS_TABLES
 from app.db.session import SessionLocal, engine
+from app.core.data_preservation import require_explicit_empty_database_bootstrap
 
-BOOTSTRAP_REVISION = "20260926_01"
+# Current operational models already include the technical_result column.
+# Stamp its revision on a fresh snapshot, then create analytics via upgrade.
+BOOTSTRAP_REVISION = "20261012_01"
+SUPPORTED_POST_BOOTSTRAP_HEADS = {"20261012_02", "20261013_01"}
 
 
 def _bootstrap_empty_database(config: Config) -> None:
@@ -26,7 +30,8 @@ def _bootstrap_empty_database(config: Config) -> None:
 
     db = SessionLocal()
     try:
-        init_db(db)
+        # New browser sessions are owned by their migration, not this historical snapshot.
+        init_db(db, exclude_tables={"auth_sessions"})
         db.commit()
     finally:
         db.close()
@@ -53,13 +58,18 @@ def main() -> None:
     fresh = not (tables - {"alembic_version"})
 
     if fresh:
-        if head != BOOTSTRAP_REVISION:
+        require_explicit_empty_database_bootstrap()
+        if head != BOOTSTRAP_REVISION and head not in SUPPORTED_POST_BOOTSTRAP_HEADS:
             raise RuntimeError(
                 f"Bootstrap de banco vazio está fixado em {BOOTSTRAP_REVISION}; "
                 f"a migration head atual é {head}. Atualize e valide o snapshot antes de implantar."
             )
         print("Banco vazio detectado; criando snapshot inicial e políticas RLS.")
         _bootstrap_empty_database(config)
+        # Operational models represent the pinned snapshot. Analytical tables
+        # belong to separate metadata and must be created by their migration.
+        if head != BOOTSTRAP_REVISION:
+            command.upgrade(config, "head")
     else:
         print("Banco existente detectado; aplicando migrations Alembic.")
         command.upgrade(config, "head")

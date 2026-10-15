@@ -1,0 +1,40 @@
+{
+  "source_commit": "70a2c8734965e1b0de11b95e4b50997c6d29faea",
+  "tag": "sha-70a2c8734965e1b0de11b95e4b50997c6d29faea",
+  "platform": "linux/amd64",
+  "publication_method": "local Docker push; not GitHub Actions",
+  "images": {
+    "api": {
+      "reference": "alvarocareli/ragmatch-api:sha-70a2c8734965e1b0de11b95e4b50997c6d29faea",
+      "digest": "sha256:0b9a708cf095533e2a4a6a49d500b85ac79326e808ff93b64485d455fa4de12a",
+      "remote_verified": true
+    },
+    "frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:sha-70a2c8734965e1b0de11b95e4b50997c6d29faea",
+      "digest": "sha256:639ac27c5ef617a928e3d32eeb781d617ef328db590fbe96d14e16342245ba50",
+      "remote_verified": true
+    },
+    "mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:sha-70a2c8734965e1b0de11b95e4b50997c6d29faea",
+      "digest": "sha256:afdd302e4f64eee8b968a6c50c3b71fd128bbec98d46ec32ffc6b1f0a4fb812a",
+      "remote_verified": true
+    },
+    "market-worker": {
+      "reference": "alvarocareli/ragmatch-market-worker:sha-70a2c8734965e1b0de11b95e4b50997c6d29faea",
+      "digest": "sha256:5315c21c4bb01b1a6b3137ab4066924007163dc416ea68ed62574e3306663b43",
+      "remote_verified": true
+    }
+  },
+  "validation": {
+    "final_api_http_and_normalization_tests": 116,
+    "prior_engine_regression_tests": 88,
+    "api_readiness": "passed",
+    "migration_head": "20261013_01",
+    "frontend_nginx": "passed",
+    "mlflow_version": "2.12.1",
+    "worker_help": "passed"
+  },
+  "vps_deployed": false,
+  "api_dependency_base": "alvarocareli/ragmatch-api@sha256:d740be3e195a9dfc0fd0a056753d7aa8011acbb15b00f20ad76e122002b709fc",
+  "worker_dependency_base": "alvarocareli/ragmatch-market-worker@sha256:f08f158f6699f8f6dcfb50a68180128be777756d22b250b7d7c5de2223c82d36"
+}
