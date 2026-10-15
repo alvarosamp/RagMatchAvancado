@@ -10,4 +10,4 @@ Validação: 13 testes de documentos/backend, nove testes de match, revisão doc
 
 Teste visual concluído em 15/10/2026: login de QA, geração pelo match DEMO-3, arquivamento no edital e download nativo pelo link Baixar Word. O arquivo DOCX foi recebido na pasta Downloads. A cópia temporária das credenciais de QA foi removida após o uso.
 
-Disponível na prévia Docker local. Ainda não publicado no Docker Hub nesta alteração.
+Disponível na prévia Docker local e publicado no Docker Hub. Código enviado ao GitHub na branch `codex/technical-match-v8`. Consulte [a release verificada](releases/tor-declaration-20261015.md) para a tag comum das quatro imagens e as variáveis de implantação. A VPS ainda precisa ser reimplantada com essa tag.
