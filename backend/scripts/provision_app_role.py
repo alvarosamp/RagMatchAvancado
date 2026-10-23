@@ -71,6 +71,14 @@ def provision(connection, app_user: str, app_password: str) -> None:
                 sql.Identifier(app_user)
             )
         )
+        # On a fresh install the runtime role is created after migrations, so
+        # migration-time grants cannot discover it. Provision existing ledger
+        # schemas here as well; do not give the HTTP account DDL privileges.
+        for schema in ("raw", "core", "mart", "staging"):
+            cursor.execute("SELECT 1 FROM pg_namespace WHERE nspname=%s", (schema,))
+            if cursor.fetchone():
+                cursor.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(sql.Identifier(schema), sql.Identifier(app_user)))
+                cursor.execute(sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {} TO {}").format(sql.Identifier(schema), sql.Identifier(app_user)))
         cursor.execute(
             sql.SQL(
                 "ALTER DEFAULT PRIVILEGES FOR ROLE {} IN SCHEMA public "

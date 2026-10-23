@@ -35,6 +35,9 @@ const CompetitiveIntelligence = lazy(() => import('./pages/CompetitiveIntelligen
 const BidRobot = lazy(() => import('./pages/BidRobot'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const BlingIntegration = lazy(() => import('./pages/BlingIntegration'))
+const ConlicitacaoIntegration = lazy(() => import('./pages/ConlicitacaoIntegration'))
+const TechnicalMatch = lazy(() => import('./pages/TechnicalMatch'))
+const TechnicalExtraction = lazy(() => import('./pages/TechnicalExtraction'))
 const CrmHub = lazy(() => import('./pages/CrmHub'))
 const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
@@ -74,6 +77,7 @@ createRoot(document.getElementById('root')).render(
             <Route path={INTERNAL_REGISTER_PATH} element={<InternalRegister />} />
 
             <Route path="/dashboard"              element={<PrivateRoute><Dashboard     /></PrivateRoute>} />
+            <Route path="/laboratorio-tecnico" element={<PrivateRoute><TechnicalExtraction /></PrivateRoute>} />
             <Route path="/suite"                  element={<PrivateRoute><Suite         /></PrivateRoute>} />
             <Route path="/assinatura"             element={<PrivateRoute><Assinatura    /></PrivateRoute>} />
             <Route path="/monitoramento-pncp"     element={<PrivateRoute><ProcurementExpansion moduleId="pncp_monitor" /></PrivateRoute>} />
@@ -86,6 +90,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/onboarding-planos"      element={<PrivateRoute><ProcurementExpansion moduleId="onboarding_plans" /></PrivateRoute>} />
             <Route path="/integracoes"            element={<PrivateRoute><BlingIntegration /></PrivateRoute>} />
             <Route path="/integracoes/bling"      element={<PrivateRoute><BlingIntegration /></PrivateRoute>} />
+            <Route path="/integracoes/conlicitacao" element={<PrivateRoute><AdminRoute><ConlicitacaoIntegration /></AdminRoute></PrivateRoute>} />
             <Route path="/upload"                 element={<PrivateRoute><Upload        /></PrivateRoute>} />
             <Route path="/jobs"                   element={AI_FEATURES_ENABLED ? <PrivateRoute><Jobs /></PrivateRoute> : <Navigate to="/dashboard" replace />} />
             <Route path="/analytics"              element={<PrivateRoute><Analytics     /></PrivateRoute>} />
@@ -94,6 +99,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/controle"               element={<PrivateRoute><Controle      /></PrivateRoute>} />
             <Route path="/radar"                  element={<PrivateRoute><OpportunityRadar /></PrivateRoute>} />
             <Route path="/pncp"                   element={<PrivateRoute><PncpSearch    /></PrivateRoute>} />
+            <Route path="/crm/comparacao-tecnica" element={<PrivateRoute><TechnicalMatch /></PrivateRoute>} />
             <Route path="/crm"                    element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/crm/*"                  element={<PrivateRoute withLayout={false}><CrmHub /></PrivateRoute>} />
             <Route path="/configuracoes"          element={<PrivateRoute><Configuracoes /></PrivateRoute>} />

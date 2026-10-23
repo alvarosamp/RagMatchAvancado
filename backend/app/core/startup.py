@@ -42,6 +42,18 @@ def _validate_production_database() -> None:
         ):
             raise RuntimeError("Migração de isolamento incompleta: RLS das tabelas de tenant não está ativo.")
 
+        if connection.execute(text("SELECT to_regclass('core.facts') IS NOT NULL")).scalar():
+            from app.market_intelligence.models import WarehouseBase
+            expected = {(table.schema, table.name) for table in WarehouseBase.metadata.sorted_tables}
+            analytical = connection.execute(text(
+                "SELECT n.nspname, c.relname, c.relrowsecurity, c.relforcerowsecurity "
+                "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                "WHERE n.nspname IN ('raw','core','mart') AND c.relkind='r'"
+            )).all()
+            protected = {(row.nspname, row.relname) for row in analytical if row.relrowsecurity and row.relforcerowsecurity}
+            if not expected.issubset(protected):
+                raise RuntimeError("Migração analítica incompleta: isolamento por tenant ausente.")
+
     logger.info("Banco de produção validado: conta restrita e RLS ativo.")
 
 

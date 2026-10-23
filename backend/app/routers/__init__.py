@@ -10,6 +10,8 @@ from app.routers.analysis import router as analysis_router
 from app.routers.analysis_dashboard import router as analysis_dashboard_router
 from app.routers.analytics import router as analytics_router
 from app.routers.bid_robot import router as bid_robot_router
+from app.routers.catalog_import import router as catalog_import_router
+from app.routers.crm_intelligence_read import router as crm_intelligence_read_router
 from app.routers.crm import router as crm_router
 from app.routers.datasheets import router as datasheets_router
 from app.routers.documents import router as documents_router
@@ -17,7 +19,10 @@ from app.routers.editais import router as editais_router
 from app.routers.edital_locks import router as edital_locks_router
 from app.routers.export import router as export_router
 from app.routers.health import router as health_router
+from app.routers.technical_extraction import router as technical_extraction_router
+from app.routers.manual_match import router as manual_match_router
 from app.routers.market import router as market_router
+from app.routers.market_intelligence import router as market_intelligence_router
 from app.routers.ops import router as ops_router
 from app.routers.pncp import router as pncp_router
 from app.routers.reports import router as reports_router
@@ -25,10 +30,14 @@ from app.routers.switches import router as switches_router
 
 ROUTERS = (
     health_router,
+    technical_extraction_router,
+    manual_match_router,
     auth_router,
     bling_router,
     conlicitacao_router,
     crm_router,
+    crm_intelligence_read_router,
+    catalog_import_router,
     jobs_router,
     ops_router,
     reports_router,
@@ -37,6 +46,7 @@ ROUTERS = (
     documents_router,
     switches_router,
     market_router,
+    market_intelligence_router,
     bid_robot_router,
     editais_router,
     edital_locks_router,

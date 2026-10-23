@@ -1,0 +1,170 @@
+diff --git a/src/components/notices/ResultsTab.tsx b/src/components/notices/ResultsTab.tsx
+index 7947733..8790c05 100644
+--- a/src/components/notices/ResultsTab.tsx
++++ b/src/components/notices/ResultsTab.tsx
+@@ -15,6 +15,7 @@ import { DocumentGeneratorDialog } from './DocumentGeneratorDialog';
+ import { lpuUnitPrice, referenceTotalPrice, resolveCompositionMinimumUnitPrice, resolveMinimumUnitPrice } from '@/lib/pricing';
+ import { isTechnicalFeatureKey, resolveTechnicalFeatures } from '@/lib/item-technical-features';
+ import { EmptyState } from '@/components/ui/empty-state';
++import { ItemMatchJsonExport } from './ItemMatchJsonExport';
+ import { OperationalSection } from './OperationalSection';
+ import { EditableInfoField } from './EditableInfoField';
+ 
+@@ -846,6 +847,7 @@ export function ResultsTab({
+                         <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                       </Button>
+                     </CollapsibleTrigger>
++                    <ItemMatchJsonExport noticeId={noticeId} itemId={p.id} number={p.item_number}/>
+                     {canEdit && (
+                       <>
+                         {isDiscarded ? (
+diff --git a/src/pages/NoticeDetail.tsx b/src/pages/NoticeDetail.tsx
+index 9c4e5cb..4d586dd 100644
+--- a/src/pages/NoticeDetail.tsx
++++ b/src/pages/NoticeDetail.tsx
+@@ -25,7 +25,7 @@ import { SessionsTab } from '@/components/notices/SessionsTab';
+ import { ResultsTab } from '@/components/notices/ResultsTab';
+ import { EditableInfoField as EditableField } from '@/components/notices/EditableInfoField';
+ import { OperationalSection as InfoSection } from '@/components/notices/OperationalSection';
+-import { NoticeMatchTab } from '@/components/notices/NoticeMatchTab';
++import { ManualNoticeMatchTab } from '@/components/notices/ManualNoticeMatchTab';
+ import { NoticeMetadataExport } from '@/components/notices/NoticeMetadataExport';
+ import { BidRoomTab } from '@/components/notices/BidRoomTab';
+ import { OrganPicker } from '@/components/notices/OrganPicker';
+@@ -1328,9 +1328,9 @@ export default function NoticeDetail() {
+         </TabsContent>
+ 
+         <TabsContent value="match" className="space-y-4">
+-          <NoticeMatchTab
++          <ManualNoticeMatchTab
+             noticeId={id!}
+-            productsCount={products.length}
++            products={products}
+             canEdit={canEdit}
+             onChanged={() => load(false)}
+           />
+diff --git a/src/components/notices/ManualNoticeMatchTab.tsx b/src/components/notices/ManualNoticeMatchTab.tsx
+new file mode 100644
+index 0000000..c3db418
+--- /dev/null
++++ b/src/components/notices/ManualNoticeMatchTab.tsx
+@@ -0,0 +1,39 @@
++import {ManualItemMatch} from './CatalogFacetMatch';
++import { useEffect, useState } from 'react';
++import { crmFetch } from '@/integrations/supabase/client';
++import { Button } from '@/components/ui/button';
++import { Card, CardContent } from '@/components/ui/card';
++import { Badge } from '@/components/ui/badge';
++import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
++import { Loader2, Plus, SlidersHorizontal, Save } from 'lucide-react';
++import { toast } from 'sonner';
++import { ItemMatchJsonExport } from './ItemMatchJsonExport';
++import { NoticeMatchTab } from './NoticeMatchTab';
++
++const categories:Record<string,string> = {switch:'Switch',access_point:'Access point',transceiver:'Transceiver'};
++const operators:Record<string,string> = {'==':'Igual a','>=':'No mínimo','<=':'No máximo','>':'Maior que','<':'Menor que',em:'Um destes',contem_todos:'Contém todos',contem_algum:'Contém algum',cobre_faixa:'Cobre a faixa'};
++const valueLabel = (v:any):string => v == null ? 'Não informado' : typeof v==='object' && 'valor' in v ? `${valueLabel(v.valor)}${v.unidade?' '+v.unidade:''}` : typeof v==='boolean' ? (v?'Sim':'Não') : typeof v==='object' ? JSON.stringify(v) : String(v);
++
++export function ManualNoticeMatchTab({noticeId,products,canEdit,onChanged}:{noticeId:string;products:any[];canEdit:boolean;onChanged:()=>void}) {
++  const [item,setItem]=useState<any>(null);
++  const [saved,setSaved]=useState<Record<string,string>>({});
++  const items=products.filter(p=>!p.raw_payload?.kit_component);
++  return <div className="space-y-4">
++    <Card><CardContent className="p-5 space-y-2"><p className="crm-kicker">Match manual</p><h3 className="text-lg font-semibold">Do item ao produto, ponto a ponto</h3>
++      <p className="text-sm text-muted-foreground">Abra um item para usar a descrição já cadastrada no edital, escolha a categoria e filtre os produtos na tabela.</p>
++      <div className="flex flex-wrap gap-2 text-xs"><Badge variant="outline">1. Descrição do item</Badge><Badge variant="outline">2. Categoria</Badge><Badge variant="outline">3. Filtros</Badge><Badge variant="outline">4. Conferência e seleção</Badge></div>
++    </CardContent></Card>
++    {items.length===0 && <p className="text-sm text-muted-foreground">Cadastre os itens deste edital para começar.</p>}
++    {items.length>0 && <div className="max-w-full overflow-x-auto rounded-md border"><table aria-label="Itens para match" className="w-full text-left text-sm"><thead className="bg-muted"><tr>{['Item','Descrição','Quantidade','Situação','Ações'].map(t=><th key={t} scope="col" className="p-3">{t}</th>)}</tr></thead><tbody>
++      {items.map(p=><tr key={p.id} className="border-t align-top"><td className="p-3 whitespace-nowrap">{p.item_number || 'Sem número'}</td><td className="p-3 min-w-64">{p.description}</td><td className="p-3">{p.quantity ?? 'Não informada'}</td><td className="p-3">{saved[p.id] || (p.raw_payload?._manual_match?.selected_status==='confirmado'?'Match confirmado':p.raw_payload?._manual_match?.selected_status==='para_revisao'?'Candidato salvo para revisão':p.raw_payload?._manual_match?'Requisitos e filtros salvos':'Pronto para revisar')}</td><td className="p-3"><div className="flex gap-2"><Button onClick={()=>setItem(p)} aria-label={`Match do item ${p.item_number || p.id}`}><SlidersHorizontal className="h-4 w-4"/>Match</Button><ItemMatchJsonExport noticeId={noticeId} itemId={p.id} number={p.item_number}/></div></td></tr>)}
++    </tbody></table></div>}
++    <Dialog open={Boolean(item)} onOpenChange={open=>{if(!open)setItem(null);}}><DialogContent className="max-h-[94vh] w-[96vw] max-w-6xl overflow-y-auto">
++      <DialogHeader><DialogTitle>Match do item {item?.item_number || 'sem número'}</DialogTitle><DialogDescription>Monte os filtros e confira o produto antes de salvar a seleção.</DialogDescription></DialogHeader>
++      {item && <ManualItemMatch key={item.id} noticeId={noticeId} item={item} canEdit={canEdit} onSaved={message=>{setSaved(s=>({...s,[item.id]:message}));onChanged();}}/>}
++    </DialogContent></Dialog>
++    <details className="rounded-lg border p-4"><summary className="cursor-pointer text-sm font-medium">Resultados anteriores e histórico de comparações</summary>
++      <div className="mt-4"><NoticeMatchTab noticeId={noticeId} productsCount={items.length} canEdit={false} onChanged={onChanged}/></div>
++    </details>
++  </div>;
++}
++
+diff --git a/src/components/notices/ItemMatchJsonExport.tsx b/src/components/notices/ItemMatchJsonExport.tsx
+new file mode 100644
+index 0000000..54149aa
+--- /dev/null
++++ b/src/components/notices/ItemMatchJsonExport.tsx
+@@ -0,0 +1,25 @@
++import { useState } from 'react';
++import { Download, Loader2 } from 'lucide-react';
++import { Button } from '@/components/ui/button';
++import { crmFetch } from '@/integrations/supabase/client';
++import { toast } from 'sonner';
++
++export function ItemMatchJsonExport({noticeId, itemId, number}: {noticeId:string; itemId:string; number?:string | null}) {
++  const [busy,setBusy] = useState(false);
++  async function download() {
++    setBusy(true);
++    try {
++      const response = await crmFetch(`/api/crm/notices/${noticeId}/products/${itemId}/match-json`);
++      if (!response.ok) throw new Error(response.payload?.detail || 'Não foi possível exportar o item.');
++      const url = URL.createObjectURL(new Blob([JSON.stringify(response.payload,null,2)],{type:'application/json'}));
++      const anchor = document.createElement('a');
++      anchor.href=url; anchor.download=`match_item_${String(number || itemId).replace(/[^a-zA-Z0-9_-]/g,'_')}.json`;
++      anchor.click(); window.setTimeout(()=>URL.revokeObjectURL(url),10000);
++      toast.success('JSON deste item exportado.');
++    } catch (error:any) { toast.error(error.message); }
++    finally {setBusy(false);}
++  }
++  return <Button size="sm" variant="outline" disabled={busy} onClick={download} aria-label={`Exportar JSON do item ${number || itemId}`}>
++    {busy?<Loader2 className="h-4 w-4 animate-spin"/>:<Download className="h-4 w-4"/>}Exportar JSON
++  </Button>;
++}
+diff --git a/src/components/notices/CatalogFacetMatch.tsx b/src/components/notices/CatalogFacetMatch.tsx
+new file mode 100644
+index 0000000..38a85e5
+--- /dev/null
++++ b/src/components/notices/CatalogFacetMatch.tsx
+@@ -0,0 +1,43 @@
++import {useEffect, useState} from 'react';
++import {crmFetch} from '@/integrations/supabase/client';
++import {Button} from '@/components/ui/button';
++import {toast} from 'sonner';
++
++const categories:Record<string,string>={switch:'Switch',access_point:'Access point',transceiver:'Transceiver',cabo:'Cabo',fonte:'Fonte'};
++const label=(v:any):string=>v==null?'Não informado':typeof v==='boolean'?(v?'Sim':'Não'):typeof v==='object'&&'valor' in v?label(v.valor)+(v.unidade?' '+v.unidade:''):typeof v==='object'?JSON.stringify(v):String(v);
++const op:Record<string,string>={'>=':'Mínimo','<=':'Máximo','>':'Mais de','<':'Menos de','==':'','em':'Um destes'};
++
++export function ManualItemMatch({noticeId,item,canEdit,onSaved}:{noticeId:string;item:any;canEdit:boolean;onSaved:(v:string)=>void}){
++ const base=`/api/crm/notices/${noticeId}/products/${item.id}/manual-match`;
++ const [state,setState]=useState<any>(null),[data,setData]=useState<any>(null),[revision,setRevision]=useState('');
++ const [selected,setSelected]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[stamp,setStamp]=useState('');
++ const current=JSON.stringify({state,selected});
++ useEffect(()=>{let live=true;crmFetch(base).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível abrir o item.');const s=r.payload.state;setState({...s,filtros:[],catalog_filters:s.catalog_filters||{}});setRevision(r.payload.base_revision);setData(r.payload);setSelected(s.catalog_filters?s.selected_catalog_id||'':'');}).catch(e=>{if(live){setError(e.message);setLoading(false);}});return()=>{live=false;};},[base]);
++ useEffect(()=>{if(!state)return;let live=true;setLoading(true);const timer=setTimeout(()=>{crmFetch(base+'/preview',{method:'POST',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null})}).then(r=>{if(!live)return;if(!r.ok)throw Error(r.payload?.detail||'Não foi possível atualizar os filtros.');setData(r.payload);setStamp(current);setError('');}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setLoading(false);});},150);return()=>{live=false;clearTimeout(timer);};},[base,state,selected,revision]);
++ const ready=state&&!loading&&!busy&&!error&&stamp===current;
++ function choose(name:string,value:any){setState((s:any)=>{const filters={...s.catalog_filters};if(JSON.stringify(filters[name])===JSON.stringify(value))delete filters[name];else filters[name]=value;return {...s,catalog_filters:filters};});setSelected('');}
++ async function save(){if(!ready)return;setBusy(true);try{const c=data.candidatos.find((c:any)=>c.id===selected);const r=await crmFetch(base,{method:'PUT',body:JSON.stringify({state,base_revision:revision,catalog_product_id:selected||null,catalog_hash:c?.hash_catalogo,confirm:false})});if(!r.ok)throw Error(r.payload?.detail||'Não foi possível salvar.');setState(r.payload.state);setRevision(r.payload.base_revision);toast.success(r.payload.mensagem);onSaved(r.payload.mensagem);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
++ if(!state)return <p className="p-4" role={error?'alert':undefined}>{error||'Abrindo item…'}</p>;
++ const fields=data?.campos||[];
++ const allowed=data?.campos_categoria?.[state.categoria]||fields.map((f:any)=>f.nome);
++ const requirements=state.requisitos||[];
++ const ordered=["portas_rj45","portas_sfp","portas_sfp_plus",...allowed.filter((n:string)=>!["portas_rj45","portas_sfp","portas_sfp_plus"].includes(n))].filter((n:string)=>allowed.includes(n));
++ const names=Array.from(new Set([...ordered.filter((n:string)=>(data?.facetas?.[n]?.length||requirements.some((r:any)=>r.atributo===n)||n in state.catalog_filters)),...requirements.filter((r:any)=>r.atributo&&allowed.includes(r.atributo)).map((r:any)=>r.atributo)])) as string[];
++ const others=requirements.filter((r:any)=>!names.includes(r.atributo));
++ const candidates=(data?.candidatos||[]).filter((c:any)=>c.status_filtro==='ATENDE');
++ const rowValue=(name:string)=>{const reqs=requirements.filter((r:any)=>r.atributo===name);return reqs.length?reqs.map((r:any)=>`${op[r.operador]??r.operador} ${label(r.valor)}${r.unidade?' '+r.unidade:''}`.trim()).join(' · '):'Não informado';};
++ return <div className="space-y-4 min-w-0">
++  {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
++  <details open className="rounded-lg border p-3"><summary className="text-sm font-medium cursor-pointer">Descrição completa do item</summary><p className="mt-2 whitespace-pre-wrap text-sm">{item.description}</p></details>
++  <div className="overflow-x-auto rounded-lg border"><table aria-label="Filtros técnicos do catálogo" className="w-full text-left text-sm"><thead className="bg-muted"><tr><th className="p-3 w-[24%]">Característica</th><th className="p-3 w-[28%]">Item do edital</th><th className="p-3">Escolha no catálogo</th></tr></thead><tbody>
++   <tr className="border-t"><th className="p-3 align-top font-medium">Produto</th><td className="p-3 align-top">{categories[item.category]||item.category||'Não informado'}</td><td className="p-3"><div className="flex flex-wrap gap-2">{Object.entries(data?.categorias||{}).sort(([a],[b])=>Object.keys(categories).indexOf(a)-Object.keys(categories).indexOf(b)).map(([c,count])=><button key={c} type="button" aria-label={`Categoria ${categories[c]||c}`} aria-pressed={state.categoria===c} disabled={busy} className={`rounded-md border px-3 py-1.5 ${state.categoria===c?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`} onClick={()=>{setState((s:any)=>({...s,categoria:c,catalog_filters:{},filtros:[]}));setSelected('');}}>{categories[c]||c}</button>)}</div></td></tr>
++   {names.map(name=>{const f=fields.find((f:any)=>f.nome===name);const picked=state.catalog_filters[name];const values=data?.facetas?.[name]||[];const choices=picked!==undefined&&!values.some((v:any)=>JSON.stringify(v)===JSON.stringify(picked))?[picked,...values]:values;return <tr key={name} className="border-t"><th className="p-3 align-top font-medium">{f?.rotulo||name}</th><td className="p-3 align-top">{rowValue(name)}</td><td className="p-3"><div className="flex flex-wrap gap-2">{choices.map((v:any)=><button type="button" key={JSON.stringify(v)} aria-label={`Filtro ${f?.rotulo||name}: ${label(v)}`} aria-pressed={JSON.stringify(picked)===JSON.stringify(v)} disabled={!ready} onClick={()=>choose(name,v)} className={`rounded-md border px-3 py-1.5 ${JSON.stringify(picked)===JSON.stringify(v)?'bg-primary text-primary-foreground border-primary':'hover:bg-muted'}`}>{label(v)}{f?.unit?' '+f.unit:''}</button>)}{!choices.length&&<span className="text-muted-foreground">Sem valor disponível</span>}</div></td></tr>;})}
++   {others.length>0&&<tr className="border-t"><th className="p-3 align-top font-medium">Outras condições</th><td className="p-3" colSpan={2}><details><summary className="cursor-pointer text-muted-foreground">Ver {others.length} pontos da descrição</summary><ul className="mt-2 space-y-2">{others.map((r:any)=><li key={r.id}>{r.texto_original}</li>)}</ul></details></td></tr>}
++  </tbody></table></div>
++  <div className="flex justify-between items-center gap-3"><p className="text-sm" aria-live="polite">{loading?'Atualizando opções…':`${candidates.length} produtos disponíveis`}</p><Button size="sm" variant="ghost" onClick={()=>{setState((s:any)=>({...s,catalog_filters:{},filtros:[]}));setSelected('');}}>Limpar filtros</Button></div>
++  <div className="grid gap-2 sm:grid-cols-2">{candidates.map((c:any)=><button type="button" key={c.id} disabled={!ready} aria-label={`Selecionar ${c.sku}`} aria-pressed={selected===c.id} onClick={()=>setSelected(c.id)} className={`rounded-lg border p-3 text-left ${selected===c.id?'border-primary bg-primary/5':'hover:bg-muted'}`}><span className="block font-medium text-sm">{c.nome}</span><span className="block text-xs text-muted-foreground mt-1 break-all">{c.sku}</span></button>)}</div>
++  {!loading&&!candidates.length&&<p className="text-sm text-muted-foreground">Nenhum produto tem dados suficientes para essas escolhas. Remova um filtro para ver outras opções.</p>}
++  {selected&&<p className="text-xs text-muted-foreground">Selecionado: {data.candidatos.find((c:any)=>c.id===selected)?.nome}. Salvo para revisão técnica.</p>}
++  {canEdit&&<div className="flex justify-end"><Button disabled={!ready} onClick={save}>{busy?'Salvando…':selected?'Salvar seleção':'Salvar filtros'}</Button></div>}
++ </div>;
++}

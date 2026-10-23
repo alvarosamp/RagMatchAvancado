@@ -4,7 +4,7 @@ import json
 import os
 import tempfile
 import csv
-from datetime import datetime
+from datetime import date, datetime
 from io import BytesIO, StringIO
 from pathlib import Path
 from urllib.parse import quote
@@ -23,6 +23,7 @@ from app.crm.sales_process_importer import build_import_context_for_user, run_im
 from app.crm.models import (
     CrmBidAssistLog,
     CrmCatalogProduct,
+    CrmLpuVersion,
     CrmCatalogProductDatasheet,
     CrmChecklistStatus,
     CrmItemFulfillment,
@@ -44,7 +45,8 @@ from app.crm.models import (
 )
 from app.crm.query import TABLES, crm_user_payload, delete_records, insert_records, list_records, update_records
 from app.db.session import get_db
-from app.db.models import DocumentFile
+from app.db.models import DocumentFile, AnalysisDocument
+from app.services.notice_metadata_export import build_notice_metadata_export
 from app.jobs.models import Job, JobStatus, JobType
 from app.jobs.queue import JobQueue
 from app.services.crm_item_matcher import (
@@ -93,6 +95,51 @@ from app.services.crm_notice_list import invalidate_notice_list_cache, list_noti
 
 router = APIRouter(prefix="/crm", tags=["crm"])
 DEFAULT_BID_DECREMENT = 1.0
+
+
+@router.get("/dashboard-data")
+def crm_dashboard_data(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.crm.dashboard import dashboard_snapshot
+
+    return dashboard_snapshot(db, current_user.tenant_id)
+
+
+@router.get("/notices/{notice_id}/metadata-json")
+def export_notice_metadata_json(
+    notice_id: str,
+    include_text: bool = Query(default=False),
+    download: bool = Query(default=False),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    notice = (db.query(CrmNotice)
+              .options(selectinload(CrmNotice.organ), selectinload(CrmNotice.portal))
+              .filter(CrmNotice.id == notice_id, CrmNotice.tenant_id == current_user.tenant_id).first())
+    if notice is None:
+        raise HTTPException(status_code=404, detail="Edital nao encontrado.")
+    products = (db.query(CrmNoticeProduct)
+                .filter(CrmNoticeProduct.notice_id == notice.id,
+                        CrmNoticeProduct.tenant_id == current_user.tenant_id)
+                .order_by(CrmNoticeProduct.sort_order, CrmNoticeProduct.id).all())
+    documents = (db.query(CrmNoticeDocument)
+                 .filter(CrmNoticeDocument.notice_id == notice.id,
+                         CrmNoticeDocument.tenant_id == current_user.tenant_id)
+                 .order_by(CrmNoticeDocument.sort_order, CrmNoticeDocument.id).all())
+    analysis = None
+    if notice.analysis_document_id is not None:
+        analysis = (db.query(AnalysisDocument)
+                    .filter(AnalysisDocument.id == notice.analysis_document_id,
+                            AnalysisDocument.tenant_id == current_user.tenant_id).first())
+    payload = build_notice_metadata_export(notice, products, documents, analysis, include_text=include_text)
+    if not download:
+        return payload
+    return Response(content=json.dumps(payload, ensure_ascii=False, indent=2),
+                    media_type="application/json; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="metadados_edital_{notice.id}.json"',
+                             "Cache-Control": "no-store"})
 
 
 @router.get("/notices/{notice_id}/match-json")
@@ -770,6 +817,12 @@ def link_catalog_product_and_datasheet(
     if notice_product is None or catalog_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item ou produto do catalogo nao encontrado.")
 
+    if catalog_product.archived_at and notice_product.catalog_product_id != catalog_product.id:
+        raise HTTPException(400, "Produto retirado do catalogo ativo.")
+    if notice_product.catalog_product_id != catalog_product.id or not notice_product.catalog_snapshot:
+        from app.crm.query import serialize_record
+        notice_product.catalog_snapshot = serialize_record(catalog_product)
+        notice_product.catalog_lpu_version = catalog_product.lpu_version
     notice_product.catalog_product_id = catalog_product.id
     notice_product.catalog_match_source = "manual_confirmed"
     notice_product.catalog_match_confirmed_by = current_user.id
@@ -1102,6 +1155,9 @@ async def crm_import_sales_processes(
 async def crm_import_lpu_catalog(
     file: UploadFile = File(..., description="Planilha XLSX de LPU/catalogo"),
     drive_url: str = Form(..., description="Link do Drive da LPU"),
+    valid_until: date = Form(...),
+    owner_id: int = Form(...),
+    preview: bool = Form(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1111,6 +1167,9 @@ async def crm_import_lpu_catalog(
             detail="Somente administradores podem importar a LPU.",
         )
 
+    owner = db.query(User).filter_by(id=owner_id, tenant_id=current_user.tenant_id, is_active=True).first()
+    if not owner:
+        raise HTTPException(400, "Selecione um usuario ativo da sua organizacao.")
     filename = (file.filename or "").lower()
     if not filename.endswith(".xlsx"):
         raise HTTPException(
@@ -1130,10 +1189,16 @@ async def crm_import_lpu_catalog(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             lpu_drive_url=drive_url,
+            valid_until=valid_until,
+            owner_id=owner_id,
+            commit=not preview,
         )
+        if preview:
+            db.rollback()
         db.expire_all()
-        return {"ok": True, "summary": summary}
+        return {"ok": True, "summary": summary, "preview": preview}
     except ValueError as exc:
+        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
@@ -1142,6 +1207,68 @@ async def crm_import_lpu_catalog(
         await file.close()
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@router.get("/lpu/status")
+def crm_lpu_status(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import today_brasilia
+    from app.crm.query import serialize_record
+    current = db.query(CrmLpuVersion).filter_by(tenant_id=current_user.tenant_id, superseded_at=None).first()
+    pending = db.query(CrmCatalogProduct).filter(
+        CrmCatalogProduct.tenant_id == current_user.tenant_id,
+        CrmCatalogProduct.lpu_missing_since.isnot(None), CrmCatalogProduct.archived_at.is_(None),
+    ).all()
+    users = db.query(User).filter_by(tenant_id=current_user.tenant_id, is_active=True).all()
+    today = today_brasilia()
+    return {"current": serialize_record(current) if current else None,
+            "expired": bool(current and current.valid_until < today),
+            "pending": [dict(serialize_record(p), overdue=p.lpu_review_deadline < today,
+                             assigned_to_me=p.lpu_review_owner_id == current_user.id) for p in pending],
+            "users": [{"id": u.id, "name": u.full_name or u.email} for u in users]}
+
+
+@router.post("/lpu/{lpu_id}/extend")
+def crm_extend_lpu(lpu_id: str, payload: dict = Body(...), db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import today_brasilia
+    if current_user.role != "admin":
+        raise HTTPException(403, "Somente administradores podem prorrogar a LPU.")
+    row = db.query(CrmLpuVersion).filter_by(id=lpu_id, tenant_id=current_user.tenant_id, superseded_at=None).with_for_update().first()
+    if not row:
+        raise HTTPException(404, "LPU atual nao encontrada.")
+    try:
+        deadline = date.fromisoformat(str(payload.get("valid_until", "")))
+        owner_id = int(payload.get("owner_id"))
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Informe uma validade e um usuario.")
+    owner = db.query(User).filter_by(id=owner_id, tenant_id=current_user.tenant_id, is_active=True).first()
+    if not owner or deadline <= row.valid_until or deadline < today_brasilia():
+        raise HTTPException(400, "Selecione um usuario ativo e uma validade posterior a atual, hoje ou futura.")
+    row.extensions = [*(row.extensions or []), {"by": current_user.id, "at": datetime.now().isoformat(),
+        "previous_valid_until": row.valid_until.isoformat(), "valid_until": deadline.isoformat(), "owner_id": owner_id}]
+    row.valid_until, row.owner_id = deadline, owner_id
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/lpu/products/{product_id}/review")
+def crm_review_lpu_product(product_id: str, payload: dict = Body(...), db: Session = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    from app.services.lpu_lifecycle import preserve_process_products
+    row = db.query(CrmCatalogProduct).filter_by(id=product_id, tenant_id=current_user.tenant_id).with_for_update().first()
+    if not row or not row.lpu_missing_since or row.archived_at:
+        raise HTTPException(404, "Pendencia nao encontrada.")
+    if current_user.id != row.lpu_review_owner_id and current_user.role != "admin":
+        raise HTTPException(403, "Somente o responsavel ou administrador pode confirmar a retirada.")
+    if payload.get("action") != "confirm":
+        raise HTTPException(400, "Confirme a retirada apos conferir o produto.")
+    preserve_process_products(db, row)
+    row.archived_at = datetime.now()
+    row.is_active = False
+    row.lpu_reviewed_at = datetime.now()
+    row.lpu_reviewed_by = current_user.id
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/summary")
@@ -1927,7 +2054,12 @@ def crm_run_notice_matches(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    payload = payload or {}
+    mode = payload.get("mode", "hybrid")
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
     payload = payload or {}
@@ -1937,6 +2069,8 @@ def crm_run_notice_matches(
             current_user,
             notice_id,
             use_llm=payload.get("use_llm", True),
+            mode=mode,
+            attribute_filters=payload.get("attribute_filters"),
             notice_product_id=payload.get("notice_product_id"),
             category=payload.get("category"),
         )
@@ -2000,7 +2134,12 @@ def crm_run_notice_matches_job(
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    payload = payload or {}
+    mode = payload.get("mode", "hybrid")
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match.")
 
@@ -2048,6 +2187,8 @@ def crm_run_notice_matches_job(
         notice_product_id=payload.get("notice_product_id"),
         category=payload.get("category"),
         use_llm=bool(payload.get("use_llm", True)),
+        mode=mode,
+        attribute_filters=payload.get("attribute_filters"),
     )
     return {
         "job_id": job_id,
@@ -2386,11 +2527,15 @@ def crm_run_match_batch(
     stage: str = Body(..., embed=True, description="Etapa do edital: triage|analysis|documentation|proposal|auction"),
     limit: int = Body(default=50, embed=True, ge=1, le=500),
     use_llm: bool = Body(default=True, embed=True),
+    mode: str = Body(default="hybrid", embed=True),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _raise_match_paused()
-    require_ai_enabled("crm_matching", current_user.tenant)
+    if mode not in {"rules", "hybrid"}:
+        raise HTTPException(status_code=400, detail="Modo de match invalido")
+    if mode != "rules":
+        require_ai_enabled("crm_matching", current_user.tenant)
     if current_user.role not in {"admin", "editor"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para rodar o match em lote.")
 
@@ -2443,12 +2588,9 @@ def crm_run_match_batch(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
             db=db,
+            mode=mode,
+            use_llm=bool(use_llm) and mode != "rules",
         )
-        # Permite mudar o comportamento do job sem criar outro endpoint.
-        job = db.query(Job).filter(Job.id == job_id).first()
-        if job is not None:
-            job.payload = {**(job.payload or {}), "use_llm": bool(use_llm)}
-            db.add(job)
         job_ids.append(job_id)
 
     db.commit()
@@ -2475,6 +2617,8 @@ def crm_confirm_match(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permissao insuficiente para confirmar o match.")
     try:
         return confirm_notice_item_match(db, current_user, match_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -2590,3 +2734,139 @@ def crm_query_delete(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.put("/catalog-products/{product_id}/technical-sheet")
+def save_catalog_technical_sheet(
+    product_id: str,
+    payload: dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Save reviewed values against this tenant's attached private datasheets."""
+    import hashlib
+    import json
+    from pathlib import Path
+    product = db.query(CrmCatalogProduct).filter_by(id=product_id, tenant_id=current_user.tenant_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Produto nao encontrado")
+    attributes = payload.get("atributos")
+    if not isinstance(attributes, dict) or not attributes:
+        raise HTTPException(status_code=400, detail="Informe atributos normalizados")
+    values = []
+    for attribute in attributes.values():
+        variants = attribute.get("variantes") if isinstance(attribute, dict) else None
+        if variants is not None and (not isinstance(variants, list) or not variants):
+            raise HTTPException(status_code=400, detail="Variantes devem ser uma lista nao vazia")
+        values.extend(variants if variants is not None else [attribute])
+    for value in values:
+        if not isinstance(value, dict) or "valor" not in value:
+            raise HTTPException(status_code=400, detail="Cada atributo deve conter valor e evidencias")
+        evidences = value.get("evidencias", [])
+        if not isinstance(evidences, list):
+            raise HTTPException(status_code=400, detail="Evidencias devem ser uma lista")
+        for evidence in evidences:
+            if not isinstance(evidence, dict):
+                raise HTTPException(status_code=400, detail="Evidencia invalida")
+            sheet = db.query(CrmCatalogProductDatasheet).filter_by(
+                id=evidence.get("documento_id"), catalog_product_id=product_id,
+                tenant_id=current_user.tenant_id,
+            ).first()
+            page = evidence.get("pagina")
+            if sheet is None or not isinstance(page, int) or isinstance(page, bool) or page < 1:
+                raise HTTPException(status_code=400, detail="Documento vinculado e pagina positiva obrigatorios")
+            try:
+                evidence["hash_documento"] = hashlib.sha256(Path(sheet.storage_path).read_bytes()).hexdigest()
+            except OSError as exc:
+                raise HTTPException(status_code=409, detail="Arquivo de evidencia indisponivel") from exc
+            evidence["versao_documento"] = sheet.version
+            if evidence.get("revisado") is True:
+                evidence["revisado_por"] = current_user.id
+                evidence["revisado_em"] = datetime.utcnow().isoformat() + "Z"
+    try:
+        product.specification = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail="Ficha tecnica invalida") from exc
+    db.commit()
+    return {"id": product.id, "technical_sheet": payload}
+
+
+@router.post("/matches/{match_id}/reevaluate")
+def crm_reevaluate_technical_match(
+    match_id: str, db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    from app.services.crm_item_matcher import reevaluate_notice_item_match
+    try:
+        return reevaluate_notice_item_match(db, current_user, match_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/notices/{notice_id}/products/{item_id}/match-facets")
+def crm_technical_match_facets(
+    notice_id: str, item_id: str, filters: str = Query(default="{}"),
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    import json
+    from app.services.crm_item_matcher import _load_notice, _structured_item, _json_object
+    from app.services.technical_matching.facets import build_facets
+    try:
+        notice = _load_notice(db, current_user, notice_id)
+        product = next((p for p in notice.notice_products if p.id == item_id), None)
+        if product is None:
+            raise LookupError("Item nao encontrado")
+        item = _structured_item(product)
+        if item is None:
+            raise ValueError("Item sem requisitos estruturados")
+        catalog = db.query(CrmCatalogProduct).filter(
+            CrmCatalogProduct.tenant_id == current_user.tenant_id,
+            CrmCatalogProduct.is_active.is_(True),
+        ).all()
+        products = []
+        for row in catalog:
+            sheet = _json_object(row.specification) or {}
+            products.append({**sheet, "id": row.id, "categoria": sheet.get("categoria") or row.category})
+        return build_facets(item, products, json.loads(filters))
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/matches/{match_id}/technical-history")
+def crm_technical_match_history(match_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.crm_item_matcher import _load_match
+    try:
+        match = _load_match(db, current_user, match_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    rows = db.query(CrmNoticeHistory).filter(
+        CrmNoticeHistory.tenant_id == current_user.tenant_id,
+        CrmNoticeHistory.notice_id == match.notice_id,
+        CrmNoticeHistory.action == "Comparacao tecnica reavaliada explicitamente",
+    ).order_by(CrmNoticeHistory.created_at.desc()).all()
+    return {"history": [{"created_at": row.created_at.isoformat(), "user_id": row.user_id, **row.details}
+                        for row in rows if (row.details or {}).get("match_id") == match.id]}
+
+
+@router.post("/catalog-products/{product_id}/technical-sheet/draft")
+def crm_technical_sheet_draft(
+    product_id: str, payload: dict[str, Any] = Body(...), db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    from app.services.technical_matching.datasheet_draft import extract_draft
+    sheet = db.query(CrmCatalogProductDatasheet).filter_by(
+        id=payload.get("documento_id"), catalog_product_id=product_id, tenant_id=current_user.tenant_id,
+    ).first()
+    if sheet is None:
+        raise HTTPException(status_code=404, detail="Datasheet vinculado nao encontrado")
+    path = Path(sheet.storage_path)
+    if path.suffix.lower() != ".pdf":
+        raise HTTPException(status_code=400, detail="Sugestoes automaticas exigem PDF com texto")
+    try:
+        return extract_draft(path, document_id=sheet.id, document_version=sheet.version)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail="Nao foi possivel extrair texto deste PDF; preencha a ficha manualmente") from exc

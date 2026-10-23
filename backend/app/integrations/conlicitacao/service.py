@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 from app.integrations.conlicitacao import metrics
@@ -18,6 +19,15 @@ from app.integrations.tenders.schemas import (
     TenderOpportunity,
     TenderSyncResult,
 )
+
+
+@dataclass(frozen=True)
+class ConlicitacaoLookupResult:
+    filter_id: int
+    bulletin_id: int
+    bulletin_number: int | None
+    bulletin_closed_at: str | None
+    opportunity: TenderOpportunity
 
 
 class _TenderRepository(Protocol):
@@ -60,9 +70,71 @@ class ConlicitacaoService(TenderProvider):
         return opportunities
 
     async def get_opportunity(self, external_id: str) -> TenderOpportunity:
-        raise ConlicitacaoUnsupportedOperation(
-            "A API documentada não oferece consulta direta por ID da licitação."
+        result = await self.find_opportunity(external_id)
+        if result is None:
+            raise ConlicitacaoUnsupportedOperation(
+                "Licitação não encontrada nos boletins recentes consultados."
+            )
+        return result.opportunity
+
+    async def find_opportunity(
+        self,
+        external_id: str,
+        *,
+        correlation_id: str | None = None,
+        max_bulletins: int = 30,
+    ) -> ConlicitacaoLookupResult | None:
+        """Locate a tender by scanning the newest provider bulletins.
+
+        The provider does not document a direct bidding lookup endpoint. Keep
+        this search bounded so a typo cannot fan out into the full history.
+        """
+        try:
+            target_id = int(external_id)
+        except (TypeError, ValueError) as exc:
+            raise ConlicitacaoUnsupportedOperation(
+                "O número ConLicitação deve ser um inteiro positivo."
+            ) from exc
+        if target_id <= 0:
+            raise ConlicitacaoUnsupportedOperation(
+                "O número ConLicitação deve ser um inteiro positivo."
+            )
+
+        limit = max(1, min(int(max_bulletins), 100))
+        filters = await self.client.get_filters(correlation_id=correlation_id)
+        candidates: list[tuple[int, ConlicitacaoBulletinSummary]] = []
+        for provider_filter in filters.filtros:
+            response = await self.client.list_bulletins(
+                provider_filter.id,
+                page=1,
+                per_page=limit,
+                order="desc",
+                correlation_id=correlation_id,
+            )
+            candidates.extend((provider_filter.id, row) for row in response.boletins)
+
+        candidates.sort(
+            key=lambda item: item[1].datahora_fechamento or "",
+            reverse=True,
         )
+        for filter_id, summary in candidates[:limit]:
+            bulletin = await self.client.get_bulletin(
+                summary.id, correlation_id=correlation_id
+            )
+            for row in bulletin.licitacoes:
+                if row.id != target_id:
+                    continue
+                return ConlicitacaoLookupResult(
+                    filter_id=filter_id,
+                    bulletin_id=summary.id,
+                    bulletin_number=summary.numero_edicao,
+                    bulletin_closed_at=summary.datahora_fechamento,
+                    opportunity=map_tender(
+                        row.model_dump(mode="json"),
+                        base_url=self.client.settings.base_url,
+                    ),
+                )
+        return None
 
     async def get_documents(self, external_id: str) -> list[TenderDocument]:
         raise ConlicitacaoUnsupportedOperation(

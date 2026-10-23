@@ -1,0 +1,9 @@
+__pycache__/
+.validation/
+*.pyc
+*.log
+.venv*/
+.dbt-runtime/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

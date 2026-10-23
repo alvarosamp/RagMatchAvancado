@@ -130,3 +130,15 @@ class PasswordResetToken(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    id = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    auth_version = Column(Integer, nullable=False)
+    generation = Column(Integer, nullable=False, default=0)
+    remember_me = Column(Boolean, nullable=False, default=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    rotated_at = Column(DateTime(timezone=True))
+    revoked_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

@@ -103,6 +103,9 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
             self.filters.update(dict(clauses))
             return self
 
+        def with_for_update(self):
+            return self
+
         def first(self):
             key = (self.filters.get("tenant_id"), self.filters.get("sku"))
             return self.db.products.get(key)
@@ -115,7 +118,7 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
                 product
                 for product in self.db.products.values()
                 if product.tenant_id == tenant_id
-                and product.category in categories
+                and (not categories or product.category in categories)
                 and product.sku not in excluded_skus
             ]
 
@@ -150,6 +153,10 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     db = FakeDb()
     db.add(
         FakeProduct(
+            id="old-product",
+            lpu_version="old",
+            lpu_drive_url="https://drive.google.com/file/d/old",
+            min_price=2.0,
             tenant_id=1,
             sku="PN-FORA-DA-LPU",
             category="transceiver",
@@ -170,10 +177,45 @@ def test_import_lpu_updates_duplicate_pn_in_same_workbook(monkeypatch):
     assert summary["updated"] == 1
     assert summary["items"] == 2
     assert summary["duplicate_updates"] == 1
-    assert summary["removed_stale"] == 1
+    assert summary["removed_stale"] == 0
+    assert summary["pending_review"] == 1
     assert summary["lpu_version"]
     assert summary["lpu_drive_url"] == "https://drive.google.com/file/d/lpu"
     assert db.products[(1, "PN-1")].lpu_version == summary["lpu_version"]
     assert db.products[(1, "PN-1")].lpu_drive_url == summary["lpu_drive_url"]
     assert db.products[(1, "PN-1")].description == "Descricao nova"
-    assert (1, "PN-FORA-DA-LPU") not in db.products
+    import json
+    specification = json.loads(db.products[(1, "PN-1")].specification)
+    assert specification['sku'] == 'PN-1'
+    assert specification['dados_lpu']['descricao_original'] == 'Descricao nova'
+    assert specification['dados_lpu']['versao'] == summary['lpu_version']
+    assert specification['dados_lpu']['linha'] == 3
+    assert specification['dados_lpu']['campos_originais']['part no'] == 'MFR-2'
+    assert summary['technical_jsons_refreshed'] == 2
+    assert (1, "PN-FORA-DA-LPU") in db.products
+    assert db.products[(1, "PN-FORA-DA-LPU")].cost == 1.0
+    assert db.products[(1, "PN-FORA-DA-LPU")].lpu_review_owner_id == 2
+
+
+def test_transceiver_header_can_start_on_fourth_row():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append([]); sheet.append([]); sheet.append([])
+    sheet.append(['Marca','PN TOR','Descrição','Disponibilidade','Part No (MFR)'])
+    assert lpu_importer._find_header(sheet)[0] == 4
+
+
+def test_switch_model_and_sku_use_identifiers_and_preserve_description():
+    header=['Marca','PN TOR','Description','Vig','Disponibilidade','Part No']
+    row=['TPLINK','TLSG3428MP','Switch 24P GIGA POE+ 4*SFP','-','Estoque','TLSG3428MP']
+    record=_row_to_record(header,[_norm(v) for v in header],row,'Switches')
+    assert record['sku']=='TLSG3428MP'
+    assert record['model']=='TLSG3428MP'
+    assert record['description']==row[2]
+    assert record['specification']==row[2]
+
+
+def test_tplink_access_points_and_power_supplies_have_distinct_categories():
+    assert lpu_importer._category_from_sheet('TP-LINK','ACCESS POINT AX3000 EAP653')=='access_point'
+    assert lpu_importer._category_from_sheet('TP-LINK','SWITCH 16P SG1016D')=='switch'
+    assert lpu_importer._category_from_sheet('Switches','AC power supply module for S3600')=='fonte'

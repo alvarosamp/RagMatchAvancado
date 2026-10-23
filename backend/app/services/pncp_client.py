@@ -17,7 +17,7 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; EditalMatcher-Radar/1.0)",
 }
 
-_PNCP_ID_PATTERN = re.compile(r"^(\d{14})-(\d+)-(\d+)/(\d{4})$")
+_PNCP_ID_PATTERN = re.compile(r"^([A-Z0-9]{12}\d{2})-(\d+)-(\d+)/(\d{4})$", re.I)
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ def parse_pncp_id(raw: str) -> ParsedPncpId | None:
         return None
     return ParsedPncpId(
         raw=raw.strip(),
-        cnpj=match.group(1),
+        cnpj=match.group(1).upper(),
         tipo=int(match.group(2)),
         sequencial=int(match.group(3)),
         ano=int(match.group(4)),
@@ -90,10 +90,10 @@ def search_publications(
         if not current_rows or (isinstance(current_payload, dict) and current_payload.get("paginasRestantes", 0) <= 0):
             break
     if cnpj:
-        digits = re.sub(r"\D", "", cnpj)
+        digits = re.sub(r"[^A-Z0-9]", "", cnpj.upper())
         rows = [
             row for row in rows
-            if digits in str(row.get("orgaoEntidade", {}).get("cnpj", "") or row.get("cnpjOrgao", ""))
+            if digits in re.sub(r"[^A-Z0-9]", "", str(row.get("orgaoEntidade", {}).get("cnpj", "") or row.get("cnpjOrgao", "")).upper())
         ]
     if texto:
         rows = [row for row in rows if _matches_text(row, texto)]

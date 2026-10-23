@@ -8,7 +8,7 @@ from app.services.catalog_loader import load_switch_catalog
 from app.vector.pgvector_store import ensure_pgvector_extension
 
 
-def init_db(db: Session) -> dict:
+def init_db(db: Session, *, exclude_tables=()) -> dict:
     """
     Cria tabelas do portal principal e do CRM no mesmo banco.
     """
@@ -19,7 +19,7 @@ def init_db(db: Session) -> dict:
 
     try:
         ensure_pgvector_extension(db)
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine, tables=[t for t in Base.metadata.sorted_tables if t.name not in exclude_tables])
         _ensure_user_schema_updates()
         _ensure_job_enum_updates()
         _ensure_crm_schema_updates()
@@ -152,6 +152,7 @@ def _ensure_crm_schema_updates() -> None:
             "catalog_match_model_version": "VARCHAR",
             "catalog_match_notes": "TEXT",
             "catalog_lpu_version": "VARCHAR",
+            "catalog_snapshot": "JSON",
         },
     )
     _ensure_columns(
@@ -171,14 +172,23 @@ def _ensure_crm_schema_updates() -> None:
             "category": "VARCHAR",
             "min_price": "DOUBLE PRECISION",
             "manufacturer_part_number": "VARCHAR",
+            "gtin": "VARCHAR(14)",
+            "supplier_tax_id": "VARCHAR(14)",
             "lpu_version": "VARCHAR",
             "lpu_drive_url": "TEXT",
+            "lpu_missing_since": "DATE",
+            "lpu_review_deadline": "DATE",
+            "lpu_review_owner_id": "INTEGER",
+            "lpu_reviewed_by": "INTEGER",
+            "lpu_reviewed_at": "TIMESTAMP",
+            "archived_at": "TIMESTAMP",
             "supplier_name": "VARCHAR",
             "datasheet_url": "TEXT",
             "certificate_url": "TEXT",
             "equivalent_skus": "TEXT",
         },
     )
+    _ensure_columns(inspector, "crm_notice_item_results", {"competitor_tax_id": "VARCHAR(14)"})
     _ensure_indexes(
         [
             "CREATE INDEX IF NOT EXISTS ix_crm_notices_tenant_tor_id ON crm_notices (tenant_id, tor_id)",

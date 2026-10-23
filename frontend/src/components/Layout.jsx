@@ -64,6 +64,7 @@ const NAV = [
 const NAV_ADMIN = [
   { key: 'users', path: '/usuarios', icon: Users },
 ]
+NAV.push({ key: 'technical_preview', path: '/laboratorio-tecnico', icon: FileSearch, label: 'Revisão documental' })
 
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 const AI_NAV_KEYS = new Set(['analysis_dashboard', 'datasheets', 'competitive', 'jobs'])
@@ -73,7 +74,7 @@ const NAV_STRUCTURE = [
   { type: 'item', key: 'radar' },
   { type: 'item', key: 'upload' },
   { type: 'item', key: 'crm' },
-  { type: 'group', title: 'Analise', keys: ['analysis_dashboard', 'datasheets', 'competitive', 'pncp_monitor'] },
+  { type: 'group', title: 'Analise', keys: ['technical_preview', 'analysis_dashboard', 'datasheets', 'competitive', 'pncp_monitor'] },
   { type: 'group', title: 'Disputa', keys: ['auction_monitor', 'bid_robot', 'controle'] },
   { type: 'group', title: 'Documentos', keys: ['proposal_studio', 'compliance', 'pricing', 'subscription', 'reports'] },
   { type: 'group', title: 'Gestao', keys: ['analytics', 'post_award'] },
@@ -94,7 +95,7 @@ export default function Layout({ children }) {
   )
   const items = baseItems.map((item) => ({
     ...item,
-    label: market.nav?.[item.key]?.label || item.key,
+    label: market.nav?.[item.key]?.label || item.label || item.key,
     hint: market.nav?.[item.key]?.hint || '',
   }))
   const itemsByKey = new Map(items.map((item) => [item.key, item]))

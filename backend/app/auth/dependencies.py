@@ -29,7 +29,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 from app.db.session import get_db, set_tenant_context
-from app.auth.models import User, Tenant
+from app.auth.models import User, Tenant, AuthSession
 from app.auth.security import decode_access_token
 from app.logs.config import logger
 
@@ -90,6 +90,8 @@ def get_current_user(
     try:
         # Valida assinatura e expiração, retorna o payload
         payload = decode_access_token(token)
+        if payload.get("type", "access") != "access":
+            raise credentials_exception
 
         # Prefer the immutable numeric id. The email remains as a compatibility
         # fallback for tokens issued before the user profile became editable.
@@ -104,7 +106,18 @@ def get_current_user(
         logger.warning(f"[Auth] JWT inválido: {e}")
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == int(user_id)).first() if user_id else db.query(User).filter(User.email == email).first()
+    if user_id is not None:
+        try:
+            if isinstance(user_id, bool) or not isinstance(user_id, (int, str)):
+                raise ValueError("Invalid user identifier")
+            normalized_user_id = int(user_id)
+            if normalized_user_id <= 0:
+                raise ValueError("Invalid user identifier")
+        except (TypeError, ValueError):
+            raise credentials_exception
+        user = db.query(User).filter(User.id == normalized_user_id).first()
+    else:
+        user = db.query(User).filter(User.email == email).first()
     if not user:
         logger.warning(f"[Auth] Usuário não encontrado: {email}")
         raise credentials_exception
@@ -116,6 +129,12 @@ def get_current_user(
     if token_auth_version != int(getattr(user, "auth_version", 0) or 0):
         logger.info("[Auth] Sessao revogada para user_id=%s", user.id)
         raise credentials_exception
+
+    if payload.get("sid"):
+        from app.auth.sessions import aware, now
+        session = db.query(AuthSession).filter_by(id=payload['sid'], user_id=user.id).first()
+        if not session or session.revoked_at or aware(session.expires_at) <= now():
+            raise credentials_exception
 
     # Verifica se a conta está ativa
     if not user.is_active:

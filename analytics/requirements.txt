@@ -1,0 +1,17 @@
+# Isolated from the HTTP/OCR runtime. Refresh pins only after the analytics CI.
+prefect==3.4.22
+# Prefect 3.4 router requires the FastAPI routing implementation before 0.137.
+fastapi==0.116.1
+starlette==0.47.3
+scikit-learn==1.6.1
+xgboost==3.0.5
+mlflow==2.22.2
+evidently==0.7.14
+sqlalchemy==2.0.43
+psycopg2-binary==2.9.10
+pgvector==0.4.1
+pydantic-settings==2.10.1
+pydantic[email]==2.11.9
+requests==2.32.5
+python-dotenv==1.1.1
+tzdata==2025.2

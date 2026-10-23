@@ -1,0 +1,13 @@
+ragmatch_market:
+  target: analytics
+  outputs:
+    analytics:
+      type: postgres
+      host: "{{ env_var('MARKET_DB_HOST') }}"
+      port: "{{ env_var('MARKET_DB_PORT', '5432') | int }}"
+      user: "{{ env_var('MARKET_DB_USER') }}"
+      password: "{{ env_var('MARKET_DB_PASSWORD') }}"
+      dbname: "{{ env_var('MARKET_DB_NAME') }}"
+      schema: mart
+      threads: 1
+      connect_timeout: 10

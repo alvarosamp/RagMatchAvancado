@@ -133,6 +133,18 @@ def _generation_notice(db: Session, current_user: User, notice_id: str) -> CrmNo
     )
     if notice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Edital nao encontrado.")
+    from app.crm.models import CrmCatalogProduct
+    # Saved review candidates are deliberately distinct from confirmed commercial links.
+    selected_ids = {(item.raw_payload or {}).get('_manual_match', {}).get('selected_catalog_id')
+                    for item in notice.notice_products if isinstance((item.raw_payload or {}).get('_manual_match', {}), dict)}
+    selected_ids.discard(None)
+    catalogs = {row.id: row for row in db.query(CrmCatalogProduct).filter(
+        CrmCatalogProduct.id.in_(selected_ids), CrmCatalogProduct.tenant_id == current_user.tenant_id,
+        CrmCatalogProduct.is_active.is_(True)).all()} if selected_ids else {}
+    for item in notice.notice_products:
+        saved = (item.raw_payload or {}).get('_manual_match') or {}
+        if isinstance(saved, dict) and saved.get('selected_catalog_id'):
+            item._declaration_catalog = catalogs.get(saved['selected_catalog_id'])
     return notice
 
 
@@ -190,7 +202,7 @@ def generate_and_archive_document(
     template = preview["template"]
     document = store_document_file(
         db, tenant_id=current_user.tenant_id, user_id=current_user.id,
-        fileobj=BytesIO(content), original_filename=generated_filename(notice, payload.template_id),
+        fileobj=BytesIO(content), original_filename=generated_filename(notice, payload.template_id, options),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         title=f"{template['name']} - {notice.number}", category=template["name"], crm_notice_id=notice.id,
         status_value="generated", template_id=payload.template_id, template_version=template["template_version"],

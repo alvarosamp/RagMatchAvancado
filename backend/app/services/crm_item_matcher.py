@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
@@ -17,20 +18,22 @@ from app.crm.models import (
     CrmNoticeProductMatchLevel,
     CrmNoticeProductMatchStatus,
 )
-from app.pipeline.embedder import embed_texts_batch
 from app.logs.config import logger
+from app.pipeline.embedder import embed_texts_batch
 from app.services.catalog_embeddings import ensure_catalog_embeddings
 from app.services.crm_match_scoring import (
+    THRESHOLD_ATENDE,
     MatchScore,
+    _has_hard_category_conflict,
     build_match_summary,
     combine_scores,
     cosine_similarity,
-    _has_hard_category_conflict,
     lexical_similarity,
     normalize_text,
     technical_compatibility_score,
     try_llm_rerank,
 )
+from app.services.technical_matching import compare_item_product
 
 PRESELECT_LIMIT = 12
 SUGGESTIONS_PER_ITEM = 10
@@ -43,7 +46,22 @@ def _auto_pricing_allowed(product: CrmNoticeProduct) -> bool:
 
 
 def _remember_lpu_version(product: CrmNoticeProduct, catalog: CrmCatalogProduct) -> None:
+    from app.crm.query import serialize_record
     product.catalog_lpu_version = getattr(catalog, "lpu_version", None)
+    product.catalog_snapshot = serialize_record(catalog)
+
+
+def _has_validated_match(product: CrmNoticeProduct) -> bool:
+    return bool(
+        getattr(product, "catalog_match_confirmed_at", None)
+        or getattr(product, "catalog_match_confirmed_by", None)
+        or getattr(product, "catalog_match_source", None) in {"manual_confirmed", "match_confirmed"}
+        or getattr(product, "match_reviewed_at", None)
+        or any(
+            match.status == CrmNoticeProductMatchStatus.CONFIRMED
+            for match in getattr(product, "product_matches", ())
+        )
+    )
 
 
 def run_notice_item_match(
@@ -54,10 +72,16 @@ def run_notice_item_match(
     use_llm: bool = True,
     notice_product_id: str | None = None,
     category: str | None = None,
+    mode: str = "hybrid",
+    attribute_filters: dict[str, list[Any]] | None = None,
 ) -> dict[str, Any]:
+    if mode not in {"rules", "hybrid"}:
+        raise ValueError("Modo de match invalido")
+    if attribute_filters and (mode != "rules" or not notice_product_id):
+        raise ValueError("Filtros de atributos exigem modo rules e item selecionado")
     tenant = getattr(current_user, "tenant", None)
     use_llm = bool(
-        use_llm
+        mode != "rules" and use_llm
         and CRM_MATCH_USE_LLM
         and ai_feature_enabled("crm_llm_rerank", tenant)
     )
@@ -81,6 +105,8 @@ def run_notice_item_match(
             raise LookupError("Item do edital nao encontrado para rodar match.")
 
     catalog_products_filtered = catalog_products
+    if category and mode == "rules" and not notice_product_id:
+        raise ValueError("No modo rules, categoria explicita exige selecionar um item")
     if category:
         wanted = normalize_text(category)
         catalog_products_filtered = [
@@ -89,8 +115,21 @@ def run_notice_item_match(
         if not catalog_products_filtered:
             raise ValueError("Nenhum produto ativo encontrado no catalogo para a categoria selecionada.")
 
+    # A retry or a new analysis must never replace a human validation. Preserve
+    # the original match IDs, review evidence, catalog attachment and pricing.
+    protected_products = [p for p in notice_products if _has_validated_match(p)]
+    pending_products = [p for p in notice_products if not _has_validated_match(p)]
+    for product in protected_products:
+        best_scores.append({
+            "notice_product_id": product.id,
+            "best_score": max((m.overall_score or 0.0 for m in product.product_matches), default=0.0),
+            "reference_value": _reference_value(product),
+        })
+
     embedding_stats: dict[str, Any] | None = None
-    if ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
+    if pending_products and (mode == "rules" or all(_structured_item(p) is not None for p in pending_products)):
+        embedding_stats = {"status": "not_used", "reason": "deterministic_json"}
+    if mode != "rules" and any(_structured_item(p) is None for p in pending_products) and ai_feature_enabled("crm_embeddings", tenant) and catalog_products_filtered:
         try:
             embedding_stats = ensure_catalog_embeddings(db, catalog_products_filtered)
         except Exception as exc:
@@ -98,22 +137,18 @@ def run_notice_item_match(
             # indisponibilidade do provider em score semantico artificial.
             logger.warning("[CRM Match] Embeddings persistidos indisponiveis; usando lexical: %s", exc)
 
-    if notice_product_id:
+    if pending_products:
         db.query(CrmNoticeProductMatch).filter(
             CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
             CrmNoticeProductMatch.notice_id == notice_id,
-            CrmNoticeProductMatch.notice_product_id == notice_product_id,
-        ).delete(synchronize_session=False)
-        db.flush()
-    else:
-        db.query(CrmNoticeProductMatch).filter(
-            CrmNoticeProductMatch.tenant_id == current_user.tenant_id,
-            CrmNoticeProductMatch.notice_id == notice_id,
+            CrmNoticeProductMatch.notice_product_id.in_([p.id for p in pending_products]),
+            CrmNoticeProductMatch.status != CrmNoticeProductMatchStatus.CONFIRMED,
         ).delete(synchronize_session=False)
         db.flush()
 
-    for product in notice_products:
-        reused_catalog = _find_reusable_catalog_product(product, reusable_matches)
+    for product in pending_products:
+        # A matching description cannot substitute explicit technical requirements.
+        reused_catalog = _find_reusable_catalog_product(product, reusable_matches) if mode != "rules" and _structured_item(product) is None else None
         if reused_catalog is not None:
             reused_match = CrmNoticeProductMatch(
                 tenant_id=current_user.tenant_id,
@@ -147,7 +182,14 @@ def run_notice_item_match(
             })
             continue
 
-        ranked = _rank_candidates(
+        item_catalog = catalog_products_filtered
+        if attribute_filters:
+            from app.services.technical_matching.facets import build_facets
+            selected = build_facets(_structured_item(product) or {"categoria": getattr(product, "category", None)},
+                [{**_technical_catalog_payload(c), "id": c.id} for c in item_catalog], attribute_filters)
+            allowed = set(selected["catalog_product_ids"])
+            item_catalog = [c for c in item_catalog if c.id in allowed]
+        ranked = _rank_structured_candidates(_structured_item(product) or {"categoria": getattr(product, "category", None), "requisitos": {}}, item_catalog) if mode == "rules" else _rank_candidates(
             product,
             catalog_products_filtered,
             embedding_cache=embedding_cache,
@@ -157,7 +199,7 @@ def run_notice_item_match(
         matches: list[CrmNoticeProductMatch] = []
         for rank, candidate in enumerate(ranked[:SUGGESTIONS_PER_ITEM], start=1):
             score: MatchScore = candidate["score"]
-            if score.overall_score < MIN_SUGGESTION_SCORE:
+            if score.overall_score < MIN_SUGGESTION_SCORE and score.source_method != "deterministic_json":
                 continue
             match = CrmNoticeProductMatch(
                 tenant_id=current_user.tenant_id,
@@ -166,12 +208,13 @@ def run_notice_item_match(
                 catalog_product_id=candidate["catalog"].id,
                 match_rank=rank,
                 source_method=score.source_method,
-                status=CrmNoticeProductMatchStatus.CONFIRMED if product.catalog_product_id == candidate["catalog"].id else CrmNoticeProductMatchStatus.SUGGESTED,
+                status=CrmNoticeProductMatchStatus.CONFIRMED if product.catalog_product_id == candidate["catalog"].id and score.source_method != "deterministic_json" else CrmNoticeProductMatchStatus.SUGGESTED,
                 match_level=_match_level_enum(score.level),
                 lexical_score=score.lexical_score,
                 semantic_score=score.semantic_score,
                 llm_score=score.llm_score,
                 overall_score=score.overall_score,
+                technical_result=candidate.get("technical_match"),
                 rationale=score.rationale,
                 matched_features=list(score.matched_features) if score.matched_features else None,
                 conflicts=list(score.conflicts) if score.conflicts else None,
@@ -197,6 +240,7 @@ def run_notice_item_match(
             action="Match catalogo x edital executado",
             details={
                 **summary,
+                "validated_items_preserved": len(protected_products),
                 "embedding": embedding_stats or {"status": "lexical_fallback"},
             },
         )
@@ -251,8 +295,14 @@ def get_notice_item_match_payload(db: Session, current_user: User, notice_id: st
 
 def confirm_notice_item_match(db: Session, current_user: User, match_id: str) -> dict[str, Any]:
     match = _load_match(db, current_user, match_id)
+    if _technical_stale(match):
+        raise ValueError("Comparacao desatualizada: reavalie antes de confirmar")
+    if (match.technical_result or {}).get("status") in {"NAO_ATENDE", "VERIFICAR"}:
+        raise ValueError("A comparacao tecnica exige resolver as falhas ou pendencias antes da confirmacao")
     product = match.notice_product
     catalog = match.catalog_product
+    if catalog.archived_at:
+        raise ValueError("Produto retirado do catalogo ativo.")
 
     product.catalog_product_id = catalog.id
     product.catalog_match_source = "match_confirmed"
@@ -316,8 +366,8 @@ def mark_notice_product_ground_truth(
         )
         .first()
     )
-    if not catalog:
-        raise LookupError("Produto do catalogo nao encontrado.")
+    if not catalog or catalog.archived_at:
+        raise LookupError("Produto do catalogo ativo nao encontrado.")
 
     product.catalog_product_id = catalog.id
     product.catalog_match_source = source
@@ -645,6 +695,9 @@ def _rank_candidates(
     use_llm: bool,
     use_embeddings: bool | None = None,
 ) -> list[dict[str, Any]]:
+    structured = _structured_item(product)
+    if structured is not None:
+        return _rank_structured_candidates(structured, catalog_products)
     notice_text = _notice_product_text(product)
     candidates = [
         {
@@ -728,12 +781,104 @@ def _rank_candidates(
                 matched_features=(*score.matched_features, *technical.matched_features),
                 conflicts=(*score.conflicts, *technical.conflicts),
             )
+        # Numeric evidence cannot be overruled by a high lexical/LLM score.
+        # Unstructured requirements remain reviewable instead of being labeled
+        # as a definitive technical rejection by regex alone.
+        from app.market_intelligence.domain import technical_conflicts
+        numeric_conflicts = technical_conflicts(notice_text, _catalog_product_text(candidate["catalog"]))
+        if numeric_conflicts:
+            score = MatchScore(
+                lexical_score=score.lexical_score, semantic_score=score.semantic_score,
+                llm_score=score.llm_score,
+                overall_score=min(score.overall_score, THRESHOLD_ATENDE - 0.05),
+                level="possible" if score.level == "strong" else score.level,
+                source_method=score.source_method, rationale=score.rationale,
+                matched_features=score.matched_features,
+                conflicts=(*score.conflicts, *(f"Conflito quantitativo ({c['attribute']}): exigido {c['required']}, encontrado {c['offered']}; revisar evidências." for c in numeric_conflicts)),
+            )
         ranked.append({
             "catalog": candidate["catalog"],
             "score": score,
         })
 
     return sorted(ranked, key=lambda item: item["score"].overall_score, reverse=True)
+
+
+def _json_object(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else None
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _structured_item(product: CrmNoticeProduct) -> dict[str, Any] | None:
+    from app.services.technical_matching.adapter import adapt_item
+    manual = (getattr(product, 'raw_payload', None) or {}).get('_manual_match')
+    if isinstance(manual, dict):
+        from app.services.manual_match import required_payload
+        return required_payload(manual)
+    for source in (getattr(product, "raw_payload", None), getattr(product, "technical_characteristics", None)):
+        payload = _json_object(source)
+        if payload is not None:
+            result = adapt_item(payload, getattr(product, "category", None))
+            if result is not None:
+                return result
+    return None
+
+
+def _technical_catalog_payload(catalog):
+    payload = _json_object(getattr(catalog, "specification", None)) or {}
+    return {"sku": getattr(catalog, "sku", None), "categoria": payload.get("categoria") or getattr(catalog, "category", None),
+            "atributos": payload.get("atributos", payload), "revisao": payload.get("revisao"), "variante": payload.get("variante")}
+
+
+def _technical_stale(match):
+    from app.services.technical_matching.engine import _hash
+    from app.services.technical_matching.normalizer import RULES
+    saved = getattr(match, "technical_result", None)
+    if not isinstance(saved, dict):
+        return False
+    item = _structured_item(match.notice_product)
+    return (item is None or saved.get("hash_requisitos") != _hash(item)
+            or saved.get("hash_produto") != _hash(_technical_catalog_payload(match.catalog_product))
+            or saved.get("versao_regras") != RULES.get("version"))
+
+
+def _rank_structured_candidates(item: dict[str, Any], catalog_products: list[CrmCatalogProduct]) -> list[dict[str, Any]]:
+    ranked = []
+    for catalog in catalog_products:
+        result = compare_item_product(item, _technical_catalog_payload(catalog))
+        rows = tuple(
+            f"{d['atributo']}: {d['status']} | exigido {d['operador']} {d['exigido']} | "
+            f"produto {d['encontrado']} | {d['motivo']}"
+            for d in result["detalhes"]
+        )
+        # The CRM summary uses numeric thresholds; a high fraction of matched
+        # attributes must never count an unresolved/rejected item as approved.
+        overall = result["score"]
+        if result["status"] == "NAO_ATENDE":
+            overall = 0.0
+        elif result["status"] == "VERIFICAR":
+            overall = min(overall, THRESHOLD_ATENDE - 0.05)
+        base = combine_scores(overall, None, None)
+        score = MatchScore(
+            lexical_score=0.0, semantic_score=None, llm_score=None,
+            overall_score=overall, level="none" if result["status"] == "NAO_ATENDE" else base.level,
+            source_method="deterministic_json",
+            rationale=(f"{result['status']} | compatibilidade {result['score']:.0%} | "
+                       f"cobertura {result['cobertura']:.0%}\n" + "\n".join(rows)),
+            matched_features=tuple(row for row, d in zip(rows, result["detalhes"]) if d["status"] == "ATENDE"),
+            conflicts=tuple(row for row, d in zip(rows, result["detalhes"]) if d["status"] != "ATENDE"),
+        )
+        ranked.append({"catalog": catalog, "score": score, "technical_match": result})
+    priority = {"ATENDE": 2, "VERIFICAR": 1, "NAO_ATENDE": 0}
+    # Compare every candidate before applying the retrieval limit.
+    return sorted(ranked, key=lambda c: (priority[c["technical_match"]["status"]], c["score"].overall_score), reverse=True)[:PRESELECT_LIMIT]
 
 
 def _attach_semantic_scores(
@@ -1047,6 +1192,9 @@ def _serialize_match(match: CrmNoticeProductMatch) -> dict[str, Any]:
         "semantic_score": match.semantic_score,
         "llm_score": match.llm_score,
         "overall_score": match.overall_score,
+        "technical_stale": _technical_stale(match),
+        "technical_result": getattr(match, "technical_result", None),
+        "technical_status": (getattr(match, "technical_result", None) or {}).get("status"),
         "rationale": match.rationale,
         "matched_features": match.matched_features or [],
         "conflicts": match.conflicts or [],
@@ -1114,3 +1262,28 @@ def _find_reusable_catalog_product(
     if not signature:
         return None
     return reusable_matches.get(signature)
+
+
+def reevaluate_notice_item_match(db: Session, current_user: User, match_id: str) -> dict[str, Any]:
+    """Explicitly reevaluate; retain human selection and archive the old snapshot."""
+    match = _load_match(db, current_user, match_id)
+    item = _structured_item(match.notice_product)
+    if item is None:
+        raise ValueError("Item sem requisitos estruturados")
+    candidate = _rank_structured_candidates(item, [match.catalog_product])[0]
+    previous = match.technical_result
+    result = candidate['technical_match']
+    db.add(CrmNoticeHistory(
+        tenant_id=current_user.tenant_id, notice_id=match.notice_id,
+        user_id=current_user.id, action="Comparacao tecnica reavaliada explicitamente",
+        details={"match_id": match.id, "previous_result": previous, "technical_result": result,
+                 "human_status": _enum_value(match.status)},
+    ))
+    match.technical_result = result
+    match.rationale = candidate['score'].rationale
+    match.overall_score = candidate['score'].overall_score
+    match.match_level = _match_level_enum(candidate['score'].level)
+    match.matched_features = list(candidate['score'].matched_features)
+    match.conflicts = list(candidate['score'].conflicts)
+    db.commit()
+    return get_notice_item_match_payload(db, current_user, match.notice_id)

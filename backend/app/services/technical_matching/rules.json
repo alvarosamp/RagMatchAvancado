@@ -1,0 +1,271 @@
+{
+  "categories": {
+    "switch": [
+      "switch",
+      "switches"
+    ],
+    "access_point": [
+      "access point",
+      "access points",
+      "ap",
+      "ponto de acesso",
+      "Pontos de acesso",
+      "Access-Point"
+    ],
+    "transceiver": [
+      "transceiver",
+      "transceivers",
+      "transceptor",
+      "Transceptores",
+      "Módulo transceptor"
+    ],
+    "cabo": [
+      "cabos",
+      "cable"
+    ],
+    "fonte": [
+      "fontes",
+      "power supply"
+    ]
+  },
+  "attributes": {
+    "portas_rj45": {
+      "type": "number",
+      "aliases": [
+        "Portas RJ45",
+        "rj45_ports",
+        "interfaces.portas_acesso_rj45_qtd",
+        "Portas RJ-45",
+        "Quantidade de portas RJ45",
+        "Qtd portas RJ45",
+        "RJ45 port count",
+        "RJ-45 ports",
+        "PortasRJ45"
+      ],
+      "integer": true,
+      "minimum": 0
+    },
+    "poe_budget_w": {
+      "type": "number",
+      "unit": "W",
+      "aliases": [
+        "Budget PoE (W)",
+        "potencia_poe",
+        "poe_budget",
+        "orçamento PoE",
+        "poe.orcamento_total_w",
+        "poe.poe_budget_w",
+        "Orçamento de PoE",
+        "Orcamento PoE (W)",
+        "PoE budget (W)"
+      ]
+    },
+    "portas_sfp_plus": {
+      "type": "number",
+      "aliases": [
+        "Portas SFP+",
+        "sfp_plus_ports",
+        "interfaces.portas_sfp_plus_qtd",
+        "Slots SFP+",
+        "Quantidade de portas SFP+",
+        "SFP+ ports",
+        "PortasSFPPlus"
+      ],
+      "integer": true,
+      "minimum": 0
+    },
+    "portas_sfp": {
+      "type": "number",
+      "aliases": [
+        "Portas SFP",
+        "sfp_ports",
+        "interfaces.portas_sfp_qtd",
+        "Slots SFP",
+        "Quantidade de portas SFP",
+        "SFP ports",
+        "PortasSFP"
+      ],
+      "integer": true,
+      "minimum": 0
+    },
+    "velocidade_uplink_mbps": {
+      "type": "number",
+      "unit": "Mbps",
+      "aliases": [
+        "velocidade_uplink",
+        "uplink_speed_mbps"
+      ]
+    },
+    "capacidade_comutacao_gbps": {
+      "type": "number",
+      "unit": "Gbps",
+      "aliases": [
+        "Capacidade de Comutação",
+        "switching_capacity_gbps",
+        "Capacidade de comutação (Gbps)",
+        "Switching capacity (Gbps)"
+      ]
+    },
+    "gerenciavel": {
+      "type": "boolean",
+      "aliases": [
+        "gerenciável",
+        "managed",
+        "Gerenciamento",
+        "Switch gerenciável"
+      ]
+    },
+    "poe": {
+      "type": "boolean",
+      "aliases": [
+        "PoE",
+        "suporte_poe"
+      ]
+    },
+    "alcance_m": {
+      "type": "number",
+      "unit": "m",
+      "aliases": [
+        "alcance",
+        "reach_m",
+        "alcance_ou_comprimento"
+      ]
+    },
+    "conector": {
+      "type": "string",
+      "aliases": [
+        "connector"
+      ]
+    },
+    "temperatura_operacao_c": {
+      "type": "number",
+      "unit": "C",
+      "aliases": [
+        "temperatura_operacao",
+        "ambientais.temperatura_operacao_c"
+      ]
+    },
+    "comprimento_onda_tx_nm": {
+      "type": "number",
+      "unit": "nm",
+      "aliases": [
+        "optica.comprimento_onda_tx_nm"
+      ]
+    },
+    "comprimento_onda_rx_nm": {
+      "type": "number",
+      "unit": "nm",
+      "aliases": [
+        "optica.comprimento_onda_rx_nm"
+      ]
+    },
+    "tipo_fibra": {
+      "type": "string",
+      "aliases": [
+        "optica.tipo_fibra"
+      ]
+    },
+    "velocidades_porta_mbps": {
+      "type": "number",
+      "unit": "Mbps",
+      "aliases": [
+        "interfaces.velocidades_porta",
+        "velocidades_porta"
+      ]
+    },
+    "camada": {
+      "type": "string",
+      "aliases": [
+        "layer",
+        "camada_rede"
+      ]
+    },
+    "tecnologia_wifi": {
+      "type": "string",
+      "aliases": [
+        "wifi_standard",
+        "padrao_wifi"
+      ]
+    },
+    "ambiente": {
+      "type": "string",
+      "aliases": [
+        "environment"
+      ]
+    },
+    "bandas_wifi": {
+      "type": "string",
+      "aliases": [
+        "wifi_bands"
+      ]
+    },
+    "velocidade_wifi_mbps": {
+      "type": "number",
+      "unit": "Mbps",
+      "aliases": [
+        "wifi_speed_mbps"
+      ]
+    },
+    "marca": {
+      "type": "string",
+      "aliases": [
+        "brand",
+        "fabricante"
+      ]
+    },
+    "vlan_802_1q": {
+      "type": "boolean",
+      "aliases": [
+        "IEEE 802.1Q",
+        "802.1q"
+      ]
+    },
+    "portas_expansao": {
+      "type": "number",
+      "integer": true,
+      "minimum": 0,
+      "aliases": [
+        "portas de expansão"
+      ]
+    },
+    "tipo_switch": {
+      "type": "string",
+      "aliases": [
+        "tipo de switch"
+      ]
+    },
+    "portas_acesso": {
+      "type": "number",
+      "integer": true,
+      "minimum": 0,
+      "aliases": [
+        "portas de acesso"
+      ]
+    },
+    "taxa_nominal_gbps": {
+      "type": "number",
+      "unit": "Gbps",
+      "aliases": [
+        "taxa_nominal",
+        "taxa_dados"
+      ]
+    },
+    "alimentacao_bivolt": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "mdi_mdix": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "controle_fluxo_8023x": {
+      "type": "boolean",
+      "aliases": []
+    },
+    "rack_19": {
+      "type": "boolean",
+      "aliases": []
+    }
+  },
+  "version": "1.3.1"
+}

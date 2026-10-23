@@ -61,6 +61,7 @@ def create_access_token(
         user_id : int,
         auth_version: int = 0,
         expires_delta : Optional[timedelta] = None,
+        session_id: Optional[str] = None,
     ) -> str:
     '''
     Cria um JWT assinado com as informaçoes do usuario
@@ -97,6 +98,9 @@ def create_access_token(
         "auth_version": auth_version,
         "exp": expire #quando expira 
     }
+    if session_id:
+        payload["sid"] = session_id
+        payload["type"] = "access"
     #Assina e retorna o token
     # Garantir que SECRET_KEY não é None para satisfazer verificadores de tipo
     assert SECRET_KEY is not None, "SECRET_KEY must be set"
@@ -125,5 +129,8 @@ def decode_access_token(token: str) -> dict:
     #jwr.decode() valida assinatura + expiraçao automaticamente
     assert SECRET_KEY is not None, "SECRET_KEY must be set"
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    logger.debug(f"Token decodificado com sucesso: {payload}")
+    if payload.get("type", "access") != "access":
+        from jose import JWTError
+        raise JWTError("Wrong token purpose")
+    logger.debug("Token de acesso validado")
     return payload 

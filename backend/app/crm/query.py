@@ -5,7 +5,9 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, func as sa_func
+from fastapi import HTTPException
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, text
+from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.models import User
@@ -18,9 +20,9 @@ from app.crm.models import (
     CrmNoticeDocument,
     CrmNoticeHistory,
     CrmNoticeItemResult,
-    CrmNoticeProductMatch,
     CrmNoticeOutcome,
     CrmNoticeProduct,
+    CrmNoticeProductMatch,
     CrmNoticeSession,
     CrmNoticeStage,
     CrmOrgan,
@@ -139,6 +141,25 @@ def ensure_default_template(db: Session, current_user: User) -> None:
     if existing:
         return
 
+    # Parallel dashboard reads may all bootstrap a new tenant. Serialize only
+    # that first creation and recheck after acquiring the transaction lock.
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(17061009, :tenant_id)"),
+            {"tenant_id": current_user.tenant_id},
+        )
+    existing = (
+        db.query(CrmChecklistTemplate)
+        .filter(
+            CrmChecklistTemplate.tenant_id == current_user.tenant_id,
+            (CrmChecklistTemplate.is_default.is_(True))
+            | (CrmChecklistTemplate.name == "Habilitacao Padrao"),
+        )
+        .first()
+    )
+    if existing:
+        return
+
     template = CrmChecklistTemplate(
         tenant_id=current_user.tenant_id,
         name="Habilitacao Padrao",
@@ -188,6 +209,8 @@ def list_records(
     if hasattr(config.model, "tenant_id"):
         query = query.filter(config.model.tenant_id == current_user.tenant_id)
 
+    if config.model is CrmCatalogProduct:
+        query = query.filter(CrmCatalogProduct.archived_at.is_(None))
     query = _apply_filters(query, config.model, filters or [])
     if head:
         return None, query.count()
@@ -258,6 +281,8 @@ def update_records(
     rows = query.all()
 
     for row in rows:
+        if config.model is CrmCatalogProduct and row.archived_at:
+            raise ValueError("Produto retirado do catalogo; importe uma nova LPU para reativa-lo.")
         payload = _prepare_payload(config.model, values, current_user, existing=row)
         _validate_business_rules(db, current_user, config.model, payload, existing=row)
         for key, value in payload.items():
@@ -296,6 +321,9 @@ def delete_records(
         query = query.filter(config.model.tenant_id == current_user.tenant_id)
     query = _apply_filters(query, config.model, filters or [])
     rows = query.all()
+    if config.model is CrmCatalogProduct:
+        if any(row.lpu_version or row.notice_products for row in rows):
+            raise ValueError("Produtos de LPU ou vinculados a processos devem ser retirados pelo fluxo de revisao da LPU.")
     count = len(rows)
     affected_notice_ids: set[str] = set()
     if config.model in {CrmNoticeProduct, CrmNoticeSession, CrmNoticeItemResult}:
@@ -335,6 +363,11 @@ def serialize_record(row: Any) -> dict[str, Any]:
             data[column.name] = _json_value(value)
 
     if isinstance(row, CrmCatalogProduct):
+        from app.services.catalog_technical_sheet import effective_sheet
+        sheet = effective_sheet(row)
+        data['specification'] = __import__('json').dumps(sheet, ensure_ascii=False, default=str)
+        from app.services.catalog_identity import product_category
+        data['category'] = product_category(row.category, row.description, row.model)
         data["min_price"] = row.min_price if row.min_price is not None else row.computed_min_price
     elif isinstance(row, CrmNotice):
         data["organs"] = serialize_related(row.organ, ("id", "name", "city", "state")) if row.organ else None
@@ -370,7 +403,9 @@ def serialize_record(row: Any) -> dict[str, Any]:
         if not data.get("tor_id") and data.get("number"):
             data["tor_id"] = data["number"]
     elif isinstance(row, CrmNoticeProduct):
-        data["catalog_products"] = serialize_record(row.catalog_product) if row.catalog_product else None
+        snapshot = row.catalog_snapshot
+        data["catalog_products"] = (snapshot if snapshot and snapshot.get("id") == row.catalog_product_id
+                                    else serialize_record(row.catalog_product) if row.catalog_product else None)
         if row.catalog_product and not data.get("catalog_lpu_version"):
             data["catalog_lpu_version"] = getattr(row.catalog_product, "lpu_version", None)
         if data.get("reference_total_price") is None and data.get("reference_price") is not None and data.get("quantity") not in (None, 0):
@@ -441,12 +476,19 @@ def _apply_orders(query: Any, model: type, orders: list[dict[str, Any]]) -> Any:
 
 
 def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, existing: Any | None) -> dict[str, Any]:
+    if model is CrmNoticeProductMatch and "technical_result" in payload:
+        raise ValueError("Resultado técnico é calculado pelo servidor; execute a comparação por regras.")
     values: dict[str, Any] = {}
     for column in model.__table__.columns:
         name = column.name
         if name in {"id", "created_at", "updated_at", "tenant_id"}:
             continue
-        if model is CrmCatalogProduct and name in CATALOG_INTERNAL_COLUMNS:
+        if model is CrmCatalogProduct and name in (CATALOG_INTERNAL_COLUMNS | {
+            "archived_at", "lpu_missing_since", "lpu_review_deadline", "lpu_review_owner_id",
+            "lpu_reviewed_at", "lpu_reviewed_by", "lpu_version", "lpu_drive_url",
+        }):
+            continue
+        if model is CrmNoticeProduct and name == "catalog_snapshot":
             continue
         if name not in payload:
             continue
@@ -461,6 +503,14 @@ def _prepare_payload(model: type, payload: dict[str, Any], current_user: User, e
         values["user_id"] = current_user.id
 
     if model is CrmCatalogProduct:
+        from app.market_intelligence.domain import gtin, tax_id, valid_cnpj
+
+        for field, validator in [("gtin", gtin), ("supplier_tax_id", lambda value: tax_id(value) if valid_cnpj(value) else None)]:
+            if values.get(field):
+                identifier = validator(values[field])
+                if not identifier:
+                    raise HTTPException(status_code=422, detail=f"Identificador inválido: {field}.")
+                values[field] = identifier
         brand = values.get("brand") or getattr(existing, "brand", None)
         model_name = values.get("model") or getattr(existing, "model", None)
         specification = values.get("specification") or getattr(existing, "specification", None)
@@ -485,6 +535,17 @@ def _validate_business_rules(
     payload: dict[str, Any],
     existing: Any | None,
 ) -> None:
+    if model is CrmNoticeProduct and "catalog_product_id" in payload:
+        catalog_id = payload["catalog_product_id"]
+        catalog = db.query(CrmCatalogProduct).filter_by(id=catalog_id, tenant_id=current_user.tenant_id).with_for_update().first() if catalog_id else None
+        if catalog_id and (not catalog or (catalog.archived_at and (not existing or existing.catalog_product_id != catalog_id))):
+            raise ValueError("Produto do catalogo ativo nao encontrado.")
+        if existing and existing.catalog_product_id == catalog_id and existing.catalog_snapshot:
+            payload["catalog_snapshot"] = existing.catalog_snapshot
+            payload["catalog_lpu_version"] = existing.catalog_lpu_version
+        else:
+            payload["catalog_snapshot"] = serialize_record(catalog) if catalog else None
+            payload["catalog_lpu_version"] = catalog.lpu_version if catalog else None
     _validate_unique_field(
         db,
         model,
@@ -736,7 +797,6 @@ def _delete_virtual_table(db: Session, current_user: User, table_name: str, filt
         raise PermissionError("Remocao nao suportada para esta tabela virtual.")
     # O CRM faz delete + insert para trocar papel. Aqui o delete e um no-op
     # para evitar estado intermediario sem permissao.
-    return None
 
 
 def _first_filter_value(filters: list[dict[str, Any]], column_name: str) -> Any:

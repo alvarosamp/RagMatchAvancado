@@ -90,7 +90,10 @@ def test_build_match_export_preserves_raw_and_builds_normalized_contract() -> No
     assert payload["obrigacoes_gerais"]["prazo_entrega_tipo"] == "uteis"
     assert payload["obrigacoes_gerais"]["garantia_meses"] == 12
     assert payload["obrigacoes_gerais"]["documentos_exigidos"] == ["Datasheet do fabricante"]
-    assert any(req["campo_normalizado"] == "quantidade_portas" for req in payload["requisitos_atomicos"])
+    assert not any(req["campo_normalizado"] == "quantidade_portas" for req in payload["requisitos_atomicos"])
+    assert any(req["campo_normalizado"] == "gerenciavel" for req in payload["requisitos_atomicos"])
+    assert any(s["campo"] == "quantidade_portas" for s in payload["sugestoes_bi"])
+    assert all(req["revisao_necessaria"] for req in payload["requisitos_atomicos"])
 
 
 def test_v8_match_export_uses_direct_evidence_and_general_clauses() -> None:
@@ -396,3 +399,20 @@ def test_build_crm_notice_export_contains_all_edital_items_in_one_json() -> None
     assert [entry["item"]["numero"] for entry in payload["itens"]] == ["1", "2"]
     assert all("processo" not in entry for entry in payload["itens"])
     assert match_notice_filename(payload) == "match_edital_2026_09_10_2.json"
+
+
+def test_exported_session_date_is_json_safe_for_direct_manual_match() -> None:
+    import json
+    from datetime import date, datetime
+    from app.services.manual_match import import_item, preview
+
+    for session_date in (datetime(2026, 10, 19, 9, 0), date(2026, 10, 19)):
+        doc = _document(result={"edital": {"data_disputa": session_date}})
+        item = _item(description="Switch gerenciável, mínimo de 24 portas RJ45")
+        payload = build_match_item_export(doc, item)
+        assert payload["processo"]["data_sessao"] == session_date.isoformat()
+        state = import_item(payload, SimpleNamespace(id="99", item_number="67", category="switch"))
+        result = preview(state, [])
+        json.dumps(result, allow_nan=False)
+        assert result["state"]["fonte_json"]["payload"]["item"]["descricao_original"] == item.description
+        assert any(r["atributo"] == "portas_rj45" and r["valor"] == 24 for r in state["requisitos"])

@@ -184,6 +184,7 @@ class CrmCatalogProduct(Base):
     brand = Column(String)
     model = Column(String)
     manufacturer_part_number = Column(String)
+    gtin = Column(String(14))
     specification = Column(Text)
     sku = Column(String)
     keywords = Column(Text)
@@ -193,12 +194,19 @@ class CrmCatalogProduct(Base):
     tax_percent = Column(Float, nullable=False, default=0.0)
     margin_percent = Column(Float, nullable=False, default=0.0)
     supplier_name = Column(String)
+    supplier_tax_id = Column(String(14))
     datasheet_url = Column(Text)
     certificate_url = Column(Text)
     equivalent_skus = Column(Text)
     notes = Column(Text)
     lpu_version = Column(String)
     lpu_drive_url = Column(Text)
+    lpu_missing_since = Column(Date)
+    lpu_review_deadline = Column(Date)
+    lpu_review_owner_id = Column(Integer, ForeignKey("users.id"))
+    lpu_reviewed_by = Column(Integer, ForeignKey("users.id"))
+    lpu_reviewed_at = Column(DateTime)
+    archived_at = Column(DateTime)
     embedding = Column(Vector(EMBEDDING_DIM))
     embedding_model = Column(String)
     embedding_provider = Column(String)
@@ -217,6 +225,20 @@ class CrmCatalogProduct(Base):
     @property
     def computed_min_price(self) -> float:
         return round((self.cost or 0.0) * (1 + (self.tax_percent or 0.0) / 100) * (1 + (self.margin_percent or 0.0) / 100), 4)
+
+
+class CrmLpuVersion(Base):
+    __tablename__ = "crm_lpu_versions"
+    id = Column(String(36), primary_key=True, default=_uuid)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    version = Column(String, nullable=False)
+    drive_url = Column(Text, nullable=False)
+    valid_until = Column(Date, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    superseded_at = Column(DateTime)
+    extensions = Column(JSON, nullable=False, default=list)
 
 
 class CrmNotice(Base):
@@ -379,6 +401,7 @@ class CrmNoticeProduct(Base):
     catalog_match_model_version = Column(String)
     catalog_match_notes = Column(Text)
     catalog_lpu_version = Column(String)
+    catalog_snapshot = Column(JSON)
     match_review_verdict = Column(String)
     match_review_confidence = Column(Float)
     match_review_reason_codes = Column(JSON)
@@ -488,6 +511,7 @@ class CrmNoticeProductMatch(Base):
     semantic_score = Column(Float)
     llm_score = Column(Float)
     overall_score = Column(Float, nullable=False, default=0.0)
+    technical_result = Column(JSON)
     rationale = Column(Text)
     matched_features = Column(JSON)
     conflicts = Column(JSON)
@@ -565,6 +589,7 @@ class CrmNoticeItemResult(Base):
     notice_product_id = Column(String(36), ForeignKey("crm_notice_products.id", ondelete="CASCADE"), nullable=False, index=True, unique=True)
     winner_type = Column(SqlEnum(CrmItemWinnerType, native_enum=False), nullable=False, default=CrmItemWinnerType.US)
     competitor_name = Column(String)
+    competitor_tax_id = Column(String(14))
     competitor_product = Column(String)
     winning_price = Column(Float)
     winning_quantity = Column(Float)
