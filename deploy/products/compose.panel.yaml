@@ -1,6 +1,5 @@
-# Cole este arquivo inteiro no editor Compose da Hostinger.
-# Somente a branch codex/inteligencia-produtos-hostinger, fonte fixada em 7fc43556cfb16f3e18cd46c39a42257f402dcd1e.
-# Imagens construidas na VPS; nao exige checkout local ou publicacao no Docker Hub.
+# Painel Hostinger: imagens prontas da branch codex/inteligencia-produtos-hostinger.
+# Imagens da release products-hostinger-20261028-v3; sem build no painel.
 name: ragmatch-products-test
 services:
   db:
@@ -58,7 +57,7 @@ services:
   api:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -153,24 +152,11 @@ services:
       retries: 30
       start_period: 30s
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
-    pull_policy: build
-    build: &2
-      context: https://codeload.github.com/alvarosamp/RagMatchAvancado/tar.gz/7fc43556cfb16f3e18cd46c39a42257f402dcd1e
-      dockerfile_inline: |
-        FROM alvarocareli/ragmatch-api@sha256:59031991833df7b2af0c7b6f863f5cf73f7e12ee34f0c0fe594a3a4547816699
-        WORKDIR /app
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/backend/app /app/app
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/backend/scripts /app/scripts
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/backend/alembic /app/alembic
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/backend/alembic.ini /app/alembic.ini
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/deploy/products/bootstrap_test.py /app/deploy/bootstrap_test.py
-        ENV PYTHONPATH=/app PYTHONUNBUFFERED=1
-        LABEL org.opencontainers.image.revision=7fc43556cfb16f3e18cd46c39a42257f402dcd1e
-        CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    pull_policy: always
   initialize:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: 'no'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -187,12 +173,11 @@ services:
     command: python deploy/bootstrap_test.py
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   worker:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -235,14 +220,13 @@ services:
       1 --threads ${WORKER_THREADS:-2}
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   worker-ai:
     stop_grace_period: 60s
     logging: *1
     mem_limit: "${AI_WORKER_MEMORY_LIMIT:-1g}"
     cpus: "${AI_WORKER_CPU_LIMIT:-1.0}"
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -282,12 +266,11 @@ services:
       --threads ${AI_WORKER_THREADS:-1}
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   worker-conlicitacao:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -315,12 +298,11 @@ services:
       1
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   scheduler:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -347,8 +329,7 @@ services:
     command: python -m app.scheduler
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   redis:
     stop_grace_period: 60s
     logging: *1
@@ -430,7 +411,7 @@ services:
   migrate:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: 'no'
     environment:
       APP_ENV: production
@@ -443,12 +424,11 @@ services:
     command: python scripts/migrate_database.py
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   db-bootstrap:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: 'no'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -461,12 +441,11 @@ services:
     command: python scripts/provision_app_role.py
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   backup-uploader:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
     profiles:
     - tools
     restart: 'no'
@@ -481,12 +460,11 @@ services:
     command: python scripts/upload_backup.py --directory /backup
     networks:
     - app-internal
-    pull_policy: build
-    build: *2
+    pull_policy: always
   frontend:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-frontend:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     ports:
     - "${HTTP_PORT:-8088}:80"
@@ -495,28 +473,11 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    pull_policy: build
-    build:
-      context: https://codeload.github.com/alvarosamp/RagMatchAvancado/tar.gz/7fc43556cfb16f3e18cd46c39a42257f402dcd1e
-      dockerfile_inline: |
-        FROM node:24-alpine AS portal
-        WORKDIR /portal
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/package.json RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/package-lock.json ./
-        RUN npm ci
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/src ./src
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/public ./public
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/index.html RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/vite.config.js RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/postcss.config.cjs RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/tailwind.config.js ./
-        RUN npm run build
-        FROM nginx:alpine
-        COPY --from=portal /portal/dist /usr/share/nginx/html
-        COPY RagMatchAvancado-7fc43556cfb16f3e18cd46c39a42257f402dcd1e/frontend/nginx.conf /etc/nginx/conf.d/default.conf
-        RUN sed -i 's/Host [$]host;/Host $$http_host;/' /etc/nginx/conf.d/default.conf
-        LABEL org.opencontainers.image.revision=7fc43556cfb16f3e18cd46c39a42257f402dcd1e
-        EXPOSE 80
+    pull_policy: always
   mlflow:
     stop_grace_period: 60s
     logging: *1
-    image: ragmatch-products-mlflow:${IMAGE_TAG:-products-hostinger-20261028-v2}
+    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-products-hostinger-20261028-v3}
     restart: unless-stopped
     expose:
     - '5000'
@@ -536,11 +497,7 @@ services:
         condition: service_healthy
     networks:
     - app-internal
-    pull_policy: build
-    build:
-      dockerfile_inline: |
-        FROM python:3.11-slim
-        RUN pip install --no-cache-dir "mlflow==2.12.1" "sqlalchemy<2.1" psycopg2-binary
+    pull_policy: always
 volumes:
   products_files:
   products_documents:

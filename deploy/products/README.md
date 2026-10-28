@@ -6,15 +6,20 @@ da aplicação e do CRM fixado no submódulo. Não altera a `main`.
 
 ## Colar Compose e ambiente no painel Docker
 
-Use **`deploy/products/compose.panel.yaml`**: é um único arquivo independente.
-Ele inclui todos os serviços da composição de teste e os builds remotos. O painel
-não precisa de checkout local nem de imagens da aplicação publicadas em registro.
-A fonte está fixada no commit `7fc43556cfb16f3e18cd46c39a42257f402dcd1e` desta
-branch; inclui o relatório por marca. O frontend compila com o bundle CRM já
-verificado no repositório principal, sem clonar o submódulo. O build do painel
-aplica a mesma preservação de Host/porta da configuração Nginx atual da branch.
+Use **`deploy/products/compose.panel.yaml`**: é um único arquivo independente,
+com imagens prontas no Docker Hub. Não depende de checkout, submódulo ou build no
+painel. O Docker Manager observado pulou o build e tentou criar `migrate` antes
+de existir a imagem local; por isso o fluxo do painel usa somente pull.
 
-1. No servidor de teste, crie o projeto `ragmatch-products-test` no painel Docker.
+Release: `products-hostinger-20261028-v3`, nos repositórios
+`alvarocareli/ragmatch-api`, `alvarocareli/ragmatch-frontend` e
+`alvarocareli/ragmatch-mlflow`. A aplicação vem do commit
+`7fc43556cfb16f3e18cd46c39a42257f402dcd1e` desta branch, com o ajuste de proxy
+validado em `8b458a3`. Inclui o relatório por marca e não usa `PUBLIC_ORIGIN`.
+
+1. No servidor de teste, abra o projeto existente (na implantação acompanhada,
+   **`servidor2`**). Preserve esse nome para reutilizar os volumes já criados.
+   Para uma instalação nova, use `ragmatch-products-test`.
 2. Cole todo o conteúdo de `compose.panel.yaml` no editor de Compose.
 3. Nas variáveis de ambiente, cole os valores de um arquivo gerado conforme
    `hostinger.env.example`. Use credenciais novas numa instalação nova; se o
@@ -24,7 +29,7 @@ aplica a mesma preservação de Host/porta da configuração Nginx atual da bran
    Para outra porta, ajuste `HTTP_PORT` e libere essa porta no firewall.
 5. Na primeira instalação com banco vazio, use `ALLOW_EMPTY_DATABASE_BOOTSTRAP=1`.
    Depois da implantação bem-sucedida, volte para `0` nas variáveis do painel.
-6. Implante. O primeiro build baixa dependências; o Ollama também baixa os modelos.
+6. Implante. O painel baixa as imagens prontas; o Ollama também baixa os modelos.
    `migrate`, `db-bootstrap` e `initialize` devem terminar com código zero.
 
 Abra `http://IP_DO_SERVIDOR:8088/login` usando `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
@@ -121,3 +126,9 @@ O acesso sem `PUBLIC_ORIGIN` foi validado localmente na porta 18088: o Nginx
 preserva `Host` com a porta, a API aceita a origem do próprio acesso e rejeita
 origens externas. Readiness, login por cookie e importação/leitura CRM passaram
 sem `CSRF_TRUSTED_ORIGINS` no ambiente.
+
+A variante de build remoto foi testada localmente, mas o log real do painel
+confirmou que esse fluxo não executou o build. O arquivo `compose.panel.yaml`
+agora usa somente imagens publicadas e `pull_policy: always`. Preserve o projeto
+`servidor2`, o ENV existente e os volumes; atualize apenas `IMAGE_TAG` para a nova
+release e substitua o Compose pelo arquivo atual.
