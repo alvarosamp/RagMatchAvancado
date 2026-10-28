@@ -25,8 +25,8 @@ Abra `http://IP_DO_SERVIDOR:8088/login` e entre com `ADMIN_EMAIL` e `ADMIN_PASSW
 A inteligência de produtos fica em `/crm/inteligencia-mercado`.
 
 O modo sem build no painel exige antes a publicação das imagens.
-Enquanto a publicação não estiver disponível, use o build pelo terminal abaixo. A tag padrão do Compose está fixada na entrega da
-branch. `IMAGE_TAG` permite selecionar outra release **publicada desta branch**.
+Enquanto a publicação não estiver disponível, use o build pelo terminal abaixo. A tag padrão identifica o build local desta entrega da branch.
+Se alterar `IMAGE_TAG`, reconstrua as imagens com o mesmo arquivo de ambiente.
 A publicação de imagens e a implantação no painel são etapas distintas.
 
 ## Serviços e isolamento
@@ -62,7 +62,8 @@ usa a configuração do frontend da branch, incluindo os cabeçalhos de seguran�
 Clone com `--recurse-submodules --branch codex/inteligencia-produtos-hostinger`.
 O Git precisa ter acesso de leitura ao repositório do CRM. Na raiz do clone,
 gere o ambiente com `python3 deploy/products/make_env.py`, copie o arquivo gerado
-para `.env.prod` e ajuste `PUBLIC_ORIGIN` com o IP/porta do servidor de teste.
+para `.env.prod` e execute `python3 deploy/products/set_origin.py` para informar
+a URL do servidor de teste. Esse comando funciona também no macOS/zsh.
 
 ```sh
 docker compose --env-file .env.prod -f docker-compose.prod.yaml -f deploy/products/compose.build.yaml config --quiet

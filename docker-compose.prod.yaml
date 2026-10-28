@@ -1,7 +1,7 @@
 name: ragmatch-products-test
 
 # Stack completa e exclusiva da branch codex/inteligencia-produtos-hostinger.
-# Usa imagens publicadas; nao precisa de Git, build ou Traefik no painel.
+# Aplicacao: construir com compose.build.yaml; sem dependencia de Traefik.
 x-production-defaults: &production-defaults
   stop_grace_period: 60s
   logging:
@@ -58,7 +58,7 @@ services:
 
   api:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     volumes:
       - products_files:/data
@@ -152,7 +152,7 @@ services:
 
   initialize:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: "no"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -172,7 +172,7 @@ services:
 
   worker:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     volumes:
       - products_files:/data
@@ -219,7 +219,7 @@ services:
     <<: *production-defaults
     mem_limit: ${AI_WORKER_MEMORY_LIMIT:-1g}
     cpus: ${AI_WORKER_CPU_LIMIT:-1.0}
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     volumes:
       - products_files:/data
@@ -261,7 +261,7 @@ services:
 
   worker-conlicitacao:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -291,7 +291,7 @@ services:
 
   scheduler:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -391,7 +391,7 @@ services:
 
   migrate:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: "no"
     environment:
       APP_ENV: production
@@ -407,7 +407,7 @@ services:
 
   db-bootstrap:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: "no"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -423,7 +423,7 @@ services:
 
   backup-uploader:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v2}
     profiles: ["tools"]
     restart: "no"
     environment:
@@ -440,7 +440,7 @@ services:
 
   frontend:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-8088}:80"
@@ -452,7 +452,7 @@ services:
 
   mlflow:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-products-hostinger-20261028-v2}
     restart: unless-stopped
     expose:
       - "5000"
