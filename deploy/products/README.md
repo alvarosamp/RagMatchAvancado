@@ -4,30 +4,33 @@ Compose exclusivo de `codex/inteligencia-produtos-hostinger`. A stack completa �
 baseada na composição completa de produção, com imagens Linux amd64
 da aplicação e do CRM fixado no submódulo. Não altera a `main`.
 
-## Pelo painel Docker
+## Colar Compose e ambiente no painel Docker
 
-1. No **servidor de teste**, crie um projeto `ragmatch-products-test`.
-2. Cole `docker-compose.prod.yaml` desta branch no editor do painel.
-   `deploy/products/compose.hostinger.yaml` contém a mesma composição.
-3. Preencha as variáveis conforme `hostinger.env.example`. Para gerar senhas novas,
-   execute `python3 deploy/products/make_env.py`; o arquivo `hostinger.env` é privado
-   e não vai para o Git. Se esse arquivo já existir de uma entrega anterior,
-   preserve as senhas e acrescente as novas variáveis do exemplo.
-4. Defina `PUBLIC_ORIGIN=http://IP_DO_SERVIDOR:8088`, com o IP real do teste, e
-   libere a porta 8088 no firewall desse servidor. Para outra porta, ajuste também
-   `HTTP_PORT` e `PUBLIC_ORIGIN`.
+Use **`deploy/products/compose.panel.yaml`**: é um único arquivo independente.
+Ele inclui todos os serviços da composição de teste e os builds remotos. O painel
+não precisa de checkout local nem de imagens da aplicação publicadas em registro.
+A fonte está fixada no commit `7fc43556cfb16f3e18cd46c39a42257f402dcd1e` desta
+branch; inclui o relatório por marca. O frontend compila com o bundle CRM já
+verificado no repositório principal, sem clonar o submódulo.
+
+1. No servidor de teste, crie o projeto `ragmatch-products-test` no painel Docker.
+2. Cole todo o conteúdo de `compose.panel.yaml` no editor de Compose.
+3. Nas variáveis de ambiente, cole os valores de um arquivo gerado conforme
+   `hostinger.env.example`. Use credenciais novas numa instalação nova; se o
+   projeto já possui banco/storage, preserve as senhas dessa instalação.
+4. Ajuste `PUBLIC_ORIGIN=http://IP_DO_SERVIDOR:8088` com o endereço real do teste.
+   Para outra porta, ajuste também `HTTP_PORT` e libere essa porta no firewall.
 5. Na primeira instalação com banco vazio, use `ALLOW_EMPTY_DATABASE_BOOTSTRAP=1`.
-   Depois da primeira implantação bem-sucedida, volte para `0`.
-6. Implante e confira `migrate`, `db-bootstrap` e `initialize`: devem terminar com
-   código zero. API saudável libera a inicialização do frontend.
+   Depois da implantação bem-sucedida, volte para `0` nas variáveis do painel.
+6. Implante. O primeiro build baixa dependências; o Ollama também baixa os modelos.
+   `migrate`, `db-bootstrap` e `initialize` devem terminar com código zero.
 
-Abra `http://IP_DO_SERVIDOR:8088/login` e entre com `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
-A inteligência de produtos fica em `/crm/inteligencia-mercado`.
+Abra `http://IP_DO_SERVIDOR:8088/login` usando `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
+O relatório por marca fica em `/crm/inteligencia-mercado`.
 
-O modo sem build no painel exige antes a publicação das imagens.
-Enquanto a publicação não estiver disponível, use o build pelo terminal abaixo. A tag padrão identifica o build local desta entrega da branch.
-Se alterar `IMAGE_TAG`, reconstrua as imagens com o mesmo arquivo de ambiente.
-A publicação de imagens e a implantação no painel são etapas distintas.
+`docker-compose.prod.yaml` e `compose.hostinger.yaml` continuam sendo a composição
+para build a partir do checkout pelo terminal, usando o overlay `compose.build.yaml`.
+O arquivo para **colar sozinho no painel** é `compose.panel.yaml`.
 
 ## Serviços e isolamento
 
