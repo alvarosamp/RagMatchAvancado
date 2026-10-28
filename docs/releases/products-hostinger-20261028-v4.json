@@ -1,0 +1,31 @@
+{
+  "tag": "products-hostinger-20261028-v4",
+  "branch": "codex/inteligencia-produtos-hostinger",
+  "source_commit": "7fc43556cfb16f3e18cd46c39a42257f402dcd1e",
+  "proxy_fix_commit": "8b458a3",
+  "images": {
+    "api": {
+      "reference": "alvarocareli/ragmatch-api:products-hostinger-20261028-v4",
+      "digest": "sha256:ecb8e1446ae6877ef148419197b11577291da0f8aee9d3fd83c08dbb05e2e522",
+      "anonymous_pull_verified": true,
+      "platform": "linux/amd64"
+    },
+    "frontend": {
+      "reference": "alvarocareli/ragmatch-frontend:products-hostinger-20261028-v4",
+      "digest": "sha256:efe70182c7142166652bc5a60f8a858a4b2ed84f9a3228fb153ecb2c46778321",
+      "anonymous_pull_verified": true,
+      "platform": "linux/amd64"
+    },
+    "mlflow": {
+      "reference": "alvarocareli/ragmatch-mlflow:products-hostinger-20261028-v4",
+      "digest": "sha256:9b503d052c37603a5c0ac8a5a0cfe981a8bf94b2e1d4033e51bd45743829ba70",
+      "anonymous_pull_verified": true,
+      "platform": "linux/amd64"
+    }
+  },
+  "frontend_fix_commit": "8ba9c68",
+  "api_and_mlflow": "same tested images as v3, tagged v4",
+  "frontend_validation": "50 tests passed; browser with simulated initial 401 kept public auth pages open and redirected protected dashboard",
+  "vps_deployed": false,
+  "validation": "existing local Docker stack: readiness, login, CSRF, JSON import, CRM readback; no PUBLIC_ORIGIN"
+}

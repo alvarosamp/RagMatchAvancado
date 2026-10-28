@@ -1,5 +1,5 @@
 # Painel Hostinger: imagens prontas da branch codex/inteligencia-produtos-hostinger.
-# Imagens da release products-hostinger-20261028-v3; sem build no painel.
+# Imagens da release products-hostinger-20261028-v4; sem build no painel.
 name: ragmatch-products-test
 services:
   db:
@@ -57,7 +57,7 @@ services:
   api:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -156,7 +156,7 @@ services:
   initialize:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: 'no'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -177,7 +177,7 @@ services:
   worker:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -226,7 +226,7 @@ services:
     logging: *1
     mem_limit: "${AI_WORKER_MEMORY_LIMIT:-1g}"
     cpus: "${AI_WORKER_CPU_LIMIT:-1.0}"
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     volumes:
     - products_files:/data
@@ -270,7 +270,7 @@ services:
   worker-conlicitacao:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -302,7 +302,7 @@ services:
   scheduler:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
@@ -411,7 +411,7 @@ services:
   migrate:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: 'no'
     environment:
       APP_ENV: production
@@ -428,7 +428,7 @@ services:
   db-bootstrap:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: 'no'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
@@ -445,7 +445,7 @@ services:
   backup-uploader:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-products-hostinger-20261028-v4}
     profiles:
     - tools
     restart: 'no'
@@ -464,7 +464,7 @@ services:
   frontend:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     ports:
     - "${HTTP_PORT:-8088}:80"
@@ -477,7 +477,7 @@ services:
   mlflow:
     stop_grace_period: 60s
     logging: *1
-    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-products-hostinger-20261028-v3}
+    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-products-hostinger-20261028-v4}
     restart: unless-stopped
     expose:
     - '5000'

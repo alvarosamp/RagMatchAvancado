@@ -11,11 +11,14 @@ com imagens prontas no Docker Hub. Não depende de checkout, submódulo ou build
 painel. O Docker Manager observado pulou o build e tentou criar `migrate` antes
 de existir a imagem local; por isso o fluxo do painel usa somente pull.
 
-Release: `products-hostinger-20261028-v3`, nos repositórios
+Release: `products-hostinger-20261028-v4`, nos repositórios
 `alvarocareli/ragmatch-api`, `alvarocareli/ragmatch-frontend` e
 `alvarocareli/ragmatch-mlflow`. A aplicação vem do commit
 `7fc43556cfb16f3e18cd46c39a42257f402dcd1e` desta branch, com o ajuste de proxy
-validado em `8b458a3`. Inclui o relatório por marca e não usa `PUBLIC_ORIGIN`.
+validado em `8b458a3`. O frontend inclui a correção `8ba9c68`: cadastro e
+recuperação de senha permanecem abertos quando a consulta inicial de sessão
+retorna 401. API e MLflow reutilizam as imagens validadas da v3, com a mesma tag
+v4 do frontend. Inclui o relatório por marca e não usa `PUBLIC_ORIGIN`.
 
 1. No servidor de teste, abra o projeto existente (na implantação acompanhada,
    **`servidor2`**). Preserve esse nome para reutilizar os volumes já criados.
@@ -132,3 +135,9 @@ confirmou que esse fluxo não executou o build. O arquivo `compose.panel.yaml`
 agora usa somente imagens publicadas e `pull_policy: always`. Preserve o projeto
 `servidor2`, o ENV existente e os volumes; atualize apenas `IMAGE_TAG` para a nova
 release e substitua o Compose pelo arquivo atual.
+
+Na v4, os 50 testes do frontend passaram. O navegador validou as páginas públicas
+com a resposta inicial 401 simulada, reproduzindo o comportamento observado na
+VPS: cadastro permanece aberto e páginas privadas redirecionam para login.
+Para permitir cadastro, mantenha `REGISTER_ENABLED=1` e acesse
+`/cadastro-tor-gestao-interna`. É necessário reimplantar para carregar a imagem nova.
