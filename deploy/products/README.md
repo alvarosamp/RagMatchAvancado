@@ -109,3 +109,8 @@ Teste HTTP opcional, que cria um edital fictício no ambiente de teste:
 ```sh
 python3 deploy/products/smoke_test.py --base-url http://IP_DO_SERVIDOR:8088 --env-file .env.prod
 ```
+
+O Compose único `compose.panel.yaml` também teve o build remoto de API, frontend
+e MLflow aprovado localmente. A stack foi iniciada a partir dessas imagens;
+readiness, login com cookie, bloqueio CSRF e importação/leitura CRM passaram pelo
+frontend. A execução na Hostinger ainda depende de colar os arquivos no painel.

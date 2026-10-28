@@ -542,13 +542,13 @@ services:
         FROM python:3.11-slim
         RUN pip install --no-cache-dir "mlflow==2.12.1" "sqlalchemy<2.1" psycopg2-binary
 volumes:
-  products_files: 
-  products_documents: 
-  products_db: 
-  mlflow_data: 
-  redis_data: 
-  minio_data: 
-  ollama_data: 
+  products_files:
+  products_documents:
+  products_db:
+  mlflow_data:
+  redis_data:
+  minio_data:
+  ollama_data:
 networks:
   app-internal:
     driver: bridge
