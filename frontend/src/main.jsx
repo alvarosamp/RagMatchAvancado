@@ -1,3 +1,4 @@
+import { INTERNAL_REGISTER_PATH } from './utils/authRoutes'
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -41,7 +42,6 @@ const CrmHub = lazy(() => import('./pages/CrmHub'))
 const DatasheetCompare = lazy(() => import('./pages/DatasheetCompare'))
 import Layout         from './components/Layout'
 
-const INTERNAL_REGISTER_PATH = import.meta.env.VITE_INTERNAL_REGISTER_PATH || '/cadastro-tor-gestao-interna'
 const AI_FEATURES_ENABLED = import.meta.env.VITE_AI_FEATURES_ENABLED === '1'
 
 function PrivateRoute({ children, withLayout = true }) {

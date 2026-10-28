@@ -14,6 +14,7 @@
 
 import axios from 'axios'
 import { clearPortalSessionStorage } from '../utils/authStorage'
+import { shouldRedirectUnauthorized } from '../utils/authRoutes'
 
 const api = axios.create({
   baseURL: '/api',            // proxy Vite → http://localhost:8000 em dev
@@ -31,9 +32,9 @@ api.interceptors.response.use(
       const currentPath = window.location.pathname
       const requestPath = error.config?.url || ''
 
-      // Login e checagem inicial podem receber 401 sem forcar reload da pagina.
+      // Cadastro, login e recuperacao precisam continuar acessiveis sem sessao.
       clearPortalSessionStorage()
-      if (currentPath !== '/login' && !requestPath.includes('/auth/login')) {
+      if (shouldRedirectUnauthorized(currentPath, requestPath)) {
         window.location.href = '/login'
       }
     }
