@@ -1,69 +1,107 @@
-# Hostinger — teste da inteligência de produtos
+# Hostinger — branch de inteligência de produtos
 
-Este Compose constrói o código da branch `codex/inteligencia-produtos-hostinger`, incluindo
-o commit do submódulo CRM. Não usa as imagens antigas da aplicação. A imagem base
-da API está fixada por digest público; o frontend compila portal e CRM juntos.
-A entrega usa uma branch exclusiva nos dois repositórios, com volumes do projeto
-`ragmatch-products-test`.
+Compose exclusivo de `codex/inteligencia-produtos-hostinger`. A stack completa é
+baseada na composição completa de produção, com imagens Linux amd64
+da aplicação e do CRM fixado no submódulo. Não altera a `main`.
 
-## No gerenciador Docker da Hostinger
+## Pelo painel Docker
 
-1. Crie um novo projeto chamado **ragmatch-products-test** no outro servidor.
-2. Cole o conteúdo de `compose.hostinger.yaml` no editor de Compose.
-3. Nas variáveis/arquivo de ambiente, cole o conteúdo do **hostinger.env** entregue
-   separadamente. As senhas foram geradas para este teste e não estão no GitHub.
-4. Faça o build e a implantação. A primeira construção baixa as dependências.
+1. No **servidor de teste**, crie um projeto `ragmatch-products-test`.
+2. Cole `docker-compose.prod.yaml` desta branch no editor do painel.
+   `deploy/products/compose.hostinger.yaml` contém a mesma composição.
+3. Preencha as variáveis conforme `hostinger.env.example`. Para gerar senhas novas,
+   execute `python3 deploy/products/make_env.py`; o arquivo `hostinger.env` é privado
+   e não vai para o Git. Se esse arquivo já existir de uma entrega anterior,
+   preserve as senhas e acrescente as novas variáveis do exemplo.
+4. Defina `PUBLIC_ORIGIN=http://IP_DO_SERVIDOR:8088`, com o IP real do teste, e
+   libere a porta 8088 no firewall desse servidor. Para outra porta, ajuste também
+   `HTTP_PORT` e `PUBLIC_ORIGIN`.
+5. Na primeira instalação com banco vazio, use `ALLOW_EMPTY_DATABASE_BOOTSTRAP=1`.
+   Depois da primeira implantação bem-sucedida, volte para `0`.
+6. Implante e confira `migrate`, `db-bootstrap` e `initialize`: devem terminar com
+   código zero. API saudável libera a inicialização do frontend.
 
-Se o gerenciador não aceitar build a partir de contexto Git remoto, use o terminal:
+Abra `http://IP_DO_SERVIDOR:8088/login` e entre com `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
+A inteligência de produtos fica em `/crm/inteligencia-mercado`.
+
+O modo sem build no painel exige antes a publicação das imagens.
+Enquanto a publicação não estiver disponível, use o build pelo terminal abaixo. A tag padrão do Compose está fixada na entrega da
+branch. `IMAGE_TAG` permite selecionar outra release **publicada desta branch**.
+A publicação de imagens e a implantação no painel são etapas distintas.
+
+## Serviços e isolamento
+
+A composição inclui PostgreSQL/pgvector, PgBouncer, Redis persistente, MinIO,
+Ollama, MLflow, migração, provisionamento do banco, inicialização do administrador,
+API, workers, scheduler e frontend. Somente o frontend publica uma porta no host.
+Não exige domínio, Traefik ou rede externa. Os volumes pertencem ao projeto de
+Compose escolhido; nunca use o nome/volumes do servidor principal.
+
+A sequência é banco saudável → migração → usuário restrito → administrador de
+teste → API saudável → frontend. A aplicação usa a conta restrita; a conta de
+administração do PostgreSQL fica nos serviços de inicialização. Reimplantar não
+redefine a senha do administrador existente. O inicializador recusa bancos com
+nome diferente de `ragmatch_products_test`.
+
+`SEED_DEMO=0` começa sem exemplos; com `1`, cria editais/produto explicitamente
+fictícios. Para dados reais de teste, envie os JSONs em `/upload` com a opção
+**Somente análise, não sincronizar CRM** desmarcada, e importe o catálogo no CRM.
+
+Ollama baixa os modelos na primeira implantação (`OLLAMA_PULL_MODELS=1`); falha
+no download interrompe essa etapa em vez de declarar sucesso. Para validar apenas
+JSONs/interface sem modelos, use `OLLAMA_PULL_MODELS=0`. LLM e coletas agendadas
+ficam desligados por padrão; ligue as variáveis correspondentes quando necessário.
+O worker analítico separado e os overlays de BI não fazem parte do Compose base.
+
+Este acesso por IP usa HTTP e `AUTH_COOKIE_SECURE=0`. Ao configurar um proxy com
+HTTPS, ajuste `PUBLIC_ORIGIN` e `AUTH_COOKIE_SECURE=1`. O Nginx encaminha `/api` e
+usa a configuração do frontend da branch, incluindo os cabeçalhos de segurança.
+
+## Build no servidor pelo terminal (sem publicação no Docker Hub)
+
+Clone com `--recurse-submodules --branch codex/inteligencia-produtos-hostinger`.
+O Git precisa ter acesso de leitura ao repositório do CRM. Na raiz do clone,
+gere o ambiente com `python3 deploy/products/make_env.py`, copie o arquivo gerado
+para `.env.prod` e ajuste `PUBLIC_ORIGIN` com o IP/porta do servidor de teste.
 
 ```sh
-git clone --recurse-submodules --branch codex/inteligencia-produtos-hostinger https://github.com/alvarosamp/RagMatchAvancado.git ragmatch-products-test
-cd ragmatch-products-test/deploy/products
-# Coloque aqui o hostinger.env entregue, ou gere outro com: python3 make_env.py
-export SOURCE_CONTEXT=../..
-docker compose --env-file hostinger.env -f compose.hostinger.yaml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yaml -f deploy/products/compose.build.yaml config --quiet
+docker compose --env-file .env.prod -f docker-compose.prod.yaml -f deploy/products/compose.build.yaml build api frontend mlflow
+docker compose --env-file .env.prod -f docker-compose.prod.yaml pull db pgbouncer redis minio ollama ollama-setup
+docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d --no-build --pull never --wait --wait-timeout 900
 ```
 
-Não reutilize `.env.prod` nem volumes do servidor principal. A API e o PostgreSQL
-não publicam portas; somente o frontend publica **8088**. O projeto usa HTTP para
-teste por IP. Ao colocar atrás de HTTPS, ajuste `AUTH_COOKIE_SECURE` para `1` no
-Compose. O acesso por IP aceita qualquer Host e exige a mesma origem nas chamadas
-do navegador; a configuração não é o deploy definitivo para clientes.
+API e todos os workers/migradores usam a mesma imagem construída localmente.
+Depois de subir, volte `ALLOW_EMPTY_DATABASE_BOOTSTRAP` para `0` em `.env.prod`.
+Nenhuma imagem da aplicação é enviada para um registro por esses comandos.
+Os downloads de dependências e imagens base continuam necessários.
 
-## Acessar e testar
-
-- Abra `http://IP_DO_SERVIDOR:8088/login`.
-- Entre com `ADMIN_EMAIL` e `ADMIN_PASSWORD` do arquivo de ambiente.
-- Se aparecer a solicitação de completar cadastro, preencha ou feche o diálogo.
-- Abra `http://IP_DO_SERVIDOR:8088/crm/inteligencia-mercado`.
-- A seção **Inteligência de produtos** mostra perfis técnicos, qualidade,
-  associação de modelo à marca do catálogo, fontes e exportação.
-- `SEED_DEMO=1` cria dois editais e um produto **explicitamente fictícios** para
-  você ver a análise imediatamente. Não são dados de mercado nem vendas reais.
-  Para começar vazio, mude para `SEED_DEMO=0` antes da primeira implantação.
-- Para seus dados, envie os JSONs em `/upload`, com **Somente análise, não
-  sincronizar CRM** desmarcado, e cadastre/importe o catálogo no CRM. Marcas por
-  modelo dependem do catálogo. Filtre os exemplos `DEMO` separadamente ou
-  remova-os pela interface antes de analisar volumes reais.
-
-O ambiente testa a análise implementada: não inclui a consolidação completa de
-vendas próprias, o dossiê técnico final para fornecedores ou o workflow externo
-n8n. OCR/LLM/Ollama e coleta automática estão desativados; a entrada é por JSON.
-
-## Diagnóstico e preservação
+## Diagnóstico
 
 ```sh
-docker compose --env-file hostinger.env -f compose.hostinger.yaml ps -a
-docker compose --env-file hostinger.env -f compose.hostinger.yaml logs --tail=80 initialize api
+docker compose --env-file deploy/products/hostinger.env -f deploy/products/compose.hostinger.yaml config --quiet
+docker compose --env-file deploy/products/hostinger.env -f deploy/products/compose.hostinger.yaml up -d --wait --wait-timeout 600
+docker compose --env-file deploy/products/hostinger.env -f deploy/products/compose.hostinger.yaml ps -a
+docker compose --env-file deploy/products/hostinger.env -f deploy/products/compose.hostinger.yaml logs --tail=80 migrate db-bootstrap initialize api
 ```
 
-O serviço `initialize` deve terminar com código zero antes da API iniciar. Ele
-migra o banco novo, provisiona a conta restrita e cria o administrador. Reexecuções
-não trocam senhas existentes nem apagam dados. Para parar, use `docker compose
---env-file hostinger.env -f compose.hostinger.yaml stop`; os dados ficam nos volumes.
+Use `stop` para pausar sem apagar dados. Não use `down -v` em uma instalação com
+dados que devem ser preservados. Se já existe um projeto com o Compose de produção
+nesse servidor de teste, esta composição tem banco e volumes próprios: não é uma
+migração automática dos volumes daquela outra stack.
 
-Validação desta entrega: builds e testes de aplicação anteriores documentados no
-repositório; sintaxe Compose e scripts conferidos separadamente. O Docker Desktop
-local estava indisponível ao preparar este deploy. A implantação final precisa
-atingir a saúde da API e o login no servidor de teste; não é apresentada como já
-executada na Hostinger.
+## Validação local
+
+Builds Linux amd64 do portal, CRM, API e MLflow; Nginx e versão MLflow conferidos.
+Stack completa iniciada com projeto isolado e banco vazio. Migração, provisionamento
+e administrador terminaram com código zero; API saudável e workers iniciados.
+Teste HTTP pelo Nginx aprovou readiness, bloqueio de origem indevida, login com
+cookie, importação JSON e leitura persistida no CRM usando a conta restrita.
+O download de modelos foi desativado nesta validação; inferência com LLM e a
+implantação na Hostinger ainda não foram executadas.
+
+Teste HTTP opcional, que cria um edital fictício no ambiente de teste:
+
+```sh
+python3 deploy/products/smoke_test.py --base-url http://IP_DO_SERVIDOR:8088 --env-file .env.prod
+```

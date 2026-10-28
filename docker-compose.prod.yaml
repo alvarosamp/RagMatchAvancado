@@ -1,3 +1,7 @@
+name: ragmatch-products-test
+
+# Stack completa e exclusiva da branch codex/inteligencia-produtos-hostinger.
+# Usa imagens publicadas; nao precisa de Git, build ou Traefik no painel.
 x-production-defaults: &production-defaults
   stop_grace_period: 60s
   logging:
@@ -8,19 +12,19 @@ x-production-defaults: &production-defaults
 
 services:
 
-  db:  
+  db:
     <<: *production-defaults
     image: pgvector/pgvector:pg16
     restart: unless-stopped
     command: postgres -c fsync=on -c synchronous_commit=on -c full_page_writes=on
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-edital_matcher}
+      POSTGRES_DB: ragmatch_products_test
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - products_db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-edital_matcher}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ragmatch_products_test"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,9 +38,9 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: ${APP_DB_USER:-ragmatch_app}
+      DB_USER: ${APP_DB_USER:-ragmatch_products}
       DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
-      DB_NAME: ${POSTGRES_DB:-edital_matcher}
+      DB_NAME: ragmatch_products_test
       AUTH_TYPE: scram-sha-256
       POOL_MODE: transaction
       DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
@@ -45,7 +49,7 @@ services:
       db-bootstrap:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${APP_DB_USER:-ragmatch_app} -d ${POSTGRES_DB:-edital_matcher}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${APP_DB_USER:-ragmatch_products} -d ragmatch_products_test"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,15 +58,15 @@ services:
 
   api:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     volumes:
-      - ./data:/data
-      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+      - products_files:/data
+      - products_documents:/documents
     expose:
       - "8000"
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
@@ -95,13 +99,12 @@ services:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       REGISTER_ENABLED: ${REGISTER_ENABLED:-0}
-      APP_ENV: ${APP_ENV:-production}
-      # O frontend encaminha /api mantendo APP_DOMAIN no header Host; a API
-      # tambem pode ser acessada diretamente por API_DOMAIN.
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS obrigatorio (inclua APP_DOMAIN e API_DOMAIN)}
-      CSRF_TRUSTED_ORIGINS: https://${APP_DOMAIN:?APP_DOMAIN obrigatorio}
+      APP_ENV: production
+      MARKET_INTELLIGENCE_ENABLED: "1"
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?Defina PUBLIC_ORIGIN (exemplo http://IP:8088)}
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-access_token}
-      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-1}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-0}
       AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
       AUTH_TOKEN_IN_BODY: ${AUTH_TOKEN_IN_BODY:-0}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -121,6 +124,8 @@ services:
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       TOR_DOCUMENTS_ROOT: /documents
     depends_on:
+      initialize:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       mlflow:
@@ -135,28 +140,45 @@ services:
         condition: service_completed_successfully
       db-bootstrap:
         condition: service_completed_successfully
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-proxy"
-      - "traefik.http.routers.ragmatch-api.rule=Host(`${API_DOMAIN}`)"
-      - "traefik.http.routers.ragmatch-api.entrypoints=websecure"
-      - "traefik.http.routers.ragmatch-api.tls=true"
-      - "traefik.http.routers.ragmatch-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ragmatch-api.loadbalancer.server.port=8000"
     networks:
       - app-internal
-      - traefik-proxy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 30s
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  initialize:
+    <<: *production-defaults
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatorio}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatorio}
+      APP_ENV: production
+      AI_FEATURES_ENABLED: "0"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Defina ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD}
+      SEED_DEMO: ${SEED_DEMO:-0}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+    command: python deploy/bootstrap_test.py
+    networks:
+      - app-internal
 
   worker:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     volumes:
-      - ./data:/data
-      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+      - products_files:/data
+      - products_documents:/documents
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
@@ -197,13 +219,13 @@ services:
     <<: *production-defaults
     mem_limit: ${AI_WORKER_MEMORY_LIMIT:-1g}
     cpus: ${AI_WORKER_CPU_LIMIT:-1.0}
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     volumes:
-      - ./data:/data
-      - ${TOR_DOCUMENTS_HOST_PATH:-./data/documents}:/documents
+      - products_files:/data
+      - products_documents:/documents
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
@@ -239,10 +261,10 @@ services:
 
   worker-conlicitacao:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-5}
@@ -269,10 +291,10 @@ services:
 
   scheduler:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_app}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
       PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
       PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
       PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
@@ -356,25 +378,25 @@ services:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
       OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      OLLAMA_PULL_MODELS: ${OLLAMA_PULL_MODELS:-1}
     depends_on:
       ollama:
         condition: service_healthy
     command:
       - |
-        ollama pull "$$OLLAMA_EMBED_MODEL" || echo "Aviso: nao foi possivel baixar $$OLLAMA_EMBED_MODEL";
-        ollama pull "$$OLLAMA_MODEL" || echo "Aviso: nao foi possivel baixar $$OLLAMA_MODEL";
-        exit 0
+        if [ "$$OLLAMA_PULL_MODELS" != "1" ]; then exit 0; fi
+        ollama pull "$$OLLAMA_EMBED_MODEL" && ollama pull "$$OLLAMA_MODEL"
     networks:
       - app-internal
 
   migrate:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: "no"
     environment:
       APP_ENV: production
       ALLOW_EMPTY_DATABASE_BOOTSTRAP: ${ALLOW_EMPTY_DATABASE_BOOTSTRAP:-0}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
     depends_on:
       db:
@@ -385,12 +407,12 @@ services:
 
   db-bootstrap:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/${POSTGRES_DB:-edital_matcher}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
-      APP_DB_USER: ${APP_DB_USER:-ragmatch_app}
+      APP_DB_USER: ${APP_DB_USER:-ragmatch_products}
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
     depends_on:
       migrate:
@@ -401,7 +423,7 @@ services:
 
   backup-uploader:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-api:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     profiles: ["tools"]
     restart: "no"
     environment:
@@ -418,27 +440,19 @@ services:
 
   frontend:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
-    expose:
-      - "80"
+    ports:
+      - "${HTTP_PORT:-8088}:80"
     networks:
       - app-internal
-      - traefik-proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik-proxy"
-      - "traefik.http.routers.ragmatch-frontend.rule=Host(`${APP_DOMAIN}`)"
-      - "traefik.http.routers.ragmatch-frontend.entrypoints=websecure"
-      - "traefik.http.routers.ragmatch-frontend.tls=true"
-      - "traefik.http.routers.ragmatch-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ragmatch-frontend.loadbalancer.server.port=80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   mlflow:
     <<: *production-defaults
-    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:?IMAGE_TAG obrigatorio (use sha-<commit> publicado pelo CI)}
+    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-sha-7870582618eea5515ce3ca0dea906b7e91226b5c}
     restart: unless-stopped
     expose:
       - "5000"
@@ -460,7 +474,9 @@ services:
       - app-internal
 
 volumes:
-  postgres_data:
+  products_files:
+  products_documents:
+  products_db:
   mlflow_data:
   redis_data:
   minio_data:
@@ -469,6 +485,3 @@ volumes:
 networks:
   app-internal:
     driver: bridge
-  traefik-proxy:
-    external: true
-    name: traefik-proxy

@@ -1,0 +1,15 @@
+# Overlay local: construir no servidor sem publicar codigo no Docker Hub.
+# Usar com docker-compose.prod.yaml na raiz do repositorio.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/products/Dockerfile.api
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/products/Dockerfile.frontend
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
