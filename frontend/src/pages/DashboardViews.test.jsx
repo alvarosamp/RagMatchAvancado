@@ -71,6 +71,24 @@ it('analysis dashboard renders the object and complete item description', async 
  expect(view.textContent).toContain('Aquisição de equipamentos')
  expect(view.textContent).toContain('PE 123')
 })
+it('analysis dashboard shows expanded categories and populated technical fields beyond the preview limits', async () => {
+ api.dashboard.mockResolvedValue({ data: { kpis: {}, categories: [
+  ...['Switch', 'Access Point', 'Transceiver', 'Modulo optico'].map(categoria => ({ categoria, itens: 1, unidades: 1, breakdowns: {} })),
+  { categoria: 'Patch cord', itens: 1, unidades: 20, breakdowns: {
+   meio: [], construcao: [], conector_lado_a: [{ valor: 'LC', unidades: 20 }],
+   comprimento: [{ valor: '2,5 m', unidades: 20 }],
+  } },
+  { categoria: 'Cabo DAC', itens: 1, unidades: 2, breakdowns: {} },
+  { categoria: 'Cabo óptico AOC', itens: 1, unidades: 3, breakdowns: {} },
+ ] } })
+ api.list.mockResolvedValue({ data: [] })
+ const view = await render(AnalysisDashboard)
+ expect(view.textContent).toContain('Patch cord')
+ expect(view.textContent).toContain('Cabo DAC')
+ expect(view.textContent).toContain('Cabo óptico AOC')
+ expect(view.textContent).toContain('2,5 m')
+ expect(view.textContent).toContain('conector lado a')
+})
 it('competitive intelligence expands comparisons and requests selected category', async () => {
  api.competitors.mockResolvedValue({ data: { summary: { competitor_products: 1 }, competitors: [{ competitor: { id: 1, model: 'Concorrente teste', category: 'Switch' }, history: { suppliers: ['Fornecedor A'] }, best_own_counters: [{ product_id: 2, model: 'Produto próprio', score: 80, advantages: 1, disadvantages: 0, ties: 0 }] }] } })
  const view = await render(CompetitiveIntelligence)

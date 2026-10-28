@@ -1,0 +1,19 @@
+FROM node:24-alpine AS crm
+WORKDIR /crm
+COPY bid-buddy/package.json bid-buddy/package-lock.json ./
+RUN npm ci
+COPY bid-buddy/ ./
+RUN npm run build:embed
+
+FROM node:24-alpine AS portal
+WORKDIR /portal
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=portal /portal/dist /usr/share/nginx/html
+COPY --from=crm /crm/dist-embed /usr/share/nginx/html/crm
+COPY deploy/products/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

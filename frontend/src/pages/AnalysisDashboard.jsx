@@ -396,7 +396,7 @@ export default function AnalysisDashboard() {
             <section className="space-y-5">
               <SectionLabel number={4}>Por categoria de equipamento</SectionLabel>
               <div className="space-y-3">
-                {categories.slice(0, 4).map(cat => (
+                {categories.map(cat => (
                   <div key={cat.categoria} className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -407,7 +407,7 @@ export default function AnalysisDashboard() {
                     </div>
 
                     {/* Breakdowns simplificados */}
-                    {Object.entries(cat.breakdowns || {}).slice(0, 2).map(([field, rows]) => (
+                    {Object.entries(cat.breakdowns || {}).filter(([, rows]) => rows.length > 0).map(([field, rows]) => (
                       <div key={field} className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                           {field.replace(/_/g, ' ')}

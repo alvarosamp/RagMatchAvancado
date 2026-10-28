@@ -976,6 +976,8 @@ def _serialize_notice_product(product: CrmNoticeProduct) -> dict[str, Any]:
         "lot": product.lot,
         "product_code": product.product_code,
         "description": product.description,
+        "category": getattr(product, "category", None),
+        "bi_features": getattr(product, "bi_features", None),
         "quantity": product.quantity,
         "reference_price": product.reference_price,
         "reference_total_price": product.reference_total_price,

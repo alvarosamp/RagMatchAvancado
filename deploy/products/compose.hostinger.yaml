@@ -1,0 +1,97 @@
+name: ragmatch-products-test
+
+x-api-image: &api-image
+  image: ragmatch-products-api:20261028-v1
+  build:
+    context: ${SOURCE_CONTEXT:-https://github.com/alvarosamp/RagMatchAvancado.git#codex/inteligencia-produtos-hostinger}
+    dockerfile: deploy/products/Dockerfile.api
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ragmatch_products_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+    volumes: [products_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d ragmatch_products_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  initialize:
+    <<: *api-image
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://postgres@db:5432/ragmatch_products_test
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      APP_DB_USER: ragmatch_products
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY}
+      APP_ENV: production
+      ALLOW_EMPTY_DATABASE_BOOTSTRAP: "1"
+      AI_FEATURES_ENABLED: "0"
+      BACKEND_LOG_DIR: /tmp/ragmatch-logs
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Defina ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD}
+      SEED_DEMO: ${SEED_DEMO:-0}
+    command: [sh, -ec, "python scripts/migrate_database.py && python scripts/provision_app_role.py && python deploy/bootstrap_test.py"]
+    depends_on:
+      db: {condition: service_healthy}
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ragmatch_products@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY}
+      APP_ENV: production
+      ALLOWED_HOSTS: "*"
+      AUTH_COOKIE_SECURE: "0"
+      AUTH_COOKIE_SAMESITE: lax
+      REGISTER_ENABLED: "0"
+      AI_FEATURES_ENABLED: "0"
+      OLLAMA_AUTO_PULL: "0"
+      CRM_MATCH_USE_LLM: "0"
+      CONLICITACAO_ENABLED: "0"
+      MARKET_INTELLIGENCE_ENABLED: "1"
+      OBJECT_STORAGE_ENABLED: "0"
+      REDIS_URL: redis://redis:6379/0
+      TOR_DOCUMENTS_ROOT: /data/documents
+      BACKEND_LOG_DIR: /tmp/ragmatch-logs
+    volumes: [products_files:/data]
+    depends_on:
+      initialize: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  frontend:
+    image: ragmatch-products-frontend:20261028-v1
+    build:
+      context: ${SOURCE_CONTEXT:-https://github.com/alvarosamp/RagMatchAvancado.git#codex/inteligencia-produtos-hostinger}
+      dockerfile: deploy/products/Dockerfile.frontend
+    restart: unless-stopped
+    ports: ["${HTTP_PORT:-8088}:80"]
+    depends_on:
+      api: {condition: service_healthy}
+
+volumes:
+  products_db:
+  products_files:

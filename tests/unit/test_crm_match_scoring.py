@@ -5,6 +5,22 @@ from app.services.crm_match_scoring import build_match_summary, combine_scores, 
 from app.services.crm_item_matcher import build_product_reuse_signature
 
 
+def test_match_item_readback_keeps_description_and_supplies_short_name_attributes():
+    fields = ('id item_number lot product_code description quantity reference_price reference_total_price '
+              'catalog_product_id catalog_match_source catalog_match_confirmed_by catalog_match_confirmed_at '
+              'catalog_match_model_version catalog_match_notes catalog_lpu_version match_review_verdict '
+              'match_review_confidence match_review_reason_codes match_review_evidence match_review_notes '
+              'match_reviewed_by match_reviewed_at catalog_product').split()
+    product = SimpleNamespace(**dict.fromkeys(fields))
+    product.description = 'Descrição técnica completa com condições de fornecimento.'
+    product.category = 'Switch'
+    product.bi_features = {'quantidade_portas': '24 Portas'}
+    row = crm_item_matcher._serialize_notice_product(product)
+    assert row['description'] == product.description
+    assert row['category'] == 'Switch'
+    assert row['bi_features'] == {'quantidade_portas': '24 Portas'}
+
+
 def test_normalize_text_removes_accents_and_symbols():
     assert normalize_text("Notebook Corporativo 14\" - São Paulo") == "notebook corporativo 14 sao paulo"
 

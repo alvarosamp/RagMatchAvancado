@@ -40,6 +40,28 @@ BREAKDOWN_FIELDS = {
 BREAKDOWN_FIELDS["Módulo óptico"] = BREAKDOWN_FIELDS["Transceiver"]
 BREAKDOWN_FIELDS["Modulo optico"] = BREAKDOWN_FIELDS["Transceiver"]
 
+# Flat fields from the V7.4.4 transport contract, including the expanded
+# connectivity catalogue. Keep legacy/nested paths above for V8 imports.
+for category, names in {
+    "Switch": ("papel_na_rede", "formato_switch", "recursos_redundancia", "orcamento_poe",
+               "capacidade_comutacao", "taxa_encaminhamento", "redundancia_fonte",
+               "fonte_hot_swap", "montagem_switch", "tabela_enderecos_mac",
+               "buffer_pacotes", "jumbo_frame"),
+    "Access Point": ("faixas_frequencia", "configuracao_radio", "interface_lan"),
+    "Patch cord": ("meio", "construcao", "conector_lado_a", "conector_lado_b",
+                   "comprimento", "diametro_externo", "tipo_fibra",
+                   "quantidade_fibras", "polimento", "polaridade",
+                   "categoria_cobre", "blindagem", "material_condutor"),
+    "Cabo DAC": ("formato", "velocidade", "tipo_cabo", "topologia",
+                 "comprimento", "bitola_awg"),
+    "Cabo óptico AOC": ("formato", "velocidade", "topologia", "comprimento"),
+}.items():
+    fields = BREAKDOWN_FIELDS.setdefault(category, {})
+    fields.update({name: [(name,)] for name in names})
+
+# Existing records may still contain the analyzer's original category spelling.
+BREAKDOWN_FIELDS["Cabo AOC"] = BREAKDOWN_FIELDS["Cabo óptico AOC"]
+
 
 def aggregate_feature_breakdowns(
     rows: list[Any], fields: dict[str, list[tuple[str, ...]]]
@@ -94,4 +116,14 @@ def _first_documented_value(features: dict[str, Any], paths: list[tuple[str, ...
                 return value
         elif isinstance(value, (int, float)) and not isinstance(value, bool):
             return str(value)
+        elif isinstance(value, list):
+            # Rank the documented combination as one value, without counting
+            # the same item/quantity repeatedly for duplicate array entries.
+            parts = []
+            for element in value:
+                part = _first_documented_value({"value": element}, [("value",)]) if isinstance(element, (str, int, float)) else None
+                if part is not None and part not in parts:
+                    parts.append(part)
+            if parts:
+                return " / ".join(parts)
     return None
