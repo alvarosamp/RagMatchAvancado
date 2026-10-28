@@ -11,15 +11,17 @@ Ele inclui todos os serviços da composição de teste e os builds remotos. O pa
 não precisa de checkout local nem de imagens da aplicação publicadas em registro.
 A fonte está fixada no commit `7fc43556cfb16f3e18cd46c39a42257f402dcd1e` desta
 branch; inclui o relatório por marca. O frontend compila com o bundle CRM já
-verificado no repositório principal, sem clonar o submódulo.
+verificado no repositório principal, sem clonar o submódulo. O build do painel
+aplica a mesma preservação de Host/porta da configuração Nginx atual da branch.
 
 1. No servidor de teste, crie o projeto `ragmatch-products-test` no painel Docker.
 2. Cole todo o conteúdo de `compose.panel.yaml` no editor de Compose.
 3. Nas variáveis de ambiente, cole os valores de um arquivo gerado conforme
    `hostinger.env.example`. Use credenciais novas numa instalação nova; se o
    projeto já possui banco/storage, preserve as senhas dessa instalação.
-4. Ajuste `PUBLIC_ORIGIN=http://IP_DO_SERVIDOR:8088` com o endereço real do teste.
-   Para outra porta, ajuste também `HTTP_PORT` e libere essa porta no firewall.
+4. Não é necessário informar IP ou domínio no ENV. O proxy preserva o endereço
+   e a porta usados pelo navegador; a API valida requisições da mesma origem.
+   Para outra porta, ajuste `HTTP_PORT` e libere essa porta no firewall.
 5. Na primeira instalação com banco vazio, use `ALLOW_EMPTY_DATABASE_BOOTSTRAP=1`.
    Depois da implantação bem-sucedida, volte para `0` nas variáveis do painel.
 6. Implante. O primeiro build baixa dependências; o Ollama também baixa os modelos.
@@ -57,7 +59,7 @@ ficam desligados por padrão; ligue as variáveis correspondentes quando necess�
 O worker analítico separado e os overlays de BI não fazem parte do Compose base.
 
 Este acesso por IP usa HTTP e `AUTH_COOKIE_SECURE=0`. Ao configurar um proxy com
-HTTPS, ajuste `PUBLIC_ORIGIN` e `AUTH_COOKIE_SECURE=1`. O Nginx encaminha `/api` e
+HTTPS, ajuste `AUTH_COOKIE_SECURE=1`. O Nginx encaminha `/api` e
 usa a configuração do frontend da branch, incluindo os cabeçalhos de segurança.
 
 ## Build no servidor pelo terminal (sem publicação no Docker Hub)
@@ -65,8 +67,8 @@ usa a configuração do frontend da branch, incluindo os cabeçalhos de seguran�
 Clone com `--recurse-submodules --branch codex/inteligencia-produtos-hostinger`.
 O Git precisa ter acesso de leitura ao repositório do CRM. Na raiz do clone,
 gere o ambiente com `python3 deploy/products/make_env.py`, copie o arquivo gerado
-para `.env.prod` e execute `python3 deploy/products/set_origin.py` para informar
-a URL do servidor de teste. Esse comando funciona também no macOS/zsh.
+para `.env.prod`. Não é necessário executar `set_origin.py` nem configurar
+`PUBLIC_ORIGIN`; o Compose desta branch não usa essa variável.
 
 ```sh
 docker compose --env-file .env.prod -f docker-compose.prod.yaml -f deploy/products/compose.build.yaml config --quiet
@@ -114,3 +116,8 @@ O Compose único `compose.panel.yaml` também teve o build remoto de API, fronte
 e MLflow aprovado localmente. A stack foi iniciada a partir dessas imagens;
 readiness, login com cookie, bloqueio CSRF e importação/leitura CRM passaram pelo
 frontend. A execução na Hostinger ainda depende de colar os arquivos no painel.
+
+O acesso sem `PUBLIC_ORIGIN` foi validado localmente na porta 18088: o Nginx
+preserva `Host` com a porta, a API aceita a origem do próprio acesso e rejeita
+origens externas. Readiness, login por cookie e importação/leitura CRM passaram
+sem `CSRF_TRUSTED_ORIGINS` no ambiente.
