@@ -2,11 +2,23 @@
 
 Branch: `codex/evolution-whatsapp`.
 Fonte das imagens API/frontend: `a976bb22a67543ef6832402e3ead447b0ae72878`.
-Tag reservada: `evolution-hostinger-20261028-v1`.
+Tag publicada: `evolution-hostinger-20261028-v1`.
 
-**Status: imagens construídas e validadas localmente; publicação no Docker Hub
-aguardando autorização explícita para os três repositórios públicos.**
-Não implante essa tag antes da confirmação de publicação e verificação dos digests.
+**Status: três imagens publicadas no Docker Hub em 29/10/2026, após autorização
+explícita do usuário para os repositórios públicos. Digests remotos verificados.**
+Os digests estão em `evolution-hostinger-20261028-v1.json`. A publicação não
+executou implantação em nenhuma VPS.
+
+No painel da VPS de teste, informe:
+
+```env
+IMAGE_TAG=evolution-hostinger-20261028-v1
+```
+
+Use o Compose único e a lista de variáveis abaixo. Se atualizar o mesmo projeto
+de teste, preserve as credenciais e volumes existentes. Preencha o número de
+atendimento em `EVOLUTION_BOT_PHONE`; após a implantação, conecte esse número
+pelo QR Code em `http://IP_DA_VPS:8090/manager`.
 
 Arquivos para o painel:
 
