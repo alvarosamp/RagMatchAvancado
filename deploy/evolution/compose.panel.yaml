@@ -1,0 +1,612 @@
+# VPS DE TESTE — branch codex/evolution-whatsapp. Somente pull; nenhum build no painel.
+# Cole este arquivo inteiro e use hostinger.env.example como referência de ambiente.
+name: ragmatch-evolution-test
+services:
+  db:
+    stop_grace_period: 60s
+    logging: &id001
+      driver: local
+      options:
+        max-size: 10m
+        max-file: '3'
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    command: postgres -c fsync=on -c synchronous_commit=on -c full_page_writes=on
+    environment:
+      POSTGRES_DB: ragmatch_products_test
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+    volumes:
+    - products_db:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER:-postgres} -d ragmatch_products_test
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+    - app-internal
+  pgbouncer:
+    stop_grace_period: 60s
+    logging: *id001
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${APP_DB_USER:-ragmatch_products}
+      DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_NAME: ragmatch_products_test
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-20}
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-200}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -h 127.0.0.1 -p 5432 -U ${APP_DB_USER:-ragmatch_products} -d ragmatch_products_test
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+    - app-internal
+  api:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    volumes:
+    - products_files:/data
+    - products_documents:/documents
+    expose:
+    - '8000'
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: '1'
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      OLLAMA_AUTO_PULL: '0'
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_BASE_URL: ${CONLICITACAO_BASE_URL:-https://consultaonline.conlicitacao.com.br}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TIMEOUT_SECONDS: ${CONLICITACAO_TIMEOUT_SECONDS:-15}
+      CONLICITACAO_BULLETIN_TIMEOUT_SECONDS: ${CONLICITACAO_BULLETIN_TIMEOUT_SECONDS:-60}
+      CONLICITACAO_POLL_ACTIVE_SECONDS: ${CONLICITACAO_POLL_ACTIVE_SECONDS:-30}
+      CONLICITACAO_POLL_IDLE_SECONDS: ${CONLICITACAO_POLL_IDLE_SECONDS:-300}
+      CONLICITACAO_POLL_UPCOMING_SECONDS: ${CONLICITACAO_POLL_UPCOMING_SECONDS:-120}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
+      CONLICITACAO_ALLOWED_ADMIN_EMAILS: ${CONLICITACAO_ALLOWED_ADMIN_EMAILS:-}
+      CONLICITACAO_SYNC_MAX_PAGES: ${CONLICITACAO_SYNC_MAX_PAGES:-10}
+      CONLICITACAO_LOOKUP_MAX_BULLETINS: ${CONLICITACAO_LOOKUP_MAX_BULLETINS:-30}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REGISTER_ENABLED: ${REGISTER_ENABLED:-0}
+      APP_ENV: production
+      MARKET_INTELLIGENCE_ENABLED: '1'
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-access_token}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-0}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      AUTH_TOKEN_IN_BODY: ${AUTH_TOKEN_IN_BODY:-0}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-1}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-0}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15}
+      SMTP_LOCAL_HOSTNAME: ${SMTP_LOCAL_HOSTNAME:-}
+      PASSWORD_RESET_URL_BASE: ${PASSWORD_RESET_URL_BASE:-}
+      PASSWORD_RESET_EXPIRE_MINUTES: ${PASSWORD_RESET_EXPIRE_MINUTES:-30}
+      MAX_PDF_UPLOAD_BYTES: ${MAX_PDF_UPLOAD_BYTES:-52428800}
+      MAX_DOCUMENT_UPLOAD_BYTES: ${MAX_DOCUMENT_UPLOAD_BYTES:-52428800}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TOR_DOCUMENTS_ROOT: /documents
+      EVOLUTION_ENABLED: ${EVOLUTION_ENABLED:-1}
+      EVOLUTION_BASE_URL: http://evolution:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-ragmatch}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+      EVOLUTION_BOT_PHONE: ${EVOLUTION_BOT_PHONE:-}
+      EVOLUTION_DIGEST_HOUR: ${EVOLUTION_DIGEST_HOUR:-9}
+    depends_on:
+      initialize:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      ollama-setup:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      db-bootstrap:
+        condition: service_completed_successfully
+    networks:
+    - app-internal
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5)
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 30s
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    pull_policy: always
+  initialize:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatorio}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatorio}
+      APP_ENV: production
+      AI_FEATURES_ENABLED: '0'
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Defina ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD}
+      SEED_DEMO: ${SEED_DEMO:-0}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+    command: python deploy/bootstrap_test.py
+    networks:
+    - app-internal
+    pull_policy: always
+  worker:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    volumes:
+    - products_files:/data
+    - products_documents:/documents
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: '1'
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      DATASHEET_EXTRACTOR_USE_LLM: ${DATASHEET_EXTRACTOR_USE_LLM:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /documents
+    depends_on:
+      db:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      ollama-setup:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      db-bootstrap:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues edital-processing,matching --processes 1 --threads ${WORKER_THREADS:-2}
+    networks:
+    - app-internal
+    pull_policy: always
+  worker-ai:
+    stop_grace_period: 60s
+    logging: *id001
+    mem_limit: ${AI_WORKER_MEMORY_LIMIT:-1g}
+    cpus: ${AI_WORKER_CPU_LIMIT:-1.0}
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    volumes:
+    - products_files:/data
+    - products_documents:/documents
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENABLED: '1'
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+      S3_BUCKET: ${S3_BUCKET:-edital-matcher}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      AI_FEATURES_ENABLED: ${AI_FEATURES_ENABLED:-0}
+      CRM_MATCH_USE_LLM: ${CRM_MATCH_USE_LLM:-0}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      TOR_DOCUMENTS_ROOT: /documents
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      ollama-setup:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+      db-bootstrap:
+        condition: service_completed_successfully
+    command: dramatiq app.jobs.tasks --queues ai-inference --processes ${AI_WORKER_PROCESSES:-1} --threads ${AI_WORKER_THREADS:-1}
+    networks:
+    - app-internal
+    pull_policy: always
+  worker-conlicitacao:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-5}
+      REDIS_URL: redis://redis:6379/0
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
+      CONLICITACAO_BASE_URL: ${CONLICITACAO_BASE_URL:-https://consultaonline.conlicitacao.com.br}
+      CONLICITACAO_TOKEN: ${CONLICITACAO_TOKEN:-}
+      CONLICITACAO_TIMEOUT_SECONDS: ${CONLICITACAO_TIMEOUT_SECONDS:-15}
+      CONLICITACAO_BULLETIN_TIMEOUT_SECONDS: ${CONLICITACAO_BULLETIN_TIMEOUT_SECONDS:-60}
+      CONLICITACAO_POLL_ACTIVE_SECONDS: ${CONLICITACAO_POLL_ACTIVE_SECONDS:-30}
+      CONLICITACAO_POLL_IDLE_SECONDS: ${CONLICITACAO_POLL_IDLE_SECONDS:-300}
+      CONLICITACAO_POLL_UPCOMING_SECONDS: ${CONLICITACAO_POLL_UPCOMING_SECONDS:-120}
+      CONLICITACAO_SYNC_MAX_PAGES: ${CONLICITACAO_SYNC_MAX_PAGES:-10}
+      CONLICITACAO_LOOKUP_MAX_BULLETINS: ${CONLICITACAO_LOOKUP_MAX_BULLETINS:-30}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: dramatiq app.jobs.tasks --queues conlicitacao-sync --processes 1 --threads 1
+    networks:
+    - app-internal
+    pull_policy: always
+  scheduler:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${APP_DB_USER:-ragmatch_products}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+      PNCP_RADAR_AUTO_REFRESH: ${PNCP_RADAR_AUTO_REFRESH:-1}
+      PNCP_RADAR_REFRESH_INTERVAL_SECONDS: ${PNCP_RADAR_REFRESH_INTERVAL_SECONDS:-86400}
+      EMAIL_MONITOR_ENABLED: ${EMAIL_MONITOR_ENABLED:-0}
+      EMAIL_MONITOR_IMAP_HOST: ${EMAIL_MONITOR_IMAP_HOST:-}
+      EMAIL_MONITOR_IMAP_USER: ${EMAIL_MONITOR_IMAP_USER:-}
+      EMAIL_MONITOR_IMAP_PASSWORD: ${EMAIL_MONITOR_IMAP_PASSWORD:-}
+      JOB_RECOVERY_INTERVAL_SECONDS: ${JOB_RECOVERY_INTERVAL_SECONDS:-60}
+      JOB_PENDING_REQUEUE_SECONDS: ${JOB_PENDING_REQUEUE_SECONDS:-60}
+      JOB_MAX_ATTEMPTS: ${JOB_MAX_ATTEMPTS:-3}
+      JOB_STALE_TIMEOUT_SECONDS: ${JOB_STALE_TIMEOUT_SECONDS:-7200}
+      REDIS_URL: redis://redis:6379/0
+      CONLICITACAO_ENABLED: ${CONLICITACAO_ENABLED:-0}
+      CONLICITACAO_TENANT_IDS: ${CONLICITACAO_TENANT_IDS:-}
+      CONLICITACAO_SYNC_INTERVAL_SECONDS: ${CONLICITACAO_SYNC_INTERVAL_SECONDS:-300}
+      EVOLUTION_ENABLED: ${EVOLUTION_ENABLED:-1}
+      EVOLUTION_BASE_URL: http://evolution:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-ragmatch}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+      EVOLUTION_BOT_PHONE: ${EVOLUTION_BOT_PHONE:-}
+      EVOLUTION_DIGEST_HOUR: ${EVOLUTION_DIGEST_HOUR:-9}
+    depends_on:
+      db-bootstrap:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    command: python -m app.scheduler
+    networks:
+    - app-internal
+    pull_policy: always
+  redis:
+    stop_grace_period: 60s
+    logging: *id001
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec
+    volumes:
+    - redis_data:/data
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+    - app-internal
+  minio:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER obrigatório}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD obrigatório}
+    command: server /data
+    volumes:
+    - minio_data:/data
+    networks:
+    - app-internal
+  ollama:
+    stop_grace_period: 60s
+    logging: *id001
+    mem_limit: ${OLLAMA_MEMORY_LIMIT:-2g}
+    cpus: ${OLLAMA_CPU_LIMIT:-1.0}
+    environment:
+      OLLAMA_NUM_PARALLEL: '1'
+      OLLAMA_MAX_LOADED_MODELS: '1'
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-2m}
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    expose:
+    - '11434'
+    volumes:
+    - ollama_data:/root/.ollama
+    healthcheck:
+      test:
+      - CMD
+      - ollama
+      - list
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+    - app-internal
+  ollama-setup:
+    stop_grace_period: 60s
+    logging: *id001
+    image: ollama/ollama:latest
+    restart: 'no'
+    entrypoint:
+    - /bin/sh
+    - -c
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      OLLAMA_PULL_MODELS: ${OLLAMA_PULL_MODELS:-1}
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command:
+    - 'if [ "$$OLLAMA_PULL_MODELS" != "1" ]; then exit 0; fi
+
+      ollama pull "$$OLLAMA_EMBED_MODEL" && ollama pull "$$OLLAMA_MODEL"
+
+      '
+    networks:
+    - app-internal
+  migrate:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: 'no'
+    environment:
+      APP_ENV: production
+      ALLOW_EMPTY_DATABASE_BOOTSTRAP: ${ALLOW_EMPTY_DATABASE_BOOTSTRAP:-0}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python scripts/migrate_database.py
+    networks:
+    - app-internal
+    pull_policy: always
+  db-bootstrap:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}@db:5432/ragmatch_products_test
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+      APP_DB_USER: ${APP_DB_USER:-ragmatch_products}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD obrigatório}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: python scripts/provision_app_role.py
+    networks:
+    - app-internal
+    pull_policy: always
+  backup-uploader:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    profiles:
+    - tools
+    restart: 'no'
+    environment:
+      BACKUP_S3_ENDPOINT_URL: ${BACKUP_S3_ENDPOINT_URL:-}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION:-us-east-1}
+      BACKUP_S3_ACCESS_KEY: ${BACKUP_S3_ACCESS_KEY:-}
+      BACKUP_S3_SECRET_KEY: ${BACKUP_S3_SECRET_KEY:-}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-ragmatch-backups}
+      BACKUP_S3_SSE: ${BACKUP_S3_SSE:-AES256}
+    command: python scripts/upload_backup.py --directory /backup
+    networks:
+    - app-internal
+    pull_policy: always
+  frontend:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-frontend:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    ports:
+    - ${HTTP_PORT:-8088}:80
+    networks:
+    - app-internal
+    depends_on:
+      api:
+        condition: service_healthy
+    pull_policy: always
+  mlflow:
+    stop_grace_period: 60s
+    logging: *id001
+    image: alvarocareli/ragmatch-mlflow:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    restart: unless-stopped
+    expose:
+    - '5000'
+    environment:
+      MLFLOW_BACKEND_STORE_URI: sqlite:////mlruns/mlflow.db
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlruns/artifacts
+    volumes:
+    - mlflow_data:/mlruns
+    command: "mlflow server\n  --backend-store-uri sqlite:////mlruns/mlflow.db\n  --default-artifact-root /mlruns/artifacts\n  --host 0.0.0.0\n\
+      \  --port 5000\n"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+    - app-internal
+    pull_policy: always
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    ports:
+    - ${EVOLUTION_HTTP_PORT:-8090}:8080
+    environment:
+      SERVER_URL: http://localhost:8080
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?Defina EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: 'false'
+      DATABASE_ENABLED: 'true'
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:?Use uma senha hexadecimal aleatória}@evolution-db:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: ragmatch
+      DATABASE_SAVE_DATA_INSTANCE: 'true'
+      DATABASE_SAVE_DATA_NEW_MESSAGE: 'false'
+      DATABASE_SAVE_MESSAGE_UPDATE: 'false'
+      DATABASE_SAVE_DATA_CONTACTS: 'true'
+      DATABASE_SAVE_DATA_CHATS: 'false'
+      DATABASE_SAVE_DATA_HISTORIC: 'false'
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_URI: redis://evolution-redis:6379/0
+      CACHE_REDIS_PREFIX_KEY: ragmatch-evolution
+      CACHE_REDIS_SAVE_INSTANCES: 'false'
+      CACHE_LOCAL_ENABLED: 'false'
+      TELEMETRY_ENABLED: 'false'
+      LOG_LEVEL: ERROR,WARN
+      LOG_BAILEYS: error
+      CORS_ORIGIN: '*'
+      CORS_CREDENTIALS: 'true'
+    volumes:
+    - evolution_instances:/evolution/instances
+    depends_on:
+      evolution-db:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_healthy
+    networks:
+    - app-internal
+    pull_policy: always
+  evolution-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:?Defina EVOLUTION_DB_PASSWORD}
+    volumes:
+    - evolution_db:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U evolution -d evolution
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+    - app-internal
+    pull_policy: always
+  evolution-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+    - evolution_redis:/data
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+    - app-internal
+    pull_policy: always
+  evolution-setup:
+    image: alvarocareli/ragmatch-api:${IMAGE_TAG:-evolution-hostinger-20261028-v1}
+    pull_policy: always
+    restart: 'no'
+    command: python scripts/setup_evolution.py
+    environment:
+      EVOLUTION_BASE_URL: http://evolution:8080
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-ragmatch}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:?Defina EVOLUTION_API_KEY}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:?Defina EVOLUTION_WEBHOOK_SECRET}
+    depends_on:
+      evolution:
+        condition: service_started
+    networks:
+    - app-internal
+volumes:
+  products_files: null
+  products_documents: null
+  products_db: null
+  mlflow_data: null
+  redis_data: null
+  minio_data: null
+  ollama_data: null
+  evolution_instances: null
+  evolution_db: null
+  evolution_redis: null
+networks:
+  app-internal:
+    driver: bridge

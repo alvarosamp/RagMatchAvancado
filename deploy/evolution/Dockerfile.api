@@ -1,0 +1,11 @@
+# Reuse the tested Hostinger runtime; this release adds no Python dependencies.
+FROM alvarocareli/ragmatch-api@sha256:ecb8e1446ae6877ef148419197b11577291da0f8aee9d3fd83c08dbb05e2e522
+WORKDIR /app
+COPY backend/app /app/app
+COPY backend/scripts /app/scripts
+COPY backend/alembic /app/alembic
+COPY backend/alembic.ini /app/alembic.ini
+COPY deploy/products/bootstrap_test.py /app/deploy/bootstrap_test.py
+COPY backend/tests/test_evolution.py /app/whatsapp-tests/test_evolution.py
+ENV PYTHONPATH=/app PYTHONUNBUFFERED=1
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

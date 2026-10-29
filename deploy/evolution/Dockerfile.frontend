@@ -1,0 +1,16 @@
+FROM node:24-alpine AS portal
+WORKDIR /portal
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm test -- src/components/WhatsAppSettings.test.jsx
+RUN npm run build
+
+# The CRM itself is unchanged: preserve the exact tested private CRM bundle.
+FROM alvarocareli/ragmatch-frontend@sha256:efe70182c7142166652bc5a60f8a858a4b2ed84f9a3228fb153ecb2c46778321 AS crm
+
+FROM nginx:alpine
+COPY --from=portal /portal/dist /usr/share/nginx/html
+COPY --from=crm /usr/share/nginx/html/crm /usr/share/nginx/html/crm
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

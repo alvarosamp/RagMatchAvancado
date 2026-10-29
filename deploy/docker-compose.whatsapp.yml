@@ -1,0 +1,14 @@
+# Optional overlay for an existing self-hosted Evolution v2 installation.
+# Use alongside docker-compose.yaml or docker-compose.prod.yaml.
+services:
+  api:
+    environment: &whatsapp-env
+      EVOLUTION_ENABLED: ${EVOLUTION_ENABLED:-0}
+      EVOLUTION_BASE_URL: ${EVOLUTION_BASE_URL:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-ragmatch}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+      EVOLUTION_BOT_PHONE: ${EVOLUTION_BOT_PHONE:-}
+      EVOLUTION_DIGEST_HOUR: ${EVOLUTION_DIGEST_HOUR:-9}
+  scheduler:
+    environment: *whatsapp-env

@@ -8,7 +8,7 @@ from app.services.catalog_loader import load_switch_catalog
 from app.vector.pgvector_store import ensure_pgvector_extension
 
 
-def init_db(db: Session) -> dict:
+def init_db(db: Session, *, include_whatsapp: bool = True) -> dict:
     """
     Cria tabelas do portal principal e do CRM no mesmo banco.
     """
@@ -16,10 +16,15 @@ def init_db(db: Session) -> dict:
     import app.crm.models  # noqa: F401
     import app.jobs.models  # noqa: F401
     import app.integrations.bling.models  # noqa: F401
+    import app.integrations.evolution.models  # noqa: F401
 
     try:
         ensure_pgvector_extension(db)
-        Base.metadata.create_all(bind=engine)
+        tables = None if include_whatsapp else [
+            table for table in Base.metadata.sorted_tables
+            if table.name not in {"whatsapp_contacts", "whatsapp_deliveries"}
+        ]
+        Base.metadata.create_all(bind=engine, tables=tables)
         _ensure_user_schema_updates()
         _ensure_job_enum_updates()
         _ensure_crm_schema_updates()

@@ -55,6 +55,15 @@ def main() -> None:
                     summary[key] += value
             if any(summary.values()):
                 logger.info("[Scheduler] Recuperacao de jobs: %s", summary)
+            # Separate sessions: tenant context from job recovery must not leak
+            # into the cross-user identity lookup for WhatsApp delivery.
+            from app.integrations.evolution.client import configured
+
+            if configured():
+                from app.integrations.evolution.service import send_daily_summaries
+
+                with SessionLocal() as whatsapp_db:
+                    send_daily_summaries(whatsapp_db)
         except Exception as exc:  # noqa: BLE001 - scheduler must survive one failed cycle
             logger.warning("[Scheduler] Falha ao recuperar jobs: %s", exc, exc_info=True)
         finally:

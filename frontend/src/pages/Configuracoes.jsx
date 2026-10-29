@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { authApi } from '../api/client'
 import PasswordRequirements from '../components/PasswordRequirements'
+import WhatsAppSettings from '../components/WhatsAppSettings'
 
 const ROLE_LABELS = {
   admin:  { label: 'Administrador', color: 'text-amber border-amber/30 bg-amber/10'           },
@@ -93,6 +94,8 @@ export default function Configuracoes() {
         <h1 className="font-display font-black text-2xl text-white">Configurações</h1>
         <p className="text-sm text-gray-500 font-mono mt-1">Preferências da conta e opções do sistema</p>
       </div>
+
+      <WhatsAppSettings />
 
       {/* ── Conta ──────────────────────────────────────────────────────────── */}
       <Section title="Conta" description="Informações do seu usuário e empresa">

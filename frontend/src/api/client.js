@@ -44,6 +44,14 @@ api.interceptors.response.use(
 
 export default api
 
+export const whatsappApi = {
+  status: () => api.get('/integrations/whatsapp/me'),
+  link: () => api.post('/integrations/whatsapp/link'),
+  unlink: () => api.delete('/integrations/whatsapp/me'),
+  preferences: (data) => api.patch('/integrations/whatsapp/me', data),
+  test: () => api.post('/integrations/whatsapp/test'),
+}
+
 // ── Helpers por domínio ───────────────────────────────────────────────────────
 
 export const authApi = {
