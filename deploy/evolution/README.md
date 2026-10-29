@@ -56,3 +56,12 @@ isolamento entre duas empresas e o resumo diário com dados de teste.
 Para atualizar a composição gerada após alterar os overlays:
 `python deploy/evolution/generate_compose.py` (requer PyYAML). O painel não precisa
 executar esse script; o arquivo resultante já está pronto para colar.
+
+Teste opcional da instalação, sem enviar mensagens (requer conta ainda sem vínculo):
+
+```sh
+python deploy/evolution/smoke_test.py \
+  --base-url http://IP_DA_VPS:8088 \
+  --evolution-url http://IP_DA_VPS:8090 \
+  --env-file CAMINHO_DO_AMBIENTE_DE_TESTE
+```
